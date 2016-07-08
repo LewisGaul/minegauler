@@ -1,1 +1,0 @@
-{"both_clicks": {}, "left_clicks": {}, "per_cell": 2, "name": "Siwel G", "right_clicks": {}, "first_success": 0, "lives": 1, "button_size": 16, "distance_to": 0, "mines": 10, "lives_remaining": 1, "detection": 1, "dims": [8, 8], "coords": [[0, 3], [0, 3], [0, 5], [0, 5], [0, 7], [0, 7], [1, 7], [1, 7], [3, 7], [3, 7]], "drag_select": 0, "diff": "b", "flagging": null}

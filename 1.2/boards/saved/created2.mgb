@@ -1,1 +1,0 @@
-{"both_clicks": {}, "left_clicks": {}, "per_cell": 1, "name": "", "right_clicks": {}, "first_success": 0, "lives": 1, "button_size": 16, "distance_to": 0, "mines": 10, "lives_remaining": 1, "detection": 1, "dims": [8, 8], "coords": [[1, 0], [2, 3], [2, 4], [3, 0], [3, 4], [4, 4], [5, 0], [6, 1], [6, 2], [6, 5]], "drag_select": 0, "diff": "b", "flagging": null}
