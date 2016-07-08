@@ -1,3 +1,13 @@
+####################
+## Project specific
+####################
+
+images/mines/*.ppm
+images/flags/*.ppm
+images/Screenshots
+images/heatmap.png
+
+
 #################
 ## Eclipse
 #################
