@@ -2,17 +2,15 @@
 ## Project specific
 ####################
 
-0.0
-1.0
-1.1
-
+0.0/
+1.0/
+1.1/
 images/mines/*.ppm
 images/flags/*.ppm
 images/Screenshots
 images/heatmap.png
-
+Latex/
 Workbook.xlsx
-post.txt
 probabilities.ods
 *.sublime-*
 
