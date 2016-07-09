@@ -1,4 +1,14 @@
 
+# Button states are:
+#     UNCLICKED
+#     CLICKED
+#     FLAGGED
+#     MINE
+#     COLOURED
+
+# Drag-and-select flagging types are:
+#     FLAG
+#     UNFLAG
 
 import sys
 import os
@@ -13,10 +23,9 @@ from glob import glob
 
 import numpy as np
 
-from constants import * #version, platform
-from resources import (nr_colours, direcs, encode_highscore,
-    get_nonzero_coords, get_highscores, get_neighbours, blend_colours)
-# from game import *
+from constants import * #version, platform etc.
+from resources import nr_colours, direcs, get_neighbours, blend_colours
+from game import Game
 # import update_highscores
 # from probabilities import NrConfig
 
@@ -24,18 +33,6 @@ if PLATFORM == 'win32':
     import win32com.client
 
 __version__ = VERSION
-
-#Button states
-UNCLICKED = -400
-FLAGGED = -401
-CLICKED = -402
-COLOURED = -403 #necessary?
-HIT = -404 #use MINE instead
-MINE = -410
-
-#Drag select flagging type
-UNFLAG = -501
-FLAG = -502
 
 default_settings = {
     'diff': 'b',
@@ -119,8 +116,8 @@ class BasicGui(object):
         if self.diff in ['b', 'i', 'e', 'm']: # If difficulty is not custom
             self.dims = self.settings['dims'] = diff_dims[self.diff]
 
-        self.all_coords = [(u, v) for u in range(self.dims[0])
-            for v in range(self.dims[1])]
+        self.all_coords = [(i, j) for i in range(self.dims[0])
+            for j in range(self.dims[1])]
 
         # Dictionary to keep track of which windows are open.
         self.active_windows = dict()
@@ -165,6 +162,9 @@ class BasicGui(object):
 
     def __repr__(self):
         return "<Minesweeper GUI>"
+
+    def get_size(self):
+        return self.dims[0]*self.dims[1]
 
     # Make the GUI
     def make_menubar(self):

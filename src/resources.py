@@ -58,6 +58,13 @@ def get_neighbours(coord, dims, dist=1, include=False):
         neighbours.remove(coord)
     return neighbours
 
+def where_coords(bool_array):
+    coords_array = np.transpose(np.nonzero(bool_array))
+    coords_list = []
+    for coord in coords_array.tolist():
+        coords_list.append(tuple(map(int, coord)))
+    return coords_list
+
 def blend_colours(ratio, high_colour=(255, 0, 0), low_colour=(255, 255, 64),
     format='hex'):
     colour = []
