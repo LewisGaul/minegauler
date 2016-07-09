@@ -161,16 +161,10 @@ class BasicGui(object):
         self.is_both_click = False
         self.drag_flag = None
 
-        # Creates a minefield stored within the game, which will generate a
-        # board if first_success is False. Otherwise call
-        # Game.mf.generate_rnd() and Game.mf.setup() to complete
-        # initialisation.
-        self.game = Game(self.settings)
-
         self.root.mainloop()
 
     def __repr__(self):
-        return "<Minesweeper GUI>"
+        return "<Basic minesweeper GUI>"
 
     def get_size(self):
         return self.dims[0]*self.dims[1]
@@ -210,7 +204,6 @@ class BasicGui(object):
     def make_panel(self):
         self.panel = Frame(self.root, pady=4, height=40)
         self.panel.pack(fill=BOTH)
-
         self.face_images = dict()
         # Collect all faces that are in the folder and store in dictionary
         # under filename.
@@ -378,17 +371,16 @@ class BasicGui(object):
         x = orig_coord[0] + event.y/self.button_size
         y = orig_coord[1] + event.x/self.button_size
         cur_coord = (x, y) if (x, y) in self.all_coords else None
-        if cur_coord == self.mouse_coord or self.is_both_click:
+        if cur_coord == self.mouse_coord:
             return
         if self.left_button_down:
             if self.right_button_down: #both
                 self.both_motion(cur_coord, self.mouse_coord)
-            else: #left
+            elif not self.is_both_click: #left
                 self.left_motion(cur_coord, self.mouse_coord)
-        else: #right
+        elif not self.is_both_click: #right
             self.right_motion(cur_coord, self.mouse_coord)
         self.mouse_coord = cur_coord
-
 
     def detect_ctrl_left_press(self, event=None):
         coord = event.widget.coord
@@ -404,7 +396,8 @@ class BasicGui(object):
         pass
 
     def left_motion(self, coord, prev_coord):
-        pass
+        if self.is_both_click:
+            return
 
     def right_press(self, coord):
         pass
@@ -413,14 +406,15 @@ class BasicGui(object):
         pass
 
     def right_motion(self, coord, prev_coord):
-        pass
+        if self.is_both_click:
+            return
 
     def both_press(self, coord):
-        pass
+        self.is_both_click = True
 
     def both_release(self, coord):
         # Either the left or right button has been released.
-        self.is_both_click = True
+        pass
 
     def both_motion(self, coord, prev_coord):
         pass
@@ -845,6 +839,11 @@ class TestGui(BasicGui):
 class GameGui(BasicGui):
     def __init__(self, settings):
         super(GameGui, self).__init__(settings)
+        # Create a minefield stored within the game, which will generate a
+        # board if first_success is False. Otherwise call
+        # Game.mf.generate_rnd() and Game.mf.setup() to complete
+        # initialisation.
+        self.game = Game(self.settings)
 
     def make_menubar(self):
         super(GameGui, self).make_menubar()
