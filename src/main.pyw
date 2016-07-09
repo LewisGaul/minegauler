@@ -14,7 +14,7 @@ import sys
 import os
 from os.path import join, dirname, exists, split, splitext, getsize, isdir
 from shutil import copy2 as copy_file
-from Tkinter import *
+import Tkinter as tk
 import tkFileDialog, tkMessageBox
 from PIL import Image as PILImage
 import time as tm
@@ -31,6 +31,8 @@ from game import Game
 
 if PLATFORM == 'win32':
     import win32com.client
+# Use platform to determine which button is right-click.
+RIGHT_BTN_NUM = 2 if PLATFORM == 'darwin' else 3
 
 __version__ = VERSION
 
@@ -90,7 +92,7 @@ msg_font = ('Times', 10, 'bold')
 
 
 
-class BasicGui(object):
+class BasicGui(tk.Tk, object):
     def __init__(self, settings=None):
         # Defaults which may be overwritten below.
         self.settings = {
@@ -122,24 +124,28 @@ class BasicGui(object):
         # Dictionary to keep track of which windows are open.
         self.active_windows = dict()
         # Initialise the root window.
-        self.root = self.focus = self.active_windows['root'] = Tk()
+        super(BasicGui, self).__init__()
+        self.focus = self.active_windows['root'] = self
         if IN_EXE:
-            self.root.title('MineGauler')
+            self.title('MineGauler')
         else:
-            self.root.title('MineGauler' + VERSION)
-        self.root.iconbitmap(default=join(direcs['images'], '3mine.ico'))
-        # self.root.protocol('WM_DELETE_WINDOW', lambda: self.close_root())
+            self.title('MineGauler' + VERSION)
+        self.iconbitmap(default=join(direcs['images'], '3mine.ico'))
+        self.protocol('WM_DELETE_WINDOW', self.close_root)
+        # Set default to be that menus cannot be 'torn off'.
+        self.option_add('*tearOff', False)
         self.nr_font = (nr_font[0], 10*self.button_size/17, nr_font[2])
         self.msg_font = msg_font
 
-        self.diff_var = StringVar()
+        # Set variables.
+        self.diff_var = tk.StringVar()
         self.diff_var.set(self.diff)
-        self.zoom_var = BooleanVar()
+        self.zoom_var = tk.BooleanVar()
         if self.button_size != 16:
             self.zoom_var.set(True)
-        self.drag_select_var = BooleanVar()
+        self.drag_select_var = tk.BooleanVar()
         self.drag_select_var.set(self.drag_select)
-        self.make_menubar()
+
         # Make main body of GUI.
         self.make_panel()
         self.make_minefield()
@@ -148,10 +154,10 @@ class BasicGui(object):
         # print "Time to get images was {:.2f}s.".format(tm.time() - t)
 
         # Set size of root window.
-        self.root.resizable(False, False)
+        self.resizable(False, False)
         width = max(147, self.dims[1]*self.button_size + 20)
         height = self.dims[0]*self.button_size + self.panel['height'] + 20
-        self.root.geometry('{}x{}'.format(width, height))
+        self.geometry('{}x{}'.format(width, height))
         # Turn off option of resizing window.
 
         # Keep track of mouse clicks.
@@ -161,60 +167,38 @@ class BasicGui(object):
         self.is_both_click = False
         self.drag_flag = None
 
-        self.root.mainloop()
-
     def __repr__(self):
         return "<Basic minesweeper GUI>"
 
     def get_size(self):
         return self.dims[0]*self.dims[1]
 
-    # Make the GUI
-    def make_menubar(self):
-        self.menubar = Menu(self.root)
-        self.root.config(menu=self.menubar)
-        self.root.option_add('*tearOff', False)
+    def run(self):
+        """
+        Final method to finish off any bits that are unique to the class
+        before running the app with mainloop. Every subclass should have its
+        own run method.
+        """
+        # Create menubar.
+        self.menubar = MenuBar(self)
+        self.config(menu=self.menubar)
+        self.mainloop()
 
-        self.game_menu = game_menu = Menu(self.menubar)
-        self.menubar.add_cascade(label='Game', menu=game_menu)
-        game_menu.add_command(label='Refresh', command=self.refresh_board,
-            accelerator='F2')
-        self.root.bind_all('<F2>', self.refresh_board)
-        game_menu.add_separator()
-        for i in diff_names:
-            game_menu.add_radiobutton(label=i[1], value=i[0],
-                variable=self.diff_var, command=self.set_difficulty)
-        game_menu.add_separator()
-        game_menu.add_checkbutton(label='Zoom', variable=self.zoom_var,
-            command=self.get_zoom)
-        game_menu.add_separator()
-        game_menu.add_command(label='Exit', command=self.root.destroy)
-
-        self.options_menu = options_menu = Menu(self.menubar)
-        self.menubar.add_cascade(label='Options', menu=options_menu)
-        options_menu.add_checkbutton(label='Drag select',
-            variable=self.drag_select_var, command=self.update_settings)
-
-        self.help_menu = help_menu = Menu(self.menubar)
-        self.menubar.add_cascade(label='Help', menu=help_menu)
-        help_menu.add_command(label='About',
-            command=lambda: self.show_text('about', 40, 5), accelerator='F1')
-        self.root.bind_all('<F1>', lambda: self.show_text('about', 40, 5))
-
+    # Make the GUI.
     def make_panel(self):
-        self.panel = Frame(self.root, pady=4, height=40)
-        self.panel.pack(fill=BOTH)
+        self.panel = tk.Frame(self, pady=4, height=40)
+        self.panel.pack(fill='both')
         self.face_images = dict()
         # Collect all faces that are in the folder and store in dictionary
         # under filename.
         for path in glob(join(direcs['images'], 'faces', '*.ppm')):
             im_name = splitext(split(path)[1])[0]
-            self.face_images[im_name] = PhotoImage(name=im_name,
+            self.face_images[im_name] = tk.PhotoImage(name=im_name,
                 file=join(direcs['images'], 'faces', im_name + '.ppm'))
-        face_frame = Frame(self.panel)
-        face_frame.place(relx=0.5, rely=0.5, anchor=CENTER)
+        face_frame = tk.Frame(self.panel)
+        face_frame.place(relx=0.5, rely=0.5, anchor='center')
         # Create face button which will refresh_board the board.
-        self.face_button = Button(face_frame, bd=4,
+        self.face_button = tk.Button(face_frame, bd=4,
             image=self.face_images['ready1face'], takefocus=False,
             command=self.refresh_board)
         self.face_button.pack()
@@ -232,56 +216,35 @@ class BasicGui(object):
         self.panel.bind_class('panel', '<ButtonRelease-1>', panel_click)
 
     def make_minefield(self):
-        self.width = self.dims[1]*self.button_size + 20
-        self.height = self.dims[0]*self.button_size + 20
-        self.mainframe = Frame(self.root, height=self.height, width=self.width)
-        self.mainframe.pack()
-        # Frame containing buttons and border.
-        self.zoomframe = Frame(self.mainframe,
-            height=100*self.button_size + 20,
-            width=200*self.button_size + 20, bd=10)
-        self.zoomframe.place(x=0, y=0, anchor=NW)
-        # Frame placed underneath buttons for border.
-        self.mainborder = Frame(self.zoomframe,
-            height=self.height,
-            width=self.width, bd=10, relief='ridge')
-        self.mainborder.place(x=0, y=0, bordermode='outside')
-        self.button_frames = dict()
+        self.board = tk.Frame(self, bd=10, relief='ridge')
+        self.board.pack()
         self.buttons = dict()
-        for coord in [(u, v) for u in range(self.dims[0])
-            for v in range(self.dims[1])]:
-            self.make_button(coord)
+        for coord in self.all_coords:
+            self.buttons[coord] = Cell(coord, self.board, self)
+        self.set_button_bindings()
 
-    def make_button(self, coord):
-        self.button_frames[coord] = f = Frame(self.zoomframe,
-            width=self.button_size, height=self.button_size)
-        f.rowconfigure(0, weight=1) # Enables button to fill frame
-        f.columnconfigure(0, weight=1)
-        f.grid_propagate(False) # Disables resizing of frame
-        # Placed on top of mainborder frame, using relative positioning
-        # so that they autoadjust on zoom.
-        f.place(relx=float(coord[1])/200, rely=float(coord[0])/100)
-        b = Label(f, bd=3, relief='raised', font=self.nr_font)
-        self.buttons[coord] = b
-        # Make sticky on all sides.
-        b.grid(sticky='nsew')
-        # Store attributes of button.
-        b.coord = coord
-        b.state = UNCLICKED
-        b.num_of_flags = 0
-        # Use platform to determine which button is right-click.
-        right_num = 2 if PLATFORM == 'darwin' else 3
-        b.bind('<Button-1>', self.detect_left_press)
-        b.bind('<ButtonRelease-1>', self.detect_left_release)
-        b.bind('<Button-%s>'%right_num, self.detect_right_press)
-        b.bind('<ButtonRelease-%s>'%right_num, self.detect_right_release)
-        b.bind('<B1-Motion>', self.detect_motion)
-        b.bind('<B%s-Motion>'%right_num, self.detect_motion)
-        b.bind('<Control-1>', self.detect_ctrl_left_press)
+    def set_button_bindings(self):
+        self.bind_class('board', '<Button-1>', self.detect_left_press)
+        self.bind_class('board', '<ButtonRelease-1>', self.detect_left_release)
+        self.bind_class('board', '<Button-%s>'%RIGHT_BTN_NUM, self.detect_right_press)
+        self.bind_class('board', '<ButtonRelease-%s>'%RIGHT_BTN_NUM,
+            self.detect_right_release)
+        self.bind_class('board', '<B1-Motion>', self.detect_motion)
+        self.bind_class('board', '<B%s-Motion>'%RIGHT_BTN_NUM, self.detect_motion)
+        self.bind_class('board', '<Control-1>', self.detect_ctrl_left_press)
+
+    def unset_button_bindings(self):
+        self.unbind_class('board', '<Button-1>')
+        self.unbind_class('board', '<ButtonRelease-1>')
+        self.unbind_class('board', '<Button-%s>'%RIGHT_BTN_NUM)
+        self.unbind_class('board', '<ButtonRelease-%s>'%RIGHT_BTN_NUM)
+        self.unbind_class('board', '<B1-Motion>')
+        self.unbind_class('board', '<B%s-Motion>'%RIGHT_BTN_NUM)
+        self.unbind_class('board', '<Control-1>')
 
     def get_images(self):
         # Create the .ppm files from the .png file. Should use zoom method on
-        # PhotoImage?...
+        # tk.PhotoImage?...
         im_size = self.button_size - 2
         im_path = join(direcs['images'], 'mines')
         for n in range(1, 2):
@@ -301,7 +264,7 @@ class BasicGui(object):
                     key = n
                 else:
                     key = (c, n)
-                self.mine_images[key] = PhotoImage(name=im_name,
+                self.mine_images[key] = tk.PhotoImage(name=im_name,
                     file=join(
                         im_path, '%s%smine%02d.ppm'%(c, n, im_size)))
 
@@ -318,10 +281,10 @@ class BasicGui(object):
         self.flag_images = dict()
         for n in range(1, 2):
             im_name = '%sflag' % n
-            self.flag_images[n] = PhotoImage(name=im_name,
+            self.flag_images[n] = tk.PhotoImage(name=im_name,
                 file=join(im_path, '%sflag%02d.ppm'%(n, im_size)))
 
-    # Button actions
+    # Button actions.
     def detect_left_press(self, event=None):
         self.left_button_down = True
         if self.right_button_down:
@@ -376,7 +339,7 @@ class BasicGui(object):
         if self.left_button_down:
             if self.right_button_down: #both
                 self.both_motion(cur_coord, self.mouse_coord)
-            elif not self.is_both_click: #left
+            elif not self.is_both_click or self.drag_select: #left
                 self.left_motion(cur_coord, self.mouse_coord)
         elif not self.is_both_click: #right
             self.right_motion(cur_coord, self.mouse_coord)
@@ -387,8 +350,6 @@ class BasicGui(object):
         if not self.right_button_down:
             self.ctrl_left_press(coord)
 
-
-    # GUI and game methods
     def left_press(self, coord):
         pass
 
@@ -396,8 +357,7 @@ class BasicGui(object):
         pass
 
     def left_motion(self, coord, prev_coord):
-        if self.is_both_click:
-            return
+        pass
 
     def right_press(self, coord):
         pass
@@ -406,8 +366,7 @@ class BasicGui(object):
         pass
 
     def right_motion(self, coord, prev_coord):
-        if self.is_both_click:
-            return
+        pass
 
     def both_press(self, coord):
         self.is_both_click = True
@@ -422,11 +381,13 @@ class BasicGui(object):
     def ctrl_left_press(self, coord):
         pass
 
+    # GUI and game methods.
     def refresh_board(self, event=None):
         for b in [self.buttons[c] for c in self.all_coords
             if self.buttons[c].state != UNCLICKED]:
             self.reset_button(b.coord)
             b.state = UNCLICKED
+        self.set_button_bindings()
 
     def reset_button(self, coord):
         b = self.buttons[coord]
@@ -436,193 +397,28 @@ class BasicGui(object):
         b.num_of_flags = 0
 
     def show_info(self, event=None):
-        self.focus = window = self.active_windows['info'] = Toplevel(self.root)
+        self.focus = window = self.active_windows['info'] = tk.Toplevel(self)
         self.focus.focus_set()
         window.title('Info')
         window.protocol('WM_DELETE_WINDOW', lambda: self.close_window('info'))
         info = ""
-        Label(window, text=info, font=('Times', 10, 'bold')).pack()
+        tk.Label(window, text=info, font=('Times', 10, 'bold')).pack()
+
+    def close_root(self):
+        self.destroy()
 
     def close_window(self, window):
         self.active_windows[window].destroy()
         self.active_windows.pop(window)
-        self.focus = self.root
+        self.focus = self
         self.focus.focus_set()
         if window == 'highscores':
             with open(join(direcs['data'], 'datacopy.txt'), 'w') as f:
                 json.dump(self.all_data, f)
 
-    def set_difficulty(self, is_new=True):
-        self.submit_name_entry()
-        def validate(event, defocus=False):
-            try:
-                x = max(0, rows.get())
-            except ValueError:
-                x = -1
-            try:
-                y = max(0, cols.get())
-            except ValueError:
-                y = -1
-            dims = (x, y)
-            try:
-                z = max(0, mines.get())
-            except ValueError:
-                z = -1
-            valid = True
-            if not (0 < x <= 100):
-                if not defocus or self.root.focus_get() != rows_entry:
-                    invalid_message[1].grid(row=1, column=2)
-                    invalid_message[1].after(2000,
-                        invalid_message[1].grid_forget)
-                if x > 100:
-                    rows.set(100)
-                else:
-                    valid = False
-            if not (0 < y <= 100):
-                if not defocus or self.root.focus_get() != columns_entry:
-                    invalid_message[2].grid(row=2, column=2)
-                    invalid_message[2].after(2000,
-                        invalid_message[2].grid_forget)
-                if y > 100:
-                    cols.set(100)
-                else:
-                    valid = False
-            if not defocus and valid and not (0 < z <= x*y - 1):
-                valid = False
-                invalid_message[3].grid(row=3, column=2)
-                invalid_message[3].after(2000, invalid_message[3].grid_forget)
-                if z and x and y and z > x*y - 1:
-                    mines.set(x*y*self.per_cell/2)
-            return valid
-
-        def get_shape(event):
-            if not validate(event):
-                return
-            self.dims = rows.get(), cols.get()
-            self.mines = mines.get()
-            #Check if this is actually custom.
-            if self.dims in dims_diff:
-                diff = dims_diff[self.dims]
-                if nr_mines[diff][self.detection] != self.mines:
-                    diff = 'c'
-            else:
-                diff = 'c'
-            self.diff = self.settings['diff'] = diff
-            self.diff_var.set(diff)
-            reshape()
-            self.close_window('custom')
-
-        def reshape():
-            self.width = self.dims[1]*self.button_size + 20
-            self.height = self.dims[0]*self.button_size + 20
-            # Make root window the right size.
-            self.root.geometry(
-                '{}x{}'.format(self.width, self.height + 62))
-            # Make the frames the right size.
-            self.mainframe.config(height=self.height,
-                width=self.width)
-            self.mainborder.config(height=self.height, width=self.width)
-            # Remove buttons that would lie over the border.
-            for coord in (
-                set([(x, self.dims[1]) for x in range(self.dims[0]+1)]) |
-                set([(self.dims[0], y) for y in range(self.dims[1])])):
-                if coord in self.button_frames:
-                    self.button_frames[coord].place_forget()
-            prev_dims = self.game.grid.shape
-            # This runs if one of the dimensions was previously larger.
-            for coord in [(u, v) for u in range(prev_dims[0])
-                for v in range(prev_dims[1]) if u >= self.dims[0] or
-                    v >= self.dims[1]]:
-                #self.button_frames[coord].place_forget()
-                self.buttons.pop(coord)
-            # This runs if one of the dimensions of the new shape is
-            # larger than the previous.
-            for coord in [(u, v) for u in range(self.dims[0])
-                for v in range(self.dims[1]) if u >= prev_dims[0] or
-                    v >= prev_dims[1]]:
-                # Pack buttons if they have already been created.
-                if coord in self.button_frames:
-                    self.button_frames[coord].grid_propagate(False)
-                    self.button_frames[coord].place(relx=float(coord[1])/200,
-                        rely=float(coord[0])/100)
-                    self.buttons[coord] = self.button_frames[coord].children.values()[0]
-                else:
-                    self.make_button(coord)
-            self.reset_game(is_new)
-
-        if self.diff_var.get() == 'c':
-            self.diff_var.set(self.diff)
-            # Do nothing if window requiring an entry is already open.
-            if (self.focus.bindtags()[1] == 'Entry' or
-                'custom' in self.active_windows):
-                self.focus.focus_set()
-                return
-            def get_mines(event):
-                if not validate(event, defocus=True):
-                    return
-
-                dims = x, y = rows.get(), cols.get()
-                if dims in dims_diff:
-                    mines.set(nr_mines[dims_diff[dims]][self.detection])
-                else:
-                    if self.root.focus_get() != rows_entry and (not x or x < 1 or x > 100):
-                        invalid_message[1].grid(row=1, column=2)
-                        invalid_message[1].after(2000, invalid_message[1].grid_forget)
-                        if x and x > 100:
-                            rows.set(100)
-                        else:
-                            invalid = True
-                    if self.root.focus_get() != columns_entry and (
-                        not y or y < 1 or y > 200):
-                        invalid_message[2].grid(row=2, column=2)
-                        invalid_message[2].after(2000, invalid_message[2].grid_forget)
-                        if y and y > 200:
-                            cols.set(200)
-                        else:
-                            invalid = True
-                    #Formula for getting reasonable number of mines.
-                    d = float(self.detection_var.get()) - 1
-                    mines.set(max(1, int((0.09*d**3 - 0.25*d**2 - 0.15*d + 1)*
-                        (dims[0]*dims[1]*0.2))))
-            #self.game.state = INACTIVE
-            window = self.active_windows['custom'] = Toplevel(self.root)
-            window.minsize(200, 50)
-            window.title('Custom')
-            window.protocol('WM_DELETE_WINDOW',
-                lambda: self.close_window('custom'))
-            Label(window, text="Enter a number for each of\n"+
-                               "the following then press enter.").pack()
-            frame = Frame(window)
-            frame.pack(side='left')
-            rows = IntVar()
-            rows.set(self.dims[0])
-            cols = IntVar()
-            cols.set(self.dims[1])
-            mines = IntVar()
-            mines.set(self.mines)
-            Label(frame, text='Rows').grid(row=1, column=0)
-            Label(frame, text='Columns').grid(row=2, column=0)
-            Label(frame, text='Mines').grid(row=3, column=0)
-            self.focus = rows_entry = Entry(frame, textvariable=rows, width=10)
-            columns_entry = Entry(frame, textvariable=cols, width=10)
-            mines_entry = Entry(frame, textvariable=mines, width=10)
-            rows_entry.grid(row=1, column=1)
-            columns_entry.grid(row=2, column=1)
-            mines_entry.grid(row=3, column=1)
-            rows_entry.icursor(END)
-            rows_entry.bind('<FocusOut>', get_mines)
-            columns_entry.bind('<FocusOut>', get_mines)
-            rows_entry.bind('<Return>', get_shape)
-            columns_entry.bind('<Return>', get_shape)
-            mines_entry.bind('<Return>', get_shape)
-            invalid_message = dict([(i+1, Message(frame, text='Invalid entry',
-                font=self.msg_font, width=100)) for i in range(3)])
-            self.focus.focus_set()
-        else:
-            self.diff = self.diff_var.get()
-            self.dims = diff_dims[self.diff]
-            self.mines = nr_mines[self.diff][self.detection]
-            reshape()
+    # Game menu methods.
+    def set_difficulty(self):
+        pass
 
     def set_zoom(self, event=None):
         old_button_size = self.button_size
@@ -646,10 +442,10 @@ class BasicGui(object):
             self.width = self.dims[1]*self.button_size + 20
             self.height = self.dims[0]*self.button_size + 20
             #Make root window the right size.
-            self.root.geometry(
+            self.geometry(
                 '{}x{}'.format(self.width, self.height + 62))
             #Make the frames the right size.
-            self.mainframe.config(height=self.height, width=self.width)
+            self.board.config(height=self.height, width=self.width)
             self.mainborder.config(height=self.height, width=self.width)
             self.zoomframe.config(height=100*self.button_size + 20,
                 width=200*self.button_size + 20)
@@ -682,7 +478,7 @@ class BasicGui(object):
         if self.focus.bindtags()[1] == 'Entry':
             self.focus.focus_set()
             return
-        window = self.active_windows['zoom'] = Toplevel(self.root)
+        window = self.active_windows['zoom'] = tk.Toplevel(self)
         window.title('Zoom')
         window.protocol('WM_DELETE_WINDOW', lambda: self.close_window('zoom'))
         Message(window, width=150, text="Enter desired button size in pixels or click 'Default'.").pack()
@@ -693,13 +489,15 @@ class BasicGui(object):
         zoom_entry.pack(side='left', padx=10)
         zoom_entry.bind('<Return>', self.set_zoom)
         zoom_entry.focus_set()
-        Button(window, text='Default', command=self.set_zoom).pack(side='left')
+        tk.Button(window, text='Default', command=self.set_zoom).pack(side='left')
 
+    # Options menu methods.
     def update_settings(self):
         self.drag_select = self.drag_select_var.get()
 
+    # Help menu methods.
     def show_text(self, filename, width=80, height=24):
-        window = self.active_windows[filename] = Toplevel(self.root)
+        window = self.active_windows[filename] = tk.Toplevel(self)
         window.title(filename.capitalize())
         scrollbar = Scrollbar(window)
         scrollbar.pack(side='right', fill=Y)
@@ -719,6 +517,7 @@ class TestGui(BasicGui):
     def __init__(self):
         super(TestGui, self).__init__()
 
+    # Button actions.
     def left_press(self, coord):
         super(TestGui, self).left_press(coord)
         b = self.buttons[coord]
@@ -829,7 +628,7 @@ class TestGui(BasicGui):
         if coord:
             self.both_press(coord)
 
-    def click(self, coord, check_for_win=True):
+    def click(self, coord):
         b = self.buttons[coord]
         b.config(bd=1, relief='sunken', text='!')
         b.state = CLICKED
@@ -837,21 +636,34 @@ class TestGui(BasicGui):
 
 
 class GameGui(BasicGui):
-    def __init__(self, settings):
+    def __init__(self, settings=None):
         super(GameGui, self).__init__(settings)
+        # Set variables.
+        self.first_success_var = tk.BooleanVar()
+        self.first_success_var.set(self.first_success)
         # Create a minefield stored within the game, which will generate a
         # board if first_success is False. Otherwise call
         # Game.mf.generate_rnd() and Game.mf.setup() to complete
         # initialisation.
         self.game = Game(self.settings)
 
-    def make_menubar(self):
-        super(GameGui, self).make_menubar()
-        self.first_success_var = BooleanVar()
-        self.first_success_var.set(self.first_success)
-        self.options_menu.insert_checkbutton(0, label='FirstAuto',
-            variable=self.first_success_var, command=self.update_settings)
+    def run(self):
+        # Create menubar.
+        self.menubar = MenuBar(self, 'full')
+        self.config(menu=self.menubar)
+        self.mainloop()
 
+    # Make the GUI.
+    def make_panel(self):
+        super(GameGui, self).make_panel()
+        # Create and place the timer.
+        self.timer_hide_var = tk.BooleanVar()
+        self.timer = Timer(self.panel)
+        self.timer.place(relx=1, x=-7, rely=0.5, anchor='e')
+        self.timer.bind('<Button-%s>'%RIGHT_BTN_NUM, self.toggle_timer)
+        self.timer.bindtags(('panel',) + self.timer.bindtags())
+
+    # Button actions.
     def left_press(self, coord):
         super(GameGui, self).left_press(coord)
         b = self.buttons[coord]
@@ -990,6 +802,7 @@ class GameGui(BasicGui):
                 self.check_completion()
         else: #mine hit, game over
             self.game.finish_time = tm.time()
+            self.unset_button_bindings()
             b.state = MINE
             self.game.state = LOST
             colour = '#%02x%02x%02x' % bg_colours['red']
@@ -1009,6 +822,7 @@ class GameGui(BasicGui):
                         image=self.mine_images[self.game.mf.mines_grid[c]])
             # self.finalise_game()
 
+    # GUI and game methods.
     def reveal_safe_cell(self, coord):
         b = self.buttons[coord]
         nr = self.game.mf.completed_grid[coord]
@@ -1028,29 +842,120 @@ class GameGui(BasicGui):
     def check_completion(self):
         pass
 
+    def toggle_timer(self, event=None):
+        if event:
+            self.timer_hide_var.set(not(self.timer_hide_var.get()))
+        # Always show the timer if the game is lost or won.
+        if (self.timer_hide_var.get() and self.game.state not in [WON, LOST]):
+            self.timer.config(fg='black')
+        else:
+            self.timer.config(fg='red')
+
+    # Game menu methods.
+    def refresh_board(self, event=None, is_replay=False):
+        super(GameGui, self).refresh_board()
+        if not is_replay:
+            self.game = Game(self.settings)
+
+    # Options menu methods.
     def update_settings(self):
         self.first_success = self.first_success_var.get()
         self.drag_select = self.drag_select_var.get()
 
 
 
-class Timer(object):
-    def __init__(self, parent):
+class MenuBar(tk.Menu, object):
+    def __init__(self, parent, config='basic'):
+        super(MenuBar, self).__init__(parent)
         self.parent = parent
-        self.var = StringVar()
+        self.config = config
+        self.make_game_menu()
+        self.make_options_menu()
+        self.make_help_menu()
+
+    def make_game_menu(self):
+        self.g_menu = tk.Menu(self)
+        self.add_cascade(label='Game', menu=self.g_menu)
+
+        self.g_menu.add_command(label='Refresh', command=self.parent.refresh_board,
+            accelerator='F2')
+        self.bind_all('<F2>', self.parent.refresh_board)
+        self.g_menu.add_separator()
+        for i in diff_names:
+            self.g_menu.add_radiobutton(label=i[1], value=i[0],
+                variable=self.parent.diff_var, command=self.parent.set_difficulty)
+        self.g_menu.add_separator()
+        self.g_menu.add_checkbutton(label='Zoom', variable=self.parent.zoom_var,
+            command=self.parent.get_zoom)
+        self.g_menu.add_separator()
+        self.g_menu.add_command(label='Exit', command=self.parent.destroy)
+
+    def make_options_menu(self):
+        self.o_menu = tk.Menu(self)
+        self.add_cascade(label='Options', menu=self.o_menu)
+
+        if self.config == 'full':
+            self.o_menu.add_checkbutton(label='FirstAuto',
+                variable=self.parent.first_success_var,
+                command=self.parent.update_settings)
+        self.o_menu.add_checkbutton(label='Drag select',
+            variable=self.parent.drag_select_var,
+            command=self.parent.update_settings)
+
+    def make_help_menu(self):
+        self.h_menu = tk.Menu(self)
+        self.add_cascade(label='Help', menu=self.h_menu)
+        self.h_menu.add_command(label='About',
+            command=lambda: self.parent.show_text('about', 40, 5), accelerator='F1')
+        self.bind_all('<F1>', lambda: self.parent.show_text('about', 40, 5))
+
+    def set_to_official(self):
+        pass
+
+
+
+class Cell(tk.Label, object):
+    def __init__(self, coord, parent, model):
+        self.coord = coord
+        self.parent = parent
+        self.model = model
+        self.state = UNCLICKED
+        # Initialise a frame of correct size to contain a button.
+        frame = tk.Frame(parent, width=model.button_size,
+            height=model.button_size)
+        frame.rowconfigure(0, weight=1) #enable button to fill frame
+        frame.columnconfigure(0, weight=1)
+        frame.grid_propagate(False) #disable resizing of frame
+        # Place with the grid packer.
+        frame.grid(row=coord[0], column=coord[1])
+        super(Cell, self).__init__(frame, bd=3, relief='raised',
+            font=model.nr_font)
+        self.grid(sticky='nsew')
+        self.bindtags(('board',) + self.bindtags())
+
+
+
+
+class Timer(tk.Label, object):
+    def __init__(self, parent):
+        self.var = tk.StringVar()
         self.var.set("000")
-        self.label = Label(parent, bg='black', fg='red', bd=5, relief='sunken', font=('Verdana',11,'bold'), textvariable=self.var)
+        super(Timer, self).__init__(parent, bg='black', fg='red', bd=5, relief='sunken',
+            font=('Verdana',11,'bold'), textvariable=self.var)
         self.start_time = None
 
     def __repr__(self):
-        return "<Timer object>"
+        return "<Timer object inheriting from Tkinter.Label>"
 
     def update(self, start_time=None):
-        if start_time: self.start_time = start_time
+        # A start time is passed in if Timer is being started.
+        if start_time:
+            self.start_time = start_time
+        # Timer updates if it has been started. It is stopped by setting start_time=None.
         if self.start_time:
             elapsed = tm.time() - self.start_time
             self.var.set("%03d" % (min(elapsed + 1, 999)))
-            self.parent.after(100, self.update)
+            self.after(100, self.update)
 
 
 
@@ -1069,5 +974,5 @@ if __name__ == '__main__':
     except:
         with open(join(direcs['files'], 'info.txt'), 'w') as f:
             json.dump({'version': VERSION}, f)
-
-    gui = GameGui(settings) # Initialise the GUI.
+    # Create and run the GUI.
+    GameGui(settings).run()

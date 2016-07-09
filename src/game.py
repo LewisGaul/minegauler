@@ -31,8 +31,6 @@ class Minefield(object):
         for s in ['dims', 'mines', 'per_cell', 'detection']:
             setattr(self, s, settings[s])
             self.settings[s] = settings[s]
-        # Create empty numpy array of integers to represent mine positions.
-        self.mines_grid = np.zeros(self.dims, int)
         # Origin is assumed to be regular, which may be changed later.
         self.origin = REGULAR
         self.all_coords = [(i, j) for i in range(self.dims[0])
@@ -62,6 +60,8 @@ class Minefield(object):
         self.origin = KNOWN
         self.mine_coords = list(set(coords)) #per_cell=1
         self.mines = len(self.mine_coords)
+        # Create empty numpy array of integers to represent mine positions.
+        self.mines_grid = np.zeros(self.dims, int)
         # Use the list to fill the array representing mine positions.
         # May not be the quickest way...
         for coord in set(self.mine_coords):
@@ -78,6 +78,8 @@ class Minefield(object):
         if len(avble_coords) < self.mines/self.per_cell + 1:
             avble_coords = list(set(self.all_coords) - {open_coord})
         np.random.shuffle(avble_coords)
+        # Create empty numpy array of integers to represent mine positions.
+        self.mines_grid = np.zeros(self.dims, int)
         # Assign a one to the mines_grid where the mines should be.
         for i in range(self.mines):
             self.mines_grid.itemset(avble_coords[i], 1)
@@ -142,7 +144,7 @@ class Game(object):
             try:
                 self.mf = Minefield(settings, minefield)
             except:
-                # Catch any error that this bold assumption causes.
+                # Catch any error that this generous assumption causes.
                 pass
         else:
             # No need to generate board yet if first_success is True.
