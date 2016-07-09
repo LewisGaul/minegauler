@@ -25,7 +25,7 @@ from resources import direcs, get_neighbours, where_coords
 
 
 class Minefield(object):
-    def __init__(self, settings, mine_coords=None, auto_create=True):
+    def __init__(self, settings, auto_create=True, mine_coords=None):
         self.settings = dict()
         # Store relevant settings.
         for s in ['dims', 'mines', 'per_cell', 'detection']:
@@ -42,8 +42,7 @@ class Minefield(object):
             self.generate_from_list(mine_coords)
             self.setup()
         elif auto_create:
-            self.generate_random()
-            self.get_mine_coords()
+            self.generate_rnd()
             self.setup()
 
     def __repr__(self):
@@ -61,14 +60,15 @@ class Minefield(object):
 
     def generate_from_list(self, coords):
         self.origin = KNOWN
-        self.mine_coords = mine_coords
-        self.mines = len(mine_coords)
+        self.mine_coords = list(set(coords)) #per_cell=1
+        self.mines = len(self.mine_coords)
         # Use the list to fill the array representing mine positions.
         # May not be the quickest way...
         for coord in set(self.mine_coords):
-            self.mines_grid.itemset(coord, self.mine_coords.count(coord))
+            self.mines_grid.itemset(coord, 1)
+        # self.per_cell = max(self.per_cell, self.mines_grid.max())
 
-    def generate_random(self, open_coord=None):
+    def generate_rnd(self, open_coord=None):
         # Get cells to be left free if first_success is True.
         opening_coords = get_neighbours(open_coord, self.dims, self.detection,
             include=True) if open_coord else set()
@@ -80,19 +80,8 @@ class Minefield(object):
         np.random.shuffle(avble_coords)
         # Assign a one to the mines_grid where the mines should be.
         for i in range(self.mines):
-            np.mines_grid.itemset(avble_coords[i], 1)
-
-    def get_mine_coords(self):
-        """Get a list of the coordinates of the mines using mines_grid."""
-        self.mine_coords = get_nonzero_coords(self.mines_grid)
-        # Include double mines in the list twice etc.
-        if self.per_cell > 1:
-            repeats = []
-            for coord in [c for c in self.mine_coords
-                if self.mines_grid.item(c) > 1]:
-                repeats += [coord]*(self.mines_grid.item(coord) - 1)
-            self.mine_coords += repeats
-            self.mine_coords.sort()
+            self.mines_grid.itemset(avble_coords[i], 1)
+        self.mine_coords = where_coords(self.mines_grid)
 
     def setup(self):
         self.get_completed_grid()
@@ -149,26 +138,26 @@ class Game(object):
             # As the minefield is passed in it is known.
             self.mf.origin = KNOWN
         elif type(minefield) is list:
-            # If list given, assume it's a list of mine coordinates, catching
-            # any error that arises.
+            # If a list is given assume it's a list of mine coordinates.
             try:
                 self.mf = Minefield(settings, minefield)
             except:
+                # Catch any error that this bold assumption causes.
                 pass
         else:
-            # Create a new minefield
-            self.mf = Minefield(settings)
+            # No need to generate board yet if first_success is True.
+            auto_create = not settings['first_success']
+            # Create a new minefield.
+            self.mf = Minefield(settings, auto_create)
 
-        self.settings = settings
+        # Settings may have changed if there is a discrepancy.
+        self.settings = self.mf.settings
         for s in settings:
             setattr(self, s, settings[s])
 
         self.grid = UNCLICKED * np.ones(self.dims, int)
         self.state = READY
-
         self.start_time, self.finish_time = None, None
-        self.lives_remaining = self.lives
-
         self.left_clicks, self.right_clicks = dict(), dict()
         self.both_clicks = dict()
 

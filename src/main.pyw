@@ -129,14 +129,17 @@ class BasicGui(object):
             self.root.title('MineGauler' + VERSION)
         self.root.iconbitmap(default=join(direcs['images'], '3mine.ico'))
         # self.root.protocol('WM_DELETE_WINDOW', lambda: self.close_root())
-
-        self.make_menubar()
-        self.diff_var.set(self.diff)
-        if self.button_size != 16:
-            self.zoom_var.set(True)
-        self.drag_select_var.set(self.drag_select)
         self.nr_font = (nr_font[0], 10*self.button_size/17, nr_font[2])
         self.msg_font = msg_font
+
+        self.diff_var = StringVar()
+        self.diff_var.set(self.diff)
+        self.zoom_var = BooleanVar()
+        if self.button_size != 16:
+            self.zoom_var.set(True)
+        self.drag_select_var = BooleanVar()
+        self.drag_select_var.set(self.drag_select)
+        self.make_menubar()
         # Make main body of GUI.
         self.make_panel()
         self.make_minefield()
@@ -145,11 +148,11 @@ class BasicGui(object):
         # print "Time to get images was {:.2f}s.".format(tm.time() - t)
 
         # Set size of root window.
+        self.root.resizable(False, False)
         width = max(147, self.dims[1]*self.button_size + 20)
         height = self.dims[0]*self.button_size + self.panel['height'] + 20
         self.root.geometry('{}x{}'.format(width, height))
         # Turn off option of resizing window.
-        self.root.resizable(False, False)
 
         # Keep track of mouse clicks.
         self.left_button_down = False
@@ -157,6 +160,12 @@ class BasicGui(object):
         self.mouse_coord = None
         self.is_both_click = False
         self.drag_flag = None
+
+        # Creates a minefield stored within the game, which will generate a
+        # board if first_success is False. Otherwise call
+        # Game.mf.generate_rnd() and Game.mf.setup() to complete
+        # initialisation.
+        self.game = Game(self.settings)
 
         self.root.mainloop()
 
@@ -172,30 +181,27 @@ class BasicGui(object):
         self.root.config(menu=self.menubar)
         self.root.option_add('*tearOff', False)
 
-        game_menu = Menu(self.menubar)
+        self.game_menu = game_menu = Menu(self.menubar)
         self.menubar.add_cascade(label='Game', menu=game_menu)
         game_menu.add_command(label='Refresh', command=self.refresh_board,
             accelerator='F2')
         self.root.bind_all('<F2>', self.refresh_board)
         game_menu.add_separator()
-        self.diff_var = StringVar()
         for i in diff_names:
             game_menu.add_radiobutton(label=i[1], value=i[0],
                 variable=self.diff_var, command=self.set_difficulty)
         game_menu.add_separator()
-        self.zoom_var = BooleanVar()
         game_menu.add_checkbutton(label='Zoom', variable=self.zoom_var,
             command=self.get_zoom)
         game_menu.add_separator()
         game_menu.add_command(label='Exit', command=self.root.destroy)
 
-        options_menu = Menu(self.menubar)
+        self.options_menu = options_menu = Menu(self.menubar)
         self.menubar.add_cascade(label='Options', menu=options_menu)
-        self.drag_select_var = BooleanVar()
         options_menu.add_checkbutton(label='Drag select',
             variable=self.drag_select_var, command=self.update_settings)
 
-        help_menu = Menu(self.menubar)
+        self.help_menu = help_menu = Menu(self.menubar)
         self.menubar.add_cascade(label='Help', menu=help_menu)
         help_menu.add_command(label='About',
             command=lambda: self.show_text('about', 40, 5), accelerator='F1')
@@ -422,7 +428,7 @@ class BasicGui(object):
     def ctrl_left_press(self, coord):
         pass
 
-    def refresh_board(self):
+    def refresh_board(self, event=None):
         for b in [self.buttons[c] for c in self.all_coords
             if self.buttons[c].state != UNCLICKED]:
             self.reset_button(b.coord)
@@ -696,8 +702,6 @@ class BasicGui(object):
         Button(window, text='Default', command=self.set_zoom).pack(side='left')
 
     def update_settings(self):
-        self.per_cell = self.per_cell_var.get()
-        # self.detection = self.detection_var.get()
         self.drag_select = self.drag_select_var.get()
 
     def show_text(self, filename, width=80, height=24):
@@ -842,6 +846,13 @@ class GameGui(BasicGui):
     def __init__(self, settings):
         super(GameGui, self).__init__(settings)
 
+    def make_menubar(self):
+        super(GameGui, self).make_menubar()
+        self.first_success_var = BooleanVar()
+        self.first_success_var.set(self.first_success)
+        self.options_menu.insert_checkbutton(0, label='FirstAuto',
+            variable=self.first_success_var, command=self.update_settings)
+
     def left_press(self, coord):
         super(GameGui, self).left_press(coord)
         b = self.buttons[coord]
@@ -954,9 +965,73 @@ class GameGui(BasicGui):
 
     def click(self, coord, check_for_win=True):
         b = self.buttons[coord]
-        b.config(bd=1, relief='sunken', text='!')
-        b.state = CLICKED
+        if self.game.state == READY:
+            if self.first_success and self.game.mf.origin != KNOWN:
+                self.game.mf.generate_rnd(open_coord=coord)
+                self.game.mf.setup()
+            self.game.state = ACTIVE
+            self.game.start_time = tm.time()
+            # self.timer.update(self.game.start_time)
 
+        cell_nr = self.game.mf.completed_grid[coord]
+        # Check if the cell clicked is an opening, safe or a mine.
+        if cell_nr == 0: #opening hit
+            # Find which opening has been hit.
+            for opening in self.game.mf.openings:
+                if coord in opening:
+                    break # Work with this set of coords
+            for c in [c1 for c1 in opening if
+                self.buttons[c1].state == UNCLICKED]:
+                self.reveal_safe_cell(c)
+            if check_for_win:
+                self.check_completion()
+        elif cell_nr > 0: #normal success
+            self.reveal_safe_cell(coord)
+            if check_for_win:
+                self.check_completion()
+        else: #mine hit, game over
+            self.game.finish_time = tm.time()
+            b.state = MINE
+            self.game.state = LOST
+            colour = '#%02x%02x%02x' % bg_colours['red']
+            b.config(bd=1, relief='sunken', bg=colour,
+                image=self.mine_images[('red', 1)])
+            self.face_button.config(image=self.face_images['lost1face'])
+            for c, b in [(b1.coord, b1) for b1 in self.buttons.values()
+                if b1.state != CLICKED]:
+                # Check for incorrect flags.
+                if b.state == FLAGGED and self.game.mf.mines_grid[c] == 0:
+                    # Could use an image here..
+                    b.config(text='X', image='', font=self.nr_font)
+                # Reveal remaining mines.
+                elif b.state == UNCLICKED and self.game.mf.mines_grid[c] > 0:
+                    b.state = MINE
+                    b.config(bd=1, relief='sunken',
+                        image=self.mine_images[self.game.mf.mines_grid[c]])
+            # self.finalise_game()
+
+    def reveal_safe_cell(self, coord):
+        b = self.buttons[coord]
+        nr = self.game.mf.completed_grid[coord]
+        # Assign the game grid with the numbers which are uncovered.
+        self.game.grid.itemset(coord, nr)
+        b.state = CLICKED
+        # Display the number unless it is a zero.
+        text = nr if nr else ''
+        try:
+            nr_colour = nr_colours[nr]
+        except KeyError:
+            # In case the number is unusually high.
+            nr_colour = 'black'
+        b.config(bd=1, relief='sunken', #bg='SystemButtonFace',
+            text=text, fg=nr_colour, font=self.nr_font)
+
+    def check_completion(self):
+        pass
+
+    def update_settings(self):
+        self.first_success = self.first_success_var.get()
+        self.drag_select = self.drag_select_var.get()
 
 
 

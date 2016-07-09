@@ -4,6 +4,8 @@ import os
 from os.path import join, dirname, isdir, basename
 import time as tm
 
+import numpy as np
+
 from constants import *
 
 
