@@ -115,7 +115,7 @@ class BasicGui(tk.Tk, object):
         for k, v in self.settings.items():
             setattr(self, k, v)
         # Check if custom.
-        if self.diff in ['b', 'i', 'e', 'm']: # If difficulty is not custom
+        if self.diff in ['b', 'i', 'e', 'm']:
             self.dims = self.settings['dims'] = diff_dims[self.diff]
             self.mines = nr_mines[self.diff][self.detection]
             self.settings['mines'] = self.mines
@@ -172,6 +172,26 @@ class BasicGui(tk.Tk, object):
     def get_size(self):
         return self.dims[0]*self.dims[1]
 
+    @staticmethod
+    def add_to_bindtags(widgets, tag):
+        if type(widgets) is list:
+            for w in widgets:
+                w.bindtags((tag,) + w.bindtags())
+        else: #assume a single widget is passed in
+            w = widgets
+            w.bindtags((tag,) + w.bindtags())
+
+    def mouse_in_widget(widget):
+        mousex = self.winfo_pointerx() - widget.winfo_rootx()
+        mousey = self.winfo_pointery() - widget.winfo_rooty()
+        width = widget.winfo_width()
+        height = widget.winfo_height()
+        if (mousex > 0 and mousex < width and
+            mousey > 0 and mousey < height):
+            return True
+        else:
+            return False
+
     def run(self):
         """
         Final method to finish off any bits that are unique to the class
@@ -196,30 +216,28 @@ class BasicGui(tk.Tk, object):
                 file=join(direcs['images'], 'faces', im_name + '.ppm'))
         face_frame = tk.Frame(self.panel)
         face_frame.place(relx=0.5, rely=0.5, anchor='center')
-        # Create face button which will refresh_board the board.
-        self.face_button = tk.Button(face_frame, bd=4,
-            image=self.face_images['ready1face'], takefocus=False,
-            command=self.refresh_board)
+        # Create face button which will refresh the board.
+        self.face_button = tk.Button(face_frame, bd=4, takefocus=False,
+            image=self.face_images['ready1face'], command=self.refresh_board)
         self.face_button.pack()
 
         # Add bindtag to panel.
-        self.panel.bindtags(('panel',) + self.panel.bindtags())
+        self.add_to_bindtags(self.panel, 'panel')
         # Bind to mouse click and release on panel.
         self.panel.bind_class('panel', '<Button-1>',
             lambda x: self.face_button.config(relief='sunken'))
         def panel_click(event):
             self.face_button.config(relief='raised')
-            if (event.x > 0 and event.x < event.widget.winfo_width()
-                and event.y > 0 and event.y < 40):
+            if mouse_in_widget(self.panel()):
                 self.face_button.invoke()
         self.panel.bind_class('panel', '<ButtonRelease-1>', panel_click)
 
     def make_minefield(self):
-        self.board = tk.Frame(self, bd=10, relief='ridge')
-        self.board.pack()
+        self.mainframe = tk.Frame(self, bd=10, relief='ridge')
+        self.mainframe.pack()
         self.buttons = dict()
         for coord in self.all_coords:
-            self.buttons[coord] = Cell(coord, self.board, self)
+            self.buttons[coord] = Cell(coord, self.mainframe, self)
         self.set_button_bindings()
 
     def set_button_bindings(self):
@@ -380,6 +398,7 @@ class BasicGui(tk.Tk, object):
             if self.buttons[c].state != UNCLICKED]:
             self.reset_button(b.coord)
             b.state = UNCLICKED
+        self.update_settings()
         self.set_button_bindings()
 
     def reset_button(self, coord):
@@ -390,22 +409,27 @@ class BasicGui(tk.Tk, object):
         b.num_of_flags = 0
 
     def show_info(self, event=None):
-        self.focus = window = self.active_windows['info'] = tk.Toplevel(self)
+        title = 'Info'
+        self.focus = win = self.active_windows[title] = tk.Toplevel(self)
         self.focus.focus_set()
-        window.title('Info')
-        window.protocol('WM_DELETE_WINDOW', lambda: self.close_window('info'))
+        win.title(title)
+        win.protocol('WM_DELETE_WINDOW', lambda: self.close_window(title))
         info = ""
-        tk.Label(window, text=info, font=('Times', 10, 'bold')).pack()
+        tk.Label(win, text=info, font=('Times', 10, 'bold')).pack()
 
     def close_root(self):
         self.destroy()
+
+    def track_window(self, win):
+        title = win.title()
+        self.active_windows[title] = win
+        win.protocol('WM_DELETE_WINDOW', lambda: self.close_window(title))
 
     def close_window(self, name):
         """
         Keep track of the windows which are open, and ensure the correct
         one receives the focus.
         """
-        name = name.lower()
         self.active_windows[name].destroy()
         self.active_windows.pop(name)
         self.focus = self
@@ -413,7 +437,114 @@ class BasicGui(tk.Tk, object):
 
     # Game menu methods.
     def set_difficulty(self):
-        pass
+        if self.diff_var.get() in diff_dims: #standard board
+            self.diff = self.diff_var.get()
+            self.mines = nr_mines[self.diff][self.detection]
+            self.reshape(diff_dims[self.diff])
+        else: #custom, open popup window
+            # Don't change the radiobutton until custom is confirmed.
+            self.diff_var.set(self.diff)
+            if not self.block_windows:
+                self.get_custom()
+
+    def get_custom(self):
+        def size_slide(num):
+            rows = row_slider.get()
+            cols = col_slider.get()
+            row_entry.delete(0, 'end')
+            col_entry.delete(0, 'end')
+            row_entry.insert(0, rows)
+            col_entry.insert(0, cols)
+            old_max = mine_slider['to']
+            new_max = rows*cols/3
+            mine_slider.set(new_max*float(mine_slider.get())/old_max)
+            mine_slider.config(to=new_max)
+        def mines_slide(num):
+            mine_entry.delete(0, 'end')
+            mine_entry.insert(0, num)
+
+        def set_custom(event=None):
+            rows = row_entry.get()
+            cols = col_entry.get()
+            mines = mine_entry.get()
+            # Check for invalid entries.
+            if (rows not in map(str, range(2, 101)) or
+                cols not in map(str, range(2, 201))):
+                return
+            else:
+                rows = int(rows)
+                cols = int(cols)
+            if mines not in map(str, range(1, rows*cols)): #also invalid
+                return
+            else:
+                mines = int(mines)
+            self.diff = 'c'
+            self.diff_var.set('c')
+            self.mines = mines
+            self.reshape((rows, cols))
+            self.close_window(title)
+
+        title = 'Custom'
+        win = Window(self, title)
+        tk.Message(win.mainframe, width=200, text="""\
+            Select the desired number of rows, columns and mines.\
+            The number of mines must be less than the size of the board,\
+            and the size of the board must be less than 100x200.\
+            """).pack(pady=10)
+        entry_frame = tk.Frame(win.mainframe)
+        entry_frame.pack()
+        row_slider = tk.Scale(entry_frame, from_=2, to=100, length=140,
+            orient='horizontal', showvalue=False, takefocus=False,
+            command=size_slide)
+        col_slider = tk.Scale(entry_frame, from_=2, to=100, length=140,
+            orient='horizontal', showvalue=False, takefocus=False,
+            command=size_slide)
+        mine_slider = tk.Scale(entry_frame, from_=1, to=self.get_size()/3,
+            length=140, orient='horizontal', showvalue=False, takefocus=False,
+            command=mines_slide)
+        row_entry = tk.Entry(entry_frame, width=4, justify='right')
+        col_entry = tk.Entry(entry_frame, width=4, justify='right')
+        mine_entry = tk.Entry(entry_frame, width=4, justify='right')
+        tk.Label(entry_frame, text='Rows').grid(row=1, column=1)
+        row_slider.grid(row=1, column=2)
+        row_entry.grid(row=1, column=3)
+        tk.Label(entry_frame, text='Columns').grid(row=2, column=1)
+        col_slider.grid(row=2, column=2)
+        col_entry.grid(row=2, column=3)
+        tk.Label(entry_frame, text='Mines').grid(row=3, column=1)
+        mine_slider.grid(row=3, column=2)
+        mine_entry.grid(row=3, column=3)
+        row_slider.set(self.dims[0])
+        row_entry.insert(0, self.dims[0])
+        col_slider.set(self.dims[1])
+        col_entry.insert(0, self.dims[1])
+        mine_slider.set(self.mines)
+        mine_entry.insert(0, self.mines)
+
+        win.make_btn('OK', set_custom)
+        win.make_btn('Cancel', lambda: self.close_window(title))
+        self.add_to_bindtags([win, row_entry, col_entry, mine_entry], 'custom')
+        self.bind_class('custom', '<Return>', set_custom)
+        self.focus = row_entry
+        self.focus.focus_set()
+
+    def reshape(self, dims):
+        # This runs if one of the dimensions was previously larger.
+        extras = [c for c in self.all_coords if c[0] >= dims[0] or
+            c[1] >= dims[1]]
+        for coord in extras:
+            self.buttons[coord].frame.destroy()
+            self.buttons.pop(coord)
+        # This runs if one of the dimensions of the new shape is larger than
+        # the previous.
+        self.all_coords = [(i, j) for i in range(dims[0])
+            for j in range(dims[1])]
+        new = [c for c in self.all_coords if c[0] >= self.dims[0] or
+            c[1] >= self.dims[1]]
+        for coord in new:
+            self.buttons[coord] = Cell(coord, self.mainframe, self)
+        self.dims = dims
+        self.refresh_board()
 
     def get_zoom(self):
         def slide(num):
@@ -423,7 +554,7 @@ class BasicGui(tk.Tk, object):
 
         def set_zoom(event=None):
             text = zoom_entry.get()
-            if text not in map(str, range(60, 501)):
+            if text not in map(str, range(60, 501)): #invalid
                 return
             old_button_size = self.button_size
             self.button_size = int(round(int(text)*16.0/100, 0))
@@ -440,37 +571,37 @@ class BasicGui(tk.Tk, object):
                         width=self.button_size)
                     b.config(font=self.nr_font)
                 self.get_images()
-            self.close_window('zoom')
+            self.close_window(title)
 
-        # Ensure tickmark is correct.
+        # Ensure tick on radiobutton is correct.
         if self.button_size == 16:
             self.zoom_var.set(False)
         else:
             self.zoom_var.set(True)
         if self.block_windows:
             return
-        window = self.active_windows['zoom'] = Window(self, 'Zoom')
-        window.bindtags(('zoom',) + window.bindtags())
-        tk.Message(window.upper_frame, width=180,
+        title = 'Zoom'
+        win = Window(self, title)
+        tk.Message(win.mainframe, width=180,
             text="""Select the desired increase in button size compared to the\
-                default, which should be an integer from 60 to 500.""").pack()
+                default, which should be an integer from 60 to 500.""").pack(
+                pady=10)
         zoom = int(round(100*self.button_size/16.0, 0))
-        slider = tk.Scale(window.upper_frame, from_=60, to=200, length=140,
+        slider = tk.Scale(win.mainframe, from_=60, to=200, length=140,
             orient='horizontal', showvalue=False, command=slide)
-        slider.set(zoom)
-        self.focus = zoom_entry = tk.Entry(window.upper_frame, width=4,
-            justify='right')
-        zoom_entry.insert(0, zoom)
-        slider.bindtags(('zoom',) + slider.bindtags())
-        zoom_entry.bindtags(('zoom',) + zoom_entry.bindtags())
-        tk.Label(window.upper_frame, text='%  ').pack(side='right')
+        zoom_entry = tk.Entry(win.mainframe, width=4, justify='right')
+        tk.Label(win.mainframe, text='%  ').pack(side='right')
         zoom_entry.pack(side='right')
         slider.pack(side='right', padx=10)
-        self.focus.focus_set()
-        ok_btn = tk.Button(window.lower_frame, text='OK', command=set_zoom)
-        ok_btn.pack(side='right', padx=10)
-        ok_btn.bindtags(('zoom',) + ok_btn.bindtags())
+        slider.set(zoom)
+        zoom_entry.insert(0, zoom)
+
+        win.make_btn('OK', set_zoom)
+        win.make_btn('Cancel', lambda: self.close_window(title))
+        self.add_to_bindtags([win, slider, zoom_entry], 'zoom')
         self.bind_class('zoom','<Return>', set_zoom)
+        self.focus = zoom_entry
+        self.focus.focus_set()
 
     # Options menu methods.
     def update_settings(self):
@@ -478,11 +609,11 @@ class BasicGui(tk.Tk, object):
 
     # Help menu methods.
     def show_text(self, filename, width=80, height=24):
-        window = self.active_windows[filename] = tk.Toplevel(self)
-        window.title(filename.capitalize())
-        scrollbar = Scrollbar(window)
+        win = self.active_windows[filename] = tk.Toplevel(self)
+        win.title(filename.capitalize())
+        scrollbar = Scrollbar(win)
         scrollbar.pack(side='right', fill=Y)
-        self.focus = text = Text(window, width=width, height=height, wrap=WORD,
+        self.focus = text = Text(win, width=width, height=height, wrap=WORD,
             yscrollcommand=scrollbar.set)
         text.pack()
         scrollbar.config(command=text.yview)
@@ -634,20 +765,20 @@ class GameGui(BasicGui):
     # Make the GUI.
     def make_panel(self):
         super(GameGui, self).make_panel()
-
         # Create and place the mines counter.
         self.mines_var = tk.StringVar()
         self.mines_label = tk.Label(self.panel, bg='black', fg='red', bd=5,
             relief='sunken', font=('Verdana',11,'bold'),
             textvariable=self.mines_var)
         self.mines_label.place(x=7, rely=0.5, anchor='w')
+        self.add_to_bindtags(self.mines_label, 'panel')
 
         # Create and place the timer.
         self.timer_hide_var = tk.BooleanVar()
         self.timer = Timer(self.panel)
         self.timer.place(relx=1, x=-7, rely=0.5, anchor='e')
         self.timer.bind('<Button-%s>'%RIGHT_BTN_NUM, self.toggle_timer)
-        self.timer.bindtags(('panel',) + self.timer.bindtags())
+        self.add_to_bindtags(self.timer, 'panel')
 
     # Button actions.
     def left_press(self, coord):
@@ -856,6 +987,8 @@ class GameGui(BasicGui):
     def update_settings(self):
         self.first_success = self.first_success_var.get()
         self.drag_select = self.drag_select_var.get()
+        for k in default_settings:
+            self.settings[k] = getattr(self, k)
 
 
 
@@ -872,9 +1005,9 @@ class MenuBar(tk.Menu, object):
         self.g_menu = tk.Menu(self)
         self.add_cascade(label='Game', menu=self.g_menu)
 
-        self.g_menu.add_command(label='Refresh', command=self.parent.refresh_board,
-            accelerator='F2')
-        self.bind_all('<F2>', self.parent.refresh_board)
+        self.g_menu.add_command(label='Refresh',
+            command=self.parent.refresh_board, accelerator='F2')
+        self.parent.bind('<F2>', self.parent.refresh_board)
         self.g_menu.add_separator()
         for i in diff_names:
             self.g_menu.add_radiobutton(label=i[1], value=i[0],
@@ -960,15 +1093,19 @@ class Window(tk.Toplevel, object):
         self.parent = parent
         super(Window, self).__init__(parent)
         self.title(title)
-        self.protocol('WM_DELETE_WINDOW', lambda: parent.close_window(title))
-        self.upper_frame = tk.Frame(self)
-        self.upper_frame.pack(ipadx=10, ipady=10)
-        self.lower_frame = tk.Frame(self)
-        self.lower_frame.pack(padx=10, pady=10)
-        cancel_btn = tk.Button(self.lower_frame, text='Cancel',
-            command=lambda: parent.close_window(title))
-        cancel_btn.pack(side='right', padx=10)
-        cancel_btn.bind('<Return>', cancel_btn.invoke)
+        parent.track_window(self)
+        self.mainframe = tk.Frame(self)
+        self.mainframe.pack(ipadx=10, ipady=10)
+        self.lowframe = tk.Frame(self)
+        self.lowframe.pack(padx=10, pady=10)
+        self.btns = []
+
+    def make_btn(self, text, cmd):
+        btn = tk.Button(self.lowframe, text=text, command=cmd)
+        btn.pack(side='left', padx=10)
+        btn.bind('<Return>', btn.invoke)
+        self.btns.append(btn)
+        return btn
 
 
 
@@ -988,4 +1125,5 @@ if __name__ == '__main__':
         with open(join(direcs['files'], 'info.txt'), 'w') as f:
             json.dump({'version': VERSION}, f)
     # Create and run the GUI.
+    settings['diff'] = 'i'
     GameGui(settings).run()
