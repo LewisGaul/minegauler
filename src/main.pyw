@@ -16,7 +16,7 @@ from os.path import join, dirname, exists, split, splitext, getsize, isdir
 from shutil import copy2 as copy_file
 import Tkinter as tk
 import tkFileDialog, tkMessageBox
-from PIL import Image as PILImage
+from PIL import Image as PILImage, ImageTk
 import time as tm
 import json
 from glob import glob
@@ -117,6 +117,8 @@ class BasicGui(tk.Tk, object):
         # Check if custom.
         if self.diff in ['b', 'i', 'e', 'm']: # If difficulty is not custom
             self.dims = self.settings['dims'] = diff_dims[self.diff]
+            self.mines = nr_mines[self.diff][self.detection]
+            self.settings['mines'] = self.mines
 
         self.all_coords = [(i, j) for i in range(self.dims[0])
             for j in range(self.dims[1])]
@@ -153,12 +155,9 @@ class BasicGui(tk.Tk, object):
         self.get_images()
         # print "Time to get images was {:.2f}s.".format(tm.time() - t)
 
-        # Set size of root window.
-        self.resizable(False, False)
-        width = max(147, self.dims[1]*self.button_size + 20)
-        height = self.dims[0]*self.button_size + self.panel['height'] + 20
-        self.geometry('{}x{}'.format(width, height))
         # Turn off option of resizing window.
+        self.resizable(False, False)
+        self.block_windows = False
 
         # Keep track of mouse clicks.
         self.left_button_down = False
@@ -247,42 +246,36 @@ class BasicGui(tk.Tk, object):
         # tk.PhotoImage?...
         im_size = self.button_size - 2
         im_path = join(direcs['images'], 'mines')
-        for n in range(1, 2):
-            for colour in bg_colours:
-                im = PILImage.open(join(im_path, '%smine.png'%n))
-                data = np.array(im)
-                data[(data == (255, 255, 255, 0)).all(axis=-1)] = tuple(
-                    list(bg_colours[colour]) + [0])
-                im = PILImage.fromarray(data, mode='RGBA').convert('RGB')
-                im = im.resize(tuple([im_size]*2), PILImage.ANTIALIAS)
-                im.close()
         self.mine_images = dict()
-        for n in range(1, 2):
-            for c in bg_colours:
-                im_name = '%s%smine' % (c, n)
-                if not c:
-                    key = n
-                else:
-                    key = (c, n)
-                self.mine_images[key] = tk.PhotoImage(name=im_name,
-                    file=join(
-                        im_path, '%s%smine%02d.ppm'%(c, n, im_size)))
+        for c in bg_colours:
+            n = 1
+            im_name = '%s%smine' % (c, n)
+            im = PILImage.open(join(im_path, '%smine.png'%n))
+            data = np.array(im)
+            data[(data == (255, 255, 255, 0)).all(axis=-1)] = tuple(
+                list(bg_colours[c]) + [0])
+            im = PILImage.fromarray(data, mode='RGBA').convert('RGB')
+            im = im.resize(tuple([im_size]*2), PILImage.ANTIALIAS)
+            im_tk = ImageTk.PhotoImage(im, name=im_name)
+            if not c:
+                key = n
+            else:
+                key = (c, n)
+            self.mine_images[key] = im_tk
 
         im_size = self.button_size - 6
         im_path = join(direcs['images'], 'flags')
-        for n in range(1, 2):
-            im = PILImage.open(join(im_path, '%sflag.png'%n))
-            data = np.array(im)
-            data[(data == (255, 255, 255, 0)).all(axis=-1)] = tuple(
-                list(bg_colours['']) + [0])
-            im = PILImage.fromarray(data, mode='RGBA').convert('RGB')
-            im = im.resize(tuple([im_size]*2), PILImage.ANTIALIAS)
-            im.close()
         self.flag_images = dict()
-        for n in range(1, 2):
-            im_name = '%sflag' % n
-            self.flag_images[n] = tk.PhotoImage(name=im_name,
-                file=join(im_path, '%sflag%02d.ppm'%(n, im_size)))
+        n = 1
+        im_name = '%sflag' % n
+        im = PILImage.open(join(im_path, '%sflag.png'%n))
+        data = np.array(im)
+        data[(data == (255, 255, 255, 0)).all(axis=-1)] = tuple(
+            list(bg_colours['']) + [0])
+        im = PILImage.fromarray(data, mode='RGBA').convert('RGB')
+        im = im.resize(tuple([im_size]*2), PILImage.ANTIALIAS)
+        im_tk = ImageTk.PhotoImage(im, name=im_name)
+        self.flag_images[n] = im_tk
 
     # Button actions.
     def detect_left_press(self, event=None):
@@ -407,89 +400,77 @@ class BasicGui(tk.Tk, object):
     def close_root(self):
         self.destroy()
 
-    def close_window(self, window):
-        self.active_windows[window].destroy()
-        self.active_windows.pop(window)
+    def close_window(self, name):
+        """
+        Keep track of the windows which are open, and ensure the correct
+        one receives the focus.
+        """
+        name = name.lower()
+        self.active_windows[name].destroy()
+        self.active_windows.pop(name)
         self.focus = self
         self.focus.focus_set()
-        if window == 'highscores':
-            with open(join(direcs['data'], 'datacopy.txt'), 'w') as f:
-                json.dump(self.all_data, f)
 
     # Game menu methods.
     def set_difficulty(self):
         pass
 
-    def set_zoom(self, event=None):
-        old_button_size = self.button_size
-        if event == None:
-            self.button_size = 16
-        else:
-            try:
-                self.button_size = max(10, min(100, int(event.widget.get())))
-            except ValueError:
-                self.button_size = 16
-        if self.game.state == ACTIVE:
-            # Make sure game gets correct button size
-            self.game.button_size = None
-        if self.button_size == 16:
-            self.zoom_var.set(False)
-        else:
-            self.zoom_var.set(True)
-        if old_button_size != self.button_size:
-            self.nr_font = (self.nr_font[0], 10*self.button_size/17,
-                self.nr_font[2])
-            self.width = self.dims[1]*self.button_size + 20
-            self.height = self.dims[0]*self.button_size + 20
-            #Make root window the right size.
-            self.geometry(
-                '{}x{}'.format(self.width, self.height + 62))
-            #Make the frames the right size.
-            self.board.config(height=self.height, width=self.width)
-            self.mainborder.config(height=self.height, width=self.width)
-            self.zoomframe.config(height=100*self.button_size + 20,
-                width=200*self.button_size + 20)
-            for coord, frame in self.button_frames.items():
-                #Update frame sizes.
-                frame.config(height=self.button_size,
-                    width=self.button_size)
-            for button in [b for b in self.buttons.values()
-                if b.state == SAFE]:
-                button.config(font=self.nr_font)
-            for button in [b for b in self.buttons.values()
-                if b.state == COLOURED]:
-                if self.button_size < 24 and len(button['text']) > 1:
-                    button.config(text='')
-                else:
-                    prob = round(self.probs.item(coord), 5)
-                    text = int(prob) if prob in [0, 1] else '%.2f'%round(
-                        prob, 2)
-                    button.config(fg='black', text=text, font=('Times',
-                        int(0.2*self.button_size+3.7), 'normal'))
-            self.get_images()
-        if self.active_windows.has_key('zoom'):
-            self.close_window('zoom')
     def get_zoom(self):
-        self.submit_name_entry()
+        def slide(num):
+            # Slider is moved, change text entry.
+            zoom_entry.delete(0, 'end')
+            zoom_entry.insert(0, num)
+
+        def set_zoom(event=None):
+            text = zoom_entry.get()
+            if text not in map(str, range(60, 501)):
+                return
+            old_button_size = self.button_size
+            self.button_size = int(round(int(text)*16.0/100, 0))
+            if self.button_size == 16:
+                self.zoom_var.set(False)
+            else:
+                self.zoom_var.set(True)
+            if old_button_size != self.button_size:
+                self.nr_font = (self.nr_font[0], 10*self.button_size/17,
+                    self.nr_font[2])
+                for b in self.buttons.values():
+                    #Update frame sizes.
+                    b.frame.config(height=self.button_size,
+                        width=self.button_size)
+                    b.config(font=self.nr_font)
+                self.get_images()
+            self.close_window('zoom')
+
+        # Ensure tickmark is correct.
         if self.button_size == 16:
             self.zoom_var.set(False)
         else:
             self.zoom_var.set(True)
-        if self.focus.bindtags()[1] == 'Entry':
-            self.focus.focus_set()
+        if self.block_windows:
             return
-        window = self.active_windows['zoom'] = tk.Toplevel(self)
-        window.title('Zoom')
-        window.protocol('WM_DELETE_WINDOW', lambda: self.close_window('zoom'))
-        Message(window, width=150, text="Enter desired button size in pixels or click 'Default'.").pack()
-        scrollbar = Scrollbar(window, orient=HORIZONTAL)
-        # scrollbar.pack(side='left', padx=10)
-        self.focus = zoom_entry = Entry(window, width=5)
-        zoom_entry.insert(0, self.button_size)
-        zoom_entry.pack(side='left', padx=10)
-        zoom_entry.bind('<Return>', self.set_zoom)
-        zoom_entry.focus_set()
-        tk.Button(window, text='Default', command=self.set_zoom).pack(side='left')
+        window = self.active_windows['zoom'] = Window(self, 'Zoom')
+        window.bindtags(('zoom',) + window.bindtags())
+        tk.Message(window.upper_frame, width=180,
+            text="""Select the desired increase in button size compared to the\
+                default, which should be an integer from 60 to 500.""").pack()
+        zoom = int(round(100*self.button_size/16.0, 0))
+        slider = tk.Scale(window.upper_frame, from_=60, to=200, length=140,
+            orient='horizontal', showvalue=False, command=slide)
+        slider.set(zoom)
+        self.focus = zoom_entry = tk.Entry(window.upper_frame, width=4,
+            justify='right')
+        zoom_entry.insert(0, zoom)
+        slider.bindtags(('zoom',) + slider.bindtags())
+        zoom_entry.bindtags(('zoom',) + zoom_entry.bindtags())
+        tk.Label(window.upper_frame, text='%  ').pack(side='right')
+        zoom_entry.pack(side='right')
+        slider.pack(side='right', padx=10)
+        self.focus.focus_set()
+        ok_btn = tk.Button(window.lower_frame, text='OK', command=set_zoom)
+        ok_btn.pack(side='right', padx=10)
+        ok_btn.bindtags(('zoom',) + ok_btn.bindtags())
+        self.bind_class('zoom','<Return>', set_zoom)
 
     # Options menu methods.
     def update_settings(self):
@@ -641,11 +622,8 @@ class GameGui(BasicGui):
         # Set variables.
         self.first_success_var = tk.BooleanVar()
         self.first_success_var.set(self.first_success)
-        # Create a minefield stored within the game, which will generate a
-        # board if first_success is False. Otherwise call
-        # Game.mf.generate_rnd() and Game.mf.setup() to complete
-        # initialisation.
-        self.game = Game(self.settings)
+        # Create a minefield stored within the game.
+        self.refresh_board()
 
     def run(self):
         # Create menubar.
@@ -656,6 +634,14 @@ class GameGui(BasicGui):
     # Make the GUI.
     def make_panel(self):
         super(GameGui, self).make_panel()
+
+        # Create and place the mines counter.
+        self.mines_var = tk.StringVar()
+        self.mines_label = tk.Label(self.panel, bg='black', fg='red', bd=5,
+            relief='sunken', font=('Verdana',11,'bold'),
+            textvariable=self.mines_var)
+        self.mines_label.place(x=7, rely=0.5, anchor='w')
+
         # Create and place the timer.
         self.timer_hide_var = tk.BooleanVar()
         self.timer = Timer(self.panel)
@@ -714,6 +700,7 @@ class GameGui(BasicGui):
             else:
                 b.config(image=self.flag_images[b.num_of_flags+1])
                 b.num_of_flags += 1
+        self.set_mines_counter()
 
     def right_motion(self, coord, prev_coord):
         super(GameGui, self).right_motion(coord, prev_coord)
@@ -721,11 +708,6 @@ class GameGui(BasicGui):
         if not coord:
             return
         b = self.buttons[coord]
-        # If the window was left, stop drag flagging. Could be altered to allow
-        # cursor to go over the frame.
-        # if not prev_coord:
-        #     self.drag_flag = None
-        # Flag or unflag as appropriate.
         if self.drag_flag == FLAG and b.state == UNCLICKED:
             b.config(image=self.flag_images[1])
             b.state = FLAGGED
@@ -734,6 +716,7 @@ class GameGui(BasicGui):
             b.config(image='')
             b.state = UNCLICKED
             b.num_of_flags = 0
+        self.set_mines_counter()
 
     def both_press(self, coord):
         super(GameGui, self).both_press(coord)
@@ -823,6 +806,12 @@ class GameGui(BasicGui):
             # self.finalise_game()
 
     # GUI and game methods.
+    def refresh_board(self, event=None, is_replay=False):
+        super(GameGui, self).refresh_board()
+        if not is_replay:
+            self.game = Game(self.settings)
+        self.mines_var.set("%03d" % self.mines)
+
     def reveal_safe_cell(self, coord):
         b = self.buttons[coord]
         nr = self.game.mf.completed_grid[coord]
@@ -842,6 +831,16 @@ class GameGui(BasicGui):
     def check_completion(self):
         pass
 
+    def set_mines_counter(self):
+        grid = self.game.grid
+        nr_found = sum([b.num_of_flags for b in self.buttons.values()])
+        nr_rem = self.mines - nr_found
+        self.mines_var.set("%03d" % (abs(nr_rem)))
+        if nr_rem < 0:
+            self.mines_label.config(bg='red', fg='black')
+        else:
+            self.mines_label.config(bg='black', fg='red')
+
     def toggle_timer(self, event=None):
         if event:
             self.timer_hide_var.set(not(self.timer_hide_var.get()))
@@ -852,10 +851,6 @@ class GameGui(BasicGui):
             self.timer.config(fg='red')
 
     # Game menu methods.
-    def refresh_board(self, event=None, is_replay=False):
-        super(GameGui, self).refresh_board()
-        if not is_replay:
-            self.game = Game(self.settings)
 
     # Options menu methods.
     def update_settings(self):
@@ -920,19 +915,19 @@ class Cell(tk.Label, object):
         self.parent = parent
         self.model = model
         self.state = UNCLICKED
+        self.num_of_flags = 0
         # Initialise a frame of correct size to contain a button.
-        frame = tk.Frame(parent, width=model.button_size,
+        self.frame = tk.Frame(parent, width=model.button_size,
             height=model.button_size)
-        frame.rowconfigure(0, weight=1) #enable button to fill frame
-        frame.columnconfigure(0, weight=1)
-        frame.grid_propagate(False) #disable resizing of frame
+        self.frame.rowconfigure(0, weight=1) #enable button to fill frame
+        self.frame.columnconfigure(0, weight=1)
+        self.frame.grid_propagate(False) #disable resizing of frame
         # Place with the grid packer.
-        frame.grid(row=coord[0], column=coord[1])
-        super(Cell, self).__init__(frame, bd=3, relief='raised',
+        self.frame.grid(row=coord[0], column=coord[1])
+        super(Cell, self).__init__(self.frame, bd=3, relief='raised',
             font=model.nr_font)
         self.grid(sticky='nsew')
         self.bindtags(('board',) + self.bindtags())
-
 
 
 
@@ -956,6 +951,24 @@ class Timer(tk.Label, object):
             elapsed = tm.time() - self.start_time
             self.var.set("%03d" % (min(elapsed + 1, 999)))
             self.after(100, self.update)
+
+
+
+class Window(tk.Toplevel, object):
+    def __init__(self, parent, title, **kwargs):
+        # kwargs are used to check if the OK and Cancel buttons are desired.
+        self.parent = parent
+        super(Window, self).__init__(parent)
+        self.title(title)
+        self.protocol('WM_DELETE_WINDOW', lambda: parent.close_window(title))
+        self.upper_frame = tk.Frame(self)
+        self.upper_frame.pack(ipadx=10, ipady=10)
+        self.lower_frame = tk.Frame(self)
+        self.lower_frame.pack(padx=10, pady=10)
+        cancel_btn = tk.Button(self.lower_frame, text='Cancel',
+            command=lambda: parent.close_window(title))
+        cancel_btn.pack(side='right', padx=10)
+        cancel_btn.bind('<Return>', cancel_btn.invoke)
 
 
 
