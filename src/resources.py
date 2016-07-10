@@ -28,39 +28,10 @@ direcs['boards'] = join(main_direc, 'boards')
 if not isdir(direcs['boards']):
     os.mkdir(direcs['boards'])
 
-nr_colours = {
-    1:  'blue',
-    2:  '#%02x%02x%02x'%(  0,128,  0),
-    3:  'red',
-    4:  '#%02x%02x%02x'%(  0,  0,128),
-    5:  '#%02x%02x%02x'%(128,  0,  0),
-    6:  '#%02x%02x%02x'%(  0,128,128),
-    7:  'black',
-    8:  '#%02x%02x%02x'%(128,128,128),
-    9:  '#%02x%02x%02x'%(192,192,  0),
-    10: '#%02x%02x%02x'%(128,  0,128),
-    11: '#%02x%02x%02x'%(192,128, 64),
-    12: '#%02x%02x%02x'%( 64,192,192),
-    13: '#%02x%02x%02x'%(192,128,192),
-    14: '#%02x%02x%02x'%(128,192, 64),
-    15: '#%02x%02x%02x'%(128, 64,192)
-    }
 
-
-def get_neighbours(coord, dims, dist=1, include=False):
-    d = dist if dist % 1 == 0 else int(dist) + 1
-    x, y = coord
-    row = [u for u in range(x-d, x+1+d) if u in range(dims[0])]
-    col = [v for v in range(y-d, y+1+d) if v in range(dims[1])]
-    # Extra feature removed.
-    if dist % 1 == 0:
-        neighbours = {(u, v) for u in row for v in col}
-    if not include:
-        #The given coord is not included.
-        neighbours.remove(coord)
-    return neighbours
 
 def where_coords(bool_array):
+    # Attach to minefield class?
     coords_array = np.transpose(np.nonzero(bool_array))
     coords_list = []
     for coord in coords_array.tolist():

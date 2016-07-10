@@ -24,7 +24,7 @@ from glob import glob
 import numpy as np
 
 from constants import * #version, platform etc.
-from resources import nr_colours, direcs, get_neighbours, blend_colours
+from resources import NR_COLOURS, direcs, blend_colours
 from game import Game
 # import update_highscores
 # from probabilities import NrConfig
@@ -128,6 +128,7 @@ class BasicGui(tk.Tk, object):
         # Initialise the root window.
         super(BasicGui, self).__init__()
         self.focus = self.active_windows['root'] = self
+        self.focus.focus_set()
         if IN_EXE:
             self.title('MineGauler')
         else:
@@ -173,6 +174,10 @@ class BasicGui(tk.Tk, object):
         return self.dims[0]*self.dims[1]
 
     @staticmethod
+    def get_tk_colour(tup):
+        return '#%02x%02x%02x'%tup[:3]
+
+    @staticmethod
     def add_to_bindtags(widgets, tag):
         if type(widgets) is list:
             for w in widgets:
@@ -181,7 +186,7 @@ class BasicGui(tk.Tk, object):
             w = widgets
             w.bindtags((tag,) + w.bindtags())
 
-    def mouse_in_widget(widget):
+    def mouse_in_widget(self, widget):
         mousex = self.winfo_pointerx() - widget.winfo_rootx()
         mousey = self.winfo_pointery() - widget.winfo_rooty()
         width = widget.winfo_width()
@@ -191,6 +196,21 @@ class BasicGui(tk.Tk, object):
             return True
         else:
             return False
+
+    def get_nbrs(self, coord, include=False):
+        # Also belongs in minefield class...
+        dist = self.detection
+        d = dist if dist % 1 == 0 else int(dist) + 1
+        x, y = coord
+        row = [u for u in range(x-d, x+1+d) if u in range(self.dims[0])]
+        col = [v for v in range(y-d, y+1+d) if v in range(self.dims[1])]
+        # Extra feature removed.
+        if dist % 1 == 0:
+            nbrs = {(u, v) for u in row for v in col}
+        if not include:
+            #The given coord is not included.
+            nbrs.remove(coord)
+        return nbrs
 
     def run(self):
         """
@@ -218,7 +238,7 @@ class BasicGui(tk.Tk, object):
         face_frame.place(relx=0.5, rely=0.5, anchor='center')
         # Create face button which will refresh the board.
         self.face_button = tk.Button(face_frame, bd=4, takefocus=False,
-            image=self.face_images['ready1face'], command=self.refresh_board)
+            image=self.face_images['ready1face'], command=self.refresh)
         self.face_button.pack()
 
         # Add bindtag to panel.
@@ -228,7 +248,7 @@ class BasicGui(tk.Tk, object):
             lambda x: self.face_button.config(relief='sunken'))
         def panel_click(event):
             self.face_button.config(relief='raised')
-            if mouse_in_widget(self.panel()):
+            if self.mouse_in_widget(self.panel):
                 self.face_button.invoke()
         self.panel.bind_class('panel', '<ButtonRelease-1>', panel_click)
 
@@ -393,13 +413,16 @@ class BasicGui(tk.Tk, object):
         pass
 
     # GUI and game methods.
-    def refresh_board(self, event=None):
+    def refresh(self, event=None):
         for b in [self.buttons[c] for c in self.all_coords
             if self.buttons[c].state != UNCLICKED]:
             self.reset_button(b.coord)
             b.state = UNCLICKED
         self.update_settings()
         self.set_button_bindings()
+        self.left_button_down = self.right_button_down = False
+        self.mouse_coord = None
+        self.is_both_click = False
 
     def reset_button(self, coord):
         b = self.buttons[coord]
@@ -424,14 +447,16 @@ class BasicGui(tk.Tk, object):
         title = win.title()
         self.active_windows[title] = win
         win.protocol('WM_DELETE_WINDOW', lambda: self.close_window(title))
+        self.block_windows = True
 
     def close_window(self, name):
         """
-        Keep track of the windows which are open, and ensure the correct
-        one receives the focus.
+        Keep track of the windows which are open, and set the focus as
+        appropriate.
         """
         self.active_windows[name].destroy()
         self.active_windows.pop(name)
+        self.block_windows = False
         self.focus = self
         self.focus.focus_set()
 
@@ -462,6 +487,8 @@ class BasicGui(tk.Tk, object):
         def mines_slide(num):
             mine_entry.delete(0, 'end')
             mine_entry.insert(0, num)
+        def focus_out():
+            pass
 
         def set_custom(event=None):
             rows = row_entry.get()
@@ -476,13 +503,19 @@ class BasicGui(tk.Tk, object):
                 cols = int(cols)
             if mines not in map(str, range(1, rows*cols)): #also invalid
                 return
-            else:
-                mines = int(mines)
-            self.diff = 'c'
-            self.diff_var.set('c')
-            self.mines = mines
-            self.reshape((rows, cols))
+            mines = int(mines)
+            dims = (rows, cols)
             self.close_window(title)
+            self.mines = mines
+            self.reshape(dims)
+            # Check if this is really custom.
+            if (dims in diff_dims and
+                mines==nr_mines[diff_dims[dims]][self.detection]):
+                self.diff = diff_dims[dims]
+                self.diff_var.set(self.diff)
+            else:
+                self.diff = 'c'
+                self.diff_var.set('c')
 
         title = 'Custom'
         win = Window(self, title)
@@ -544,7 +577,7 @@ class BasicGui(tk.Tk, object):
         for coord in new:
             self.buttons[coord] = Cell(coord, self.mainframe, self)
         self.dims = dims
-        self.refresh_board()
+        self.refresh()
 
     def get_zoom(self):
         def slide(num):
@@ -704,8 +737,7 @@ class TestGui(BasicGui):
     def both_press(self, coord):
         super(TestGui, self).both_press(coord)
         # Buttons which neighbour the current selected button.
-        new_nbrs = get_neighbours(coord, self.dims, self.detection,
-            include=True)
+        new_nbrs = self.get_nbrs(coord, include=True)
         # Only consider unclicked cells.
         new_nbrs = {self.buttons[c] for c in new_nbrs
             if self.buttons[c].state == UNCLICKED}
@@ -716,8 +748,7 @@ class TestGui(BasicGui):
     def both_release(self, coord):
         super(TestGui, self).both_release(coord)
         # Buttons which neighbour the previously selected button.
-        old_nbrs = get_neighbours(coord, self.dims, self.detection,
-            include=True)
+        old_nbrs = self.get_nbrs(coord, include=True)
         # Only worry about unclicked cells.
         old_nbrs = {self.buttons[c] for c in old_nbrs
             if self.buttons[c].state == UNCLICKED}
@@ -729,8 +760,7 @@ class TestGui(BasicGui):
         super(TestGui, self).both_motion(coord, prev_coord)
         if prev_coord:
             # Buttons which neighbour the previously selected button.
-            old_nbrs = get_neighbours(prev_coord, self.dims, self.detection,
-                include=True)
+            old_nbrs = self.get_nbrs(prev_coord, include=True)
             # Only worry about unclicked cells.
             old_nbrs = {self.buttons[c] for c in old_nbrs
                 if self.buttons[c].state == UNCLICKED}
@@ -753,8 +783,9 @@ class GameGui(BasicGui):
         # Set variables.
         self.first_success_var = tk.BooleanVar()
         self.first_success_var.set(self.first_success)
+        self.hide_timer = False
         # Create a minefield stored within the game.
-        self.refresh_board()
+        self.refresh()
 
     def run(self):
         # Create menubar.
@@ -774,7 +805,6 @@ class GameGui(BasicGui):
         self.add_to_bindtags(self.mines_label, 'panel')
 
         # Create and place the timer.
-        self.timer_hide_var = tk.BooleanVar()
         self.timer = Timer(self.panel)
         self.timer.place(relx=1, x=-7, rely=0.5, anchor='e')
         self.timer.bind('<Button-%s>'%RIGHT_BTN_NUM, self.toggle_timer)
@@ -784,6 +814,7 @@ class GameGui(BasicGui):
     def left_press(self, coord):
         super(GameGui, self).left_press(coord)
         b = self.buttons[coord]
+        self.face_button.config(image=self.face_images['active1face'])
         if self.drag_select:
             if b.state == UNCLICKED:
                 self.click(coord)
@@ -796,6 +827,8 @@ class GameGui(BasicGui):
         b = self.buttons[coord]
         if b.state == UNCLICKED: #catches the case drag_select is on
             self.click(coord)
+        if self.game.state in [READY, ACTIVE]:
+            self.face_button.config(image=self.face_images['ready1face'])
 
     def left_motion(self, coord, prev_coord):
         super(GameGui, self).left_motion(coord, prev_coord)
@@ -807,7 +840,6 @@ class GameGui(BasicGui):
     def right_press(self, coord):
         super(GameGui, self).right_press(coord)
         b = self.buttons[coord]
-
         # Check whether drag-clicking should flag or unflag if drag is on.
         if self.drag_select:
             if b.state == UNCLICKED:
@@ -851,9 +883,9 @@ class GameGui(BasicGui):
 
     def both_press(self, coord):
         super(GameGui, self).both_press(coord)
+        self.face_button.config(image=self.face_images['active1face'])
         # Buttons which neighbour the current selected button.
-        new_nbrs = get_neighbours(coord, self.dims, self.detection,
-            include=True)
+        new_nbrs = self.get_nbrs(coord, include=True)
         # Only consider unclicked cells.
         new_nbrs = {self.buttons[c] for c in new_nbrs
             if self.buttons[c].state == UNCLICKED}
@@ -864,21 +896,31 @@ class GameGui(BasicGui):
     def both_release(self, coord):
         super(GameGui, self).both_release(coord)
         # Buttons which neighbour the previously selected button.
-        old_nbrs = get_neighbours(coord, self.dims, self.detection,
-            include=True)
-        # Only worry about unclicked cells.
-        old_nbrs = {self.buttons[c] for c in old_nbrs
-            if self.buttons[c].state == UNCLICKED}
-        # Raise the old neighbouring buttons.
-        for b in old_nbrs:
-            b.config(bd=3, relief='raised', text='.')
+        nbrs = self.get_nbrs(coord, include=True)
+        grid_nr = self.game.grid[coord]
+        if grid_nr > 0: #potential chording
+            nbr_mines = sum([self.buttons[c].num_of_flags for c in nbrs])
+            if nbr_mines == grid_nr:
+                for coord in {c for c in nbrs
+                    if self.buttons[c].state == UNCLICKED}:
+                    self.click(coord, check_for_win=False)
+                if np.array_equal(
+                    self.game.mf.completed_grid>=0, self.game.grid>=0):
+                    self.finalise_win()
+        # Reset buttons if not clicked.
+        for b in {self.buttons[c] for c in nbrs if
+            self.buttons[c].state == UNCLICKED}:
+            b.config(bd=3, relief='raised')
+        # Reset face.
+        if (self.game.state in [READY, ACTIVE] and
+            not (self.left_button_down and self.drag_select)):
+            self.face_button.config(image=self.face_images['ready1face'])
 
     def both_motion(self, coord, prev_coord):
         super(GameGui, self).both_motion(coord, prev_coord)
         if prev_coord:
             # Buttons which neighbour the previously selected button.
-            old_nbrs = get_neighbours(prev_coord, self.dims, self.detection,
-                include=True)
+            old_nbrs = self.get_nbrs(prev_coord, include=True)
             # Only worry about unclicked cells.
             old_nbrs = {self.buttons[c] for c in old_nbrs
                 if self.buttons[c].state == UNCLICKED}
@@ -888,6 +930,7 @@ class GameGui(BasicGui):
         if coord:
             self.both_press(coord)
 
+    # GUI and game methods.
     def click(self, coord, check_for_win=True):
         b = self.buttons[coord]
         if self.game.state == READY:
@@ -896,7 +939,7 @@ class GameGui(BasicGui):
                 self.game.mf.setup()
             self.game.state = ACTIVE
             self.game.start_time = tm.time()
-            # self.timer.update(self.game.start_time)
+            self.timer.update(self.game.start_time)
 
         cell_nr = self.game.mf.completed_grid[coord]
         # Check if the cell clicked is an opening, safe or a mine.
@@ -908,40 +951,15 @@ class GameGui(BasicGui):
             for c in [c1 for c1 in opening if
                 self.buttons[c1].state == UNCLICKED]:
                 self.reveal_safe_cell(c)
-            if check_for_win:
-                self.check_completion()
         elif cell_nr > 0: #normal success
             self.reveal_safe_cell(coord)
-            if check_for_win:
-                self.check_completion()
         else: #mine hit, game over
-            self.game.finish_time = tm.time()
-            self.unset_button_bindings()
-            b.state = MINE
-            self.game.state = LOST
-            colour = '#%02x%02x%02x' % bg_colours['red']
-            b.config(bd=1, relief='sunken', bg=colour,
-                image=self.mine_images[('red', 1)])
-            self.face_button.config(image=self.face_images['lost1face'])
-            for c, b in [(b1.coord, b1) for b1 in self.buttons.values()
-                if b1.state != CLICKED]:
-                # Check for incorrect flags.
-                if b.state == FLAGGED and self.game.mf.mines_grid[c] == 0:
-                    # Could use an image here..
-                    b.config(text='X', image='', font=self.nr_font)
-                # Reveal remaining mines.
-                elif b.state == UNCLICKED and self.game.mf.mines_grid[c] > 0:
-                    b.state = MINE
-                    b.config(bd=1, relief='sunken',
-                        image=self.mine_images[self.game.mf.mines_grid[c]])
-            # self.finalise_game()
-
-    # GUI and game methods.
-    def refresh_board(self, event=None, is_replay=False):
-        super(GameGui, self).refresh_board()
-        if not is_replay:
-            self.game = Game(self.settings)
-        self.mines_var.set("%03d" % self.mines)
+            self.finalise_loss(coord)
+            return #don't check for completion
+        # We hold off from checking for a win if chording has been used.
+        if (check_for_win and
+            np.array_equal(self.game.mf.completed_grid>=0, self.game.grid>=0)):
+            self.finalise_win()
 
     def reveal_safe_cell(self, coord):
         b = self.buttons[coord]
@@ -952,31 +970,79 @@ class GameGui(BasicGui):
         # Display the number unless it is a zero.
         text = nr if nr else ''
         try:
-            nr_colour = nr_colours[nr]
+            nr_colour = NR_COLOURS[nr]
         except KeyError:
             # In case the number is unusually high.
             nr_colour = 'black'
         b.config(bd=1, relief='sunken', #bg='SystemButtonFace',
             text=text, fg=nr_colour, font=self.nr_font)
 
-    def check_completion(self):
-        pass
+    def finalise_win(self):
+        self.game.finish_time = tm.time()
+        self.unset_button_bindings()
+        self.timer.start_time = None
+        self.game.state = WON
+        self.face_button.config(image=self.face_images['won1face'])
+        for btn in [b for b in self.buttons.values()
+            if b.state in [UNCLICKED, FLAGGED]]:
+            n = self.game.mf.mines_grid[btn.coord]
+            btn.config(image=self.flag_images[n])
+            btn.state = FLAGGED
+            btn.num_of_flags = n
+        self.timer.set_var(min(int(self.game.get_time_passed() + 1), 999))
+        self.timer.config(fg='red')
+        self.set_mines_counter()
+
+    def finalise_loss(self, coord):
+        self.game.finish_time = tm.time()
+        self.unset_button_bindings()
+        self.timer.start_time = None
+        b = self.buttons[coord]
+        b.state = MINE
+        self.game.state = LOST
+        colour = self.get_tk_colour(bg_colours['red'])
+        b.config(bd=1, relief='sunken', bg=colour,
+            image=self.mine_images[('red', 1)])
+        self.face_button.config(image=self.face_images['lost1face'])
+        for c, b in [(btn.coord, btn) for btn in self.buttons.values()
+            if btn.state != CLICKED]:
+            # Check for incorrect flags.
+            if b.state == FLAGGED and self.game.mf.mines_grid[c] == 0:
+                # Could use an image here..
+                b.config(text='X', image='', font=self.nr_font)
+            # Reveal remaining mines.
+            elif b.state == UNCLICKED and self.game.mf.mines_grid[c] > 0:
+                b.state = MINE
+                b.config(bd=1, relief='sunken',
+                    image=self.mine_images[self.game.mf.mines_grid[c]])
+        self.timer.set_var(min(int(self.game.get_time_passed() + 1), 999))
+        self.timer.config(fg='red')
 
     def set_mines_counter(self):
-        grid = self.game.grid
         nr_found = sum([b.num_of_flags for b in self.buttons.values()])
         nr_rem = self.mines - nr_found
-        self.mines_var.set("%03d" % (abs(nr_rem)))
+        self.mines_var.set("{:03d}".format(abs(nr_rem)))
         if nr_rem < 0:
             self.mines_label.config(bg='red', fg='black')
         else:
             self.mines_label.config(bg='black', fg='red')
 
+    def refresh(self, event=None, is_replay=False):
+        super(GameGui, self).refresh()
+        self.timer.start_time = None
+        self.timer.set_var(0)
+        self.face_button.config(image=self.face_images['ready1face'])
+        if not is_replay:
+            self.game = Game(self.settings)
+        self.set_mines_counter()
+        if self.hide_timer:
+            self.timer.config(fg='black')
+
     def toggle_timer(self, event=None):
         if event:
-            self.timer_hide_var.set(not(self.timer_hide_var.get()))
+            self.hide_timer = not(self.hide_timer)
         # Always show the timer if the game is lost or won.
-        if (self.timer_hide_var.get() and self.game.state not in [WON, LOST]):
+        if self.hide_timer and self.game.state not in [WON, LOST]:
             self.timer.config(fg='black')
         else:
             self.timer.config(fg='red')
@@ -1006,8 +1072,8 @@ class MenuBar(tk.Menu, object):
         self.add_cascade(label='Game', menu=self.g_menu)
 
         self.g_menu.add_command(label='Refresh',
-            command=self.parent.refresh_board, accelerator='F2')
-        self.parent.bind('<F2>', self.parent.refresh_board)
+            command=self.parent.refresh, accelerator='F2')
+        self.parent.bind('<F2>', self.parent.refresh)
         self.g_menu.add_separator()
         for i in diff_names:
             self.g_menu.add_radiobutton(label=i[1], value=i[0],
@@ -1067,7 +1133,7 @@ class Cell(tk.Label, object):
 class Timer(tk.Label, object):
     def __init__(self, parent):
         self.var = tk.StringVar()
-        self.var.set("000")
+        self.set_var(0)
         super(Timer, self).__init__(parent, bg='black', fg='red', bd=5, relief='sunken',
             font=('Verdana',11,'bold'), textvariable=self.var)
         self.start_time = None
@@ -1084,6 +1150,9 @@ class Timer(tk.Label, object):
             elapsed = tm.time() - self.start_time
             self.var.set("%03d" % (min(elapsed + 1, 999)))
             self.after(100, self.update)
+
+    def set_var(self, time):
+        self.var.set('{:03d}'.format(time))
 
 
 

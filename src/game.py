@@ -20,7 +20,7 @@ import json
 import numpy as np
 
 from constants import *
-from resources import direcs, get_neighbours, where_coords
+from resources import direcs, where_coords
 
 
 
@@ -56,6 +56,21 @@ class Minefield(object):
     def get_size(self):
         return self.dims[0]*self.dims[1]
 
+    def get_nbrs(self, coord, include=False):
+        # Also belongs in GUI classes...
+        dist = self.detection
+        d = dist if dist % 1 == 0 else int(dist) + 1
+        x, y = coord
+        row = [u for u in range(x-d, x+1+d) if u in range(self.dims[0])]
+        col = [v for v in range(y-d, y+1+d) if v in range(self.dims[1])]
+        # Extra feature removed.
+        if dist % 1 == 0:
+            nbrs = {(u, v) for u in row for v in col}
+        if not include:
+            #The given coord is not included.
+            nbrs.remove(coord)
+        return nbrs
+
     def generate_from_list(self, coords):
         self.origin = KNOWN
         self.mine_coords = list(set(coords)) #per_cell=1
@@ -70,9 +85,11 @@ class Minefield(object):
 
     def generate_rnd(self, open_coord=None):
         # Get cells to be left free if first_success is True.
-        opening_coords = get_neighbours(open_coord, self.dims, self.detection,
-            include=True) if open_coord else set()
-        avble_coords = list(set(self.all_coords) - opening_coords)
+        if open_coord:
+            opening_coords = self.get_nbrs(open_coord, include=True)
+            avble_coords = list(set(self.all_coords) - opening_coords)
+        else:
+            avble_coords = self.all_coords[:]
         # Can't give opening on first click if too many mines, so compensate
         # by giving a safe click.
         if len(avble_coords) < self.mines/self.per_cell + 1:
@@ -92,9 +109,9 @@ class Minefield(object):
 
     def get_completed_grid(self):
         self.completed_grid = MINE * self.mines_grid.copy()
-        for coord in np.transpose(np.nonzero(self.mines_grid==0)):
-            nbrs = get_neighbours(tuple(coord), self.dims, self.detection)
-            self.completed_grid.itemset(tuple(coord),
+        for coord in where_coords(self.mines_grid==0):
+            nbrs = self.get_nbrs(coord)
+            self.completed_grid.itemset(coord,
                 sum(map(lambda k: self.mines_grid[k], nbrs)))
 
     def get_openings(self):
@@ -110,8 +127,8 @@ class Minefield(object):
                 found.update(check) #Same as |= (below)
                 coord = check.pop()
                 opening.add(coord)
-                opening |= get_neighbours(coord, self.dims, self.detection)
-                check |= get_neighbours(coord, self.dims, self.detection) & (opening_coords - found)
+                opening |= self.get_nbrs(coord)
+                check |= self.get_nbrs(coord) & (opening_coords - found)
             openings.append(opening)
         self.openings = openings
 
