@@ -35,6 +35,7 @@ class Minefield(object):
         self.origin = REGULAR
         self.all_coords = [(i, j) for i in range(self.dims[0])
             for j in range(self.dims[1])]
+        self.mines_grid = self.mine_coords = self.completed_grid = None
 
         if mine_coords:
             self.generate_from_list(mine_coords)

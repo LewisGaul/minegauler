@@ -20,14 +20,13 @@ from PIL import Image as PILImage, ImageTk
 import time as tm
 import json
 from glob import glob
+import threading
 
 import numpy as np
 
 from constants import * #version, platform etc.
-from resources import NR_COLOURS, direcs, blend_colours
+from resources import direcs, blend_colours
 from game import Game
-# import update_highscores
-# from probabilities import NrConfig
 
 if PLATFORM == 'win32':
     import win32com.client
@@ -441,7 +440,10 @@ class BasicGui(tk.Tk, object):
         tk.Label(win, text=info, font=('Times', 10, 'bold')).pack()
 
     def close_root(self):
-        self.destroy()
+        with open(join(direcs['main'], 'settings.cfg'), 'w') as f:
+            json.dump(self.settings, f)
+            # print "Saved settings."
+            self.destroy()
 
     def track_window(self, win):
         title = win.title()
@@ -587,6 +589,8 @@ class BasicGui(tk.Tk, object):
 
         def set_zoom(event=None):
             text = zoom_entry.get()
+            if event == 'default':
+                text = '100'
             if text not in map(str, range(60, 501)): #invalid
                 return
             old_button_size = self.button_size
@@ -629,6 +633,7 @@ class BasicGui(tk.Tk, object):
         slider.set(zoom)
         zoom_entry.insert(0, zoom)
 
+        win.make_btn('Default', lambda: set_zoom('default'))
         win.make_btn('OK', set_zoom)
         win.make_btn('Cancel', lambda: self.close_window(title))
         self.add_to_bindtags([win, slider, zoom_entry], 'zoom')
@@ -642,6 +647,7 @@ class BasicGui(tk.Tk, object):
 
     # Help menu methods.
     def show_text(self, filename, width=80, height=24):
+        # Use Scrolledtext widget?
         win = self.active_windows[filename] = tk.Toplevel(self)
         win.title(filename.capitalize())
         scrollbar = Scrollbar(win)
@@ -937,6 +943,9 @@ class GameGui(BasicGui):
             if self.first_success and self.game.mf.origin != KNOWN:
                 self.game.mf.generate_rnd(open_coord=coord)
                 self.game.mf.setup()
+            elif self.game.mf.mines_grid is None:
+                self.game.mf.generate_rnd()
+                self.game.mf.setup()
             self.game.state = ACTIVE
             self.game.start_time = tm.time()
             self.timer.update(self.game.start_time)
@@ -1032,7 +1041,9 @@ class GameGui(BasicGui):
         self.timer.start_time = None
         self.timer.set_var(0)
         self.face_button.config(image=self.face_images['ready1face'])
-        if not is_replay:
+        if is_replay:
+            self.game = Game(self.settings, self.game.mf)
+        else:
             self.game = Game(self.settings)
         self.set_mines_counter()
         if self.hide_timer:
@@ -1048,6 +1059,11 @@ class GameGui(BasicGui):
             self.timer.config(fg='red')
 
     # Game menu methods.
+    def save_board(self):
+        pass
+
+    def load_board(self):
+        pass
 
     # Options menu methods.
     def update_settings(self):
@@ -1071,9 +1087,16 @@ class MenuBar(tk.Menu, object):
         self.g_menu = tk.Menu(self)
         self.add_cascade(label='Game', menu=self.g_menu)
 
-        self.g_menu.add_command(label='Refresh',
+        self.g_menu.add_command(label='New',
             command=self.parent.refresh, accelerator='F2')
         self.parent.bind('<F2>', self.parent.refresh)
+        if self.config == 'full':
+            self.g_menu.add_command(label='Replay',
+                command=lambda: self.parent.refresh(is_replay=True))
+            self.g_menu.add_command(label='Save board',
+                command=self.parent.save_board)
+            self.g_menu.add_command(label='Load board',
+                command=self.parent.load_board)
         self.g_menu.add_separator()
         for i in diff_names:
             self.g_menu.add_radiobutton(label=i[1], value=i[0],
@@ -1110,6 +1133,7 @@ class MenuBar(tk.Menu, object):
 
 class Cell(tk.Label, object):
     def __init__(self, coord, parent, model):
+        """Automatically pack the created cell."""
         self.coord = coord
         self.parent = parent
         self.model = model
@@ -1172,7 +1196,7 @@ class Window(tk.Toplevel, object):
     def make_btn(self, text, cmd):
         btn = tk.Button(self.lowframe, text=text, command=cmd)
         btn.pack(side='left', padx=10)
-        btn.bind('<Return>', btn.invoke)
+        btn.bind('<Return>', lambda x: btn.invoke())
         self.btns.append(btn)
         return btn
 
@@ -1194,5 +1218,4 @@ if __name__ == '__main__':
         with open(join(direcs['files'], 'info.txt'), 'w') as f:
             json.dump({'version': VERSION}, f)
     # Create and run the GUI.
-    settings['diff'] = 'i'
     GameGui(settings).run()
