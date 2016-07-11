@@ -20,15 +20,16 @@ import json
 import numpy as np
 
 from constants import *
-from resources import direcs, where_coords
+from utils import direcs, where_coords
 
 
 
 class Minefield(object):
-    def __init__(self, settings, auto_create=True, mine_coords=None):
+    def __init__(self, settings, mine_coords=None, auto_create=True):
         self.settings = dict()
         # Store relevant settings.
-        for s in ['dims', 'mines', 'per_cell', 'detection']:
+        self.per_cell = self.detection = 1
+        for s in ['diff', 'dims', 'mines']:
             setattr(self, s, settings[s])
             self.settings[s] = settings[s]
         # Origin is assumed to be regular, which may be changed later.
@@ -82,7 +83,6 @@ class Minefield(object):
         # May not be the quickest way...
         for coord in set(self.mine_coords):
             self.mines_grid.itemset(coord, 1)
-        # self.per_cell = max(self.per_cell, self.mines_grid.max())
 
     def generate_rnd(self, open_coord=None):
         # Get cells to be left free if first_success is True.
@@ -150,6 +150,27 @@ class Minefield(object):
         else:
             self.setup()
 
+    def serialise(self, path):
+        # No need to be secure.
+        obj = {'coords': self.mine_coords}
+        for attr in ['diff', 'dims', 'mines']:
+            obj[attr] = getattr(self, attr)
+        with open(path, 'w') as f:
+            json.dump(obj, f)
+
+    @staticmethod
+    def deserialise(path):
+        with open(path, 'r') as f:
+            obj = json.load(f)
+        obj['dims'] = tuple(obj['dims'])
+        settings = dict()
+        for s in ['diff', 'dims', 'mines']:
+            settings[s] = obj[s]
+        # json stores tuples in list format.
+        mine_coords = map(tuple, obj['coords'])
+        return Minefield(settings, mine_coords)
+
+
 
 class Game(object):
     def __init__(self, settings, minefield=None):
@@ -161,14 +182,15 @@ class Game(object):
             # If a list is given assume it's a list of mine coordinates.
             try:
                 self.mf = Minefield(settings, minefield)
+                self.mf.origin = KNOWN
             except:
                 # Catch any error that this generous assumption causes.
                 pass
         else:
             # No need to generate board yet if first_success is True.
-            auto_create = not settings['first_success']
+            auto = not settings['first_success']
             # Create a new minefield.
-            self.mf = Minefield(settings, auto_create)
+            self.mf = Minefield(settings, auto_create=auto)
 
         # Settings may have changed if there is a discrepancy.
         self.settings = self.mf.settings
@@ -238,6 +260,7 @@ class Game(object):
 
     def get_prop_flagged(self):
         """Calculate the proportion of mines which are being flagged."""
+
 
 
 

@@ -25,8 +25,8 @@ import threading
 import numpy as np
 
 from constants import * #version, platform etc.
-from resources import direcs, blend_colours
-from game import Game
+from utils import direcs, blend_colours
+from game import Game, Minefield
 
 if PLATFORM == 'win32':
     import win32com.client
@@ -237,7 +237,7 @@ class BasicGui(tk.Tk, object):
         face_frame.place(relx=0.5, rely=0.5, anchor='center')
         # Create face button which will refresh the board.
         self.face_button = tk.Button(face_frame, bd=4, takefocus=False,
-            image=self.face_images['ready1face'], command=self.refresh)
+            image=self.face_images['ready1face'], command=self.start_new_game)
         self.face_button.pack()
 
         # Add bindtag to panel.
@@ -366,6 +366,8 @@ class BasicGui(tk.Tk, object):
         cur_coord = (x, y) if (x, y) in self.all_coords else None
         if cur_coord == self.mouse_coord:
             return
+        if cur_coord is None:
+            self.face_button.config(image=self.face_images['ready1face'])
         if self.left_button_down:
             if self.right_button_down: #both
                 self.both_motion(cur_coord, self.mouse_coord)
@@ -412,7 +414,7 @@ class BasicGui(tk.Tk, object):
         pass
 
     # GUI and game methods.
-    def refresh(self, event=None):
+    def refresh_board(self, event=None):
         for b in [self.buttons[c] for c in self.all_coords
             if self.buttons[c].state != UNCLICKED]:
             self.reset_button(b.coord)
@@ -463,6 +465,9 @@ class BasicGui(tk.Tk, object):
         self.focus.focus_set()
 
     # Game menu methods.
+    def start_new_game(self):
+        self.refresh_board()
+
     def set_difficulty(self):
         if self.diff_var.get() in diff_dims: #standard board
             self.diff = self.diff_var.get()
@@ -473,6 +478,7 @@ class BasicGui(tk.Tk, object):
             self.diff_var.set(self.diff)
             if not self.block_windows:
                 self.get_custom()
+        self.game = Game(self.settings)
 
     def get_custom(self):
         def size_slide(num):
@@ -510,14 +516,6 @@ class BasicGui(tk.Tk, object):
             self.close_window(title)
             self.mines = mines
             self.reshape(dims)
-            # Check if this is really custom.
-            if (dims in diff_dims and
-                mines==nr_mines[diff_dims[dims]][self.detection]):
-                self.diff = diff_dims[dims]
-                self.diff_var.set(self.diff)
-            else:
-                self.diff = 'c'
-                self.diff_var.set('c')
 
         title = 'Custom'
         win = Window(self, title)
@@ -579,7 +577,15 @@ class BasicGui(tk.Tk, object):
         for coord in new:
             self.buttons[coord] = Cell(coord, self.mainframe, self)
         self.dims = dims
-        self.refresh()
+        # Check if this is custom.
+        if (dims in diff_dims and
+            self.mines == nr_mines[diff_dims[dims]][self.detection]):
+            self.diff = diff_dims[dims]
+            self.diff_var.set(self.diff)
+        else:
+            self.diff = 'c'
+            self.diff_var.set('c')
+        self.refresh_board()
 
     def get_zoom(self):
         def slide(num):
@@ -791,7 +797,7 @@ class GameGui(BasicGui):
         self.first_success_var.set(self.first_success)
         self.hide_timer = False
         # Create a minefield stored within the game.
-        self.refresh()
+        self.start_new_game()
 
     def run(self):
         # Create menubar.
@@ -943,6 +949,7 @@ class GameGui(BasicGui):
             if self.first_success and self.game.mf.origin != KNOWN:
                 self.game.mf.generate_rnd(open_coord=coord)
                 self.game.mf.setup()
+            # In case FirstAuto is turned off and a grid of mines is needed.
             elif self.game.mf.mines_grid is None:
                 self.game.mf.generate_rnd()
                 self.game.mf.setup()
@@ -1036,15 +1043,11 @@ class GameGui(BasicGui):
         else:
             self.mines_label.config(bg='black', fg='red')
 
-    def refresh(self, event=None, is_replay=False):
-        super(GameGui, self).refresh()
+    def refresh_board(self, event=None):
+        super(GameGui, self).refresh_board()
         self.timer.start_time = None
         self.timer.set_var(0)
         self.face_button.config(image=self.face_images['ready1face'])
-        if is_replay:
-            self.game = Game(self.settings, self.game.mf)
-        else:
-            self.game = Game(self.settings)
         self.set_mines_counter()
         if self.hide_timer:
             self.timer.config(fg='black')
@@ -1059,11 +1062,51 @@ class GameGui(BasicGui):
             self.timer.config(fg='red')
 
     # Game menu methods.
+    def start_new_game(self):
+        super(GameGui, self).start_new_game()
+        self.game = Game(self.settings)
+
+    def replay_game(self):
+        self.refresh_board()
+        self.game = Game(self.settings, self.game.mf)
+
     def save_board(self):
-        pass
+        if self.game.mf.mines_grid is None:
+            return
+        if not isdir(join(direcs['boards'], 'saved')):
+            os.mkdir(join(direcs['boards'], 'saved'))
+        fname = '{} {}.mgb'.format(self.diff,
+            tm.strftime('%d%b%Y %H.%M', tm.gmtime()))
+        options = {
+            'defaultextension': '.mgb',
+            'filetypes': [('MineGauler Board', '.mgb')],
+            'initialdir': join(direcs['boards'], 'saved'),
+            'initialfile': fname,
+            'parent': self,
+            'title': 'Save MineGauler Board'
+            }
+        path = tkFileDialog.asksaveasfilename(**options)
+        if path:
+            self.game.serialise(path)
 
     def load_board(self):
-        pass
+        options = {
+            'defaultextension': '.mgb',
+            'filetypes': [('MineGauler Board', '.mgb')],
+            'initialdir': join(direcs['main'], 'boards'),
+            'parent': self,
+            'title': 'Load MineGauler Board'
+            }
+        path = tkFileDialog.askopenfilename(**options)
+        if not path: #canceled
+            return
+        mf = Minefield.deserialise(path)
+        self.game = Game(mf.settings, mf)
+        self.reshape(self.game.dims)
+        # Set appropriate settings.
+        for s in ['mines']:
+            setattr(self, s, getattr(self.game, s))
+            self.settings[s] = getattr(self.game, s)
 
     # Options menu methods.
     def update_settings(self):
@@ -1088,11 +1131,11 @@ class MenuBar(tk.Menu, object):
         self.add_cascade(label='Game', menu=self.g_menu)
 
         self.g_menu.add_command(label='New',
-            command=self.parent.refresh, accelerator='F2')
-        self.parent.bind('<F2>', self.parent.refresh)
+            command=self.parent.refresh_board, accelerator='F2')
+        self.parent.bind('<F2>', self.parent.start_new_game)
         if self.config == 'full':
             self.g_menu.add_command(label='Replay',
-                command=lambda: self.parent.refresh(is_replay=True))
+                command=self.parent.replay_game)
             self.g_menu.add_command(label='Save board',
                 command=self.parent.save_board)
             self.g_menu.add_command(label='Load board',
