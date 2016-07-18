@@ -132,7 +132,7 @@ class BasicGui(tk.Tk, object):
             self.title('MineGauler')
         else:
             self.title('MineGauler' + VERSION)
-        self.iconbitmap(default=join(direcs['images'], '3mine.ico'))
+        self.iconbitmap(default=join(direcs['images'], 'icon.ico'))
         self.protocol('WM_DELETE_WINDOW', self.close_root)
         # Set default to be that menus cannot be 'torn off'.
         self.option_add('*tearOff', False)
@@ -279,40 +279,36 @@ class BasicGui(tk.Tk, object):
         self.unbind_class('board', '<Control-1>')
 
     def get_images(self):
-        # Create the .ppm files from the .png file. Should use zoom method on
-        # tk.PhotoImage?...
+        #Create the PhotoImages from the png files.
         im_size = self.button_size - 2
-        im_path = join(direcs['images'], 'mines')
         self.mine_images = dict()
         for c in bg_colours:
-            n = 1
-            im_name = '%s%smine' % (c, n)
-            im = PILImage.open(join(im_path, '%smine.png'%n))
+            im = PILImage.open(join(direcs['images'], 'mine1.png'))
             data = np.array(im)
+            # Set background colour.
             data[(data == (255, 255, 255, 0)).all(axis=-1)] = tuple(
                 list(bg_colours[c]) + [0])
+            # Remove alpha (transparency) channel.
             im = PILImage.fromarray(data, mode='RGBA').convert('RGB')
-            im = im.resize(tuple([im_size]*2), PILImage.ANTIALIAS)
-            im_tk = ImageTk.PhotoImage(im, name=im_name)
+            im = im.resize((im_size, im_size), PILImage.ANTIALIAS)
+            im_name = '%s1mine' % c
             if not c:
-                key = n
+                key = 1
             else:
-                key = (c, n)
-            self.mine_images[key] = im_tk
+                key = (c, 1)
+            self.mine_images[key] = ImageTk.PhotoImage(im, name=im_name)
 
         im_size = self.button_size - 6
-        im_path = join(direcs['images'], 'flags')
         self.flag_images = dict()
-        n = 1
-        im_name = '%sflag' % n
-        im = PILImage.open(join(im_path, '%sflag.png'%n))
+        im = PILImage.open(join(direcs['images'], 'flag1.png'))
         data = np.array(im)
+        # Set background colour (grey, default).
         data[(data == (255, 255, 255, 0)).all(axis=-1)] = tuple(
             list(bg_colours['']) + [0])
         im = PILImage.fromarray(data, mode='RGBA').convert('RGB')
-        im = im.resize(tuple([im_size]*2), PILImage.ANTIALIAS)
-        im_tk = ImageTk.PhotoImage(im, name=im_name)
-        self.flag_images[n] = im_tk
+        im = im.resize((im_size, im_size), PILImage.ANTIALIAS)
+        im_name = '1flag'
+        self.flag_images[1] = ImageTk.PhotoImage(im, name=im_name)
 
     # Button actions.
     def detect_left_press(self, event=None):
