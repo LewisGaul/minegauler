@@ -1,4 +1,4 @@
-# minegauler
+# MineGauler
 
 Remake of the classic Minesweeper game, written in python. Currently working on the source code to remove some of the extra features and restructure the project.
 
