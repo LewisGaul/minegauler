@@ -24,14 +24,17 @@ desktop = winshell.desktop()
 sys.argv.append('py2exe') #no need to type in command line
 
 # Determine which highscores and scripts to include.
-target = raw_input(
-    "Who is this for?\n" +
-    "1) Home use (default)\n" +
-    "2) New user\n" +
-    "3) Other user\n" +
-    "4) Light\n" +
-    "5) Archive\n"
-    )
+##target = raw_input(
+##    "Who is this for?\n" +
+##    "1) Home use (default)\n" +
+##    "2) New user\n" +
+##    "3) Other user\n" +
+##    "4) Light\n" +
+##    "5) Archive\n"
+##    )
+######
+print "Running light.\n"
+target = '4'
 
 if target == '2':
     target = ''
@@ -47,11 +50,8 @@ elif target == '5':
     target = 'archive'
 else:
     target = 'home'
-    with open(join(data_direc, 'data.txt'), 'r') as f:
+    with open(join(direcs['data'], 'data.txt'), 'r') as f:
         highscores = get_highscores(json.load(f))
-######
-print "Running "
-target = 'light'
 
 
 data_files = [
@@ -59,7 +59,10 @@ data_files = [
         'cross1.png',
         'flag1.png',
         'mine1.png',
-        'icon.ico'
+        'icon.ico',
+        'btn_up.png',
+        'btn_down.png',
+        'btn_down_red.png'
         ])),
     (join('images', 'faces'), map(
         lambda x: join(direcs['images'], 'faces', x), [
@@ -79,11 +82,11 @@ data_files = [
 
 if target == 'archive':
     data_files.append(
-        (join(direcs['destn'], 'dist', 'files'), [join(data_direc, 'data.txt')]))
+        (join(direcs['destn'], 'dist', 'files'), [join(direcs['data'], 'data.txt')]))
     # Add source code files (not .pyc files).
     # This should go in the setup function.
     data_files.append(
-        (join(direcs['destn'], 'src'), glob(join(source_direc, '*.*[!c]'))))
+        (join(direcs['destn'], 'src'), glob(join(direcs['src'], '*.*[!c]'))))
 
 
 py2exe_options = {
@@ -116,11 +119,11 @@ setup(
     author_email='minegauler@gmail.com'
     )
 
-if target != 'archive':
+if target not in ['light', 'archive']:
     with open(join(direcs['destn'], 'dist', 'files', 'data.txt'), 'w') as f:
         json.dump(highscores, f)
 
-shutil.rmtree(join(direcs['main'], 'build', ignore_errors=True)
+shutil.rmtree(join(direcs['main'], 'build'), ignore_errors=True)
 
 shutil.make_archive(join(direcs['main'], '%sMineGauler%s'%(target, VERSION)),
     'zip', direcs['destn'])

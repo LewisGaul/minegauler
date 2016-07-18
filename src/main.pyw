@@ -546,11 +546,11 @@ class BasicGui(tk.Tk, object):
 
         title = 'Custom'
         win = Window(self, title)
-        tk.Message(win.mainframe, width=200, text="""\
-            Select the desired number of rows, columns and mines.\
-            The number of mines must be less than the size of the board,\
-            and the size of the board must be less than 50x100.\
-            """).pack(pady=10)
+        tk.Message(win.mainframe, width=200, text=(
+            "Select the desired number of rows, columns and mines. "
+            "The number of mines must be less than the size of the board, "
+            "and the size of the board must be less than 50x100."
+            )).pack(pady=10)
         entry_frame = tk.Frame(win.mainframe)
         entry_frame.pack()
         row_slider = tk.Scale(entry_frame, from_=2, to=50, length=140,
@@ -657,10 +657,10 @@ class BasicGui(tk.Tk, object):
             return
         title = 'Zoom'
         win = Window(self, title)
-        tk.Message(win.mainframe, width=180,
-            text="""Select the desired increase in button size compared to the\
-                default, which should be an integer from 60 to 500.""").pack(
-                pady=10)
+        tk.Message(win.mainframe, width=180, text=(
+            "Select the desired increase in button size compared to the "
+            "default, which should be an integer from 60 to 500."
+            )).pack(pady=10)
         zoom = int(round(100*self.button_size/16.0, 0))
         slider = tk.Scale(win.mainframe, from_=60, to=200, length=140,
             orient='horizontal', showvalue=False, command=slide)
@@ -685,12 +685,15 @@ class BasicGui(tk.Tk, object):
 
     # Help menu methods.
     def show_text(self, filename, width=80, height=24):
+        if self.block_windows:
+            self.focus.focus_set()
+            return
         # Use Scrolledtext widget?
-        win = self.active_windows[filename] = tk.Toplevel(self)
-        win.title(filename.capitalize())
-        scrollbar = tk.Scrollbar(win)
+        title = filename.capitalize()
+        win = Window(self, title)
+        scrollbar = tk.Scrollbar(win.mainframe)
         scrollbar.pack(side='right', fill='y')
-        text = tk.Text(win, width=width, height=height, wrap='word',
+        text = tk.Text(win.mainframe, width=width, height=height, wrap='word',
             yscrollcommand=scrollbar.set)
         text.pack()
         scrollbar.config(command=text.yview)
@@ -698,6 +701,7 @@ class BasicGui(tk.Tk, object):
             with open(join(direcs['files'], filename + '.txt'), 'r') as f:
                 text.insert('end', f.read())
         text.config(state='disabled')
+        win.make_btn('OK', lambda: self.close_window(title))
         self.focus = text
         self.focus.focus_set()
 
@@ -1136,6 +1140,45 @@ class GameGui(BasicGui):
             setattr(self, s, getattr(self.game, s))
             self.settings[s] = getattr(self.game, s)
 
+    def show_info(self, event=None):
+        if self.block_windows:
+            self.focus.focus_set()
+            return
+        win = Window(self, 'Info')
+        info = (
+            "This {d[0]} x {d[1]} grid has {} mines with "
+            "a max of {} per cell.\n"
+            "Detection level: {},  Drag select: {},  Lives remaining: {}"
+            ).format(self.mines, self.per_cell, self.detection,
+                'on' if self.drag_select else 'off', self.game.lives_rem,
+                d=self.dims)
+        time = self.game.get_time_passed()
+        if self.game.state == WON:
+            info += (
+                "\n\nIt has 3bv of {}.\n\n"
+                "You completed it in {:.2f} seconds, with 3bv/s of {:.2f}."
+                ).format(self.game.mf.bbbv, time+0.01,
+                    self.game.get_3bvps())
+        elif self.game.state == LOST:
+            info += (
+                "\n\nIt has 3bv of {}.\n\n"
+                "You lost after {:.2f} seconds, completing {:.1f}%. The grid "
+                "has a remaining 3bv of {}."
+                ).format(self.game.mf.bbbv, time+0.01,
+                    100*self.game.get_prop_complete(), self.game.get_rem_3bv())
+            # In case mine was hit on first click (ZeroDivisionError).
+            if self.game.get_prop_complete() > 0:
+                info += (
+                    "\n\nPredicted completion time "
+                    "of {:.1f} seconds with a continued 3bv/s of {:.2f}."
+                    ).format(time/self.game.get_prop_complete(),
+                        self.game.get_3bvps())
+        tk.Message(win.mainframe, width=300, text=info,
+            font=('Times', 10, 'bold')).pack()
+        win.make_btn('OK', lambda: self.close_window('Info'))
+        self.focus = win.btns[0]
+        self.focus.focus_set()
+
     # Options menu methods.
     def update_settings(self):
         self.first_success = self.first_success_var.get()
@@ -1159,7 +1202,7 @@ class MenuBar(tk.Menu, object):
         self.add_cascade(label='Game', menu=self.g_menu)
 
         self.g_menu.add_command(label='New',
-            command=self.parent.refresh_board, accelerator='F2')
+            command=self.parent.start_new_game, accelerator='F2')
         self.parent.bind('<F2>', self.parent.start_new_game)
         if self.config == 'full':
             self.g_menu.add_command(label='Replay',
@@ -1168,6 +1211,10 @@ class MenuBar(tk.Menu, object):
                 command=self.parent.save_board)
             self.g_menu.add_command(label='Load board',
                 command=self.parent.load_board)
+            self.g_menu.add_separator()
+            self.g_menu.add_command(label='Current info',
+                command=self.parent.show_info, accelerator='F6')
+            self.parent.bind('<F6>', self.parent.show_info)
         self.g_menu.add_separator()
         for i in diff_names:
             self.g_menu.add_radiobutton(label=i[1], value=i[0],
@@ -1257,8 +1304,7 @@ class Timer(tk.Label, object):
 
 
 class Window(tk.Toplevel, object):
-    def __init__(self, parent, title, **kwargs):
-        # kwargs are used to check if the OK and Cancel buttons are desired.
+    def __init__(self, parent, title):
         self.parent = parent
         super(Window, self).__init__(parent)
         self.title(title)

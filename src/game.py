@@ -196,6 +196,7 @@ class Game(object):
         self.settings = self.mf.settings
         for s in settings:
             setattr(self, s, settings[s])
+        self.lives_rem = self.lives
 
         self.grid = UNCLICKED * np.ones(self.dims, int)
         self.state = READY
@@ -232,10 +233,10 @@ class Game(object):
         else:
             t = tm.time()
             lost_mf = Minefield(self.settings, auto_create=False)
-            lost_mf.mine_coords = self.game.minefield.mine_coords
+            lost_mf.mine_coords = self.mf.mine_coords
             # Replace any openings already found with normal clicks (ones).
-            lost_mf.completed_grid = np.where(self.game.grid<0,
-                self.game.minefield.completed_grid, 1)
+            lost_mf.completed_grid = np.where(self.grid<0,
+                self.mf.completed_grid, 1)
             # Find the openings which remain.
             lost_mf.get_openings()
             rem_opening_coords = [c for opening in lost_mf.openings
@@ -245,13 +246,11 @@ class Game(object):
             # an undiscovered opening.
             completed_3bv = len({c for c in where_coords(self.grid >= 0)
                 if c not in rem_opening_coords})
-            print "Calculating remaining 3bv took {:.2f}s.".format(
-                tm.time() - t)
             return lost_mf.get_3bv() - completed_3bv
 
     def get_prop_complete(self):
         """Calculate the progress of solving the board using 3bv."""
-        float(self.mf.bbbv - self.get_rem_3bv())/self.mf.bbbv
+        return float(self.mf.bbbv - self.get_rem_3bv())/self.mf.bbbv
 
     def get_3bvps(self):
         """Return the 3bv/s."""
