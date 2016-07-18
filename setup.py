@@ -14,7 +14,7 @@ os.chdir(src_direc)
 from utils import *
 
 direcs['src'] = src_direc
-direcs['destn'] = join(direcs['main'], 'bin')
+direcs['destn'] = join(direcs['main'], 'bin', str(VERSION))
 if isdir(direcs['destn']):
     shutil.rmtree(direcs['destn'], ignore_errors=False)
 if not isdir(direcs['destn']):

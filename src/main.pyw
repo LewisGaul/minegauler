@@ -101,6 +101,7 @@ class BasicGui(tk.Tk, object):
             'drag_select': False,
             'distance_to': False,
             'button_size': 16, #pixels
+            'first_success': True
             }
         if settings == None:
             settings = dict()
@@ -148,12 +149,12 @@ class BasicGui(tk.Tk, object):
         self.drag_select_var = tk.BooleanVar()
         self.drag_select_var.set(self.drag_select)
 
-        # Make main body of GUI.
-        self.make_panel()
-        self.make_minefield()
         # t = tm.time()
         self.get_images()
         # print "Time to get images was {:.2f}s.".format(tm.time() - t)
+        # Make main body of GUI.
+        self.make_panel()
+        self.make_minefield()
 
         # Turn off option of resizing window.
         self.resizable(False, False)
@@ -251,37 +252,61 @@ class BasicGui(tk.Tk, object):
                 self.face_button.invoke()
         self.panel.bind_class('panel', '<ButtonRelease-1>', panel_click)
 
+    def set_cell_image(self, coord, image, tag=True):
+        x = (coord[1] + 0.5) * self.button_size
+        y = (coord[0] + 0.5) * self.button_size
+        tag = 'overlay' if tag else ''
+        imID = self.board.create_image(x, y, image=image, tag=tag)
+        return imID
+
     def make_minefield(self):
+        btn_size = self.button_size
         self.mainframe = tk.Frame(self, bd=10, relief='ridge')
         self.mainframe.pack()
+        self.board = tk.Canvas(self.mainframe, height=self.dims[0]*btn_size,
+            width=self.dims[1]*btn_size, highlightthickness=0)
+        self.board.pack()
         self.buttons = dict()
         for coord in self.all_coords:
-            self.buttons[coord] = Cell(coord, self.mainframe, self)
+            self.buttons[coord] = Cell(coord, self.board)
+            self.set_cell_image(coord, self.button_images['up'], tag=False)
         self.set_button_bindings()
 
     def set_button_bindings(self):
-        self.bind_class('board', '<Button-1>', self.detect_left_press)
-        self.bind_class('board', '<ButtonRelease-1>', self.detect_left_release)
-        self.bind_class('board', '<Button-%s>'%RIGHT_BTN_NUM, self.detect_right_press)
-        self.bind_class('board', '<ButtonRelease-%s>'%RIGHT_BTN_NUM,
+        self.board.bind('<Button-1>', self.detect_left_press)
+        self.board.bind('<ButtonRelease-1>', self.detect_left_release)
+        self.board.bind('<Button-%s>'%RIGHT_BTN_NUM, self.detect_right_press)
+        self.board.bind('<ButtonRelease-%s>'%RIGHT_BTN_NUM,
             self.detect_right_release)
-        self.bind_class('board', '<B1-Motion>', self.detect_motion)
-        self.bind_class('board', '<B%s-Motion>'%RIGHT_BTN_NUM, self.detect_motion)
-        self.bind_class('board', '<Control-1>', self.detect_ctrl_left_press)
+        self.board.bind('<B1-Motion>', self.detect_motion)
+        self.board.bind('<B%s-Motion>'%RIGHT_BTN_NUM, self.detect_motion)
+        self.board.bind('<Control-1>', self.detect_ctrl_left_press)
 
     def unset_button_bindings(self):
-        self.unbind_class('board', '<Button-1>')
-        self.unbind_class('board', '<ButtonRelease-1>')
-        self.unbind_class('board', '<Button-%s>'%RIGHT_BTN_NUM)
-        self.unbind_class('board', '<ButtonRelease-%s>'%RIGHT_BTN_NUM)
-        self.unbind_class('board', '<B1-Motion>')
-        self.unbind_class('board', '<B%s-Motion>'%RIGHT_BTN_NUM)
-        self.unbind_class('board', '<Control-1>')
+        self.board.unbind('<Button-1>')
+        self.board.unbind('<ButtonRelease-1>')
+        self.board.unbind('<Button-%s>'%RIGHT_BTN_NUM)
+        self.board.unbind('<ButtonRelease-%s>'%RIGHT_BTN_NUM)
+        self.board.unbind('<B1-Motion>')
+        self.board.unbind('<B%s-Motion>'%RIGHT_BTN_NUM)
+        self.board.unbind('<Control-1>')
 
     def get_images(self):
         #Create the PhotoImages from the png files.
-        im_size = self.button_size - 2
+        self.button_images = dict()
+        im_size = self.button_size
+        im = PILImage.open(join(direcs['images'], 'btn_up.png'))
+        im = im.resize((im_size, im_size), PILImage.ANTIALIAS)
+        self.button_images['up'] = ImageTk.PhotoImage(im, name='btn_up')
+        im = PILImage.open(join(direcs['images'], 'btn_down.png'))
+        im = im.resize((im_size, im_size), PILImage.ANTIALIAS)
+        self.button_images['down'] = ImageTk.PhotoImage(im, name='btn_down')
+        im = PILImage.open(join(direcs['images'], 'btn_down_red.png'))
+        im = im.resize((im_size, im_size), PILImage.ANTIALIAS)
+        self.button_images['red'] = ImageTk.PhotoImage(im, name='btn_red')
+
         self.mine_images = dict() #mines
+        im_size = self.button_size - 2
         for c in bg_colours:
             im = PILImage.open(join(direcs['images'], 'mine1.png'))
             data = np.array(im)
@@ -298,8 +323,8 @@ class BasicGui(tk.Tk, object):
                 key = (c, 1)
             self.mine_images[key] = ImageTk.PhotoImage(im, name=im_name)
 
-        im_size = self.button_size - 6
         self.flag_images = dict() #flags
+        im_size = self.button_size - 6
         im = PILImage.open(join(direcs['images'], 'flag1.png'))
         data = np.array(im)
         # Set background colour (grey, default).
@@ -321,12 +346,16 @@ class BasicGui(tk.Tk, object):
         self.cross_images[1] = ImageTk.PhotoImage(im, name=im_name)
 
     # Button actions.
+    def get_mouse_coord(self, event):
+        return tuple(
+            map(lambda p: getattr(event, p)/self.button_size, ['y', 'x']))
+
     def detect_left_press(self, event=None):
         self.left_button_down = True
         if self.right_button_down:
             self.both_press(self.mouse_coord)
         else:
-            self.mouse_coord = event.widget.coord
+            self.mouse_coord = self.get_mouse_coord(event)
             self.left_press(self.mouse_coord)
 
     def detect_left_release(self, event=None):
@@ -348,7 +377,7 @@ class BasicGui(tk.Tk, object):
         if self.left_button_down:
             self.both_press(self.mouse_coord)
         else:
-            self.mouse_coord = event.widget.coord
+            self.mouse_coord = self.get_mouse_coord(event)
             self.right_press(self.mouse_coord)
 
     def detect_right_release(self, event=None):
@@ -366,11 +395,11 @@ class BasicGui(tk.Tk, object):
             self.mouse_coord = None
 
     def detect_motion(self, event):
-        orig_coord = event.widget.coord
-        x = orig_coord[0] + event.y/self.button_size
-        y = orig_coord[1] + event.x/self.button_size
-        cur_coord = (x, y) if (x, y) in self.all_coords else None
-        if cur_coord == self.mouse_coord:
+        if self.get_mouse_coord(event) in self.all_coords:
+            cur_coord = self.get_mouse_coord(event)
+        else:
+            cur_coord = None
+        if cur_coord == self.mouse_coord: #no movement across buttons
             return
         if cur_coord is None:
             self.face_button.config(image=self.face_images['ready1face'])
@@ -421,22 +450,14 @@ class BasicGui(tk.Tk, object):
 
     # GUI and game methods.
     def refresh_board(self, event=None):
-        for b in [self.buttons[c] for c in self.all_coords
-            if self.buttons[c].state != UNCLICKED]:
-            self.reset_button(b.coord)
-            b.state = UNCLICKED
+        self.board.delete('overlay')
+        for b in [self.buttons[c] for c in self.all_coords]:
+            b.refresh()
         self.update_settings()
         self.set_button_bindings()
         self.left_button_down = self.right_button_down = False
         self.mouse_coord = None
         self.is_both_click = False
-
-    def reset_button(self, coord):
-        b = self.buttons[coord]
-        b.config(bd=3, relief='raised', bg='SystemButtonFace',
-            fg='black', font=self.nr_font, text='', image='')
-        b.state = UNCLICKED
-        b.num_of_flags = 0
 
     def show_info(self, event=None):
         title = 'Info'
@@ -509,8 +530,8 @@ class BasicGui(tk.Tk, object):
             cols = col_entry.get()
             mines = mine_entry.get()
             # Check for invalid entries.
-            if (rows not in map(str, range(2, 101)) or
-                cols not in map(str, range(2, 201))):
+            if (rows not in map(str, range(2, 51)) or
+                cols not in map(str, range(2, 101))):
                 return
             else:
                 rows = int(rows)
@@ -528,11 +549,11 @@ class BasicGui(tk.Tk, object):
         tk.Message(win.mainframe, width=200, text="""\
             Select the desired number of rows, columns and mines.\
             The number of mines must be less than the size of the board,\
-            and the size of the board must be less than 100x200.\
+            and the size of the board must be less than 50x100.\
             """).pack(pady=10)
         entry_frame = tk.Frame(win.mainframe)
         entry_frame.pack()
-        row_slider = tk.Scale(entry_frame, from_=2, to=100, length=140,
+        row_slider = tk.Scale(entry_frame, from_=2, to=50, length=140,
             orient='horizontal', showvalue=False, takefocus=False,
             command=size_slide)
         col_slider = tk.Scale(entry_frame, from_=2, to=100, length=140,
@@ -572,7 +593,6 @@ class BasicGui(tk.Tk, object):
         extras = [c for c in self.all_coords if c[0] >= dims[0] or
             c[1] >= dims[1]]
         for coord in extras:
-            self.buttons[coord].frame.destroy()
             self.buttons.pop(coord)
         # This runs if one of the dimensions of the new shape is larger than
         # the previous.
@@ -581,7 +601,10 @@ class BasicGui(tk.Tk, object):
         new = [c for c in self.all_coords if c[0] >= self.dims[0] or
             c[1] >= self.dims[1]]
         for coord in new:
-            self.buttons[coord] = Cell(coord, self.mainframe, self)
+            self.set_cell_image(coord, self.button_images['up'], tag=False)
+            self.buttons[coord] = Cell(coord, self.board)
+        self.board.config(height=self.button_size*dims[0],
+            width=self.button_size*dims[1])
         self.dims = dims
         # Check if this is custom.
         if (dims in diff_dims and
@@ -591,7 +614,7 @@ class BasicGui(tk.Tk, object):
         else:
             self.diff = 'c'
             self.diff_var.set('c')
-        self.refresh_board()
+        self.start_new_game()
 
     def get_zoom(self):
         def slide(num):
@@ -613,15 +636,17 @@ class BasicGui(tk.Tk, object):
             else:
                 self.zoom_var.set(True)
             if old_button_size != self.button_size:
+                self.board.config(height=self.button_size*self.dims[0],
+                    width=self.button_size*self.dims[1])
+                self.board.delete('all')
+                for coord in self.buttons:
+                    self.set_cell_image(coord, self.button_images['up'],
+                        tag=False)
+                self.get_images()
                 self.nr_font = (self.nr_font[0], 10*self.button_size/17,
                     self.nr_font[2])
-                for b in self.buttons.values():
-                    #Update frame sizes.
-                    b.frame.config(height=self.button_size,
-                        width=self.button_size)
-                    b.config(font=self.nr_font)
-                self.get_images()
             self.close_window(title)
+            self.start_new_game()
 
         # Ensure tick on radiobutton is correct.
         if self.button_size == 16:
@@ -690,7 +715,7 @@ class TestGui(BasicGui):
                 self.click(coord)
         else:
             if b.state == UNCLICKED:
-                b.config(bd=1, relief='sunken')
+                b.bg = self.set_cell_image(coord, self.button_images['down'])
 
     def left_release(self, coord):
         super(TestGui, self).left_release(coord)
@@ -701,7 +726,7 @@ class TestGui(BasicGui):
     def left_motion(self, coord, prev_coord):
         super(TestGui, self).left_motion(coord, prev_coord)
         if prev_coord and self.buttons[prev_coord].state == UNCLICKED:
-            self.reset_button(prev_coord) #does more than necessary
+            self.buttons[prev_coord].refresh()
         if coord:
             self.left_press(coord)
 
@@ -721,17 +746,14 @@ class TestGui(BasicGui):
             self.drag_flag = None
 
         if b.state == UNCLICKED:
-            b.config(image=self.flag_images[1])
+            b.fg = self.set_cell_image(coord, self.flag_images[1])
             b.state = FLAGGED
             b.num_of_flags = 1
         elif b.state == FLAGGED:
-            if b.num_of_flags == self.per_cell:
-                b.config(image='')
-                b.state = UNCLICKED
-                b.num_of_flags = 0
-            else:
-                b.config(image=self.flag_images[b.num_of_flags+1])
-                b.num_of_flags += 1
+            self.board.delete(b.fg)
+            b.fg = None
+            b.state = UNCLICKED
+            b.num_of_flags = 0
 
     def right_motion(self, coord, prev_coord):
         super(TestGui, self).right_motion(coord, prev_coord)
@@ -745,11 +767,11 @@ class TestGui(BasicGui):
         #     self.drag_flag = None
         # Flag or unflag as appropriate.
         if self.drag_flag == FLAG and b.state == UNCLICKED:
-            b.config(image=self.flag_images[1])
+            b.fg = self.set_cell_image(coord, self.flag_images[1])
             b.state = FLAGGED
             b.num_of_flags = 1
         elif self.drag_flag == UNFLAG and b.state == FLAGGED:
-            b.config(image='')
+            b.refresh()
             b.state = UNCLICKED
             b.num_of_flags = 0
 
@@ -758,22 +780,23 @@ class TestGui(BasicGui):
         # Buttons which neighbour the current selected button.
         new_nbrs = self.get_nbrs(coord, include=True)
         # Only consider unclicked cells.
-        new_nbrs = {self.buttons[c] for c in new_nbrs
+        new_nbrs = {c for c in new_nbrs
             if self.buttons[c].state == UNCLICKED}
         # Sink the new neighbouring buttons.
-        for b in new_nbrs:
-            b.config(bd=1, relief='sunken')
+        for c in new_nbrs:
+            self.buttons[c].bg = self.set_cell_image(c,
+                self.button_images['down'])
 
     def both_release(self, coord):
         super(TestGui, self).both_release(coord)
         # Buttons which neighbour the previously selected button.
         old_nbrs = self.get_nbrs(coord, include=True)
         # Only worry about unclicked cells.
-        old_nbrs = {self.buttons[c] for c in old_nbrs
+        old_nbrs = {c for c in old_nbrs
             if self.buttons[c].state == UNCLICKED}
         # Raise the old neighbouring buttons.
-        for b in old_nbrs:
-            b.config(bd=3, relief='raised', text='.')
+        for c in old_nbrs:
+            self.buttons[c].refresh()
 
     def both_motion(self, coord, prev_coord):
         super(TestGui, self).both_motion(coord, prev_coord)
@@ -781,17 +804,17 @@ class TestGui(BasicGui):
             # Buttons which neighbour the previously selected button.
             old_nbrs = self.get_nbrs(prev_coord, include=True)
             # Only worry about unclicked cells.
-            old_nbrs = {self.buttons[c] for c in old_nbrs
+            old_nbrs = {c for c in old_nbrs
                 if self.buttons[c].state == UNCLICKED}
             # Raise the old neighbouring buttons.
-            for b in old_nbrs:
-                b.config(bd=3, relief='raised')
+            for c in old_nbrs:
+                self.buttons[c].refresh()
         if coord:
             self.both_press(coord)
 
     def click(self, coord):
         b = self.buttons[coord]
-        b.config(bd=1, relief='sunken', text='!')
+        b.fg = self.set_cell_image(coord, self.mine_images[1])
         b.state = CLICKED
 
 
@@ -839,7 +862,7 @@ class GameGui(BasicGui):
                 self.click(coord)
         else:
             if b.state == UNCLICKED:
-                b.config(bd=1, relief='sunken')
+                b.bg = self.set_cell_image(coord, self.button_images['down'])
 
     def left_release(self, coord):
         super(GameGui, self).left_release(coord)
@@ -852,7 +875,7 @@ class GameGui(BasicGui):
     def left_motion(self, coord, prev_coord):
         super(GameGui, self).left_motion(coord, prev_coord)
         if prev_coord and self.buttons[prev_coord].state == UNCLICKED:
-            self.reset_button(prev_coord) #does more than necessary
+            self.buttons[prev_coord].refresh()
         if coord:
             self.left_press(coord)
 
@@ -871,17 +894,13 @@ class GameGui(BasicGui):
             self.drag_flag = None
 
         if b.state == UNCLICKED:
-            b.config(image=self.flag_images[1])
+            b.fg = self.set_cell_image(coord, self.flag_images[1])
             b.state = FLAGGED
             b.num_of_flags = 1
         elif b.state == FLAGGED:
-            if b.num_of_flags == self.per_cell:
-                b.config(image='')
-                b.state = UNCLICKED
-                b.num_of_flags = 0
-            else:
-                b.config(image=self.flag_images[b.num_of_flags+1])
-                b.num_of_flags += 1
+            b.refresh()
+            b.state = UNCLICKED
+            b.num_of_flags = 0
         self.set_mines_counter()
 
     def right_motion(self, coord, prev_coord):
@@ -891,11 +910,11 @@ class GameGui(BasicGui):
             return
         b = self.buttons[coord]
         if self.drag_flag == FLAG and b.state == UNCLICKED:
-            b.config(image=self.flag_images[1])
+            b.fg = self.set_cell_image(coord, self.flag_images[1])
             b.state = FLAGGED
             b.num_of_flags = 1
         elif self.drag_flag == UNFLAG and b.state == FLAGGED:
-            b.config(image='')
+            b.refresh()
             b.state = UNCLICKED
             b.num_of_flags = 0
         self.set_mines_counter()
@@ -906,11 +925,11 @@ class GameGui(BasicGui):
         # Buttons which neighbour the current selected button.
         new_nbrs = self.get_nbrs(coord, include=True)
         # Only consider unclicked cells.
-        new_nbrs = {self.buttons[c] for c in new_nbrs
-            if self.buttons[c].state == UNCLICKED}
+        new_nbrs = {c for c in new_nbrs if self.buttons[c].state == UNCLICKED}
         # Sink the new neighbouring buttons.
-        for b in new_nbrs:
-            b.config(bd=1, relief='sunken')
+        for c in new_nbrs:
+            self.buttons[c].bg = self.set_cell_image(c,
+                self.button_images['down'])
 
     def both_release(self, coord):
         super(GameGui, self).both_release(coord)
@@ -927,9 +946,8 @@ class GameGui(BasicGui):
                     self.game.mf.completed_grid>=0, self.game.grid>=0):
                     self.finalise_win()
         # Reset buttons if not clicked.
-        for b in {self.buttons[c] for c in nbrs if
-            self.buttons[c].state == UNCLICKED}:
-            b.config(bd=3, relief='raised')
+        for c in {c for c in nbrs if self.buttons[c].state == UNCLICKED}:
+            self.buttons[c].refresh()
         # Reset face.
         if (self.game.state in [READY, ACTIVE] and
             not (self.left_button_down and self.drag_select)):
@@ -941,11 +959,11 @@ class GameGui(BasicGui):
             # Buttons which neighbour the previously selected button.
             old_nbrs = self.get_nbrs(prev_coord, include=True)
             # Only worry about unclicked cells.
-            old_nbrs = {self.buttons[c] for c in old_nbrs
+            old_nbrs = {c for c in old_nbrs
                 if self.buttons[c].state == UNCLICKED}
             # Raise the old neighbouring buttons.
-            for b in old_nbrs:
-                b.config(bd=3, relief='raised')
+            for c in old_nbrs:
+                self.buttons[c].refresh()
         if coord:
             self.both_press(coord)
 
@@ -989,6 +1007,7 @@ class GameGui(BasicGui):
         nr = self.game.mf.completed_grid[coord]
         # Assign the game grid with the numbers which are uncovered.
         self.game.grid.itemset(coord, nr)
+        b.bg = self.set_cell_image(coord, self.button_images['down'])
         b.state = CLICKED
         # Display the number unless it is a zero.
         text = nr if nr else ''
@@ -997,8 +1016,10 @@ class GameGui(BasicGui):
         except KeyError:
             # In case the number is unusually high.
             nr_colour = 'black'
-        b.config(bd=1, relief='sunken', #bg='SystemButtonFace',
-            text=text, fg=nr_colour, font=self.nr_font)
+        x = (coord[1] + 0.5) * self.button_size
+        y = (coord[0] + 0.5) * self.button_size - 1
+        b.text = self.board.create_text(x, y, text=text, fill=nr_colour,
+            font=self.nr_font)
 
     def finalise_win(self):
         self.game.finish_time = tm.time()
@@ -1009,7 +1030,7 @@ class GameGui(BasicGui):
         for btn in [b for b in self.buttons.values()
             if b.state in [UNCLICKED, FLAGGED]]:
             n = self.game.mf.mines_grid[btn.coord]
-            btn.config(image=self.flag_images[n])
+            btn.fg = self.set_cell_image(btn.coord, self.flag_images[1])
             btn.state = FLAGGED
             btn.num_of_flags = n
         self.timer.set_var(min(int(self.game.get_time_passed() + 1), 999))
@@ -1024,19 +1045,19 @@ class GameGui(BasicGui):
         b.state = MINE
         self.game.state = LOST
         colour = self.get_tk_colour(bg_colours['red'])
-        b.config(bd=1, relief='sunken', bg=colour,
-            image=self.mine_images[('red', 1)])
+        b.bg = self.set_cell_image(coord, self.button_images['red'])
+        b.fg = self.set_cell_image(coord, self.mine_images[('red', 1)])
         self.face_button.config(image=self.face_images['lost1face'])
         for c, b in [(btn.coord, btn) for btn in self.buttons.values()
             if btn.state != CLICKED]:
             # Check for incorrect flags.
             if b.state == FLAGGED and self.game.mf.mines_grid[c] == 0:
-                b.config(image=self.cross_images[1], font=self.nr_font)
+                b.fg = self.set_cell_image(c, image=self.cross_images[1])
             # Reveal remaining mines.
             elif b.state == UNCLICKED and self.game.mf.mines_grid[c] > 0:
                 b.state = MINE
-                b.config(bd=1, relief='sunken',
-                    image=self.mine_images[self.game.mf.mines_grid[c]])
+                b.bg = self.set_cell_image(c, self.button_images['down'])
+                b.fg = self.set_cell_image(c, self.mine_images[1])
         self.timer.set_var(min(int(self.game.get_time_passed() + 1), 999))
         self.timer.config(fg='red')
 
@@ -1180,26 +1201,23 @@ class MenuBar(tk.Menu, object):
 
 
 
-class Cell(tk.Label, object):
-    def __init__(self, coord, parent, model):
-        """Automatically pack the created cell."""
+class Cell(object):
+    def __init__(self, coord, parent):
         self.coord = coord
         self.parent = parent
-        self.model = model
         self.state = UNCLICKED
         self.num_of_flags = 0
-        # Initialise a frame of correct size to contain a button.
-        self.frame = tk.Frame(parent, width=model.button_size,
-            height=model.button_size)
-        self.frame.rowconfigure(0, weight=1) #enable button to fill frame
-        self.frame.columnconfigure(0, weight=1)
-        self.frame.grid_propagate(False) #disable resizing of frame
-        # Place with the grid packer.
-        self.frame.grid(row=coord[0], column=coord[1])
-        super(Cell, self).__init__(self.frame, bd=3, relief='raised',
-            font=model.nr_font)
-        self.grid(sticky='nsew')
-        self.bindtags(('board',) + self.bindtags())
+        self.bg = None
+        self.fg = None
+        self.text = None
+
+    def refresh(self):
+        self.parent.delete(self.bg)
+        self.parent.delete(self.fg)
+        self.parent.delete(self.text)
+        self.bg = self.fg = self.text = None
+        self.state = UNCLICKED
+        self.num_of_flags = 0
 
 
 
