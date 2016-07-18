@@ -8,31 +8,31 @@ import winshell
 
 import numpy # So that all 'dll's are found.
 
+src_direc = join(os.getcwd(), 'src')
+sys.path.append(src_direc)
+os.chdir(src_direc)
+from utils import *
 
-main_direc = os.getcwd()
-source_direc = join(main_direc, 'source')
-sys.path.append(source_direc)
-from main import (encode_highscore, get_highscores,
-    __name__ as name, __version__ as version)
-
-im_direc = join(dirname(main_direc), 'images')
-data_direc = join(main_direc, 'data')
-dest_direc = join(main_direc, 'Package')
-if isdir(dest_direc):
-    shutil.rmtree(dest_direc, ignore_errors=True)
-if not isdir(dest_direc):
-    os.mkdir(dest_direc)
+direcs['src'] = src_direc
+direcs['destn'] = join(direcs['main'], 'bin')
+if isdir(direcs['destn']):
+    shutil.rmtree(direcs['destn'], ignore_errors=False)
+if not isdir(direcs['destn']):
+    os.mkdir(direcs['destn'])
 desktop = winshell.desktop()
 
+sys.argv.append('py2exe') #no need to type in command line
 
-sys.argv.append('py2exe') # No need to type in command line.
+# Determine which highscores and scripts to include.
+target = raw_input(
+    "Who is this for?\n" +
+    "1) Home use (default)\n" +
+    "2) New user\n" +
+    "3) Other user\n" +
+    "4) Light\n" +
+    "5) Archive\n"
+    )
 
-
-target = raw_input("Who is this for?\n" +
-                    "1) Home use (default)\n" +
-                    "2) New user\n" +
-                    "3) Other user\n"
-                    "4) Archive\n")
 if target == '2':
     target = ''
     with open(join(data_direc, 'data.txt'), 'r') as f:
@@ -42,50 +42,68 @@ elif target == '3':
     with open(join(data_direc, 'data.txt'), 'r') as f:
         highscores = get_highscores(json.load(f), name=target)
 elif target == '4':
+    target = 'light'
+elif target == '5':
     target = 'archive'
 else:
     target = 'home'
     with open(join(data_direc, 'data.txt'), 'r') as f:
         highscores = get_highscores(json.load(f))
+######
+print "Running "
+target = 'light'
 
 
-# Image files
-data_files = [('images', [join(im_direc, '3mine.ico')])]
-for folder in ['mines', 'flags']:
-    data_files.append((join('images', folder),
-        glob(join(im_direc, folder, '*.png'))))
-data_files.append((join('images', 'faces'),
-        glob(join(im_direc, 'faces', '*.ppm'))))
-# Text files
-data_files.append(
-    ('files', glob(join(main_direc, 'files', '*.txt'))))
-data_files.append((dest_direc, glob(join(main_direc, '*.txt'))))
-# Board files
-data_files.append((join('boards', 'sample'),
-    glob(join(main_direc, 'boards', 'sample', '*.mgb'))))
+data_files = [
+    ('images', map(lambda x: join(direcs['images'], x), [
+        'cross1.png',
+        'flag1.png',
+        'mine1.png',
+        'icon.ico'
+        ])),
+    (join('images', 'faces'), map(
+        lambda x: join(direcs['images'], 'faces', x), [
+        'active1face.ppm',
+        'ready1face.ppm',
+        'lost1face.ppm',
+        'won1face.ppm'
+        ])),
+    (join(direcs['boards'], 'sample'),
+        glob(join(direcs['boards'], 'sample', '*.mgb'))),
+    ('files', glob(join(direcs['files'], '*.txt'))),
+    (direcs['destn'], [
+        join(direcs['files'], 'README.txt'),
+        join(direcs['main'], 'CHANGELOG.txt')
+        ])
+    ]
+
 if target == 'archive':
     data_files.append(
-        (join(dest_direc, 'dist', 'files'), [join(data_direc, 'data.txt')]))
+        (join(direcs['destn'], 'dist', 'files'), [join(data_direc, 'data.txt')]))
     # Add source code files (not .pyc files).
     # This should go in the setup function.
     data_files.append(
-        (join(dest_direc, 'src'), glob(join(source_direc, '*.*[!c]'))))
+        (join(direcs['destn'], 'src'), glob(join(source_direc, '*.*[!c]'))))
 
 
 py2exe_options = {
-        'compressed': True,
-        'optimize': 1, # 2 does not work.
-        'dist_dir': join(dest_direc, 'dist'),
-        'excludes': ['pydoc', 'doctest', 'pdb', 'inspect', 'pyreadline',
-            'locale', 'optparse', 'pickle', 'calendar']
-        }
+    'compressed': True,
+    'optimize': 1, # 2 does not work.
+    'dist_dir': join(direcs['destn'], 'dist'),
+    'excludes': ['pydoc', 'doctest', 'pdb', 'inspect', 'pyreadline',
+        'locale', 'optparse', 'pickle', 'calendar']
+    }
 
-scripts = [{'dest_base': 'MineGauler', # Name of exe
-            'script': join(source_direc, name + '.pyw'),
-            'icon_resources': [(1, join(im_direc, '3mine.ico'))]}]
+scripts = [{
+    'dest_base': 'MineGauler', #name of exe
+    'script': join(direcs['src'], 'main.pyw'),
+    'icon_resources': [(1, join(direcs['images'], 'icon.ico'))]
+    }]
 if target in ['home', 'archive']:
-    scripts.append({'dest_base': 'Probabilities', # Name of exe
-                    'script': join(source_direc, 'probabilities.pyw')})
+    scripts.append({
+        'dest_base': 'Probabilities', # Name of exe
+        'script': join(direcs['src'], 'probabilities.pyw')
+        })
 
 setup(
     windows=scripts,
@@ -93,19 +111,19 @@ setup(
     data_files=data_files,
     # zipfile=join(dest_direc, 'dist', 'lib.zip'),
     name='MineGauler',
-    version=version,
-    author='Lewis Gaul',
+    version=VERSION,
+    author='Lewis H. Gaul',
     author_email='minegauler@gmail.com'
     )
 
 if target != 'archive':
-    with open(join(dest_direc, 'dist', 'files', 'data.txt'), 'w') as f:
+    with open(join(direcs['destn'], 'dist', 'files', 'data.txt'), 'w') as f:
         json.dump(highscores, f)
 
-shutil.rmtree('build', ignore_errors=True)
+shutil.rmtree(join(direcs['main'], 'build', ignore_errors=True)
 
-shutil.make_archive(
-    join(main_direc, '%sMineGauler%s'%(target, version)), 'zip', dest_direc)
+shutil.make_archive(join(direcs['main'], '%sMineGauler%s'%(target, VERSION)),
+    'zip', direcs['destn'])
 
 # with winshell.shortcut(
 #     join(winshell.desktop(), 'MineGauler.lnk')) as shortcut:
