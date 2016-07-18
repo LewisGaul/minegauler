@@ -281,7 +281,7 @@ class BasicGui(tk.Tk, object):
     def get_images(self):
         #Create the PhotoImages from the png files.
         im_size = self.button_size - 2
-        self.mine_images = dict()
+        self.mine_images = dict() #mines
         for c in bg_colours:
             im = PILImage.open(join(direcs['images'], 'mine1.png'))
             data = np.array(im)
@@ -299,7 +299,7 @@ class BasicGui(tk.Tk, object):
             self.mine_images[key] = ImageTk.PhotoImage(im, name=im_name)
 
         im_size = self.button_size - 6
-        self.flag_images = dict()
+        self.flag_images = dict() #flags
         im = PILImage.open(join(direcs['images'], 'flag1.png'))
         data = np.array(im)
         # Set background colour (grey, default).
@@ -309,6 +309,16 @@ class BasicGui(tk.Tk, object):
         im = im.resize((im_size, im_size), PILImage.ANTIALIAS)
         im_name = '1flag'
         self.flag_images[1] = ImageTk.PhotoImage(im, name=im_name)
+        self.cross_images = dict() #wrong flags
+        im = PILImage.open(join(direcs['images'], 'cross1.png'))
+        data = np.array(im)
+        # Set background colour (grey, default).
+        data[(data == (255, 255, 255, 0)).all(axis=-1)] = tuple(
+            list(bg_colours['']) + [0])
+        im = PILImage.fromarray(data, mode='RGBA').convert('RGB')
+        im = im.resize((im_size, im_size), PILImage.ANTIALIAS)
+        im_name = '1cross'
+        self.cross_images[1] = ImageTk.PhotoImage(im, name=im_name)
 
     # Button actions.
     def detect_left_press(self, event=None):
@@ -597,6 +607,7 @@ class BasicGui(tk.Tk, object):
                 return
             old_button_size = self.button_size
             self.button_size = int(round(int(text)*16.0/100, 0))
+            self.settings['button_size'] = self.button_size
             if self.button_size == 16:
                 self.zoom_var.set(False)
             else:
@@ -1020,8 +1031,7 @@ class GameGui(BasicGui):
             if btn.state != CLICKED]:
             # Check for incorrect flags.
             if b.state == FLAGGED and self.game.mf.mines_grid[c] == 0:
-                # Could use an image here..
-                b.config(text='X', image='', font=self.nr_font)
+                b.config(image=self.cross_images[1], font=self.nr_font)
             # Reveal remaining mines.
             elif b.state == UNCLICKED and self.game.mf.mines_grid[c] > 0:
                 b.state = MINE
