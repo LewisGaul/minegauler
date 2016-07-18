@@ -688,16 +688,17 @@ class BasicGui(tk.Tk, object):
         # Use Scrolledtext widget?
         win = self.active_windows[filename] = tk.Toplevel(self)
         win.title(filename.capitalize())
-        scrollbar = Scrollbar(win)
-        scrollbar.pack(side='right', fill=Y)
-        self.focus = text = Text(win, width=width, height=height, wrap=WORD,
+        scrollbar = tk.Scrollbar(win)
+        scrollbar.pack(side='right', fill='y')
+        text = tk.Text(win, width=width, height=height, wrap='word',
             yscrollcommand=scrollbar.set)
         text.pack()
         scrollbar.config(command=text.yview)
         if exists(join(direcs['files'], filename + '.txt')):
             with open(join(direcs['files'], filename + '.txt'), 'r') as f:
-                text.insert(END, f.read())
+                text.insert('end', f.read())
         text.config(state='disabled')
+        self.focus = text
         self.focus.focus_set()
 
 
@@ -1192,9 +1193,17 @@ class MenuBar(tk.Menu, object):
     def make_help_menu(self):
         self.h_menu = tk.Menu(self)
         self.add_cascade(label='Help', menu=self.h_menu)
-        self.h_menu.add_command(label='About',
-            command=lambda: self.parent.show_text('about', 40, 5), accelerator='F1')
+        self.h_menu.add_command(label='About', accelerator='F1',
+            command=lambda: self.parent.show_text('about', 40, 5))
         self.bind_all('<F1>', lambda: self.parent.show_text('about', 40, 5))
+        if self.config == 'full':
+            self.h_menu.add_separator()
+            self.h_menu.add_command(label='Basic rules',
+                command=lambda: self.parent.show_text('rules'))
+            self.h_menu.add_command(label='Special features',
+                command=lambda: self.parent.show_text('features'))
+            self.h_menu.add_command(label='Tips',
+                command=lambda: self.parent.show_text('tips'))
 
     def set_to_official(self):
         pass

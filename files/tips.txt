@@ -1,12 +1,12 @@
--Press 'F2' to start new games. Keeping one finger on this button is faster than using the mouse.
--Avoid moving the mouse without purpose. New players often waste time moving the mouse everywhere their eyes look.
--Ignore the clock (or hide it by clicking on it). Looking at the clock during a game wastes time, and will make you nervous if you are going fast.
--Many players listen to music while they play. This distracts them and lets them play on autopilot without nerves.
--Play in a warm room or heat your hands before you play. This increases blood flow and reaction time.
--Take short exercise breaks to increase blood flow and stimulate your brain.
--After a long playing session, it can help to change the version you are playing. This helps focus your eyes.
--If you accidentally click down on a mine, slide onto a different square before releasing the mouse button (only possible if drag select is off).
--Use the 1.5 click method*.
+- Press 'F2' to start new games. Keeping one finger on this button is faster than using the mouse.
+- Avoid moving the mouse without purpose. New players often waste time moving the mouse everywhere their eyes look.
+- Ignore the clock (or hide it by clicking on it). Looking at the clock during a game wastes time, and will make you nervous if you have a strong start.
+- Many players listen to music while they play. This distracts them and helps them play on autopilot without nerves.
+- Play in a warm room or heat your hands before you play. This increases blood flow and reaction time.
+- Take short exercise breaks to increase blood flow and stimulate your brain.
+- After a long playing session, it can help to change the version you are playing. This helps focus your eyes.
+- If you accidentally click down on a mine, slide onto a different square before releasing the mouse button (only possible if drag select is off).
+- Use the 1.5 click method*.
 
 For further strategy information see http://www.minesweeper.info/wiki/Strategy.
 
