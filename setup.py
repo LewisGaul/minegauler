@@ -10,8 +10,10 @@ import numpy # So that all 'dll's are found.
 
 src_direc = join(os.getcwd(), 'src')
 sys.path.append(src_direc)
+# Allow importing direcs from utils.
 os.chdir(src_direc)
 from utils import *
+os.chdir(direcs['main'])
 
 direcs['src'] = src_direc
 direcs['destn'] = join(direcs['main'], 'bin', str(VERSION))
