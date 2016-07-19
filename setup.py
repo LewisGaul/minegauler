@@ -8,106 +8,97 @@ import winshell
 
 import numpy # So that all 'dll's are found.
 
-src_direc = join(os.getcwd(), 'src')
-sys.path.append(src_direc)
-# Allow importing direcs from utils.
-os.chdir(src_direc)
-from utils import *
-os.chdir(direcs['main'])
+# Determine which highscores and scripts to include.
+target = raw_input(
+    "Who is this for?\n" +
+    "1) Home use (default)\n" +
+    "2) New user\n" +
+    "3) Other user\n" +
+    "4) Light\n" +
+    "5) Archive\n"
+    )
 
-direcs['src'] = src_direc
-direcs['destn'] = join(direcs['main'], 'bin', str(VERSION))
-if isdir(direcs['destn']):
-    shutil.rmtree(direcs['destn'], ignore_errors=False)
-if not isdir(direcs['destn']):
-    os.mkdir(direcs['destn'])
+src_direc = 'src' if target == '4' else 'src2'
+sys.path.append(src_direc)
+from constants import *
+
+# Destination directory.
+destn = join('bin', str(VERSION))
+if isdir(destn):
+    shutil.rmtree(destn, ignore_errors=False)
+if not isdir(destn):
+    os.mkdir(destn)
 desktop = winshell.desktop()
 
 sys.argv.append('py2exe') #no need to type in command line
 
-# Determine which highscores and scripts to include.
-##target = raw_input(
-##    "Who is this for?\n" +
-##    "1) Home use (default)\n" +
-##    "2) New user\n" +
-##    "3) Other user\n" +
-##    "4) Light\n" +
-##    "5) Archive\n"
-##    )
-######
-print "Running light.\n"
-target = '4'
-
 if target == '2':
     target = ''
-    with open(join(data_direc, 'data.txt'), 'r') as f:
-        highscores = get_highscores(json.load(f), 1, 'Siwel G')
+    # with open(join(data_direc, 'data.txt'), 'r') as f:
+    #     highscores = get_highscores(json.load(f), 1, 'Siwel G')
 elif target == '3':
     target = raw_input("Input user's name: ")
-    with open(join(data_direc, 'data.txt'), 'r') as f:
-        highscores = get_highscores(json.load(f), name=target)
+    # with open(join(data_direc, 'data.txt'), 'r') as f:
+    #     highscores = get_highscores(json.load(f), name=target)
 elif target == '4':
     target = 'light'
 elif target == '5':
     target = 'archive'
 else:
     target = 'home'
-    with open(join(direcs['data'], 'data.txt'), 'r') as f:
-        highscores = get_highscores(json.load(f))
+    # with open(join(direcs['data'], 'data.txt'), 'r') as f:
+    #     highscores = get_highscores(json.load(f))
 
 
 data_files = [
-    ('images', map(lambda x: join(direcs['images'], x), [
-        'cross1.png',
-        'flag1.png',
-        'mine1.png',
-        'icon.ico',
-        'btn_up.png',
-        'btn_down.png',
-        'btn_down_red.png'
-        ])),
-    (join('images', 'faces'), map(
-        lambda x: join(direcs['images'], 'faces', x), [
-        'active1face.ppm',
-        'ready1face.ppm',
-        'lost1face.ppm',
-        'won1face.ppm'
-        ])),
-    (join(direcs['boards'], 'sample'),
-        glob(join(direcs['boards'], 'sample', '*.mgb'))),
-    ('files', glob(join(direcs['files'], '*.txt'))),
-    (direcs['destn'], [
-        join(direcs['files'], 'README.txt'),
-        join(direcs['main'], 'CHANGELOG.txt')
+    ('images', [join('images', 'icon.ico')]),
+    (join('images', 'faces'), glob(join('images', 'faces', '*.ppm'))),
+    (join('boards', 'sample'), glob(join('boards', 'sample', '*.mgb'))),
+    ('files', glob(join('files', '*.txt'))),
+    ('..', [
+        join('files', 'README.txt'),
+        'CHANGELOG.txt'
         ])
     ]
 
+if target == 'light':
+    data_files += [
+        ('images', map(lambda x: join('images', x + '.png'), [
+            'mine1',
+            'flag1',
+            'cross1',
+            'btn_up',
+            'btn_down',
+            'btn_down_red'
+            ])),
+        ]
+else:
+    data_files += [
+        ('images', glob(join('images', '*.png')))
+        ]
 if target == 'archive':
-    data_files.append(
-        (join(direcs['destn'], 'dist', 'files'), [join(direcs['data'], 'data.txt')]))
-    # Add source code files (not .pyc files).
-    # This should go in the setup function.
-    data_files.append(
-        (join(direcs['destn'], 'src'), glob(join(direcs['src'], '*.*[!c]'))))
+    data_files += [
+        (join(destn, 'dist', 'src'), glob(join(src_direc, '*.*[!c]')))
+        ]
 
 
 py2exe_options = {
     'compressed': True,
     'optimize': 1, # 2 does not work.
-    'dist_dir': join(direcs['destn'], 'dist'),
+    'dist_dir': join(destn, 'dist'),
     'excludes': ['pydoc', 'doctest', 'pdb', 'inspect', 'pyreadline',
         'locale', 'optparse', 'pickle', 'calendar']
     }
 
 scripts = [{
     'dest_base': 'MineGauler', #name of exe
-    'script': join(direcs['src'], 'main.pyw'),
-    'icon_resources': [(1, join(direcs['images'], 'icon.ico'))]
+    'script': join(src_direc, 'main.pyw'),
+    'icon_resources': [(1, join('images', 'icon.ico'))]
     }]
 if target in ['home', 'archive']:
     scripts.append({
-        'dest_base': 'Probabilities', # Name of exe
-        'script': join(direcs['src'], 'probabilities.pyw')
+        'dest_base': 'Probabilities', #name of exe
+        'script': join(src_direc, 'probabilities.pyw')
         })
 
 setup(
@@ -118,17 +109,19 @@ setup(
     name='MineGauler',
     version=VERSION,
     author='Lewis H. Gaul',
-    author_email='minegauler@gmail.com'
+    author_email='minegauler@gmail.com',
+    url='github.com/LewisGaul'
     )
 
-if target not in ['light', 'archive']:
-    with open(join(direcs['destn'], 'dist', 'files', 'data.txt'), 'w') as f:
-        json.dump(highscores, f)
+# if target not in ['light', 'archive']:
+#     with open(join(destn, 'dist', 'files', 'data.txt'), 'w') as f:
+#         json.dump(highscores, f)
 
-shutil.rmtree(join(direcs['main'], 'build'), ignore_errors=True)
+shutil.rmtree('build', ignore_errors=True)
 
-shutil.make_archive(join(direcs['main'], '%sMineGauler%s'%(target, VERSION)),
-    'zip', direcs['destn'])
+shutil.make_archive(join('bin', '%sMineGauler%s'%(target, VERSION)),
+    'zip', destn)
+
 
 # with winshell.shortcut(
 #     join(winshell.desktop(), 'MineGauler.lnk')) as shortcut:
