@@ -1,4 +1,4 @@
-"""Contains functions to be used by multiple scripts."""
+"""Contains utilities to be used by multiple scripts."""
 
 import os
 from os.path import join, dirname, isdir, basename
@@ -28,7 +28,16 @@ direcs['boards'] = join(main_direc, 'boards')
 if not isdir(direcs['boards']):
     os.mkdir(direcs['boards'])
 
-
+def get_nbrs(coord, dims, include=False):
+    # Also belongs in classes...
+    x, y = coord
+    row = [u for u in range(x-1, x+2) if u in range(dims[0])]
+    col = [v for v in range(y-1, y+2) if v in range(dims[1])]
+    nbrs = {(u, v) for u in row for v in col}
+    if not include:
+        #The given coord is not included.
+        nbrs.remove(coord)
+    return nbrs
 
 def where_coords(bool_array):
     # Attach to minefield class?

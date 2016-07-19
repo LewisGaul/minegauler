@@ -25,19 +25,18 @@ from utils import direcs, where_coords
 
 
 class Minefield(object):
-    def __init__(self, settings, mine_coords=None, auto_create=True):
+    def __init__(self, mine_coords=None, auto_create=True, **kwargs):
         self.settings = dict()
         # Store relevant settings.
         self.per_cell = self.detection = 1
         for s in ['diff', 'dims', 'mines']:
-            setattr(self, s, settings[s])
-            self.settings[s] = settings[s]
-        # Origin is assumed to be regular, which may be changed later.
+            setattr(self, s, kwargs[s])
+            self.settings[s] = kwargs[s]
+        # Origin is assumed to be regular - may be changed later.
         self.origin = REGULAR
         self.all_coords = [(i, j) for i in range(self.dims[0])
             for j in range(self.dims[1])]
         self.mines_grid = self.mine_coords = self.completed_grid = None
-
         if mine_coords:
             self.generate_from_list(mine_coords)
             self.setup()
@@ -158,8 +157,8 @@ class Minefield(object):
         with open(path, 'w') as f:
             json.dump(obj, f)
 
-    @staticmethod
-    def deserialise(path):
+    @classmethod
+    def deserialise(cls, path):
         with open(path, 'r') as f:
             obj = json.load(f)
         obj['dims'] = tuple(obj['dims'])
@@ -168,41 +167,43 @@ class Minefield(object):
             settings[s] = obj[s]
         # json stores tuples in list format.
         mine_coords = map(tuple, obj['coords'])
-        return Minefield(settings, mine_coords)
+        return cls(mine_coords, **settings)
 
 
 
 class Game(object):
-    def __init__(self, settings, minefield=None):
-        if type(minefield) is Minefield:
-            self.mf = minefield
-            # As the minefield is passed in it is known.
+    def __init__(self, **kwargs):
+        # Check if a minefield is passed in.
+        if 'minefield' in kwargs and type(kwargs['minefield']) is Minefield:
+            self.mf = kwargs['minefield']
             self.mf.origin = KNOWN
-        elif type(minefield) is list:
-            # If a list is given assume it's a list of mine coordinates.
-            try:
-                self.mf = Minefield(settings, minefield)
-                self.mf.origin = KNOWN
-            except:
-                # Catch any error that this generous assumption causes.
-                pass
+        elif 'mine_coords' in kwargs and type(kwargs['mine_coords']) is list:
+            self.mf = Minefield(**kwargs)
         else:
-            # No need to generate board yet if first_success is True.
-            auto = not settings['first_success']
+            if 'first_success' in kwargs:
+                # No need to generate board yet if first_success is True.
+                auto = not kwargs['first_success']
+            else:
+                auto = True
             # Create a new minefield.
-            self.mf = Minefield(settings, auto_create=auto)
+            self.mf = Minefield(auto_create=auto, **kwargs)
 
-        # Settings may have changed if there is a discrepancy.
-        self.settings = self.mf.settings
-        for s in settings:
-            setattr(self, s, settings[s])
-        self.lives_rem = self.lives
+        self.settings = dict()
+        for s in [i for i in kwargs if i in default_settings]:
+            self.settings[s] = kwargs[s]
+        # Overwrite settings that may have changed if there was a discrepancy
+        # with coords passed in.
+        self.settings.update(self.mf.settings)
+        for s in self.settings:
+            setattr(self, s, self.settings[s])
+        # Get defaults for any missing settings.
+        for s, val in default_settings.items():
+            if not hasattr(self, s):
+                setattr(self, s, val)
 
         self.grid = UNCLICKED * np.ones(self.dims, int)
         self.state = READY
-        self.start_time, self.finish_time = None, None
-        self.left_clicks, self.right_clicks = dict(), dict()
-        self.both_clicks = dict()
+        self.start_time = self.finish_time = None
 
     def __repr__(self):
         return "<Game object%s>" % (", started at %s" % tm.strftime(
@@ -232,7 +233,7 @@ class Game(object):
             return self.mf.bbbv
         else:
             t = tm.time()
-            lost_mf = Minefield(self.settings, auto_create=False)
+            lost_mf = Minefield(auto_create=False, **self.settings)
             lost_mf.mine_coords = self.mf.mine_coords
             # Replace any openings already found with normal clicks (ones).
             lost_mf.completed_grid = np.where(self.grid<0,
@@ -255,7 +256,7 @@ class Game(object):
     def get_3bvps(self):
         """Return the 3bv/s."""
         if self.start_time:
-            return self.get_prop_complete()/self.get_time_passed()
+            return (self.mf.get_3bv() * self.get_prop_complete() / self.get_time_passed())
 
     def get_prop_flagged(self):
         """Calculate the proportion of mines which are being flagged."""
