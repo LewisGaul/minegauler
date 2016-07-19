@@ -8,6 +8,7 @@
 images/
 Latex/
 src2/
+settings.cfg
 *.xlsx
 *.ods
 *.sublime-*
