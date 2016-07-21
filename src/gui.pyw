@@ -89,6 +89,7 @@ class BasicGui(tk.Tk, object):
         # Make main body of GUI.
         self.make_panel()
         self.make_minefield()
+        self.make_menubar()
 
         # Turn off option of resizing window.
         self.resizable(False, False)
@@ -145,17 +146,6 @@ class BasicGui(tk.Tk, object):
             #The given coord is not included.
             nbrs.remove(coord)
         return nbrs
-
-    def run(self):
-        """
-        Final method to finish off any bits that are unique to the class
-        before running the app with mainloop. Every subclass should have its
-        own run method.
-        """
-        # Create menubar.
-        self.menubar = MenuBar(self)
-        self.config(menu=self.menubar)
-        self.mainloop()
 
     # Make the GUI.
     def make_panel(self):
@@ -223,6 +213,30 @@ class BasicGui(tk.Tk, object):
         self.board.unbind('<B1-Motion>')
         self.board.unbind('<B%s-Motion>'%RIGHT_BTN_NUM)
         self.board.unbind('<Control-1>')
+
+    def make_menubar(self):
+        self.menubar = MenuBar(self)
+        self.config(menu=self.menubar)
+        self.menubar.add_item('game', 'command', 'New',
+            command=self.start_new_game, accelerator='F2')
+        self.bind('<F2>', self.start_new_game)
+        self.menubar.add_item('game', 'separator')
+        for i in diff_names:
+            self.menubar.add_item('game', 'radiobutton', i[1], value=i[0],
+                command=self.set_difficulty, variable=self.diff_var)
+        self.menubar.add_item('game', 'separator')
+        self.menubar.add_item('game', 'checkbutton', 'Zoom',
+            command=self.get_zoom, variable=self.zoom_var)
+        self.menubar.add_item('game', 'separator')
+        self.menubar.add_item('game', 'command', 'Exit', command=self.destroy)
+
+        self.menubar.add_item('opts', 'checkbutton', 'Drag-select',
+            variable=self.drag_select_var, command=self.update_settings)
+
+        show_about = lambda: self.show_text('about', 40, 5)
+        self.menubar.add_item('help', 'command', 'About', accelerator='F1',
+            command=show_about)
+        self.bind_all('<F1>', show_about)
 
     @staticmethod
     def get_photoimage(filename, size, bg=None):
@@ -409,8 +423,6 @@ class BasicGui(tk.Tk, object):
         else: #custom, open popup window
             # Don't change the radiobutton until custom is confirmed.
             self.diff_var.set(self.diff)
-            if not self.block_windows:
-                self.get_custom()
         self.start_new_game()
 
     def get_custom(self):
@@ -450,6 +462,9 @@ class BasicGui(tk.Tk, object):
             self.mines = mines
             self.reshape(dims)
 
+        if self.block_windows:
+            self.focus.focus_set()
+            return
         title = 'Custom'
         win = Window(self, title)
         tk.Message(win.mainframe, width=200, text=(
@@ -560,6 +575,7 @@ class BasicGui(tk.Tk, object):
         else:
             self.zoom_var.set(True)
         if self.block_windows:
+            self.focus.focus_set()
             return
         title = 'Zoom'
         win = Window(self, title)
@@ -732,72 +748,36 @@ class TestGui(BasicGui):
 
 
 class MenuBar(tk.Menu, object):
-    def __init__(self, parent, config='basic'):
+    def __init__(self, parent):
         super(MenuBar, self).__init__(parent)
         self.parent = parent
-        self.config = config
-        self.make_game_menu()
-        self.make_options_menu()
-        self.make_help_menu()
+        self.game_menu = tk.Menu(self)
+        self.opts_menu = tk.Menu(self)
+        self.help_menu = tk.Menu(self)
+        self.add_cascade(label='Game', menu=self.game_menu)
+        self.add_cascade(label='Options', menu=self.opts_menu)
+        self.add_cascade(label='Help', menu=self.help_menu)
+        self.game_items = []
+        self.opts_items = []
+        self.help_items = []
 
-    def make_game_menu(self):
-        self.g_menu = tk.Menu(self)
-        self.add_cascade(label='Game', menu=self.g_menu)
+    def add_item(self, menu_, typ, label=None, index='end', **kwargs):
+        items = getattr(self, menu_ + '_items')
+        menu_ = getattr(self, menu_ + '_menu')
+        if type(index) is int and index < 0:
+            index += len(items)
+        menu_.insert(index, typ, label=label, **kwargs)
+        if index == 'end':
+            items.append(label)
+        else:
+            items.insert(index, label)
 
-        self.g_menu.add_command(label='New',
-            command=self.parent.start_new_game, accelerator='F2')
-        self.parent.bind('<F2>', self.parent.start_new_game)
-        if self.config == 'full':
-            self.g_menu.add_command(label='Replay',
-                command=self.parent.replay_game)
-            self.g_menu.add_command(label='Save board',
-                command=self.parent.save_board)
-            self.g_menu.add_command(label='Load board',
-                command=self.parent.load_board)
-            self.g_menu.add_separator()
-            self.g_menu.add_command(label='Current info',
-                command=self.parent.show_info, accelerator='F4')
-            self.parent.bind('<F4>', self.parent.show_info)
-
-        self.g_menu.add_separator()
-        for i in diff_names:
-            self.g_menu.add_radiobutton(label=i[1], value=i[0],
-                variable=self.parent.diff_var, command=self.parent.set_difficulty)
-        self.g_menu.add_separator()
-        self.g_menu.add_checkbutton(label='Zoom', variable=self.parent.zoom_var,
-            command=self.parent.get_zoom)
-        self.g_menu.add_separator()
-        self.g_menu.add_command(label='Exit', command=self.parent.destroy)
-
-    def make_options_menu(self):
-        self.o_menu = tk.Menu(self)
-        self.add_cascade(label='Options', menu=self.o_menu)
-
-        if self.config == 'full':
-            self.o_menu.add_checkbutton(label='FirstAuto',
-                variable=self.parent.first_success_var,
-                command=self.parent.update_settings)
-        self.o_menu.add_checkbutton(label='Drag select',
-            variable=self.parent.drag_select_var,
-            command=self.parent.update_settings)
-
-    def make_help_menu(self):
-        self.h_menu = tk.Menu(self)
-        self.add_cascade(label='Help', menu=self.h_menu)
-        self.h_menu.add_command(label='About', accelerator='F1',
-            command=lambda: self.parent.show_text('about', 40, 5))
-        self.bind_all('<F1>', lambda: self.parent.show_text('about', 40, 5))
-        if self.config == 'full':
-            self.h_menu.add_separator()
-            self.h_menu.add_command(label='Basic rules',
-                command=lambda: self.parent.show_text('rules'))
-            self.h_menu.add_command(label='Special features',
-                command=lambda: self.parent.show_text('features'))
-            self.h_menu.add_command(label='Tips',
-                command=lambda: self.parent.show_text('tips'))
-
-    def set_to_official(self):
-        pass
+    def del_item(self, menu, index):
+        menu = getattr(self, menu + '_menu')
+        items = getattr(self, menu + '_items')
+        menu.delete(index)
+        if index == 'end':
+            items.pop(index)
 
 
 
@@ -859,4 +839,4 @@ class Window(tk.Toplevel, object):
 
 if __name__ == '__main__':
     t = TestGui()
-    t.run()
+    t.mainloop()

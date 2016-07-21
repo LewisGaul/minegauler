@@ -52,18 +52,9 @@ msg_font = ('Times', 10, 'bold')
 class GameGui(BasicGui):
     def __init__(self, **kwargs):
         super(GameGui, self).__init__(**kwargs)
-        # Set variables.
-        self.first_success_var = tk.BooleanVar()
-        self.first_success_var.set(self.first_success)
         self.hide_timer = False
         # Create a minefield stored within the game.
         self.start_new_game()
-
-    def run(self):
-        # Create menubar.
-        self.menubar = MenuBar(self, 'full')
-        self.config(menu=self.menubar)
-        self.mainloop()
 
     # Make the GUI.
     def make_panel(self):
@@ -81,6 +72,34 @@ class GameGui(BasicGui):
         self.timer.place(relx=1, x=-7, rely=0.5, anchor='e')
         self.timer.bind('<Button-%s>'%RIGHT_BTN_NUM, self.toggle_timer)
         self.add_to_bindtags(self.timer, 'panel')
+
+    def make_menubar(self):
+        super(GameGui, self).make_menubar()
+        menu = self.menubar
+        i = menu.game_items.index('New') + 1 - len(menu.game_items)
+        menu.add_item('game', 'command', 'Replay', i,
+            command=self.replay_game)
+        menu.add_item('game', 'command', 'Save board', i,
+            command=self.save_board)
+        menu.add_item('game', 'command', 'Load board', i,
+            command=self.load_board)
+        menu.add_item('game', 'separator', index=i)
+        menu.add_item('game', 'command', 'Current info', i,
+            command=self.show_info, accelerator='F4')
+        self.bind('<F4>', self.show_info)
+
+        self.first_success_var = tk.BooleanVar()
+        self.first_success_var.set(self.first_success)
+        menu.add_item('opts', 'checkbutton', 'FirstAuto', 0,
+            variable=self.first_success_var, command=self.update_settings)
+
+        menu.add_item('help', 'separator')
+        menu.add_item('help', 'command', 'Basic rules',
+            command=lambda: root.show_text('rules'))
+        menu.add_item('help', 'command', 'Special features',
+            command=lambda: root.show_text('features'))
+        menu.add_item('help', 'command', 'Tips',
+            command=lambda: root.show_text('tips'))
 
     # Button actions.
     def left_press(self, coord):
@@ -450,4 +469,4 @@ if __name__ == '__main__':
         with open(join(direcs['files'], 'info.txt'), 'w') as f:
             json.dump({'version': VERSION}, f)
     # Create and run the GUI.
-    GameGui(**settings).run()
+    GameGui(**settings).mainloop()

@@ -1,5 +1,6 @@
 1.2.1 - unreleased
 - Huge improvement in the speed of changing zoom or size of grid.
+- Big improvement on reliability of creating, saving and loading boards.
 
 1.2.0
 - Added simplified game for code release.
