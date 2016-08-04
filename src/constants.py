@@ -60,7 +60,8 @@ default_settings = {
     'detection': 1,
     'drag_select': False,
     'button_size': 16, #pixels
-    'name': ''
+    'name': '',
+    'style': 'original'
     }
 
 bg_colours = {

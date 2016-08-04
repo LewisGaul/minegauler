@@ -37,7 +37,8 @@ class BasicGui(tk.Tk, object):
             'drag_select': False,
             'distance_to': False,
             'button_size': 16, #pixels
-            'first_success': True
+            'first_success': True,
+            'style': 'original'
             }
         # Force standard settings (basic version).
         kwargs['per_cell'] = 1
@@ -149,8 +150,10 @@ class BasicGui(tk.Tk, object):
 
     # Make the GUI.
     def make_panel(self):
-        self.panel = tk.Frame(self, pady=4, height=40)
+        self.panel = tk.Frame(self, height=40, pady=4)
         self.panel.pack(fill='both')
+        # Make the gridded widgets fill the panel.
+        self.panel.columnconfigure(1, weight=1)
         self.face_images = dict()
         # Collect all faces that are in the folder and store in dictionary
         # under filename.
@@ -159,7 +162,7 @@ class BasicGui(tk.Tk, object):
             self.face_images[im_name] = tk.PhotoImage(name=im_name,
                 file=join(direcs['images'], 'faces', im_name + '.ppm'))
         face_frame = tk.Frame(self.panel)
-        face_frame.place(relx=0.5, rely=0.5, anchor='center')
+        face_frame.grid(column=1, padx=4)
         # Create face button which will refresh the board.
         self.face_button = tk.Button(face_frame, bd=4, takefocus=False,
             image=self.face_images['ready1face'], command=self.start_new_game)
@@ -189,10 +192,18 @@ class BasicGui(tk.Tk, object):
         self.board = tk.Canvas(self.mainframe, height=self.dims[0]*btn_size,
             width=self.dims[1]*btn_size, highlightthickness=0)
         self.board.pack()
+        size = 8 * self.button_size
+        self.bg_image = self.get_photoimage(
+            join('styles', self.style, '64btns.png'), size)
+        # Place the background button image in blocks of 8x8, allowing for
+        # large board size without packing more.
+        for i in range(0, 500, 8):
+            for j in range(0, 1000, 8):
+                center = (i + 3.5, j + 3.5)
+                self.set_cell_image(center, self.bg_image, tag=False)
         self.buttons = dict()
         for coord in self.all_coords:
             self.buttons[coord] = Cell(coord, self)
-            self.set_cell_image(coord, self.bg_images['up'], tag=False)
         self.set_button_bindings()
 
     def set_button_bindings(self):
@@ -255,14 +266,15 @@ class BasicGui(tk.Tk, object):
         return ImageTk.PhotoImage(im, name=filename + bg)
 
     def get_images(self):
+        direc = join('styles', self.style)
         # Create the PhotoImages from the png files.
         self.bg_images = dict() #backgrounds
-        self.bg_images['up'] = self.get_photoimage('btn_up.png',
+        self.bg_images['up'] = self.get_photoimage(join(direc, 'btn_up.png'),
             self.button_size)
-        self.bg_images['down'] = self.get_photoimage('btn_down.png',
-            self.button_size)
-        self.bg_images['red'] = self.get_photoimage('btn_down_red.png',
-            self.button_size)
+        self.bg_images['down'] = self.get_photoimage(
+            join(direc, 'btn_down.png'), self.button_size)
+        self.bg_images['red'] = self.get_photoimage(
+            join(direc, 'btn_down_red.png'), self.button_size)
 
         self.mine_images = dict() #mines
         size = self.button_size - 2
@@ -420,10 +432,11 @@ class BasicGui(tk.Tk, object):
             self.diff = self.diff_var.get()
             self.mines = nr_mines[self.diff][self.detection]
             self.reshape(diff_dims[self.diff])
+            self.start_new_game()
         else: #custom, open popup window
             # Don't change the radiobutton until custom is confirmed.
             self.diff_var.set(self.diff)
-        self.start_new_game()
+            self.get_custom()
 
     def get_custom(self):
         def size_slide(num):
@@ -461,6 +474,8 @@ class BasicGui(tk.Tk, object):
             self.close_window(title)
             self.mines = mines
             self.reshape(dims)
+            # Needed here - after window is closed.
+            self.start_new_game()
 
         if self.block_windows:
             self.focus.focus_set()
@@ -510,19 +525,23 @@ class BasicGui(tk.Tk, object):
         self.focus.focus_set()
 
     def reshape(self, dims):
+        old_dims = self.dims
         # This runs if one of the dimensions was previously larger.
         extras = [c for c in self.all_coords if c[0] >= dims[0] or
             c[1] >= dims[1]]
         for coord in extras:
             self.buttons.pop(coord)
-        # This runs if one of the dimensions of the new shape is larger than
-        # the previous.
         self.all_coords = [(i, j) for i in range(dims[0])
             for j in range(dims[1])]
-        new = [c for c in self.all_coords if c[0] >= self.dims[0] or
-            c[1] >= self.dims[1]]
+        # size = 8 * self.button_size
+        # for i in range(0, dims[0], 8):
+        #     for j in range(0, dims[1], 8):
+        #         if (i, j) not in self.buttons:
+        #             center = (i + 3.5, j + 3.5)
+        #             self.set_cell_image(center, self.bg_image, tag=False)
+        new = [c for c in self.all_coords if c[0] >= old_dims[0] or
+            c[1] >= old_dims[1]]
         for coord in new:
-            self.set_cell_image(coord, self.bg_images['up'], tag=False)
             self.buttons[coord] = Cell(coord, self)
         self.board.config(height=self.button_size*dims[0],
             width=self.button_size*dims[1])

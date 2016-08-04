@@ -64,12 +64,12 @@ class GameGui(BasicGui):
         self.mines_label = tk.Label(self.panel, bg='black', fg='red', bd=5,
             relief='sunken', font=('Verdana',11,'bold'),
             textvariable=self.mines_var)
-        self.mines_label.place(x=7, rely=0.5, anchor='w')
+        self.mines_label.grid(row=0, padx=(6, 0))
         self.add_to_bindtags(self.mines_label, 'panel')
 
         # Create and place the timer.
         self.timer = Timer(self.panel)
-        self.timer.place(relx=1, x=-7, rely=0.5, anchor='e')
+        self.timer.grid(row=0, column=2, padx=(0, 6))
         self.timer.bind('<Button-%s>'%RIGHT_BTN_NUM, self.toggle_timer)
         self.add_to_bindtags(self.timer, 'panel')
 
@@ -329,6 +329,13 @@ class GameGui(BasicGui):
         else:
             self.timer.config(fg='red')
 
+    def close_root(self):
+        self.update_settings()
+        with open(join(direcs['main'], 'settings.cfg'), 'w') as f:
+            json.dump(self.settings, f)
+            # print "Saved settings."
+        super(GameGui, self).close_root()
+
     # Game menu methods.
     def start_new_game(self):
         super(GameGui, self).start_new_game()
@@ -461,7 +468,7 @@ if __name__ == '__main__':
         #print "Imported settings: ", settings
     except:
         settings = default_settings
-    # Check for corrupt info.txt file and ensure it contains the version.
+    # Ensure info.txt file contains the version number.
     try:
         with open(join(direcs['files'], 'info.txt'), 'r') as f:
             json.load(f)['version']
