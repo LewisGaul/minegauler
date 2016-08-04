@@ -53,6 +53,7 @@ else:
 data_files = [
     ('images', [join('images', 'icon.ico')]),
     (join('images', 'faces'), glob(join('images', 'faces', '*.ppm'))),
+    (join('images', 'styles'), glob(join('images', 'styles', '*', '*.png'))),
     (join('boards', 'sample'), glob(join('boards', 'sample', '*.mgb'))),
     ('files', glob(join('files', '*.txt'))),
     ('..', [
@@ -66,10 +67,7 @@ if target == 'light':
         ('images', map(lambda x: join('images', x + '.png'), [
             'mine1',
             'flag1',
-            'cross1',
-            'btn_up',
-            'btn_down',
-            'btn_down_red'
+            'cross1'
             ])),
         ]
 else:

@@ -180,8 +180,8 @@ class BasicGui(tk.Tk, object):
         self.panel.bind_class('panel', '<ButtonRelease-1>', panel_click)
 
     def set_cell_image(self, coord, image, tag=True):
-        x = (coord[1] + 0.5) * self.button_size
-        y = (coord[0] + 0.5) * self.button_size
+        x = (coord[1] + 0.49) * self.button_size
+        y = (coord[0] + 0.49) * self.button_size
         tag = 'overlay' if tag else ''
         return self.board.create_image(x, y, image=image, tag=tag)
 
@@ -192,9 +192,6 @@ class BasicGui(tk.Tk, object):
         self.board = tk.Canvas(self.mainframe, height=self.dims[0]*btn_size,
             width=self.dims[1]*btn_size, highlightthickness=0)
         self.board.pack()
-        size = 8 * self.button_size
-        self.bg_image = self.get_photoimage(
-            join('styles', self.style, '64btns.png'), size)
         # Place the background button image in blocks of 8x8, allowing for
         # large board size without packing more.
         for i in range(0, 500, 8):
@@ -268,6 +265,8 @@ class BasicGui(tk.Tk, object):
     def get_images(self):
         direc = join('styles', self.style)
         # Create the PhotoImages from the png files.
+        self.bg_image = self.get_photoimage(join(direc, '64btns.png'),
+            8*self.button_size)
         self.bg_images = dict() #backgrounds
         self.bg_images['up'] = self.get_photoimage(join(direc, 'btn_up.png'),
             self.button_size)
@@ -579,10 +578,11 @@ class BasicGui(tk.Tk, object):
                 self.board.config(height=self.button_size*self.dims[0],
                     width=self.button_size*self.dims[1])
                 self.board.delete('all')
-                for coord in self.buttons:
-                    self.set_cell_image(coord, self.bg_images['up'],
-                        tag=False)
                 self.get_images()
+                for i in range(0, 500, 8):
+                    for j in range(0, 1000, 8):
+                        center = (i + 3.5, j + 3.5)
+                        self.set_cell_image(center, self.bg_image, tag=False)
                 self.nr_font = (self.nr_font[0], 10*self.button_size/17,
                     self.nr_font[2])
             self.close_window(title)
