@@ -66,8 +66,7 @@ default_settings = {
 
 bg_colours = {
     '': (240, 240, 237), #button grey
-   'red':  (255,   0,   0),
-   'blue': (128, 128, 255)
+   'red':  (255,   0,   0)
    }
 
 nr_mines = {

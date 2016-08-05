@@ -265,7 +265,6 @@ class BasicGui(tk.Tk, object):
         self.btn_images['up'] = get_im('btn_up.png')
         self.btn_images['down'] = self.btn_images[0] = get_im('btn_down.png')
         self.btn_images['red'] = get_im('btn_down_red.png')
-        self.btn_images['life'] = get_im('btn_down_life.png')
         for i in range(1, 9):
             self.btn_images[i] = get_im('btn_down%s.png' % i)
 
