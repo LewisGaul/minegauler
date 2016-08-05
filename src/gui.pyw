@@ -1,6 +1,6 @@
 
 import os
-from os.path import join, split, splitext, exists
+from os.path import join, split, splitext, exists, basename
 import Tkinter as tk
 import tkFileDialog, tkMessageBox
 from PIL import Image as PILImage, ImageTk
@@ -36,7 +36,7 @@ class BasicGui(tk.Tk, object):
             'detection': 1,
             'drag_select': False,
             'distance_to': False,
-            'button_size': 16, #pixels
+            'btn_size': 16, #pixels
             'first_success': True,
             'style': 'original'
             }
@@ -72,14 +72,14 @@ class BasicGui(tk.Tk, object):
         self.protocol('WM_DELETE_WINDOW', self.close_root)
         # Set default to be that menus cannot be 'torn off'.
         self.option_add('*tearOff', False)
-        self.nr_font = (nr_font[0], 10*self.button_size/17, nr_font[2])
+        self.nr_font = (nr_font[0], 10*self.btn_size/17, nr_font[2])
         self.msg_font = msg_font
 
         # Set variables.
         self.diff_var = tk.StringVar()
         self.diff_var.set(self.diff)
         self.zoom_var = tk.BooleanVar()
-        if self.button_size != 16:
+        if self.btn_size != 16:
             self.zoom_var.set(True)
         self.drag_select_var = tk.BooleanVar()
         self.drag_select_var.set(self.drag_select)
@@ -180,27 +180,22 @@ class BasicGui(tk.Tk, object):
         self.panel.bind_class('panel', '<ButtonRelease-1>', panel_click)
 
     def set_cell_image(self, coord, image, tag=True):
-        x = (coord[1] + 0.49) * self.button_size
-        y = (coord[0] + 0.49) * self.button_size
+        x = (coord[1] + 0.5) * self.btn_size
+        y = (coord[0] + 0.5) * self.btn_size
         tag = 'overlay' if tag else ''
         return self.board.create_image(x, y, image=image, tag=tag)
 
     def make_minefield(self):
-        btn_size = self.button_size
         self.mainframe = tk.Frame(self, bd=10, relief='ridge')
         self.mainframe.pack()
-        self.board = tk.Canvas(self.mainframe, height=self.dims[0]*btn_size,
-            width=self.dims[1]*btn_size, highlightthickness=0)
+        h, w = (i*self.btn_size for i in self.dims)
+        self.board = tk.Canvas(self.mainframe, height=h, width=w,
+            highlightthickness=0)
         self.board.pack()
-        # Place the background button image in blocks of 8x8, allowing for
-        # large board size without packing more.
-        for i in range(0, 500, 8):
-            for j in range(0, 1000, 8):
-                center = (i + 3.5, j + 3.5)
-                self.set_cell_image(center, self.bg_image, tag=False)
         self.buttons = dict()
         for coord in self.all_coords:
-            self.buttons[coord] = Cell(coord, self)
+            b = self.buttons[coord] = Cell(coord, self)
+            b.bg = self.set_cell_image(coord, self.btn_images['up'], tag=False)
         self.set_button_bindings()
 
     def set_button_bindings(self):
@@ -260,23 +255,24 @@ class BasicGui(tk.Tk, object):
             # Remove alpha (transparency) channel.
             im = PILImage.fromarray(data, mode='RGBA').convert('RGB')
         im = im.resize((size, size), PILImage.ANTIALIAS)
-        return ImageTk.PhotoImage(im, name=filename + bg)
+        name = splitext(basename(filename))[0]
+        return ImageTk.PhotoImage(im, name=name+bg+str(size))
 
     def get_images(self):
-        direc = join('styles', self.style)
+        get_im = lambda f, s=self.btn_size: self.get_photoimage(
+            join('styles', self.style, f), s)
         # Create the PhotoImages from the png files.
-        self.bg_image = self.get_photoimage(join(direc, '64btns_up.png'),
-            8*self.button_size)
-        self.bg_images = dict() #backgrounds
-        self.bg_images['up'] = self.get_photoimage(join(direc, 'btn_up.png'),
-            self.button_size)
-        self.bg_images['down'] = self.get_photoimage(
-            join(direc, 'btn_down.png'), self.button_size)
-        self.bg_images['red'] = self.get_photoimage(
-            join(direc, 'btn_down_red.png'), self.button_size)
+        self.bg_image = get_im('64btns_up.png', 8*self.btn_size)
+        self.btn_images = dict() #backgrounds
+        self.btn_images['up'] = get_im('btn_up.png')
+        self.btn_images['down'] = self.btn_images[0] = get_im('btn_down.png')
+        self.btn_images['red'] = get_im('btn_down_red.png')
+        self.btn_images['life'] = get_im('btn_down_life.png')
+        for i in range(1, 9):
+            self.btn_images[i] = get_im('btn_down%s.png' % i)
 
         self.mine_images = dict() #mines
-        size = self.button_size - 2
+        size = self.btn_size - 2
         for c in bg_colours:
             if not c:
                 key = 1
@@ -286,14 +282,14 @@ class BasicGui(tk.Tk, object):
 
         self.flag_images = dict() #flags
         self.cross_images = dict() #wrong flags
-        size = self.button_size - 6
+        size = self.btn_size - 6
         self.flag_images[1] = self.get_photoimage('flag1.png', size, bg='')
         self.cross_images[1] = self.get_photoimage('cross1.png', size, bg='')
 
     # Button actions.
     def get_mouse_coord(self, event):
         return tuple(
-            map(lambda p: getattr(event, p)/self.button_size, ['y', 'x']))
+            map(lambda p: getattr(event, p)/self.btn_size, ['y', 'x']))
 
     def detect_left_press(self, event=None):
         self.left_button_down = True
@@ -304,6 +300,9 @@ class BasicGui(tk.Tk, object):
             self.left_press(self.mouse_coord)
 
     def detect_left_release(self, event=None):
+        # Catch the case the click wasn't received as a button click.
+        if not self.left_button_down:
+            return
         self.left_button_down = False
         if not self.mouse_coord:
             self.is_both_click = False
@@ -353,7 +352,7 @@ class BasicGui(tk.Tk, object):
                 self.both_motion(cur_coord, self.mouse_coord)
             elif not self.is_both_click or self.drag_select: #left
                 self.left_motion(cur_coord, self.mouse_coord)
-        elif not self.is_both_click: #right
+        elif self.right_button_down and not self.is_both_click: #right
             self.right_motion(cur_coord, self.mouse_coord)
         self.mouse_coord = cur_coord
 
@@ -529,21 +528,18 @@ class BasicGui(tk.Tk, object):
         extras = [c for c in self.all_coords if c[0] >= dims[0] or
             c[1] >= dims[1]]
         for coord in extras:
-            self.buttons.pop(coord)
+            b = self.buttons.pop(coord)
+            b.refresh()
+            self.board.delete(b.bg)
         self.all_coords = [(i, j) for i in range(dims[0])
             for j in range(dims[1])]
-        # size = 8 * self.button_size
-        # for i in range(0, dims[0], 8):
-        #     for j in range(0, dims[1], 8):
-        #         if (i, j) not in self.buttons:
-        #             center = (i + 3.5, j + 3.5)
-        #             self.set_cell_image(center, self.bg_image, tag=False)
         new = [c for c in self.all_coords if c[0] >= old_dims[0] or
             c[1] >= old_dims[1]]
         for coord in new:
-            self.buttons[coord] = Cell(coord, self)
-        self.board.config(height=self.button_size*dims[0],
-            width=self.button_size*dims[1])
+            b = self.buttons[coord] = Cell(coord, self)
+            b.bg = self.set_cell_image(coord, self.btn_images['up'], tag=False)
+        self.board.config(height=self.btn_size*dims[0],
+            width=self.btn_size*dims[1])
         self.dims = dims
         # Check if this is custom.
         if (dims in diff_dims and
@@ -567,29 +563,26 @@ class BasicGui(tk.Tk, object):
                 text = '100'
             if text not in map(str, range(60, 501)): #invalid
                 return
-            old_button_size = self.button_size
-            self.button_size = int(round(int(text)*16.0/100, 0))
-            self.settings['button_size'] = self.button_size
-            if self.button_size == 16:
+            old_btn_size = self.btn_size
+            self.btn_size = int(round(int(text)*16.0/100, 0))
+            self.settings['btn_size'] = self.btn_size
+            if self.btn_size == 16:
                 self.zoom_var.set(False)
             else:
                 self.zoom_var.set(True)
-            if old_button_size != self.button_size:
-                self.board.config(height=self.button_size*self.dims[0],
-                    width=self.button_size*self.dims[1])
+            if old_btn_size != self.btn_size:
+                self.board.config(height=self.btn_size*self.dims[0],
+                    width=self.btn_size*self.dims[1])
                 self.board.delete('all')
                 self.get_images()
-                for i in range(0, 500, 8):
-                    for j in range(0, 1000, 8):
-                        center = (i + 3.5, j + 3.5)
-                        self.set_cell_image(center, self.bg_image, tag=False)
-                self.nr_font = (self.nr_font[0], 10*self.button_size/17,
-                    self.nr_font[2])
+                for coord, b in self.buttons.items():
+                    b.bg = self.set_cell_image(coord, self.btn_images['up'],
+                        tag=False)
             self.close_window(title)
             self.start_new_game()
 
         # Ensure tick on radiobutton is correct.
-        if self.button_size == 16:
+        if self.btn_size == 16:
             self.zoom_var.set(False)
         else:
             self.zoom_var.set(True)
@@ -602,7 +595,7 @@ class BasicGui(tk.Tk, object):
             "Select the desired increase in button size compared to the "
             "default, which should be an integer from 60 to 500."
             )).pack(pady=10)
-        zoom = int(round(100*self.button_size/16.0, 0))
+        zoom = int(round(100*self.btn_size/16.0, 0))
         slider = tk.Scale(win.mainframe, from_=60, to=200, length=140,
             orient='horizontal', showvalue=False, command=slide)
         zoom_entry = tk.Entry(win.mainframe, width=4, justify='right')
@@ -661,7 +654,7 @@ class TestGui(BasicGui):
                 self.click(coord)
         else:
             if b.state == UNCLICKED:
-                b.bg = self.set_cell_image(coord, self.bg_images['down'])
+                b.bg = self.set_cell_image(coord, self.btn_images['down'])
 
     def left_release(self, coord):
         super(TestGui, self).left_release(coord)
@@ -731,7 +724,7 @@ class TestGui(BasicGui):
         # Sink the new neighbouring buttons.
         for c in new_nbrs:
             self.buttons[c].bg = self.set_cell_image(c,
-                self.bg_images['down'])
+                self.btn_images['down'])
 
     def both_release(self, coord):
         super(TestGui, self).both_release(coord)
@@ -760,7 +753,7 @@ class TestGui(BasicGui):
 
     def click(self, coord):
         b = self.buttons[coord]
-        b.bg = self.set_cell_image(coord, self.bg_images['down'])
+        b.bg = self.set_cell_image(coord, self.btn_images['down'])
         b.fg = self.set_cell_image(coord, self.mine_images[1])
         b.state = CLICKED
 
@@ -811,24 +804,23 @@ class Cell(object):
         self.nr = None
         self.bg = None
         self.fg = None
-        self.text = None
+        self.im = None
 
     def refresh(self, del_imgs=True):
         if del_imgs:
-            self.board.delete(self.bg)
             self.board.delete(self.fg)
-            self.board.delete(self.text)
-        self.bg = self.fg = self.text = None
+            self.board.delete(self.im)
+        self.fg = self.im = None
         self.state = UNCLICKED
         self.num_of_flags = 0
         self.mines = 0
         self.nr = None
 
     def incr_flags(self):
-        if self.fg:
-            self.board.delete(self.fg)
+        if self.im:
+            self.board.delete(self.im)
         self.num_of_flags += 1
-        self.fg = self.root.set_cell_image(self.coord,
+        self.im = self.root.set_cell_image(self.coord,
             self.root.flag_images[self.num_of_flags])
         self.state = FLAGGED
         self.mines = self.num_of_flags

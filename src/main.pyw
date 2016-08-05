@@ -111,7 +111,7 @@ class GameGui(BasicGui):
                 self.click(coord)
         else:
             if b.state == UNCLICKED:
-                b.bg = self.set_cell_image(coord, self.bg_images['down'])
+                b.bg = self.set_cell_image(coord, self.btn_images['down'])
 
     def left_release(self, coord):
         super(GameGui, self).left_release(coord)
@@ -170,7 +170,7 @@ class GameGui(BasicGui):
         # Sink the new neighbouring buttons.
         for c in new_nbrs:
             self.buttons[c].bg = self.set_cell_image(c,
-                self.bg_images['down'])
+                self.btn_images['down'])
 
     def both_release(self, coord):
         super(GameGui, self).both_release(coord)
@@ -245,22 +245,12 @@ class GameGui(BasicGui):
 
     def reveal_safe_cell(self, coord):
         b = self.buttons[coord]
-        nr = self.game.mf.completed_grid[coord]
+        nr = self.game.mf.completed_grid.item(coord)
         # Assign the game grid with the numbers which are uncovered.
         self.game.grid.itemset(coord, nr)
-        b.bg = self.set_cell_image(coord, self.bg_images['down'])
+        b.fg = self.set_cell_image(coord, self.btn_images[nr])
         b.state = CLICKED
-        # Display the number unless it is a zero.
-        text = nr if nr else ''
-        try:
-            nr_colour = nr_colours[nr]
-        except KeyError:
-            # In case the number is unusually high.
-            nr_colour = 'black'
-        x = (coord[1] + 0.5) * self.button_size
-        y = (coord[0] + 0.5) * self.button_size - 1
-        b.text = self.board.create_text(x, y, text=text, fill=nr_colour,
-            tag='overlay', font=self.nr_font)
+        b.nr = nr
 
     def finalise_win(self):
         self.game.finish_time = tm.time()
@@ -271,7 +261,7 @@ class GameGui(BasicGui):
         for btn in [b for b in self.buttons.values()
             if b.state in [UNCLICKED, FLAGGED]]:
             n = self.game.mf.mines_grid[btn.coord]
-            btn.fg = self.set_cell_image(btn.coord, self.flag_images[1])
+            btn.im = self.set_cell_image(btn.coord, self.flag_images[1])
             btn.state = FLAGGED
             btn.num_of_flags = n
         self.timer.set_var(min(int(self.game.get_time_passed() + 1), 999))
@@ -286,19 +276,19 @@ class GameGui(BasicGui):
         b.state = MINE
         self.game.state = LOST
         colour = self.get_tk_colour(bg_colours['red'])
-        b.bg = self.set_cell_image(coord, self.bg_images['red'])
-        b.fg = self.set_cell_image(coord, self.mine_images['red1'])
+        b.fg = self.set_cell_image(coord, self.btn_images['red'])
+        b.im = self.set_cell_image(coord, self.mine_images['red1'])
         self.face_button.config(image=self.face_images['lost1face'])
         for c, b in [(btn.coord, btn) for btn in self.buttons.values()
             if btn.state != CLICKED]:
             # Check for incorrect flags.
             if b.state == FLAGGED and self.game.mf.mines_grid[c] == 0:
-                b.fg = self.set_cell_image(c, image=self.cross_images[1])
+                b.im = self.set_cell_image(c, image=self.cross_images[1])
             # Reveal remaining mines.
             elif b.state == UNCLICKED and self.game.mf.mines_grid[c] > 0:
                 b.state = MINE
-                b.bg = self.set_cell_image(c, self.bg_images['down'])
-                b.fg = self.set_cell_image(c, self.mine_images[1])
+                b.fg = self.set_cell_image(c, self.btn_images['down'])
+                b.im = self.set_cell_image(c, self.mine_images[1])
         self.timer.set_var(min(int(self.game.get_time_passed() + 1), 999))
         self.timer.config(fg='red')
 
