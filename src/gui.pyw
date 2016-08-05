@@ -265,7 +265,7 @@ class BasicGui(tk.Tk, object):
     def get_images(self):
         direc = join('styles', self.style)
         # Create the PhotoImages from the png files.
-        self.bg_image = self.get_photoimage(join(direc, '64btns.png'),
+        self.bg_image = self.get_photoimage(join(direc, '64btns_up.png'),
             8*self.button_size)
         self.bg_images = dict() #backgrounds
         self.bg_images['up'] = self.get_photoimage(join(direc, 'btn_up.png'),
