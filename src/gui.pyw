@@ -180,8 +180,7 @@ class BasicGui(tk.Tk, object):
         self.panel.bind_class('panel', '<ButtonRelease-1>', panel_click)
 
     def set_cell_image(self, coord, image, tag=True):
-        x = (coord[1] + 0.5) * self.btn_size
-        y = (coord[0] + 0.5) * self.btn_size
+        y, x = [(p + 0.5)*self.btn_size for p in coord]
         tag = 'overlay' if tag else ''
         return self.board.create_image(x, y, image=image, tag=tag)
 
@@ -259,10 +258,9 @@ class BasicGui(tk.Tk, object):
         return ImageTk.PhotoImage(im, name=name+bg+str(size))
 
     def get_images(self):
-        get_im = lambda f, s=self.btn_size: self.get_photoimage(
-            join('styles', self.style, f), s)
+        get_im = lambda f: self.get_photoimage(
+            join('styles', self.style, f), self.btn_size)
         # Create the PhotoImages from the png files.
-        self.bg_image = get_im('64btns_up.png', 8*self.btn_size)
         self.btn_images = dict() #backgrounds
         self.btn_images['up'] = get_im('btn_up.png')
         self.btn_images['down'] = self.btn_images[0] = get_im('btn_down.png')
@@ -288,8 +286,7 @@ class BasicGui(tk.Tk, object):
 
     # Button actions.
     def get_mouse_coord(self, event):
-        return tuple(
-            map(lambda p: getattr(event, p)/self.btn_size, ['y', 'x']))
+        return tuple(getattr(event, p)/self.btn_size for p in ['y', 'x'])
 
     def detect_left_press(self, event=None):
         self.left_button_down = True
@@ -723,7 +720,7 @@ class TestGui(BasicGui):
             if self.buttons[c].state == UNCLICKED}
         # Sink the new neighbouring buttons.
         for c in new_nbrs:
-            self.buttons[c].bg = self.set_cell_image(c,
+            self.buttons[c].fg = self.set_cell_image(c,
                 self.btn_images['down'])
 
     def both_release(self, coord):

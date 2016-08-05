@@ -169,7 +169,7 @@ class GameGui(BasicGui):
         new_nbrs = {c for c in new_nbrs if self.buttons[c].state == UNCLICKED}
         # Sink the new neighbouring buttons.
         for c in new_nbrs:
-            self.buttons[c].bg = self.set_cell_image(c,
+            self.buttons[c].fg = self.set_cell_image(c,
                 self.btn_images['down'])
 
     def both_release(self, coord):

@@ -6,7 +6,6 @@
 #     READY
 #     ACTIVE
 #     INACTIVE
-#     COLOURED
 #     CREATE
 
 # Minefield origins
@@ -29,6 +28,8 @@ class Minefield(object):
         self.settings = dict()
         # Store relevant settings.
         self.per_cell = self.detection = 1
+        if mine_coords:
+            kwargs['mines'] = len(mine_coords)
         for s in ['diff', 'dims', 'mines']:
             setattr(self, s, kwargs[s])
             self.settings[s] = kwargs[s]
@@ -256,7 +257,8 @@ class Game(object):
     def get_3bvps(self):
         """Return the 3bv/s."""
         if self.start_time:
-            return (self.mf.get_3bv() * self.get_prop_complete() / self.get_time_passed())
+            return (self.mf.bbbv *
+                self.get_prop_complete() / self.get_time_passed())
 
     def get_prop_flagged(self):
         """Calculate the proportion of mines which are being flagged."""
