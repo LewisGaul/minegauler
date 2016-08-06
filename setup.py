@@ -18,20 +18,6 @@ target = raw_input(
     "5) Archive\n"
     )
 
-src_direc = 'src' if target == '4' else 'src2'
-sys.path.append(src_direc)
-from constants import *
-
-# Destination directory.
-destn = join('bin', str(VERSION))
-if isdir(destn):
-    shutil.rmtree(destn, ignore_errors=False)
-if not isdir(destn):
-    os.mkdir(destn)
-desktop = winshell.desktop()
-
-sys.argv.append('py2exe') #no need to type in command line
-
 if target == '2':
     target = ''
     # with open(join(data_direc, 'data.txt'), 'r') as f:
@@ -49,11 +35,26 @@ else:
     # with open(join(direcs['data'], 'data.txt'), 'r') as f:
     #     highscores = get_highscores(json.load(f))
 
+src_direc = 'src' if target == 'light' else 'src2'
+sys.path.append(src_direc)
+from constants import *
+
+# Destination directory.
+destn = join('bin', str(VERSION) + target)
+if isdir(destn):
+    shutil.rmtree(destn, ignore_errors=False)
+if not isdir(destn):
+    os.mkdir(destn)
+desktop = winshell.desktop()
+
+sys.argv.append('py2exe') #no need to type in command line
+
 
 data_files = [
     ('images', [join('images', 'icon.ico')]),
     (join('images', 'faces'), glob(join('images', 'faces', '*.ppm'))),
-    (join('images', 'styles'), glob(join('images', 'styles', '*', '*.png'))),
+    (join('images', 'styles', 'original'),
+        glob(join('images', 'styles', 'original', '*.png'))),
     (join('boards', 'sample'), glob(join('boards', 'sample', '*.mgb'))),
     ('files', glob(join('files', '*.txt'))),
     ('..', [
@@ -121,7 +122,7 @@ shutil.make_archive(join('bin', '%sMineGauler%s'%(target, VERSION)),
     'zip', destn)
 
 
-# with winshell.shortcut(
-#     join(winshell.desktop(), 'MineGauler.lnk')) as shortcut:
-#     shortcut.working_directory = join(dest_direc, 'dist')
-#     shortcut.path = join(shortcut.working_directory, 'MineGauler.exe')
+with winshell.shortcut(
+    join(winshell.desktop(), 'MineGauler.lnk')) as shortcut:
+    shortcut.working_directory = join(destn, 'dist')
+    shortcut.path = join(shortcut.working_directory, 'MineGauler.exe')

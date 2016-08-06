@@ -1,4 +1,3 @@
-
 # Button states are:
 #     UNCLICKED
 #     CLICKED
@@ -95,11 +94,11 @@ class GameGui(BasicGui):
 
         menu.add_item('help', 'separator')
         menu.add_item('help', 'command', 'Basic rules',
-            command=lambda: root.show_text('rules'))
+            command=lambda: self.show_text('rules'))
         menu.add_item('help', 'command', 'Special features',
-            command=lambda: root.show_text('features'))
+            command=lambda: self.show_text('features'))
         menu.add_item('help', 'command', 'Tips',
-            command=lambda: root.show_text('tips'))
+            command=lambda: self.show_text('tips'))
 
     # Button actions.
     def left_press(self, coord):
@@ -111,7 +110,7 @@ class GameGui(BasicGui):
                 self.click(coord)
         else:
             if b.state == UNCLICKED:
-                b.bg = self.set_cell_image(coord, self.btn_images['down'])
+                b.fg = self.set_cell_image(coord, self.btn_images['down'])
 
     def left_release(self, coord):
         super(GameGui, self).left_release(coord)
