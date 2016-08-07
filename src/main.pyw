@@ -130,21 +130,20 @@ class GameGui(BasicGui):
     def right_press(self, coord):
         super(GameGui, self).right_press(coord)
         b = self.buttons[coord]
-        # Check whether drag-clicking should flag or unflag if drag is on.
-        if self.drag_select:
-            if b.state == UNCLICKED:
-                self.drag_flag = FLAG
-            elif b.state == FLAGGED and self.per_cell == 1:
-                self.drag_flag = UNFLAG
-            else:
-                self.drag_flag = None
-        else:
-            self.drag_flag = None
-
         if b.state == UNCLICKED:
             b.incr_flags()
         elif b.state == FLAGGED:
             b.refresh()
+        # Check whether drag-clicking should flag or unflag if drag is on.
+        if self.drag_select:
+            if b.state == UNCLICKED:
+                self.drag_flag = UNFLAG
+            elif b.state == FLAGGED:
+                self.drag_flag = FLAG
+            else:
+                self.drag_flag = None
+        else:
+            self.drag_flag = None
         self.set_mines_counter()
 
     def right_motion(self, coord, prev_coord):
@@ -257,12 +256,11 @@ class GameGui(BasicGui):
         self.timer.start_time = None
         self.game.state = WON
         self.face_button.config(image=self.face_images['won1face'])
-        for btn in [b for b in self.buttons.values()
-            if b.state in [UNCLICKED, FLAGGED]]:
-            n = self.game.mf.mines_grid[btn.coord]
-            btn.im = self.set_cell_image(btn.coord, self.flag_images[1])
-            btn.state = FLAGGED
-            btn.num_of_flags = n
+        for b in self.buttons.values():
+            if b.state in [UNCLICKED, FLAGGED]:
+                n = b.num_of_flags = self.game.mf.mines_grid[b.coord]
+                b.fg = self.set_cell_image(b.coord, self.flag_image)
+                b.state = FLAGGED
         self.timer.set_var(min(int(self.game.get_time_passed() + 1), 999))
         self.timer.config(fg='red')
         self.set_mines_counter()
@@ -274,20 +272,18 @@ class GameGui(BasicGui):
         b = self.buttons[coord]
         b.state = MINE
         self.game.state = LOST
-        colour = self.get_tk_colour(bg_colours['red'])
-        b.fg = self.set_cell_image(coord, self.btn_images['red'])
-        b.im = self.set_cell_image(coord, self.mine_images['red1'])
+        b.fg = self.set_cell_image(coord, self.mine_image_red)
         self.face_button.config(image=self.face_images['lost1face'])
         for c, b in [(btn.coord, btn) for btn in self.buttons.values()
             if btn.state != CLICKED]:
             # Check for incorrect flags.
             if b.state == FLAGGED and self.game.mf.mines_grid[c] == 0:
-                b.im = self.set_cell_image(c, image=self.cross_images[1])
+                self.board.delete(b.fg)
+                b.fg = self.set_cell_image(c, image=self.cross_image)
             # Reveal remaining mines.
             elif b.state == UNCLICKED and self.game.mf.mines_grid[c] > 0:
                 b.state = MINE
-                b.fg = self.set_cell_image(c, self.btn_images['down'])
-                b.im = self.set_cell_image(c, self.mine_images[1])
+                b.fg = self.set_cell_image(c, self.mine_image)
         self.timer.set_var(min(int(self.game.get_time_passed() + 1), 999))
         self.timer.config(fg='red')
 
