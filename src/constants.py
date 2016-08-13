@@ -57,8 +57,7 @@ default_settings = {
     'styles': {
         'buttons': 'standard',
         'numbers': 'standard',
-        'mines': 'standard',
-        'flags': 'standard'
+        'images': 'standard'
         }
     }
 

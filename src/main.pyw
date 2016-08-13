@@ -161,14 +161,16 @@ class GameGui(BasicGui):
     def both_press(self, coord):
         super(GameGui, self).both_press(coord)
         self.face_button.config(image=self.face_images['active1face'])
+        b = self.buttons[coord]
+        if b.state == UNCLICKED:
+            b.refresh()
         # Buttons which neighbour the current selected button.
-        new_nbrs = self.get_nbrs(coord, include=True)
-        # Only consider unclicked cells.
-        new_nbrs = {c for c in new_nbrs if self.buttons[c].state == UNCLICKED}
+        nbrs = self.get_nbrs(coord, include=True)
         # Sink the new neighbouring buttons.
-        for c in new_nbrs:
-            self.buttons[c].fg = self.set_cell_image(c,
-                self.btn_images['down'])
+        for c in nbrs:
+            b = self.buttons[c]
+            if b.state == UNCLICKED:
+                b.fg = self.set_cell_image(c, self.btn_images['down'])
 
     def both_release(self, coord):
         super(GameGui, self).both_release(coord)
@@ -188,8 +190,7 @@ class GameGui(BasicGui):
         for c in {c for c in nbrs if self.buttons[c].state == UNCLICKED}:
             self.buttons[c].refresh()
         # Reset face.
-        if (self.game.state in [READY, ACTIVE] and
-            not (self.left_button_down and self.drag_select)):
+        if self.game.state in [READY, ACTIVE]:
             self.face_button.config(image=self.face_images['ready1face'])
 
     def both_motion(self, coord, prev_coord):
@@ -263,7 +264,7 @@ class GameGui(BasicGui):
                 b.state = FLAGGED
         self.timer.set_var(min(int(self.game.get_time_passed() + 1), 999))
         self.timer.config(fg='red')
-        self.set_mines_counter()
+        self.mines_var.set('000')
 
     def finalise_loss(self, coord):
         self.game.finish_time = tm.time()
@@ -323,8 +324,8 @@ class GameGui(BasicGui):
 
     # Game menu methods.
     def start_new_game(self):
-        super(GameGui, self).start_new_game()
         self.game = Game(**self.settings)
+        super(GameGui, self).start_new_game()
 
     def replay_game(self):
         self.refresh_board()

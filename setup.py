@@ -49,36 +49,49 @@ desktop = winshell.desktop()
 
 sys.argv.append('py2exe') #no need to type in command line
 
+def get_data_files(folder, files, pattern=None):
+    if not type(files) is list:
+        pattern = files
+    if pattern:
+        files = glob(join(folder, pattern))
+    else:
+        files = map(lambda f: join(folder, f), files)
+    return (folder, files)
 
 data_files = [
-    ('images', [join('images', 'icon.ico')]),
-    (join('images', 'faces'), glob(join('images', 'faces', '*.ppm'))),
-    (join('images', 'styles', 'original'),
-        glob(join('images', 'styles', 'original', '*.png'))),
-    (join('boards', 'sample'), glob(join('boards', 'sample', '*.mgb'))),
-    ('files', glob(join('files', '*.txt'))),
-    ('..', [
-        join('files', 'README.txt'),
-        'CHANGELOG.txt'
-        ])
+    ('..', [join('files', 'README.txt'), 'CHANGELOG.txt']),
+    get_data_files(join('boards', 'sample'), '*.mgb'),
+    get_data_files('images', 'icon.ico'),
+    get_data_files('files', '*.txt')
     ]
 
-if target == 'light':
-    data_files += [
-        ('images', map(lambda x: join('images', x + '.png'), [
-            'mine1',
-            'flag1',
-            'cross1'
-            ])),
-        ]
+
+if target == 'light': #sort out
+    data_files.append(get_data_files(join('images', 'faces'), [
+        'active1face.ppm',
+        'ready1face.ppm',
+        'won1face.ppm',
+        'lost1face.ppm'
+        ]))
+    for i in glob(join('images', 'buttons', '*')):
+        data_files.append(get_data_files(i, [
+            'btn_down.png',
+            'btn_up.png',
+            'btn_down_red.png'
+            ]))
+    for i in glob(join('images', 'numbers', '*')):
+        data_files.append(get_data_files(i,
+            map(lambda n: 'num%s.png'%n, range(1, 9))))
+    for i in glob(join('images', 'images', '*')):
+        data_files.append(get_data_files(i, '*1.png'))
 else:
-    data_files += [
-        ('images', glob(join('images', '*.png')))
-        ]
+    data_files.append(get_data_files(join('images', 'faces'), '*.ppm'))
+    for i in ['buttons', 'images', 'numbers']:
+        for j in glob(join('images', i, '*')):
+            data_files.append(get_data_files(j, '*.png'))
 if target == 'archive':
-    data_files += [
-        (join(destn, 'dist', 'src'), glob(join(src_direc, '*.*[!c]')))
-        ]
+    data_files.append(
+        (join(destn, 'dist', 'src'), glob(join(src_direc, '*.*[!c]'))))
 
 
 py2exe_options = {
@@ -108,8 +121,8 @@ setup(
     name='MineGauler',
     version=VERSION,
     author='Lewis H. Gaul',
-    author_email='minegauler@gmail.com',
-    url='github.com/LewisGaul'
+    url=r'github.com/LewisGaul',
+    author_email=r'minegauler@gmail.com'
     )
 
 # if target not in ['light', 'archive']:
@@ -122,7 +135,8 @@ shutil.make_archive(join('bin', '%sMineGauler%s'%(target, VERSION)),
     'zip', destn)
 
 
-with winshell.shortcut(
-    join(winshell.desktop(), 'MineGauler.lnk')) as shortcut:
-    shortcut.working_directory = join(destn, 'dist')
-    shortcut.path = join(shortcut.working_directory, 'MineGauler.exe')
+if target != 'light':
+    with winshell.shortcut(
+        join(winshell.desktop(), 'MineGauler.lnk')) as shortcut:
+        shortcut.working_directory = join(os.getcwd(), destn, 'dist')
+        shortcut.path = join(shortcut.working_directory, 'MineGauler.exe')

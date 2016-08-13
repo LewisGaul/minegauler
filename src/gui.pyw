@@ -74,6 +74,8 @@ class BasicGui(tk.Tk, object):
         self.drag_select_var.set(self.drag_select)
 
         # t = tm.time()
+        self.face_images = dict()
+        self.btn_images = dict()
         self.get_images()
         # print "Time to get images was {:.2f}s.".format(tm.time() - t)
         # Make main body of GUI.
@@ -86,8 +88,8 @@ class BasicGui(tk.Tk, object):
         self.block_windows = False
 
         # Keep track of mouse clicks.
-        self.left_button_down = False
-        self.right_button_down = False
+        self.left_btn_down = False
+        self.right_btn_down = False
         self.mouse_coord = None
         self.is_both_click = False
         self.drag_flag = None
@@ -230,7 +232,7 @@ class BasicGui(tk.Tk, object):
                 style = basename(j)
                 submenu.add_radiobutton(label=style.capitalize(),
                     variable=self.style_vars[i], value=style,
-                    command=lambda: self.update_style(i))
+                    command=self.update_style(i))
         menu.add_item('game', 'separator')
         menu.add_item('game', 'command', 'Exit', command=self.destroy)
 
@@ -247,48 +249,55 @@ class BasicGui(tk.Tk, object):
         im = PILImage.open(join(direcs['images'], filename))
         if overlay:
             overlay = PILImage.open(join(direcs['images'], overlay))
+            if overlay.mode == 'RGB':
+                overlay = overlay.convert('RGBA')
             pos = (80 - overlay.size[0]) / 2
             # Place the overlay on top of the image.
             im.paste(overlay, (pos, pos), overlay)
         im = im.resize((size, size), PILImage.ANTIALIAS)
         return ImageTk.PhotoImage(im)
 
-    def get_images(self):
-        self.face_images = dict()
-        # Collect all faces that are in the folder and store in dictionary
-        # under filename.
-        for path in glob(join(direcs['images'], 'faces', '*.ppm')):
-            im_name = splitext(basename(path))[0]
-            self.face_images[im_name] = tk.PhotoImage(name=im_name,
-                file=join(direcs['images'], 'faces', im_name + '.ppm'))
+    def get_images(self, change='all'):
+        if change in ['all', 'faces']:
+            # Collect all faces that are in the folder and store in dictionary
+            # under filename.
+            for path in glob(join(direcs['images'], 'faces', '*.ppm')):
+                # Remove 'face.ppm' from end of filename.
+                im_name = splitext(basename(path))[0][:-4]
+                self.face_images[im_name] = tk.PhotoImage(name=im_name,
+                    file=join(direcs['images'], 'faces', im_name + 'face.ppm'))
 
+        # Create the PhotoImages from the png files.
         get_im = lambda f1, f2=None: self.get_photoimage(
             join('buttons', self.styles['buttons'], f1), self.btn_size, f2)
-        # Create the PhotoImages from the png files.
-        self.btn_images = dict() #backgrounds
-        self.btn_images['up'] = get_im('btn_up.png')
-        self.btn_images['down'] = self.btn_images[0] = get_im('btn_down.png')
-        self.btn_images['red'] = get_im('btn_down_red.png')
-        for i in range(1, 9):
-            self.btn_images[i] = get_im('btn_down.png',
-                join('numbers', self.styles['numbers'], 'num%s.png'%i))
+        if change in ['all', 'buttons']:
+            self.btn_images['up'] = get_im('btn_up.png')
+            self.btn_images['down'] = get_im('btn_down.png')
+            self.btn_images['red'] = get_im('btn_down_red.png')
+            self.btn_images[0] = self.btn_images['down']
+        if change in ['all', 'numbers', 'buttons']:
+            for i in range(1, 9):
+                self.btn_images[i] = get_im('btn_down.png',
+                    join('numbers', self.styles['numbers'], 'num%s.png'%i))
 
-        self.mine_image = get_im('btn_down.png',
-                join('mines', self.styles['mines'], 'mine1.png'))
-        self.mine_image_red = get_im('btn_down_red.png',
-                join('mines', self.styles['mines'], 'mine1.png'))
-        self.flag_image = get_im('btn_up.png',
-            join('flags', self.styles['flags'], 'flag1.png'))
-        self.cross_image = get_im('btn_up.png',
-            join('flags', self.styles['flags'], 'cross1.png'))
+        if change in ['all', 'images', 'buttons']:
+            path = join('images', self.styles['images'])
+            self.mine_image = get_im('btn_down.png',
+                    join(path, 'mine1.png'))
+            self.mine_image_red = get_im('btn_down_red.png',
+                    join(path, 'mine1.png'))
+            self.flag_image = get_im('btn_up.png',
+                join(path, 'flag1.png'))
+            self.cross_image = get_im('btn_up.png',
+                join(path, 'cross1.png'))
 
     # Button actions.
     def get_mouse_coord(self, event):
         return tuple(getattr(event, p)/self.btn_size for p in ['y', 'x'])
 
     def detect_left_press(self, event=None):
-        self.left_button_down = True
-        if self.right_button_down:
+        self.left_btn_down = True
+        if self.right_btn_down:
             self.both_press(self.mouse_coord)
         else:
             self.mouse_coord = self.get_mouse_coord(event)
@@ -296,13 +305,14 @@ class BasicGui(tk.Tk, object):
 
     def detect_left_release(self, event=None):
         # Catch the case the click wasn't received as a button click.
-        if not self.left_button_down:
+        if not self.left_btn_down:
             return
-        self.left_button_down = False
+        self.left_btn_down = False
         if not self.mouse_coord:
             self.is_both_click = False
+            self.right_btn_down = False
             return
-        if self.right_button_down:
+        if self.right_btn_down:
             self.both_release(self.mouse_coord)
         elif self.is_both_click:
             self.is_both_click = False
@@ -312,19 +322,20 @@ class BasicGui(tk.Tk, object):
             self.mouse_coord = None
 
     def detect_right_press(self, event=None):
-        self.right_button_down = True
-        if self.left_button_down:
+        self.right_btn_down = True
+        if self.left_btn_down:
             self.both_press(self.mouse_coord)
         else:
             self.mouse_coord = self.get_mouse_coord(event)
             self.right_press(self.mouse_coord)
 
     def detect_right_release(self, event=None):
-        self.right_button_down = False
+        self.right_btn_down = False
         if not self.mouse_coord:
             self.is_both_click = False
+            self.left_btn_down = False
             return
-        if self.left_button_down:
+        if self.left_btn_down:
             self.both_release(self.mouse_coord)
         elif self.is_both_click:
             self.is_both_click = False
@@ -342,18 +353,18 @@ class BasicGui(tk.Tk, object):
             return
         if cur_coord is None:
             self.face_button.config(image=self.face_images['ready1face'])
-        if self.left_button_down:
-            if self.right_button_down: #both
+        if self.left_btn_down:
+            if self.right_btn_down: #both
                 self.both_motion(cur_coord, self.mouse_coord)
-            elif not self.is_both_click or self.drag_select: #left
+            elif not self.is_both_click: #left
                 self.left_motion(cur_coord, self.mouse_coord)
-        elif self.right_button_down and not self.is_both_click: #right
+        elif self.right_btn_down and not self.is_both_click: #right
             self.right_motion(cur_coord, self.mouse_coord)
         self.mouse_coord = cur_coord
 
     def detect_ctrl_left_press(self, event=None):
         coord = self.get_mouse_coord(event)
-        if not self.right_button_down:
+        if not self.right_btn_down:
             self.ctrl_left_press(coord)
 
     def left_press(self, coord):
@@ -394,7 +405,7 @@ class BasicGui(tk.Tk, object):
             b.refresh(del_imgs=False)
         self.update_settings()
         self.set_button_bindings()
-        self.left_button_down = self.right_button_down = False
+        self.left_btn_down = self.right_btn_down = False
         self.mouse_coord = self.drag_flag = None
         self.is_both_click = False
 
@@ -609,18 +620,20 @@ class BasicGui(tk.Tk, object):
         self.focus.focus_set()
 
     def update_style(self, change):
-        new_style = self.style_vars[change].get()
-        if new_style == self.styles[change]: #no change
-            return
-        self.styles[change] = new_style
-        self.settings['styles'] = self.styles
-        self.get_images()
-        if change == 'buttons':
-            self.board.delete('all')
-            for coord in self.all_coords:
-                self.buttons[coord].bg = self.set_cell_image(coord,
-                    self.btn_images['up'], tag=False)
-        self.start_new_game()
+        def run():
+            new_style = self.style_vars[change].get()
+            if new_style == self.styles[change]: #no change
+                return
+            self.styles[change] = new_style
+            self.settings['styles'] = self.styles
+            self.get_images(change)
+            if change == 'buttons':
+                self.board.delete('all')
+                for coord in self.all_coords:
+                    self.buttons[coord].bg = self.set_cell_image(coord,
+                        self.btn_images['up'], tag=False)
+            self.start_new_game()
+        return run
 
     # Options menu methods.
     def update_settings(self):
@@ -714,15 +727,16 @@ class TestGui(BasicGui):
 
     def both_press(self, coord):
         super(TestGui, self).both_press(coord)
+        b = self.buttons[coord]
+        if b.state == UNCLICKED:
+            b.refresh()
         # Buttons which neighbour the current selected button.
         new_nbrs = self.get_nbrs(coord, include=True)
-        # Only consider unclicked cells.
-        new_nbrs = {c for c in new_nbrs
-            if self.buttons[c].state == UNCLICKED}
         # Sink the new neighbouring buttons.
         for c in new_nbrs:
-            self.buttons[c].fg = self.set_cell_image(c,
-                self.btn_images['down'])
+            b = self.buttons[c]
+            if b.state == UNCLICKED:
+                b.fg = self.set_cell_image(c, self.btn_images['down'])
 
     def both_release(self, coord):
         super(TestGui, self).both_release(coord)
