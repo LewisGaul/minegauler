@@ -1,6 +1,6 @@
 from distutils.core import setup
 import py2exe, sys, os
-from os.path import join, isdir, dirname
+from os.path import join, isdir, exists
 from glob import glob
 import shutil
 import json
@@ -74,11 +74,11 @@ if target == 'light': #sort out
         'lost1face.ppm'
         ]))
     for i in glob(join('images', 'buttons', '*')):
-        data_files.append(get_data_files(i, [
-            'btn_down.png',
-            'btn_up.png',
-            'btn_down_red.png'
-            ]))
+        exist_files = []
+        for f in ['btn_down.png', 'btn_up.png', 'btn_down_red.png']:
+            if exists(join(i, f)):
+                exist_files.append(f)
+        data_files.append(get_data_files(i, exist_files))
     for i in glob(join('images', 'numbers', '*')):
         data_files.append(get_data_files(i,
             map(lambda n: 'num%s.png'%n, range(1, 9))))

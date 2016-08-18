@@ -140,6 +140,43 @@ class BasicGui(tk.Tk, object):
         return nbrs
 
     # Make the GUI.
+    def make_menubar(self):
+        menu = self.menubar = MenuBar(self)
+        self.config(menu=menu)
+        menu.add_item('game', 'command', 'New',
+            command=self.start_new_game, accelerator='F2')
+        self.bind('<F2>', self.start_new_game)
+        menu.add_item('game', 'separator')
+        for i in diff_names:
+            menu.add_item('game', 'radiobutton', i[1], value=i[0],
+                command=self.set_difficulty, variable=self.diff_var)
+        menu.add_item('game', 'separator')
+        menu.add_item('game', 'checkbutton', 'Zoom',
+            command=self.get_zoom, variable=self.zoom_var)
+        styles_menu = tk.Menu(menu)
+        menu.add_item('game', 'cascade', 'Styles', menu=styles_menu)
+        self.style_vars = dict()
+        for i in ['buttons']:
+            submenu = tk.Menu(styles_menu)
+            styles_menu.add_cascade(label=i.capitalize(), menu=submenu)
+            self.style_vars[i] = tk.StringVar()
+            self.style_vars[i].set(self.styles[i])
+            for j in glob(join(direcs['images'], i, '*')):
+                style = basename(j)
+                submenu.add_radiobutton(label=style.capitalize(),
+                    variable=self.style_vars[i], value=style,
+                    command=self.update_style(i))
+        menu.add_item('game', 'separator')
+        menu.add_item('game', 'command', 'Exit', command=self.destroy)
+
+        menu.add_item('opts', 'checkbutton', 'Drag-select',
+            variable=self.drag_select_var, command=self.update_settings)
+
+        show_about = lambda: self.show_text('about', 40, 5)
+        menu.add_item('help', 'command', 'About', accelerator='F1',
+            command=show_about)
+        self.bind_all('<F1>', show_about)
+
     def make_panel(self):
         self.panel = tk.Frame(self, height=40, pady=4)
         self.panel.pack(fill='both')
@@ -153,7 +190,7 @@ class BasicGui(tk.Tk, object):
             self.face_images[im_name] = tk.PhotoImage(name=im_name,
                 file=join(direcs['images'], 'faces', im_name + '.ppm'))
         face_frame = tk.Frame(self.panel)
-        face_frame.grid(column=1, padx=4)
+        face_frame.place(relx=0.5, rely=0.5, anchor='center')
         # Create face button which will refresh the board.
         self.face_button = tk.Button(face_frame, bd=4, takefocus=False,
             image=self.face_images['ready1face'], command=self.start_new_game)
@@ -207,43 +244,6 @@ class BasicGui(tk.Tk, object):
         self.board.unbind('<B%s-Motion>'%RIGHT_BTN_NUM)
         self.board.unbind('<Control-1>')
 
-    def make_menubar(self):
-        menu = self.menubar = MenuBar(self)
-        self.config(menu=menu)
-        menu.add_item('game', 'command', 'New',
-            command=self.start_new_game, accelerator='F2')
-        self.bind('<F2>', self.start_new_game)
-        menu.add_item('game', 'separator')
-        for i in diff_names:
-            menu.add_item('game', 'radiobutton', i[1], value=i[0],
-                command=self.set_difficulty, variable=self.diff_var)
-        menu.add_item('game', 'separator')
-        menu.add_item('game', 'checkbutton', 'Zoom',
-            command=self.get_zoom, variable=self.zoom_var)
-        styles_menu = tk.Menu(menu)
-        menu.add_item('game', 'cascade', 'Styles', menu=styles_menu)
-        self.style_vars = dict()
-        for i in ['buttons']:
-            submenu = tk.Menu(styles_menu)
-            styles_menu.add_cascade(label=i.capitalize(), menu=submenu)
-            self.style_vars[i] = tk.StringVar()
-            self.style_vars[i].set(self.styles[i])
-            for j in glob(join(direcs['images'], i, '*')):
-                style = basename(j)
-                submenu.add_radiobutton(label=style.capitalize(),
-                    variable=self.style_vars[i], value=style,
-                    command=self.update_style(i))
-        menu.add_item('game', 'separator')
-        menu.add_item('game', 'command', 'Exit', command=self.destroy)
-
-        menu.add_item('opts', 'checkbutton', 'Drag-select',
-            variable=self.drag_select_var, command=self.update_settings)
-
-        show_about = lambda: self.show_text('about', 40, 5)
-        menu.add_item('help', 'command', 'About', accelerator='F1',
-            command=show_about)
-        self.bind_all('<F1>', show_about)
-
     @staticmethod
     def get_photoimage(filename, size, overlay=None):
         im = PILImage.open(join(direcs['images'], filename))
@@ -268,8 +268,20 @@ class BasicGui(tk.Tk, object):
                     file=join(direcs['images'], 'faces', im_name + 'face.ppm'))
 
         # Create the PhotoImages from the png files.
-        get_im = lambda f1, f2=None: self.get_photoimage(
-            join('buttons', self.styles['buttons'], f1), self.btn_size, f2)
+        def get_im(f1, im_type=None, f2=None):
+            # If image isn't present in current style use standard style.
+            path1 = join(direcs['images'], 'buttons',
+                self.styles['buttons'], f1)
+            if not exists(path1):
+                path1 = join(direcs['images'], 'buttons', 'standard', f1)
+            if im_type and f2:
+                path2 = join(direcs['images'], im_type,
+                    self.styles[im_type], f2)
+                if not exists(path2):
+                    path2 = join(direcs['images'], im_type, 'standard', f2)
+            else:
+                path2 = None
+            return self.get_photoimage(path1, self.btn_size, path2)
         if change in ['all', 'buttons']:
             self.btn_images['up'] = get_im('btn_up.png')
             self.btn_images['down'] = get_im('btn_down.png')
@@ -278,18 +290,17 @@ class BasicGui(tk.Tk, object):
         if change in ['all', 'numbers', 'buttons']:
             for i in range(1, 9):
                 self.btn_images[i] = get_im('btn_down.png',
-                    join('numbers', self.styles['numbers'], 'num%s.png'%i))
+                    'numbers', 'num%s.png'%i)
 
         if change in ['all', 'images', 'buttons']:
-            path = join('images', self.styles['images'])
             self.mine_image = get_im('btn_down.png',
-                    join(path, 'mine1.png'))
+                    'images', 'mine1.png')
             self.mine_image_red = get_im('btn_down_red.png',
-                    join(path, 'mine1.png'))
+                    'images', 'mine1.png')
             self.flag_image = get_im('btn_up.png',
-                join(path, 'flag1.png'))
+                'images', 'flag1.png')
             self.cross_image = get_im('btn_up.png',
-                join(path, 'cross1.png'))
+                'images', 'cross1.png')
 
     # Button actions.
     def get_mouse_coord(self, event):

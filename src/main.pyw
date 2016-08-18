@@ -461,5 +461,6 @@ if __name__ == '__main__':
     except:
         with open(join(direcs['files'], 'info.txt'), 'w') as f:
             json.dump({'version': VERSION}, f)
+    print settings
     # Create and run the GUI.
     GameGui(**settings).mainloop()

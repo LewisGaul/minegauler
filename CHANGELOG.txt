@@ -3,6 +3,7 @@
 - Big improvement on reliability of creating, saving and loading boards.
 - Reintroduced multiple mines per cell and lives.
 - Added option to change button style.
+- Improved highscores.
 
 1.2.0
 - Added simplified game for code release.
