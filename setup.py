@@ -6,7 +6,7 @@ import shutil
 import json
 import winshell
 
-import numpy # So that all 'dll's are found.
+import numpy # So that all dll files are found.
 
 # Determine which highscores and scripts to include.
 target = raw_input(
@@ -18,26 +18,27 @@ target = raw_input(
     "5) Archive\n"
     )
 
+names = []
 if target == '2':
     target = ''
-    # with open(join(data_direc, 'data.txt'), 'r') as f:
-    #     highscores = get_highscores(json.load(f), 1, 'Siwel G')
 elif target == '3':
-    target = raw_input("Input user's name: ")
-    # with open(join(data_direc, 'data.txt'), 'r') as f:
-    #     highscores = get_highscores(json.load(f), name=target)
+    name = True
+    while name:
+        name = raw_input("Input user's name: ").strip()
+        names.append(name)
+    target = names[0] if names else ''
 elif target == '4':
     target = 'light'
 elif target == '5':
     target = 'archive'
 else:
     target = 'home'
-    # with open(join(direcs['data'], 'data.txt'), 'r') as f:
-    #     highscores = get_highscores(json.load(f))
 
 src_direc = 'src' if target == 'light' else 'src2'
-sys.path.append(src_direc)
+sys.path.append(src_direc) #allow the following imports
 from constants import *
+if target != 'light':
+    import highscore_utils
 
 # Destination directory.
 destn = join('bin', str(VERSION) + target)
@@ -90,8 +91,9 @@ else:
         for j in glob(join('images', i, '*')):
             data_files.append(get_data_files(j, '*.png'))
 if target == 'archive':
-    data_files.append(
-        (join(destn, 'dist', 'src'), glob(join(src_direc, '*.*[!c]'))))
+    data_files.append((join(destn, 'src'), glob(join(src_direc, '*.*[!c]'))))
+if target in ['home', 'archive']:
+    data_files.append(join(destn, 'files'), [join('data', 'highscores.json')])
 
 
 py2exe_options = {
@@ -125,9 +127,11 @@ setup(
     author_email=r'minegauler@gmail.com'
     )
 
-# if target not in ['light', 'archive']:
-#     with open(join(destn, 'dist', 'files', 'data.txt'), 'w') as f:
-#         json.dump(highscores, f)
+if target not in ['light', 'home', 'archive']:
+    names.append('Siwel G')
+    highscores = highscore_utils.get_personal(names)
+    with open(join(destn, 'dist', 'files', 'highscores.json'), 'w') as f:
+        json.dump(highscores, f)
 
 shutil.rmtree('build', ignore_errors=True)
 
@@ -135,7 +139,7 @@ shutil.make_archive(join('bin', '%sMineGauler%s'%(target, VERSION)),
     'zip', destn)
 
 
-if target != 'light':
+if target in ['', 'home', 'archive']:
     with winshell.shortcut(
         join(winshell.desktop(), 'MineGauler.lnk')) as shortcut:
         shortcut.working_directory = join(os.getcwd(), destn, 'dist')
