@@ -1,8 +1,9 @@
 1.2.2 - unreleased
 - Added pause function.
-- Added back retrieve highscores.
+- Added retrieve highscores.
 - Improved highscores.
 - Improved probability calculator to work with multiple mines per cell.
+- Fixed icon bug.
 
 1.2.1
 - Added option to change button style.

@@ -5,6 +5,7 @@ from glob import glob
 import shutil
 import json
 import winshell
+import tempfile
 
 import numpy # So that all dll files are found.
 
@@ -17,6 +18,17 @@ target = raw_input(
     "4) Light\n" +
     "5) Archive\n"
     )
+
+sys.argv.append('py2exe') #no need to type in command line
+
+# Ensure icon works by running setup twice (py2exe bug).
+tf = tempfile.NamedTemporaryFile(delete=False)
+tf.close()
+setup(windows = [{
+    'script': tf.name,
+    'icon_resources': [(1, join('images', 'icon.ico'))]}]
+)
+os.remove(tf.name)
 
 names = []
 if target == '2':
@@ -47,8 +59,6 @@ if isdir(destn):
 if not isdir(destn):
     os.mkdir(destn)
 desktop = winshell.desktop()
-
-sys.argv.append('py2exe') #no need to type in command line
 
 def get_data_files(folder, files, pattern=None):
     if not type(files) is list:
@@ -91,9 +101,9 @@ else:
         for j in glob(join('images', i, '*')):
             data_files.append(get_data_files(j, '*.png'))
 if target == 'archive':
-    data_files.append((join(destn, 'src'), glob(join(src_direc, '*.*[!c]'))))
+    data_files.append(('src', glob(join(src_direc, '*.*[!c]'))))
 if target in ['home', 'archive']:
-    data_files.append(join(destn, 'files'), [join('data', 'highscores.json')])
+    data_files.append(('files', [join('data', 'highscores.json')]))
 
 
 py2exe_options = {
@@ -134,12 +144,13 @@ if target not in ['light', 'home', 'archive']:
         json.dump(highscores, f)
 
 shutil.rmtree('build', ignore_errors=True)
+shutil.rmtree('dist', ignore_errors=True) #dummy exe
 
 shutil.make_archive(join('bin', '%sMineGauler%s'%(target, VERSION)),
     'zip', destn)
 
 
-if target in ['', 'home', 'archive']:
+if target in ['home', 'archive']:
     with winshell.shortcut(
         join(winshell.desktop(), 'MineGauler.lnk')) as shortcut:
         shortcut.working_directory = join(os.getcwd(), destn, 'dist')
