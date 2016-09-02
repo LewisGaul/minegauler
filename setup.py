@@ -4,47 +4,49 @@ from os.path import join, isdir, exists
 from glob import glob
 import shutil
 import json
-import winshell
 import tempfile
+if sys.platform == 'win32':
+    import winshell
 
 import numpy # So that all dll files are found.
 
 # Determine which highscores and scripts to include.
 target = raw_input(
     "Who is this for?\n" +
-    "1) Home use (default)\n" +
-    "2) New user\n" +
-    "3) Other user\n" +
-    "4) Light\n" +
-    "5) Archive\n"
+    "1) New user (default)\n" +
+    "2) Other user\n" +
+    "3) Home use\n" +
+    "4) Archive\n"
+    "5) Light\n"
     )
+
+names = []
+if target == '2':
+    name = True
+    while name:
+        name = raw_input("Input user's name: ").strip()
+        names.append(name)
+    target = names[0] if names else ''
+elif target == '3':
+    target = 'home'
+elif target == '4':
+    target = 'archive'
+elif target == '5':
+    target = 'light'
+else:
+    target = ''
 
 sys.argv.append('py2exe') #no need to type in command line
 
 # Ensure icon works by running setup twice (py2exe bug).
 tf = tempfile.NamedTemporaryFile(delete=False)
 tf.close()
+print "RUNNING DUMMY COMPILE"
 setup(windows = [{
     'script': tf.name,
     'icon_resources': [(1, join('images', 'icon.ico'))]}]
 )
 os.remove(tf.name)
-
-names = []
-if target == '2':
-    target = ''
-elif target == '3':
-    name = True
-    while name:
-        name = raw_input("Input user's name: ").strip()
-        names.append(name)
-    target = names[0] if names else ''
-elif target == '4':
-    target = 'light'
-elif target == '5':
-    target = 'archive'
-else:
-    target = 'home'
 
 src_direc = 'src' if target == 'light' else 'src2'
 sys.path.append(src_direc) #allow the following imports
@@ -76,7 +78,6 @@ data_files = [
     get_data_files('files', '*.txt')
     ]
 
-
 if target == 'light': #sort out
     data_files.append(get_data_files(join('images', 'faces'), [
         'active1face.ppm',
@@ -100,6 +101,14 @@ else:
     for i in ['buttons', 'images', 'numbers']:
         for j in glob(join('images', i, '*')):
             data_files.append(get_data_files(j, '*.png'))
+    # Move this above if needed in light version.
+    for i in glob(join('images', 'frames', '*')):
+        exist_files = []
+        for f in ['frame_topleft.png', 'frame_right.png', 'frame_bottom.png',
+            'frame_corner.png']:
+            if exists(join(i, f)):
+                exist_files.append(f)
+        data_files.append(get_data_files(i, exist_files))
 if target == 'archive':
     data_files.append(('src', glob(join(src_direc, '*.*[!c]'))))
 if target in ['home', 'archive']:
@@ -125,6 +134,7 @@ if target in ['home', 'archive']:
         'script': join(src_direc, 'probabilities.pyw')
         })
 
+print "\nRUNNING MINEGAULER COMPILE"
 setup(
     windows=scripts,
     options={'py2exe': py2exe_options},
@@ -143,14 +153,16 @@ if target not in ['light', 'home', 'archive']:
     with open(join(destn, 'dist', 'files', 'highscores.json'), 'w') as f:
         json.dump(highscores, f)
 
+print "\nREMOVING BUILD FOLDERS"
 shutil.rmtree('build', ignore_errors=True)
 shutil.rmtree('dist', ignore_errors=True) #dummy exe
 
+print "COMPRESSING"
 shutil.make_archive(join('bin', '%sMineGauler%s'%(target, VERSION)),
     'zip', destn)
 
-
 if target in ['home', 'archive']:
+    print "CREATING SHORTCUT"
     with winshell.shortcut(
         join(winshell.desktop(), 'MineGauler.lnk')) as shortcut:
         shortcut.working_directory = join(os.getcwd(), destn, 'dist')
