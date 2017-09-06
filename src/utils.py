@@ -1,6 +1,9 @@
 
 
 
+im_direc = r'../images/'
+
+
 def prettify_grid(grid, repr_map=dict(), cell_size=1):
     ret = ''
     for row in grid:

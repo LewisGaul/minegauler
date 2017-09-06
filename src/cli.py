@@ -56,7 +56,7 @@ class GameCLI:
     def get_click(self):
         """Get the user to choose a coordinate to be clicked."""
         print("Enter a coordinate in the form (x, y)," +
-              "where the top-left is (1, 1): ", end='')
+              " where the top-left is (1, 1): ", end='')
         prompt = "Invalid coordinate entered."
         coord = self.get_coord(1, 1, self.procr.x_size, self.procr.y_size,
                                prompt)
@@ -72,7 +72,7 @@ class GameCLI:
         """Provides callable for performing a click (top-left is (1, 1))."""
         self.procr.click(x-1, y-1)
 
-    def reveal_safe_cell(self, x, y):
+    def reveal_cell(self, x, y):
         pass
 
     def finalise_loss(self):
@@ -83,3 +83,9 @@ class GameCLI:
     def finalise_win(self):
         print("\nYou won!")
         self.print_current_board()
+
+    def flag(self, x, y):
+        pass
+
+    def unflag(self, x, y):
+        pass

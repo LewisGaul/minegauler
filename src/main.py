@@ -4,7 +4,8 @@ The following characters representations are used:
     'U' - unclicked
     'F' - flag
     'M' - mine
-    '!' - hit mine
+    '!' - hit mine (game over)
+    'L' - life lost (mine hit but not game over)
     'X' - incorrect flag
 """
 
@@ -14,7 +15,7 @@ import time as tm
 from minefield import Minefield
 from cli import GameCLI
 from gui import GameGUI
-from utils import get_nbrs
+from utils import get_nbrs, prettify_grid
 
 
 # Import settings here.
@@ -89,6 +90,8 @@ class Processor:
         self.game = Game(self.settings)
 
     def click(self, x, y, check_for_win=True):
+        if self.game.board[y][x] != 'U':
+            return
         if self.game.state == Game.READY:
             safe_coords = (get_nbrs(x, y, self.x_size, self.y_size)
                            if self.first_success else [])
@@ -98,19 +101,22 @@ class Processor:
         cell = self.game.mf.completed_board[y][x]
         if type(cell) is str:   # Mine hit, game over
             hit = '!' + (str(self.game.mf[y][x])
-                          if self.max_per_cell > 1 else '')
+                         if self.max_per_cell > 1 else '')
             self.game.board[y][x] = hit
+            # self.ui.reveal_cell(x, y)
             self.finalise_loss()
-            return
+            return      # No need to check for win
         elif cell == 0:         # Opening hit
             for opening in self.game.mf.openings:
                 if (x, y) in opening:
                     break # Work with this set of coords
             for (x, y) in opening:
                 if self.game.board[y][x] == 'U':
-                    self.reveal_safe_cell(x, y)
-        else:
-            self.reveal_safe_cell(x, y)
+                    self.game.board[y][x] = self.game.mf.completed_board[y][x]
+                    self.ui.reveal_cell(x, y)
+        else:                   # Number revealed
+            self.game.board[y][x] = self.game.mf.completed_board[y][x]
+            self.ui.reveal_cell(x, y)
         if check_for_win and self.check_is_game_won():
             self.finalise_win()
 
@@ -118,10 +124,16 @@ class Processor:
         self.game.end_time = tm.time()
         self.game.state = Game.LOST
         for (x, y) in self.game.mf.all_coords:
-            if self.game.mf[y][x] > 0 and self.game.board[y][x] == 'U':
-                mine = 'M' + (str(self.game.mf[y][x])
-                              if self.max_per_cell > 1 else '')
+            board_cell = self.game.board[y][x]
+            mines = self.game.mf[y][x]
+            if mines > 0 and board_cell == 'U':
+                mine = 'M' + (str(mines) if self.max_per_cell > 1 else '')
                 self.game.board[y][x] = mine
+            elif (str(board_cell)[0] == 'F'
+                  and board_cell != self.game.mf.completed_board[y][x]):
+                cross = 'X' + (str(mines) if self.max_per_cell > 1 else '')
+                self.game.board[y][x] = cross
+        # print(prettify_grid(self.game.board))
         self.ui.finalise_loss()
 
     def finalise_win(self):
@@ -140,12 +152,20 @@ class Processor:
                 return False
         return True
 
-    def reveal_safe_cell(self, x, y):
-        self.game.board[y][x] = self.game.mf.completed_board[y][x]
-        self.ui.reveal_safe_cell(x, y)
+    def toggle_flag(self, x, y):
+        val = self.game.board[y][x]
+        if val == 'U':
+            self.game.board[y][x] = 'F'
+            self.ui.flag(x, y)
+            print(1)
+        elif val == 'F':
+            self.game.board[y][x] = 'U'
+            self.ui.unflag(x, y)
 
 
 class Game:
+    """Store attributes of a game such as the minefield, the start and end time
+    etc.""" ###### Needs tidying up.
     READY = 'ready'
     ACTIVE = 'active'
     LOST = 'lost'
