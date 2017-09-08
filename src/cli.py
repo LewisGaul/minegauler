@@ -8,7 +8,6 @@ from utils import prettify_grid
 class GameCLI:
     def __init__(self, processor):
         self.procr = processor
-        self.choose_settings()
 
     def choose_settings(self):
         diff = None
@@ -43,14 +42,12 @@ class GameCLI:
         else:
             self.procr.change_difficulty(diff[0])
 
-    def print_current_board(self):
-        print(prettify_grid(self.procr.game.board, {0:'-', 'U':'#'}))
-
     def start(self):
         """This is the CLI equivalent of 'mainloop'."""
+        self.choose_settings()
         while self.procr.game.state in [self.procr.game.READY,
                                         self.procr.game.ACTIVE]:
-            self.print_current_board()
+            self.procr.game.print_board()
             self.get_click()
 
     def get_click(self):
@@ -77,15 +74,18 @@ class GameCLI:
 
     def finalise_loss(self):
         print("\nYou hit a mine!")
-        self.print_current_board()
+        self.procr.game.print_board()
         print("Game over")
 
     def finalise_win(self):
         print("\nYou won!")
-        self.print_current_board()
+        self.procr.game.print_board()
 
     def flag(self, x, y):
         pass
 
     def unflag(self, x, y):
+        pass
+
+    def start_new_game(self):
         pass

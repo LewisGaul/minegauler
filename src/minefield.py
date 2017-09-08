@@ -77,8 +77,7 @@ class Minefield(list):
             mines = self[y][x]
             if mines > 0:
                 # print((x, y))
-                flag = 'F' + (str(mines) if self.max_per_cell > 1 else '')
-                self.completed_board[y][x] = flag
+                self.completed_board[y][x] = 'F' + str(mines)
                 # print(prettify_grid(self.completed_board))
                 for (i, j) in get_nbrs(x, y, self.x_size, self.y_size):
                     # print("  ", (i, j), self[j][i])

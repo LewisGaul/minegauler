@@ -50,8 +50,10 @@ class Processor:
                  else default_settings[attr])
             setattr(self, attr, s)
             self.settings[attr] = s
-        self.start_new_game()
+        self.ui = GameCLI(self) #### HACK - use CLI to get settings
+        self.ui.choose_settings()
         self.ui = GameUI(self)
+        self.start_new_game()
         self.ui.start()
 
     def update_settings(self):
@@ -88,6 +90,7 @@ class Processor:
 
     def start_new_game(self):
         self.game = Game(self.settings)
+        self.ui.start_new_game()
 
     def click(self, x, y, check_for_win=True):
         if self.game.board[y][x] != 'U':
@@ -100,9 +103,7 @@ class Processor:
             self.game.start_time = tm.time()
         cell = self.game.mf.completed_board[y][x]
         if type(cell) is str:   # Mine hit, game over
-            hit = '!' + (str(self.game.mf[y][x])
-                         if self.max_per_cell > 1 else '')
-            self.game.board[y][x] = hit
+            self.game.board[y][x] = '!' + str(self.game.mf[y][x])
             # self.ui.reveal_cell(x, y)
             self.finalise_loss()
             return      # No need to check for win
@@ -127,12 +128,10 @@ class Processor:
             board_cell = self.game.board[y][x]
             mines = self.game.mf[y][x]
             if mines > 0 and board_cell == 'U':
-                mine = 'M' + (str(mines) if self.max_per_cell > 1 else '')
-                self.game.board[y][x] = mine
+                self.game.board[y][x] = 'M' + str(mines)
             elif (str(board_cell)[0] == 'F'
                   and board_cell != self.game.mf.completed_board[y][x]):
-                cross = 'X' + (str(mines) if self.max_per_cell > 1 else '')
-                self.game.board[y][x] = cross
+                self.game.board[y][x] = 'X' + board_cell[1]
         # print(prettify_grid(self.game.board))
         self.ui.finalise_loss()
 
@@ -141,9 +140,7 @@ class Processor:
         self.game.state = Game.WON
         for (x, y) in self.game.mf.all_coords:
             if self.game.mf[y][x] > 0:
-                flag = 'F' + (str(self.game.mf[y][x])
-                              if self.max_per_cell > 1 else '')
-                self.game.board[y][x] = flag
+                self.game.board[y][x] = 'F' + str(self.game.mf[y][x])
         self.ui.finalise_win()
 
     def check_is_game_won(self):
@@ -153,14 +150,19 @@ class Processor:
         return True
 
     def toggle_flag(self, x, y):
+        """The given cell must either be unclicked or flagged (otherwise it is
+        unclickable)."""
         val = self.game.board[y][x]
         if val == 'U':
-            self.game.board[y][x] = 'F'
-            self.ui.flag(x, y)
-            print(1)
-        elif val == 'F':
+            self.game.board[y][x] = 'F1'
+            self.ui.flag(x, y, 1)
+        elif val == 'F' + str(self.max_per_cell):
             self.game.board[y][x] = 'U'
             self.ui.unflag(x, y)
+        else:
+            flags = int(val[1]) + 1
+            self.game.board[y][x] = 'F' + str(flags)
+            self.ui.flag(x, y, flags)
 
 
 class Game:
@@ -194,6 +196,13 @@ class Game:
         if self.start_time:
             ret += " Started at %s." % tm.strftime('%H:%M, %d %b %Y', tm.localtime(self.start_time))
         return ret
+
+    def print_board(self):
+        replace = {0:'-', 'U':'#'}
+        if self.max_per_cell == 1:
+            for char in ['M', 'F', '!', 'X', 'L']:
+                replace[char + '1'] = char
+        print(prettify_grid(self.board, replace))
 
     def create_minefield(self, safe_coords=[]):
         self.mf.create(self.nr_mines, self.max_per_cell, safe_coords)
@@ -240,9 +249,6 @@ class Game:
         if self.start_time:
             return (self.mf.bbbv *
                 self.get_prop_complete() / self.get_time_passed())
-
-    def get_prop_flagged(self):
-        """Calculate the proportion of mines which are being flagged."""
 
 
 
