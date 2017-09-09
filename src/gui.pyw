@@ -12,7 +12,16 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QIcon
 from PyQt5.QtCore import pyqtSignal, Qt, QSize
 
-from utils import im_direc
+from utils import im_direc, get_nbrs
+
+
+def QMouseButton_to_int(QMouseButton):
+    if QMouseButton == Qt.LeftButton:
+        return int(Qt.LeftButton)
+    elif QMouseButton == Qt.RightButton:
+        return int(Qt.RightButton)
+    elif QMouseButton == Qt.LeftButton | Qt.RightButton:
+        return int(Qt.LeftButton | Qt.RightButton)
 
 
 app = QApplication(sys.argv)
@@ -22,13 +31,15 @@ class GameGUI(QMainWindow):
     styles = {'buttons': 'pi',
               'numbers': 'standard',
               'markers':  'standard'}
+    drag_select = False
     def __init__(self, processor):
         super().__init__()
         self.setWindowTitle('MineGaulerQt')
         self.procr = processor
-        self.settings = {'btn_size': self.btn_size, 'styles': self.styles}
+        self.settings = dict()
+        for attr in ['btn_size', 'styles', 'drag_select']:
+            self.settings[attr] = getattr(self, attr)
         self.setupUI()
-
     def setupUI(self):
         centralWidget = QWidget(self)
         self.setCentralWidget(centralWidget)
@@ -62,64 +73,93 @@ class GameGUI(QMainWindow):
         hstretch.addStretch()
         vlayout.addLayout(hstretch)
         lyt = QVBoxLayout(self.body)
-        self.minefield_widget = MinefieldWidget(self.body, self.procr,
+        self.minefield_widget = MinefieldWidget(self.body, self.procr, self,
                                                 self.settings)
         lyt.setContentsMargins(0, 0, 0, 0)
         lyt.addWidget(self.minefield_widget)
         self.setMaximumSize(self.body.width(),
                             self.panel.height() + self.body.height())
-
     def start(self):
         self.move(500, 150)
         self.show()
-        return app.exec_()
-
+        sys.exit(app.exec_())
     def reveal_cell(self, x, y):
+        """Make the cell at (x, y) show the same as is contained in the current
+        game board."""
         b = self.minefield_widget.buttons[y][x]
-        b.reveal(self.procr.game.board[y][x])
-
+        contents = self.procr.game.board[y][x]
+        if type(contents) is int:
+            im_type = 'btn'
+            num = contents
+        elif type(contents) is str:
+            char = contents[0]
+            num = int(contents[1])
+            if char == 'F':
+                im_type = 'flag'
+            elif char == 'M':
+                im_type = 'mine'
+            elif char == '!':
+                im_type = 'hit'
+            elif char == 'X':
+                im_type = 'cross'
+            elif char == 'L':
+                im_type = 'life'
+        b.set_image(im_type, num)
     def finalise_loss(self):
-        self.panel.face_button.set_face('lost', 1)
+        self.set_face('lost', 1)
         for (x, y) in self.procr.game.mf.all_coords:
             b = self.minefield_widget.buttons[y][x]
-            b.remove_clickability()
+            b.remove_interaction()
             board_cell = self.procr.game.board[y][x]
             if str(board_cell)[0] in ['M', '!', 'X']:
-                b.reveal(board_cell)
-
+                self.reveal_cell(x, y)
     def finalise_win(self):
-        self.panel.face_button.set_face('won', 1)
+        self.set_face('won', 1)
         for (x, y) in self.procr.game.mf.all_coords:
             b = self.minefield_widget.buttons[y][x]
-            b.remove_clickability()
+            b.remove_interaction()
             n = self.procr.game.mf[y][x]
             if n > 0:
-                b.setPixmap(self.flag_images[n])
-
+                self.reveal_cell(x, y)
+                # b.setPixmap(self.flag_images[n])
     def flag(self, x, y, n):
-        b = self.buttons[y][x]
-        b.setPixmap(self.flag_images[n])
-        b.is_clickable = False
+        b = self.minefield_widget.buttons[y][x]
+        b.setPixmap(self.minefield_widget.flag_images[n])
+        b.pressed.disconnect()
+        b.areaPressed.disconnect()
+        b.areaReleased.disconnect()
+        if not self.drag_select:
+            b.released.disconnect()
+            b.clicked.disconnect()
     def unflag(self, x, y):
-        b = self.buttons[y][x]
-        b.setPixmap(self.btn_images['up'])
-        b.is_clickable = True
-
+        b = self.minefield_widget.buttons[y][x]
+        b.refresh()
+    def set_face(self, state, life=1):
+        fname = 'face' + str(life) + state + '.png'
+        pixmap = QPixmap(join(im_direc, 'faces', fname))
+        self.panel.face_button.setPixmap(pixmap.scaled(26, 26,
+                                         transformMode=Qt.SmoothTransformation))
     def start_new_game(self):
-        self.panel.face_button.set_face('ready', 1)
+        self.set_face('ready', 1)
         for (x, y) in self.procr.game.mf.all_coords:
             self.minefield_widget.buttons[y][x].refresh()
 
 
 class MinefieldWidget(QWidget):
-    def __init__(self, parent, processor, settings):
+    def __init__(self, parent, processor, gui, settings):
         super().__init__(parent)
         self.procr = processor
-        for attr in ['btn_size', 'styles']:
+        self.gui = gui
+        self.x_size, self.y_size = self.procr.x_size, self.procr.y_size
+        self.all_coords = [(i, j) for i in range(self.x_size)
+                           for j in range(self.y_size)]
+        for attr in ['btn_size', 'styles', 'drag_select']:
             setattr(self, attr, settings[attr])
         self.populate()
         self.get_pixmaps()
         self.mouse_coord = None
+        self.both_mouse_buttons_pressed = False
+        self.mouse_buttons_down = Qt.NoButton
     def populate(self):
         layout = QGridLayout(self)
         layout.setSpacing(0)
@@ -182,86 +222,122 @@ class MinefieldWidget(QWidget):
                     'markers', 'flag{}.png'.format(i), 5/8))
                 self.cross_images.append(self.make_pixmap('btn_up.png',
                     'markers', 'cross{}.png'.format(i), 5/8))
-
     def mousePressEvent(self, event):
         x, y = event.x() // self.btn_size, event.y() // self.btn_size
         self.mouse_coord = (x, y)
-        if event.buttons() == Qt.LeftButton:
-            self.buttons[y][x].pressed.emit()
+        b = self.buttons[y][x]
+        self.mouse_buttons_down = QMouseButton_to_int(event.buttons())
+        if self.mouse_buttons_down == int(Qt.LeftButton):
+            self.both_mouse_buttons_pressed = False
+            b.pressed.emit()
+        elif self.mouse_buttons_down == int(Qt.RightButton):
+            self.both_mouse_buttons_pressed = False
+            b.rightPressed.emit()
+        elif self.mouse_buttons_down == int(Qt.LeftButton | Qt.RightButton):
+            self.both_mouse_buttons_pressed = True
+            # self.gui.set_face('active')
+            self.sink_area(x, y)
+            if self.drag_select:
+                self.procr.chord(x, y)
     def mouseReleaseEvent(self, event):
-        x, y = event.x() // self.btn_size, event.y() // self.btn_size
-        # print(x, y)
+        if not self.mouse_coord:
+            return # Do nothing it not currently over a button
+        x, y = self.mouse_coord
         self.mouse_coord = None
-        if event.button() == Qt.LeftButton:
-            self.buttons[y][x].clicked.emit()
+        self.mouse_buttons_down -= QMouseButton_to_int(event.button())
+        b = self.buttons[y][x]
+        if self.mouse_buttons_down != int(Qt.NoButton): # Both buttons were down
+            self.raise_area(x, y)
+            if not self.drag_select:
+                self.procr.chord(x, y)
+        elif (not self.both_mouse_buttons_pressed and
+              event.button() == Qt.LeftButton):
+            # Don't perform a click if both buttons were pressed
+            b.clicked.emit()
     def mouseMoveEvent(self, event):
+        old_coord = self.mouse_coord
         x, y = event.x() // self.btn_size, event.y() // self.btn_size
-        if (x, y) != self.mouse_coord:
-            old_x, old_y = self.mouse_coord
-            self.mouse_coord = (x, y)
-            if event.buttons() == Qt.LeftButton:
-                self.buttons[old_y][old_x].released.emit()
-                self.buttons[y][x].pressed.emit()
+        # Update mouse_coord
+        self.mouse_coord = (x, y) if (x, y) in self.all_coords else None
+        if old_coord != self.mouse_coord:
+            if (event.buttons() != Qt.LeftButton | Qt.RightButton
+                and self.both_mouse_buttons_pressed):
+                # Do nothing if both buttons were pressed but aren't currently
+                return
+            if old_coord:
+                old_x, old_y = old_coord
+                if event.buttons() == Qt.LeftButton:
+                    self.buttons[old_y][old_x].released.emit()
+                elif event.buttons() == Qt.LeftButton | Qt.RightButton:
+                    self.raise_area(old_x, old_y)
+            if self.mouse_coord:
+                if event.buttons() == Qt.LeftButton:
+                    self.buttons[y][x].pressed.emit()
+                elif event.buttons() == Qt.RightButton and self.drag_select:
+                    self.buttons[y][x].rightPressed.emit()
+                elif event.buttons() == Qt.LeftButton | Qt.RightButton:
+                    self.sink_area(x, y)
+    def sink_area(self, x, y):
+        for (i, j) in get_nbrs(x, y, self.x_size, self.y_size):
+            self.buttons[j][i].areaPressed.emit()
+    def raise_area(self, x, y):
+        for (i, j) in get_nbrs(x, y, self.x_size, self.y_size):
+            self.buttons[j][i].areaReleased.emit()
 
 
 class CellButton(QLabel):
-    pressed = pyqtSignal()
-    released = pyqtSignal()
-    clicked = pyqtSignal()
+    pressed = pyqtSignal()      # Left mouse button pressed down over button
+    released = pyqtSignal()     # Left mouse button moved away from button
+    clicked = pyqtSignal()      # Left mouse button released over button
+    rightPressed = pyqtSignal() # Right mouse button pressed down
+    areaPressed = pyqtSignal()  # Both mouse buttons down on a button in area
+    areaReleased = pyqtSignal() # Area release (move away/raise mouse button...)
+    # bothClicked = pyqtSignal()
     def __init__(self, parent, processor, x, y):
         super().__init__(parent)
-        self.parent = parent
+        self.parent = parent # Stores data such as images, settings
         self.procr = processor
         self.x, self.y = x, y
-    def push(self):
-        self.setPixmap(self.parent.btn_images['down'])
+    def press(self):
+        self.parent.gui.set_face('active')
+        if self.parent.drag_select:
+            self.procr.click(self.x, self.y)
+        else:
+            self.setPixmap(self.parent.btn_images['down'])
     def release(self):
+        self.parent.gui.set_face('ready')
         self.setPixmap(self.parent.btn_images['up'])
     def click(self):
+        self.parent.gui.set_face('ready')
         self.procr.click(self.x, self.y)
-    # def right_press(self):
-    #     self.procr.toggle_flag(self.x, self.y)
-    # def mouse_double_click(self, e):
-    #     print("double")
+    def rightpress(self):
+        self.procr.toggle_flag(self.x, self.y)
+    def areapress(self):
+        self.parent.gui.set_face('active')
+        self.setPixmap(self.parent.btn_images['down'])
     def refresh(self):
         self.setPixmap(self.parent.btn_images['up'])
-        self.is_clickable = True
-        self.pressed.connect(self.push)
+        # First remove connections so that signals are only connected once.
+        self.remove_interaction()
+        self.pressed.connect(self.press)
         self.released.connect(self.release)
         self.clicked.connect(self.click)
+        self.rightPressed.connect(self.rightpress)
+        self.areaPressed.connect(self.areapress)
+        self.areaReleased.connect(self.release)
     def remove_interaction(self):
-        for signal in ['pressed', 'released', 'clicked']:
-            getattr(self, signal).disconnect()
-    def reveal(self, contents):
+        """Remove all connected signals for interation through clicks."""
+        for signal in ['pressed', 'released', 'clicked', 'rightPressed',
+                       'areaPressed', 'areaReleased']:
+            try:
+                getattr(self, signal).disconnect()
+            except TypeError:
+                pass # Already disconnected
+    def set_image(self, im_type, num):
         self.remove_interaction()
-        if type(contents) is int:
-            self.setPixmap(self.parent.btn_images[contents])
-        elif type(contents) is str:
-            char = contents[0]
-            mines = int(contents[1])
-            if char == 'M':
-                self.setPixmap(self.parent.mine_images[mines])
-            elif char == '!':
-                self.setPixmap(self.parent.hit_images[mines])
-            elif char == 'X':
-                self.setPixmap(self.parent.cross_images[mines])
-            elif char == 'L':
-                self.setPixmap(self.parent.life_images[mines])
+        images = getattr(self.parent, im_type + '_images')
+        self.setPixmap(images[num])
 
-
-class FaceButton(QLabel):
-    def __init__(self, parent, size):
-        super().__init__(parent)
-        self.pixmap = None
-        self.setFixedSize(size, size)
-        self.setLineWidth(3)
-        self.setFrameShadow(QFrame.Raised)
-        self.setFrameShape(QFrame.Panel)
-    def set_face(self, state, life=1):
-        fname = 'face' + str(life) + state + '.png'
-        pixmap = QPixmap(join(im_direc, 'faces', fname))
-        self.setPixmap(pixmap.scaled(self.width()-6, self.height()-6,
-                       transformMode=Qt.SmoothTransformation))
 
 class TopPanel(QAbstractButton):
     def __init__(self, parent):
@@ -280,18 +356,17 @@ class TopPanel(QAbstractButton):
         self.mine_counter.setFixedWidth(20)
         layout.addWidget(self.mine_counter)
         layout.addStretch()
-        self.face_button = FaceButton(self, 32)
+        self.face_button = QLabel(self)
+        self.face_button.setFixedSize(32, 32)
+        self.face_button.setFrameShape(QFrame.Panel)
+        self.face_button.setFrameShadow(QFrame.Raised)
+        self.face_button.setLineWidth(3)
         layout.addWidget(self.face_button)
         layout.addStretch()
         self.timer = QLabel('000', self)
         self.timer.setFixedWidth(20)
         layout.addWidget(self.timer)
-    # def mousePressEvent(self, e):
-    #     self.face_button.setFrameShadow(QFrame.Sunken)
-    # def mouseReleaseEvent(self, e):
-    #     self.face_button.setFrameShadow(QFrame.Raised)
-        # if self.underMouse():
-        #     self.clicked.emit()
+
 
 
 if __name__ == '__main__':

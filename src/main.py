@@ -139,8 +139,9 @@ class Processor:
         self.game.end_time = tm.time()
         self.game.state = Game.WON
         for (x, y) in self.game.mf.all_coords:
-            if self.game.mf[y][x] > 0:
-                self.game.board[y][x] = 'F' + str(self.game.mf[y][x])
+            mines = self.game.mf[y][x]
+            if mines > 0 and self.game.board[y][x][0] in ['U','F']:
+                self.game.board[y][x] = 'F' + str(mines)
         self.ui.finalise_win()
 
     def check_is_game_won(self):
@@ -163,6 +164,27 @@ class Processor:
             flags = int(val[1]) + 1
             self.game.board[y][x] = 'F' + str(flags)
             self.ui.flag(x, y, flags)
+
+    def chord(self, x, y):
+        """Receive an attempt to chord at (x, y). If the number of flags is
+        correct, return True and send the required signals to the UI, otherwise
+        return False."""
+        state = self.game.board[y][x]
+        if type(state) is not int:
+            return False
+        nbrs = get_nbrs(x, y, self.x_size, self.y_size)
+        nbr_flags = sum([int(self.game.board[j][i][1]) for (i, j) in nbrs
+                         if str(self.game.board[j][i])[0] in ['F', 'L']])
+        if nbr_flags == state:
+            for (i, j) in nbrs:
+                if self.game.board[j][i] == 'U':
+                    self.click(i, j, check_for_win=False)
+                    if self.check_is_game_won():
+                        self.finalise_win()
+                    # self.ui.reveal_cell(i, j)
+            return True
+        else:
+            return False
 
 
 class Game:
