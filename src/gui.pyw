@@ -4,7 +4,8 @@ and the view and controller part of the app (GameGui).
 """
 
 import sys
-from os.path import join, exists
+from os.path import join, exists, basename
+from glob import glob
 
 from PyQt5.QtWidgets import *
                             # (QApplication, QMainWindow, QWidget, QDesktopWidget,
@@ -12,7 +13,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QIcon
 from PyQt5.QtCore import pyqtSignal, Qt, QSize
 
-from utils import im_direc, get_nbrs
+from utils import img_direc, get_nbrs
 
 
 def QMouseButton_to_int(QMouseButton):
@@ -23,7 +24,6 @@ def QMouseButton_to_int(QMouseButton):
     elif QMouseButton == Qt.LeftButton | Qt.RightButton:
         return int(Qt.LeftButton | Qt.RightButton)
 
-
 app = QApplication(sys.argv)
 
 class GameGUI(QMainWindow):
@@ -31,7 +31,7 @@ class GameGUI(QMainWindow):
     styles = {'buttons': 'pi',
               'numbers': 'standard',
               'markers':  'standard'}
-    drag_select = False
+    drag_select = True
     def __init__(self, processor):
         super().__init__()
         self.setWindowTitle('MineGaulerQt')
@@ -73,16 +73,71 @@ class GameGUI(QMainWindow):
         hstretch.addStretch()
         vlayout.addLayout(hstretch)
         lyt = QVBoxLayout(self.body)
-        self.minefield_widget = MinefieldWidget(self.body, self.procr, self,
-                                                self.settings)
+        self.minefield_widget = MinefieldWidget(self.body, self.procr,
+                                                self, **self.settings)
         lyt.setContentsMargins(0, 0, 0, 0)
         lyt.addWidget(self.minefield_widget)
+        self.make_menubar()
         self.setMaximumSize(self.body.width(),
                             self.panel.height() + self.body.height())
+    def make_menubar(self):
+        menu = self.menuBar() # QMainWindow has QMenuBar already
+        game_menu = menu.addMenu('Game')
+        opts_menu = menu.addMenu('Options')
+        help_menu = menu.addMenu('Help')
+        new_act = QAction('New', self)
+        game_menu.addAction(new_act)
+        new_act.triggered.connect(self.procr.start_new_game)
+        new_act.setShortcut('F2')
+        replay_act = QAction('Replay', self)
+        # replay_act.triggered.connect(SOMETHING)
+        new_act.setShortcut('F3')
+        game_menu.addAction(replay_act)
+        game_menu.addSeparator()
+        group = QActionGroup(self, exclusive=True)
+        for diff in ['Beginner', 'Intermediate', 'Expert', 'Master', 'Custom']:
+            diff_act = QAction(diff, self, checkable=True)
+            # diff_act.triggered.connect(SOMETHING)
+            diff_act.setShortcut(diff[0])
+            group.addAction(diff_act)
+            game_menu.addAction(diff_act)
+        game_menu.addSeparator()
+        zoom_act = QAction('Zoom', self)
+        # zoom_act.triggered.connect(SOMETHING)
+        game_menu.addAction(zoom_act)
+        styles_menu = QMenu('Styles', self)
+        game_menu.addMenu(styles_menu)
+        for img_group in ['buttons']:
+            submenu = QMenu(img_group.capitalize(), self)
+            styles_menu.addMenu(submenu)
+            group = QActionGroup(self, exclusive=True)
+            for folder in glob(join(img_direc, img_group, '*')):
+                style = basename(folder)
+                style_act = QAction(style, self, checkable=True)
+                # style_act.triggered.connect(SOMETHING)
+                group.addAction(style_act)
+                submenu.addAction(style_act)
+        game_menu.addSeparator()
+        exit_act = QAction('Exit', self)
+        # exit_act.triggered.connect(SOMETHING)
+        exit_act.setShortcut('Alt+F4')
+        game_menu.addAction(exit_act)
+        first_act = QAction('Safe start', self, checkable=True)
+        # first_act.triggered.connect(SOMETHING)
+        opts_menu.addAction(first_act)
+        drag_act = QAction('Drag-select', self, checkable=True)
+        drag_act.triggered.connect(self.set_drag_select)
+        drag_act.setChecked(self.drag_select)
+        opts_menu.addAction(drag_act)
+    def set_drag_select(self):
+        # Should check if a game is in play
+        print(self.drag_select)
+        self.drag_select = not(self.drag_select)
+        self.minefield_widget.drag_select = self.drag_select
     def start(self):
         self.move(500, 150)
         self.show()
-        sys.exit(app.exec_())
+        app.exec_()
     def reveal_cell(self, x, y):
         """Make the cell at (x, y) show the same as is contained in the current
         game board."""
@@ -106,7 +161,7 @@ class GameGUI(QMainWindow):
                 im_type = 'life'
         b.set_image(im_type, num)
     def finalise_loss(self):
-        self.set_face('lost', 1)
+        self.set_face('lost')
         for (x, y) in self.procr.game.mf.all_coords:
             b = self.minefield_widget.buttons[y][x]
             b.remove_interaction()
@@ -114,7 +169,7 @@ class GameGUI(QMainWindow):
             if str(board_cell)[0] in ['M', '!', 'X']:
                 self.reveal_cell(x, y)
     def finalise_win(self):
-        self.set_face('won', 1)
+        self.set_face('won')
         for (x, y) in self.procr.game.mf.all_coords:
             b = self.minefield_widget.buttons[y][x]
             b.remove_interaction()
@@ -126,27 +181,32 @@ class GameGUI(QMainWindow):
         b = self.minefield_widget.buttons[y][x]
         b.setPixmap(self.minefield_widget.flag_images[n])
         b.pressed.disconnect()
+        b.released.disconnect()
+        b.clicked.disconnect()
         b.areaPressed.disconnect()
         b.areaReleased.disconnect()
-        if not self.drag_select:
-            b.released.disconnect()
-            b.clicked.disconnect()
     def unflag(self, x, y):
         b = self.minefield_widget.buttons[y][x]
         b.refresh()
-    def set_face(self, state, life=1):
+    def set_face(self, state, check_game_state=False):
+        if (check_game_state and
+            self.procr.game.state not in
+                [self.procr.game.READY, self.procr.game.ACTIVE]):
+            return False
+        life = 1
         fname = 'face' + str(life) + state + '.png'
-        pixmap = QPixmap(join(im_direc, 'faces', fname))
+        pixmap = QPixmap(join(img_direc, 'faces', fname))
         self.panel.face_button.setPixmap(pixmap.scaled(26, 26,
                                          transformMode=Qt.SmoothTransformation))
+        return True
     def start_new_game(self):
-        self.set_face('ready', 1)
+        self.set_face('ready')
         for (x, y) in self.procr.game.mf.all_coords:
             self.minefield_widget.buttons[y][x].refresh()
 
 
 class MinefieldWidget(QWidget):
-    def __init__(self, parent, processor, gui, settings):
+    def __init__(self, parent, processor, gui, **settings):
         super().__init__(parent)
         self.procr = processor
         self.gui = gui
@@ -174,7 +234,7 @@ class MinefieldWidget(QWidget):
             self.buttons.append(row)
     def make_pixmap(self, fname1, im_type, fname2=None, prop=None):
         def get_path(im_type, fname):
-            base = join(im_direc, im_type)
+            base = join(img_direc, im_type)
             path = join(base, self.styles[im_type], fname)
             if not exists(path):
                 path = join(base, 'standard', fname)
@@ -229,13 +289,16 @@ class MinefieldWidget(QWidget):
         self.mouse_buttons_down = QMouseButton_to_int(event.buttons())
         if self.mouse_buttons_down == int(Qt.LeftButton):
             self.both_mouse_buttons_pressed = False
+            if self.drag_select:
+                self.gui.set_face('active', check_game_state=True)
             b.pressed.emit()
         elif self.mouse_buttons_down == int(Qt.RightButton):
             self.both_mouse_buttons_pressed = False
             b.rightPressed.emit()
         elif self.mouse_buttons_down == int(Qt.LeftButton | Qt.RightButton):
             self.both_mouse_buttons_pressed = True
-            # self.gui.set_face('active')
+            # Reset face to account for case drag_select=True
+            self.gui.set_face('ready', check_game_state=True)
             self.sink_area(x, y)
             if self.drag_select:
                 self.procr.chord(x, y)
@@ -246,14 +309,17 @@ class MinefieldWidget(QWidget):
         self.mouse_coord = None
         self.mouse_buttons_down -= QMouseButton_to_int(event.button())
         b = self.buttons[y][x]
+        # Catch a case for drag_select=True (left-down always active)
+        self.gui.set_face('ready', check_game_state=True)
         if self.mouse_buttons_down != int(Qt.NoButton): # Both buttons were down
             self.raise_area(x, y)
             if not self.drag_select:
                 self.procr.chord(x, y)
-        elif (not self.both_mouse_buttons_pressed and
-              event.button() == Qt.LeftButton):
-            # Don't perform a click if both buttons were pressed
-            b.clicked.emit()
+            elif self.drag_select and event.button() == Qt.RightButton:
+                self.gui.set_face('active', check_game_state=True)
+        elif event.button() == Qt.LeftButton:
+            if self.drag_select or not self.both_mouse_buttons_pressed:
+                b.clicked.emit()
     def mouseMoveEvent(self, event):
         old_coord = self.mouse_coord
         x, y = event.x() // self.btn_size, event.y() // self.btn_size
@@ -261,7 +327,7 @@ class MinefieldWidget(QWidget):
         self.mouse_coord = (x, y) if (x, y) in self.all_coords else None
         if old_coord != self.mouse_coord:
             if (event.buttons() != Qt.LeftButton | Qt.RightButton
-                and self.both_mouse_buttons_pressed):
+                and self.both_mouse_buttons_pressed and not self.drag_select):
                 # Do nothing if both buttons were pressed but aren't currently
                 return
             if old_coord:
@@ -292,17 +358,16 @@ class CellButton(QLabel):
     rightPressed = pyqtSignal() # Right mouse button pressed down
     areaPressed = pyqtSignal()  # Both mouse buttons down on a button in area
     areaReleased = pyqtSignal() # Area release (move away/raise mouse button...)
-    # bothClicked = pyqtSignal()
     def __init__(self, parent, processor, x, y):
         super().__init__(parent)
         self.parent = parent # Stores data such as images, settings
         self.procr = processor
         self.x, self.y = x, y
     def press(self):
-        self.parent.gui.set_face('active')
         if self.parent.drag_select:
             self.procr.click(self.x, self.y)
         else:
+            self.parent.gui.set_face('active')
             self.setPixmap(self.parent.btn_images['down'])
     def release(self):
         self.parent.gui.set_face('ready')

@@ -16,6 +16,7 @@ from minefield import Minefield
 from cli import GameCLI
 from gui import GameGUI
 from utils import get_nbrs, prettify_grid
+from solver import ProbsGrid
 
 
 # Import settings here.
@@ -42,14 +43,12 @@ default_settings = {
 GameUI = GameGUI
 
 class Processor:
-    def __init__(self):
+    def __init__(self, **settings):
         self.settings = dict()
         for attr in ['x_size', 'y_size', 'nr_mines', 'first_success',
                      'max_per_cell']:
-            s = (imported_settings[attr] if attr in imported_settings
-                 else default_settings[attr])
-            setattr(self, attr, s)
-            self.settings[attr] = s
+            setattr(self, attr, settings[attr])
+            self.settings[attr] = settings[attr]
         self.ui = GameCLI(self) #### HACK - use CLI to get settings
         self.ui.choose_settings()
         self.ui = GameUI(self)
@@ -89,7 +88,7 @@ class Processor:
         self.start_new_game()
 
     def start_new_game(self):
-        self.game = Game(self.settings)
+        self.game = Game(**self.settings)
         self.ui.start_new_game()
 
     def click(self, x, y, check_for_win=True):
@@ -186,6 +185,9 @@ class Processor:
         else:
             return False
 
+    def calculate_probs(self):
+        print(ProbsGrid(board, **settings))
+
 
 class Game:
     """Store attributes of a game such as the minefield, the start and end time
@@ -195,7 +197,7 @@ class Game:
     LOST = 'lost'
     WON = 'won'
 
-    def __init__(self, settings):
+    def __init__(self, **settings):
         for attr in ['x_size', 'y_size', 'nr_mines', 'first_success',
                      'max_per_cell']:
             setattr(self, attr, settings[attr])
@@ -276,4 +278,9 @@ class Game:
 
 
 if __name__ == '__main__':
-    p = Processor()
+    settings = dict()
+    for attr in ['x_size', 'y_size', 'nr_mines', 'first_success',
+                 'max_per_cell']:
+        settings[attr] = (imported_settings[attr] if attr in imported_settings
+                          else default_settings[attr])
+    p = Processor(**settings)

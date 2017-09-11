@@ -12,27 +12,24 @@ class Minefield(list):
         for j in range(y_size):
             row = x_size*[0]
             self.append(row)
-        self.x_size = x_size
-        self.y_size = y_size
+        self.x_size, self.y_size = x_size, y_size
         self.all_coords = [(x, y) for x in range(x_size) for y in range(y_size)]
         self.nr_mines = 0
         self.mine_coords = self.completed_board = None
 
     def __repr__(self):
-        ret = "<{}x{} minefield".format(self.x_size, self.y_size)
-        if self.nr_mines:
-            ret += " with {} mines".format(self.nr_mines)
-        ret += ">"
-        return ret
+        mines = " with {} mines".format(self.nr_mines) if self.nr_mines else ""
+        return "<{}x{} minefield{}>".format(self.x_size, self.y_size, mines)
 
     def __str__(self):
-        ret = "Minefield with dimensions {} x {}".format(self.x_size,
-                                                         self.y_size)
-        if self.nr_mines:
-            ret += ", {} mine(s) and 3bv of {}:\n".format(self.nr_mines,
-                                                          self.bbbv)
-            ret += prettify_grid(self) + '\n'
-        return ret
+        return prettify_grid(self)
+        # ret = "Minefield with dimensions {} x {}".format(self.x_size,
+        #                                                  self.y_size)
+        # if self.nr_mines:
+        #     ret += ", {} mine(s) and 3bv of {}:\n".format(self.nr_mines,
+        #                                                   self.bbbv)
+        #     ret += prettify_grid(self) + '\n'
+        # return ret
 
     def print_completed_board(self):
         print(prettify_grid(self.completed_board, {0: '-'}) + '\n')

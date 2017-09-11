@@ -1,7 +1,7 @@
 
 
 
-im_direc = r'../images/'
+img_direc = r'../images/'
 
 
 def prettify_grid(grid, repr_map=dict(), cell_size=1):
@@ -9,7 +9,8 @@ def prettify_grid(grid, repr_map=dict(), cell_size=1):
     for row in grid:
         for i in row:
             cell = '{:>%d}' % cell_size
-            ret += cell.format(repr_map[i] if i in repr_map else str(i))
+            ret += cell.format(
+                repr_map[i] if i in repr_map else str(i)[:cell_size])
             ret += ' '
         ret = ret[:-1] # Remove trailing space
         ret += '\n'
