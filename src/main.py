@@ -1,6 +1,7 @@
 """
 Entry point for playing the game.
-The following characters representations are used:
+
+The following character representations are used:
     'U' - unclicked
     'F' - flag
     'M' - mine
@@ -52,6 +53,7 @@ class Processor:
         self.ui = GameCLI(self) #### HACK - use CLI to get settings
         self.ui.choose_settings()
         self.ui = GameUI(self)
+        self.nr_flags = 0
         self.start_new_game()
         self.ui.start()
 
@@ -89,6 +91,7 @@ class Processor:
 
     def start_new_game(self):
         self.game = Game(**self.settings)
+        self.nr_flags = 0
         self.ui.start_new_game()
 
     def click(self, x, y, check_for_win=True):
@@ -141,6 +144,7 @@ class Processor:
             mines = self.game.mf[y][x]
             if mines > 0 and self.game.board[y][x][0] in ['U','F']:
                 self.game.board[y][x] = 'F' + str(mines)
+        self.nr_flags = self.nr_mines #all flags displayed
         self.ui.finalise_win()
 
     def check_is_game_won(self):
@@ -155,13 +159,16 @@ class Processor:
         val = self.game.board[y][x]
         if val == 'U':
             self.game.board[y][x] = 'F1'
+            self.nr_flags += 1
             self.ui.flag(x, y, 1)
         elif val == 'F' + str(self.max_per_cell):
             self.game.board[y][x] = 'U'
+            self.nr_flags -= self.max_per_cell
             self.ui.unflag(x, y)
         else:
             flags = int(val[1]) + 1
             self.game.board[y][x] = 'F' + str(flags)
+            self.nr_flags += 1
             self.ui.flag(x, y, flags)
 
     def chord(self, x, y):

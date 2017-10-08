@@ -73,10 +73,10 @@ class GameGUI(QMainWindow):
         hstretch.addStretch()
         vlayout.addLayout(hstretch)
         lyt = QVBoxLayout(self.body)
-        self.minefield_widget = MinefieldWidget(self.body, self.procr,
+        self.mf_widget = MinefieldWidget(self.body, self.procr,
                                                 self, **self.settings)
         lyt.setContentsMargins(0, 0, 0, 0)
-        lyt.addWidget(self.minefield_widget)
+        lyt.addWidget(self.mf_widget)
         self.make_menubar()
         self.setMaximumSize(self.body.width(),
                             self.panel.height() + self.body.height())
@@ -91,7 +91,7 @@ class GameGUI(QMainWindow):
         new_act.setShortcut('F2')
         replay_act = QAction('Replay', self)
         # replay_act.triggered.connect(SOMETHING)
-        new_act.setShortcut('F3')
+        replay_act.setShortcut('F3')
         game_menu.addAction(replay_act)
         game_menu.addSeparator()
         group = QActionGroup(self, exclusive=True)
@@ -130,10 +130,10 @@ class GameGUI(QMainWindow):
         drag_act.setChecked(self.drag_select)
         opts_menu.addAction(drag_act)
     def set_drag_select(self):
-        # Should check if a game is in play
-        print(self.drag_select)
+        # [Should check if a game is in play]
+        # print(self.drag_select)
         self.drag_select = not(self.drag_select)
-        self.minefield_widget.drag_select = self.drag_select
+        self.mf_widget.drag_select = self.drag_select
     def start(self):
         self.move(500, 150)
         self.show()
@@ -141,7 +141,7 @@ class GameGUI(QMainWindow):
     def reveal_cell(self, x, y):
         """Make the cell at (x, y) show the same as is contained in the current
         game board."""
-        b = self.minefield_widget.buttons[y][x]
+        b = self.mf_widget.buttons[y][x]
         contents = self.procr.game.board[y][x]
         if type(contents) is int:
             im_type = 'btn'
@@ -159,39 +159,60 @@ class GameGUI(QMainWindow):
                 im_type = 'cross'
             elif char == 'L':
                 im_type = 'life'
+        else:
+            # Used for dummy processor with an empty board
+            return
         b.set_image(im_type, num)
     def finalise_loss(self):
         self.set_face('lost')
-        for (x, y) in self.procr.game.mf.all_coords:
-            b = self.minefield_widget.buttons[y][x]
+        for (x, y) in self.mf_widget.all_coords:
+            b = self.mf_widget.buttons[y][x]
             b.remove_interaction()
             board_cell = self.procr.game.board[y][x]
             if str(board_cell)[0] in ['M', '!', 'X']:
                 self.reveal_cell(x, y)
     def finalise_win(self):
-        self.set_face('won')
-        for (x, y) in self.procr.game.mf.all_coords:
-            b = self.minefield_widget.buttons[y][x]
+        for (x, y) in self.mf_widget.all_coords:
+            b = self.mf_widget.buttons[y][x]
             b.remove_interaction()
             n = self.procr.game.mf[y][x]
             if n > 0:
                 self.reveal_cell(x, y)
                 # b.setPixmap(self.flag_images[n])
+        self.set_face('won')
+        self.set_mines_counter()
     def flag(self, x, y, n):
-        b = self.minefield_widget.buttons[y][x]
-        b.setPixmap(self.minefield_widget.flag_images[n])
+        b = self.mf_widget.buttons[y][x]
+        b.setPixmap(self.mf_widget.flag_images[n])
+        rem_mines = self.procr.nr_mines - self.procr.nr_flags
+        self.set_mines_counter()
         b.pressed.disconnect()
         b.released.disconnect()
         b.clicked.disconnect()
         b.areaPressed.disconnect()
         b.areaReleased.disconnect()
     def unflag(self, x, y):
-        b = self.minefield_widget.buttons[y][x]
+        b = self.mf_widget.buttons[y][x]
         b.refresh()
+        self.set_mines_counter()
+    def set_mines_counter(self):
+        rem_mines = self.procr.nr_mines - self.procr.nr_flags
+        self.panel.mines_counter.setText('{:03d}'.format(abs(rem_mines)))
+        if rem_mines >= 0:
+            self.panel.mines_counter.setStyleSheet("""color: red;
+                                                      background: black;
+                                                      border-radius: 2px;
+                                                      font: bold 15px Tahoma;
+                                                      padding-left: 1px;""")
+        else:
+            self.panel.mines_counter.setStyleSheet("""color: black;
+                                                      background: red;
+                                                      border-radius: 2px;
+                                                      font: bold 15px Tahoma;
+                                                      padding-left: 1px;""")
     def set_face(self, state, check_game_state=False):
         if (check_game_state and
-            self.procr.game.state not in
-                [self.procr.game.READY, self.procr.game.ACTIVE]):
+            self.procr.game.state not in ['ready', 'active']):
             return False
         life = 1
         fname = 'face' + str(life) + state + '.png'
@@ -200,9 +221,10 @@ class GameGUI(QMainWindow):
                                          transformMode=Qt.SmoothTransformation))
         return True
     def start_new_game(self):
+        for (x, y) in self.mf_widget.all_coords:
+            self.mf_widget.buttons[y][x].refresh()
         self.set_face('ready')
-        for (x, y) in self.procr.game.mf.all_coords:
-            self.minefield_widget.buttons[y][x].refresh()
+        self.set_mines_counter()
 
 
 class MinefieldWidget(QWidget):
@@ -225,9 +247,9 @@ class MinefieldWidget(QWidget):
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
         self.buttons = []
-        for j in range(self.procr.y_size):
+        for j in range(self.y_size):
             row = []
-            for i in range(self.procr.x_size):
+            for i in range(self.x_size):
                 b = CellButton(self, self.procr, i, j)
                 layout.addWidget(b, j, i)
                 row.append(b)
@@ -360,7 +382,7 @@ class CellButton(QLabel):
     areaReleased = pyqtSignal() # Area release (move away/raise mouse button...)
     def __init__(self, parent, processor, x, y):
         super().__init__(parent)
-        self.parent = parent # Stores data such as images, settings
+        self.parent = parent #stores data such as images, settings
         self.procr = processor
         self.x, self.y = x, y
     def press(self):
@@ -375,9 +397,9 @@ class CellButton(QLabel):
     def click(self):
         self.parent.gui.set_face('ready')
         self.procr.click(self.x, self.y)
-    def rightpress(self):
+    def rightPress(self):
         self.procr.toggle_flag(self.x, self.y)
-    def areapress(self):
+    def areaPress(self):
         self.parent.gui.set_face('active')
         self.setPixmap(self.parent.btn_images['down'])
     def refresh(self):
@@ -387,8 +409,8 @@ class CellButton(QLabel):
         self.pressed.connect(self.press)
         self.released.connect(self.release)
         self.clicked.connect(self.click)
-        self.rightPressed.connect(self.rightpress)
-        self.areaPressed.connect(self.areapress)
+        self.rightPressed.connect(self.rightPress)
+        self.areaPressed.connect(self.areaPress)
         self.areaReleased.connect(self.release)
     def remove_interaction(self):
         """Remove all connected signals for interation through clicks."""
@@ -410,6 +432,7 @@ class TopPanel(QAbstractButton):
         self.setFixedHeight(40)
         self.populate()
     def paintEvent(self, e):
+        # Must be implemented on QAbstractButton
         pass
     def sizeHint(self):
         return QSize(100, 40)
@@ -417,9 +440,17 @@ class TopPanel(QAbstractButton):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(6, 2, 6, 2)
         layout.setAlignment(Qt.AlignCenter)
-        self.mine_counter = QLabel('099', self)
-        self.mine_counter.setFixedWidth(20)
-        layout.addWidget(self.mine_counter)
+        self.mines_counter = QLabel(self)
+        self.mines_counter.setFixedSize(39, 26)
+        self.mines_counter.setFrameShape(QFrame.Panel)
+        self.mines_counter.setFrameShadow(QFrame.Sunken)
+        self.mines_counter.setLineWidth(2)
+        # self.mines_counter.setStyleSheet("""color: red;
+        #                                    background: black;
+        #                                    border-radius: 2px;
+        #                                    font: bold 15px Tahoma;
+        #                                    padding-left: 1px;""")
+        layout.addWidget(self.mines_counter)
         layout.addStretch()
         self.face_button = QLabel(self)
         self.face_button.setFixedSize(32, 32)
@@ -429,13 +460,23 @@ class TopPanel(QAbstractButton):
         layout.addWidget(self.face_button)
         layout.addStretch()
         self.timer = QLabel('000', self)
-        self.timer.setFixedWidth(20)
+        self.timer.setFixedSize(39, 26)
+        self.timer.setFrameShape(QFrame.Panel)
+        self.timer.setFrameShadow(QFrame.Sunken)
+        self.timer.setLineWidth(5)
+        self.timer.setStyleSheet("""color: red;
+                                    background: black;
+                                    border-radius: 2px;
+                                    font: bold 15px Tahoma;
+                                    padding-left: 1px;""")
         layout.addWidget(self.timer)
+
 
 
 
 if __name__ == '__main__':
 	# app = QApplication(sys.argv)
-	win = BasicGUI()
-	win.show()
-	sys.exit(app.exec_())
+    from Testing.dummies import DummyProcessor
+    win = GameGUI(DummyProcessor())
+    win.start_new_game()
+    win.start()
