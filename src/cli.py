@@ -8,7 +8,6 @@ from utils import prettify_grid
 class GameCLI:
     def __init__(self, processor):
         self.procr = processor
-
     def choose_settings(self):
         diff = None
         while diff not in ['', 'b', 'i', 'e', 'm', 'c', 'beginner',
@@ -25,7 +24,7 @@ class GameCLI:
                 "Enter your choice of difficulty " +
                 "(b, i, e, m, c or hit ENTER for default): ").lower()
         if not diff:
-            return      # No change to the setting/use default.
+            return      #no change to the setting/use default
         if diff == 'c':
             prompt = "Invalid size."
             print("Input custom dimensions (x_size, y_size): ", end='')
@@ -41,7 +40,6 @@ class GameCLI:
             self.procr.change_difficulty('c', x, y, mines)
         else:
             self.procr.change_difficulty(diff[0])
-
     def start(self):
         """This is the CLI equivalent of 'mainloop'."""
         self.choose_settings()
@@ -49,7 +47,8 @@ class GameCLI:
                                         self.procr.game.ACTIVE]:
             self.procr.game.print_board()
             self.get_click()
-
+    def prepare_new_game(self):
+        pass
     def get_click(self):
         """Get the user to choose a coordinate to be clicked."""
         print("Enter a coordinate in the form (x, y)," +
@@ -58,34 +57,28 @@ class GameCLI:
         coord = self.get_coord(1, 1, self.procr.x_size, self.procr.y_size,
                                prompt)
         self.perform_click(*coord)
-
     def get_coord(self, x_min, y_min, x_max, y_max, prompt):
         """Get user to enter a coordinate/dimensions between given bounds."""
         ####### Add in validation.
         coord_input = input()
         return map(int, coord_input.split())
-
     def perform_click(self, x, y):
         """Provides callable for performing a click (top-left is (1, 1))."""
         self.procr.click(x-1, y-1)
-
-    def reveal_cell(self, x, y):
+    def start_game(self):
+        """Not needed for CLI, this is called when the first click is made."""
         pass
-
+    def reveal_cell(self, x, y):
+        """Not needed for a CLI, cells are revealed as they are chosen."""
+        pass
+    def flag(self, x, y):
+        pass
+    def unflag(self, x, y):
+        pass
     def finalise_loss(self):
         print("\nYou hit a mine!")
         self.procr.game.print_board()
         print("Game over")
-
     def finalise_win(self):
         print("\nYou won!")
         self.procr.game.print_board()
-
-    def flag(self, x, y):
-        pass
-
-    def unflag(self, x, y):
-        pass
-
-    def start_new_game(self):
-        pass

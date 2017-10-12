@@ -6,14 +6,13 @@ and the view and controller part of the app (GameGui).
 import sys
 from os.path import join, exists, basename
 from glob import glob
+import time as tm
 
 from PyQt5.QtWidgets import *
-                            # (QApplication, QMainWindow, QWidget, QDesktopWidget,
-                            #  QGridLayout, QPushButton, QLabel,)
-from PyQt5.QtGui import QPixmap, QImage, QPainter, QIcon
-from PyQt5.QtCore import pyqtSignal, Qt, QSize
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
 
-from utils import img_direc, get_nbrs
+from utils import img_direc, get_nbrs, diff_settings
 
 
 def QMouseButton_to_int(QMouseButton):
@@ -24,7 +23,6 @@ def QMouseButton_to_int(QMouseButton):
     elif QMouseButton == Qt.LeftButton | Qt.RightButton:
         return int(Qt.LeftButton | Qt.RightButton)
 
-app = QApplication(sys.argv)
 
 class GameGUI(QMainWindow):
     btn_size = 16
@@ -33,12 +31,15 @@ class GameGUI(QMainWindow):
               'markers':  'standard'}
     drag_select = True
     def __init__(self, processor):
+        global app
+        app = QApplication(sys.argv)
         super().__init__()
         self.setWindowTitle('MineGaulerQt')
         self.procr = processor
         self.settings = dict()
         for attr in ['btn_size', 'styles', 'drag_select']:
             self.settings[attr] = getattr(self, attr)
+        self.setWindowIcon(QIcon(join(img_direc, 'icon.ico')))
         self.setupUI()
     def setupUI(self):
         centralWidget = QWidget(self)
@@ -52,16 +53,16 @@ class GameGUI(QMainWindow):
         self.panel_frame.setFrameShadow(QFrame.Sunken)
         self.panel_frame.setFrameShape(QFrame.Panel)
         self.panel_frame.setLineWidth(2)
-        self.panel = TopPanel(self.panel_frame)
+        self.panel = TopPanel(self.panel_frame, self)
         vlayout.addWidget(self.panel_frame)
         lyt = QVBoxLayout(self.panel_frame)
         lyt.setContentsMargins(0, 0, 0, 0)
         lyt.addWidget(self.panel)
         self.panel.pressed.connect(
-            lambda: self.panel.face_button.setFrameShadow(QFrame.Sunken))
+            lambda: self.face_button.setFrameShadow(QFrame.Sunken))
         self.panel.released.connect(
-            lambda: self.panel.face_button.setFrameShadow(QFrame.Raised))
-        self.panel.clicked.connect(self.procr.start_new_game)
+            lambda: self.face_button.setFrameShadow(QFrame.Raised))
+        self.panel.clicked.connect(self.procr.prepare_new_game)
         # Main body widget config - use horizontal layout for centre alignment
         hstretch = QHBoxLayout()
         hstretch.addStretch()
@@ -81,63 +82,95 @@ class GameGUI(QMainWindow):
         self.setMaximumSize(self.body.width(),
                             self.panel.height() + self.body.height())
     def make_menubar(self):
-        menu = self.menuBar() # QMainWindow has QMenuBar already
+        menu = self.menuBar() #QMainWindow has QMenuBar already
         game_menu = menu.addMenu('Game')
         opts_menu = menu.addMenu('Options')
-        help_menu = menu.addMenu('Help')
+        # help_menu = menu.addMenu('Help')
         new_act = QAction('New', self)
         game_menu.addAction(new_act)
-        new_act.triggered.connect(self.procr.start_new_game)
+        new_act.triggered.connect(self.procr.prepare_new_game)
         new_act.setShortcut('F2')
-        replay_act = QAction('Replay', self)
+        # replay_act = QAction('Replay', self)
+        # game_menu.addAction(replay_act)
         # replay_act.triggered.connect(SOMETHING)
-        replay_act.setShortcut('F3')
-        game_menu.addAction(replay_act)
+        # replay_act.setShortcut('F3')
         game_menu.addSeparator()
-        group = QActionGroup(self, exclusive=True)
-        for diff in ['Beginner', 'Intermediate', 'Expert', 'Master', 'Custom']:
-            diff_act = QAction(diff, self, checkable=True)
-            # diff_act.triggered.connect(SOMETHING)
-            diff_act.setShortcut(diff[0])
-            group.addAction(diff_act)
+        self.diff_group = QActionGroup(self, exclusive=True)
+        for diff in ['Beginner', 'Intermediate', 'Expert', 'Master']:#, 'Custom']:
+            diff_act = QAction(diff, self.diff_group, checkable=True)
             game_menu.addAction(diff_act)
+            diff_act.id = diff[0].lower()
+            if diff_act.id == self.procr.diff:
+                diff_act.setChecked(True)
+            diff_act.triggered.connect(lambda e: self.change_difficulty())
+            diff_act.setShortcut(diff[0])
         game_menu.addSeparator()
-        zoom_act = QAction('Zoom', self)
+        # zoom_act = QAction('Zoom', self)
+        # game_menu.addAction(zoom_act)
         # zoom_act.triggered.connect(SOMETHING)
-        game_menu.addAction(zoom_act)
-        styles_menu = QMenu('Styles', self)
-        game_menu.addMenu(styles_menu)
-        for img_group in ['buttons']:
-            submenu = QMenu(img_group.capitalize(), self)
-            styles_menu.addMenu(submenu)
-            group = QActionGroup(self, exclusive=True)
-            for folder in glob(join(img_direc, img_group, '*')):
-                style = basename(folder)
-                style_act = QAction(style, self, checkable=True)
-                # style_act.triggered.connect(SOMETHING)
-                group.addAction(style_act)
-                submenu.addAction(style_act)
-        game_menu.addSeparator()
+        # styles_menu = QMenu('Styles', self)
+        # game_menu.addMenu(styles_menu)
+        # for img_group in ['buttons']:
+        #     submenu = QMenu(img_group.capitalize(), self)
+        #     styles_menu.addMenu(submenu)
+        #     group = QActionGroup(self, exclusive=True)
+        #     for folder in glob(join(img_direc, img_group, '*')):
+        #         style = basename(folder)
+        #         style_act = QAction(style, self, checkable=True)
+        #         # style_act.triggered.connect(SOMETHING)
+        #         group.addAction(style_act)
+        #         submenu.addAction(style_act)
+        # game_menu.addSeparator()
         exit_act = QAction('Exit', self)
-        # exit_act.triggered.connect(SOMETHING)
-        exit_act.setShortcut('Alt+F4')
         game_menu.addAction(exit_act)
+        exit_act.triggered.connect(self.close)
+        exit_act.setShortcut('Alt+F4')
         first_act = QAction('Safe start', self, checkable=True)
-        # first_act.triggered.connect(SOMETHING)
         opts_menu.addAction(first_act)
+        first_act.setChecked(self.procr.first_success)
+        first_act.triggered.connect(lambda: setattr(self.procr,
+            'first_success', not(self.procr.first_success)))
         drag_act = QAction('Drag-select', self, checkable=True)
-        drag_act.triggered.connect(self.set_drag_select)
-        drag_act.setChecked(self.drag_select)
         opts_menu.addAction(drag_act)
-    def set_drag_select(self):
-        # [Should check if a game is in play]
-        # print(self.drag_select)
-        self.drag_select = not(self.drag_select)
-        self.mf_widget.drag_select = self.drag_select
+        drag_act.setChecked(self.drag_select)
+        drag_act.triggered.connect(self.toggle_drag_select)
     def start(self):
         self.move(500, 150)
         self.show()
         app.exec_()
+    def closeEvent(self, event):
+        event.accept()
+    def toggle_drag_select(self):
+        # [Should check if a game is in play]
+        # print(self.drag_select)
+        self.drag_select = not(self.drag_select)
+        self.mf_widget.drag_select = self.drag_select
+    def change_difficulty(self):
+        diff = self.diff_group.checkedAction().id
+        if diff == self.procr.diff:
+            return
+        if diff == 'c':
+            # Currently does nothing
+            # Find the old difficulty button and check it
+            for action in self.diff_group.actions():
+                if action.id == self.procr.diff:
+                    action.setChecked(True)
+            return
+        self.procr.change_difficulty(diff)
+        x, y = self.procr.x_size, self.procr.y_size
+        self.setFixedSize(20+x*self.btn_size,
+            20 + self.panel.height() + 20+y*self.btn_size)
+        self.mf_widget.reshape(x, y)
+        self.prepare_new_game()
+    def prepare_new_game(self):
+        self.timer.stop()
+        self.timer.label.setText('000')
+        for (x, y) in self.mf_widget.all_coords:
+            self.mf_widget.buttons[y][x].refresh()
+        self.set_face('ready')
+        self.set_mines_counter()
+    def start_game(self):
+        self.timer.start()
     def reveal_cell(self, x, y):
         """Make the cell at (x, y) show the same as is contained in the current
         game board."""
@@ -149,6 +182,7 @@ class GameGUI(QMainWindow):
         elif type(contents) is str:
             char = contents[0]
             num = int(contents[1])
+            # [Put these in a dictionary in utils?]
             if char == 'F':
                 im_type = 'flag'
             elif char == 'M':
@@ -159,28 +193,7 @@ class GameGUI(QMainWindow):
                 im_type = 'cross'
             elif char == 'L':
                 im_type = 'life'
-        else:
-            # Used for dummy processor with an empty board
-            return
         b.set_image(im_type, num)
-    def finalise_loss(self):
-        self.set_face('lost')
-        for (x, y) in self.mf_widget.all_coords:
-            b = self.mf_widget.buttons[y][x]
-            b.remove_interaction()
-            board_cell = self.procr.game.board[y][x]
-            if str(board_cell)[0] in ['M', '!', 'X']:
-                self.reveal_cell(x, y)
-    def finalise_win(self):
-        for (x, y) in self.mf_widget.all_coords:
-            b = self.mf_widget.buttons[y][x]
-            b.remove_interaction()
-            n = self.procr.game.mf[y][x]
-            if n > 0:
-                self.reveal_cell(x, y)
-                # b.setPixmap(self.flag_images[n])
-        self.set_face('won')
-        self.set_mines_counter()
     def flag(self, x, y, n):
         b = self.mf_widget.buttons[y][x]
         b.setPixmap(self.mf_widget.flag_images[n])
@@ -197,19 +210,19 @@ class GameGUI(QMainWindow):
         self.set_mines_counter()
     def set_mines_counter(self):
         rem_mines = self.procr.nr_mines - self.procr.nr_flags
-        self.panel.mines_counter.setText('{:03d}'.format(abs(rem_mines)))
+        self.mines_counter.setText('{:03d}'.format(abs(rem_mines)))
         if rem_mines >= 0:
-            self.panel.mines_counter.setStyleSheet("""color: red;
-                                                      background: black;
-                                                      border-radius: 2px;
-                                                      font: bold 15px Tahoma;
-                                                      padding-left: 1px;""")
+            self.mines_counter.setStyleSheet("""color: red;
+                                                background: black;
+                                                border-radius: 2px;
+                                                font: bold 15px Tahoma;
+                                                padding-left: 1px;""")
         else:
-            self.panel.mines_counter.setStyleSheet("""color: black;
-                                                      background: red;
-                                                      border-radius: 2px;
-                                                      font: bold 15px Tahoma;
-                                                      padding-left: 1px;""")
+            self.mines_counter.setStyleSheet("""color: black;
+                                                background: red;
+                                                border-radius: 2px;
+                                                font: bold 15px Tahoma;
+                                                padding-left: 1px;""")
     def set_face(self, state, check_game_state=False):
         if (check_game_state and
             self.procr.game.state not in ['ready', 'active']):
@@ -217,14 +230,31 @@ class GameGUI(QMainWindow):
         life = 1
         fname = 'face' + str(life) + state + '.png'
         pixmap = QPixmap(join(img_direc, 'faces', fname))
-        self.panel.face_button.setPixmap(pixmap.scaled(26, 26,
+        self.face_button.setPixmap(pixmap.scaled(26, 26,
                                          transformMode=Qt.SmoothTransformation))
         return True
-    def start_new_game(self):
+    def finalise_loss(self):
+        self.set_face('lost')
+        self.timer.stop()
+        self.timer.set_time(self.procr.game.elapsed)
         for (x, y) in self.mf_widget.all_coords:
-            self.mf_widget.buttons[y][x].refresh()
-        self.set_face('ready')
+            b = self.mf_widget.buttons[y][x]
+            b.remove_interaction()
+            board_cell = self.procr.game.board[y][x]
+            if str(board_cell)[0] in ['M', '!', 'X']:
+                self.reveal_cell(x, y)
+    def finalise_win(self):
+        self.set_face('won')
         self.set_mines_counter()
+        self.timer.stop()
+        self.timer.set_time(self.procr.game.elapsed)
+        # self.timer.set_time(self.procr.game.)
+        for (x, y) in self.mf_widget.all_coords:
+            b = self.mf_widget.buttons[y][x]
+            b.remove_interaction()
+            n = self.procr.game.mf[y][x]
+            if n > 0:
+                self.reveal_cell(x, y)
 
 
 class MinefieldWidget(QWidget):
@@ -243,15 +273,15 @@ class MinefieldWidget(QWidget):
         self.both_mouse_buttons_pressed = False
         self.mouse_buttons_down = Qt.NoButton
     def populate(self):
-        layout = QGridLayout(self)
-        layout.setSpacing(0)
-        layout.setContentsMargins(0, 0, 0, 0)
+        self.layout = QGridLayout(self)
+        self.layout.setSpacing(0)
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.buttons = []
         for j in range(self.y_size):
             row = []
             for i in range(self.x_size):
                 b = CellButton(self, self.procr, i, j)
-                layout.addWidget(b, j, i)
+                self.layout.addWidget(b, j, i)
                 row.append(b)
             self.buttons.append(row)
     def make_pixmap(self, fname1, im_type, fname2=None, prop=None):
@@ -371,6 +401,33 @@ class MinefieldWidget(QWidget):
     def raise_area(self, x, y):
         for (i, j) in get_nbrs(x, y, self.x_size, self.y_size):
             self.buttons[j][i].areaReleased.emit()
+    def reshape(self, x_size, y_size):
+        old_x, old_y = self.x_size, self.y_size
+        self.x_size, self.y_size = x_size, y_size
+        self.all_coords = [(i, j) for i in range(x_size) for j in range(y_size)]
+        # New buttons to be created
+        # First add on to the end of every row that already exists
+        for j, row in enumerate(self.buttons):
+            for i in range(len(row), x_size): #extra in x-direction
+                b = CellButton(self, self.procr, i, j)
+                self.layout.addWidget(b, j, i)
+                row.append(b)
+        # Next create any new rows that are needed at same length as the others
+        for j in range(len(self.buttons), y_size):
+            row = []
+            for i in range(len(self.buttons[0])): #keep self.buttons square
+                b = CellButton(self, self.procr, i, j)
+                self.layout.addWidget(b, j, i)
+                row.append(b)
+            self.buttons.append(row)
+        # Buttons to be hidden/shown
+        for x in range(max(old_x, x_size)):
+            for y in range(max(old_y, y_size)):
+                if x < x_size and y < y_size:
+                    self.buttons[y][x].setVisible(True)
+                else:
+                    self.buttons[y][x].setVisible(False)
+        self.setFixedSize(x_size*self.btn_size, y_size*self.btn_size)
 
 
 class CellButton(QLabel):
@@ -427,8 +484,9 @@ class CellButton(QLabel):
 
 
 class TopPanel(QAbstractButton):
-    def __init__(self, parent):
+    def __init__(self, parent, gui):
         super().__init__(parent)
+        self.gui = gui
         self.setFixedHeight(40)
         self.populate()
     def paintEvent(self, e):
@@ -440,36 +498,46 @@ class TopPanel(QAbstractButton):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(6, 2, 6, 2)
         layout.setAlignment(Qt.AlignCenter)
-        self.mines_counter = QLabel(self)
+        self.gui.mines_counter = self.mines_counter = QLabel(self)
         self.mines_counter.setFixedSize(39, 26)
-        self.mines_counter.setFrameShape(QFrame.Panel)
-        self.mines_counter.setFrameShadow(QFrame.Sunken)
-        self.mines_counter.setLineWidth(2)
-        # self.mines_counter.setStyleSheet("""color: red;
-        #                                    background: black;
-        #                                    border-radius: 2px;
-        #                                    font: bold 15px Tahoma;
-        #                                    padding-left: 1px;""")
         layout.addWidget(self.mines_counter)
         layout.addStretch()
-        self.face_button = QLabel(self)
+        self.gui.face_button = self.face_button = QLabel(self)
         self.face_button.setFixedSize(32, 32)
         self.face_button.setFrameShape(QFrame.Panel)
         self.face_button.setFrameShadow(QFrame.Raised)
         self.face_button.setLineWidth(3)
         layout.addWidget(self.face_button)
         layout.addStretch()
-        self.timer = QLabel('000', self)
-        self.timer.setFixedSize(39, 26)
-        self.timer.setFrameShape(QFrame.Panel)
-        self.timer.setFrameShadow(QFrame.Sunken)
-        self.timer.setLineWidth(5)
-        self.timer.setStyleSheet("""color: red;
+        self.gui.timer = self.timer = Timer(self)
+        # self.timer = QLabel('000', self)
+        # self.timer.setFixedSize(39, 26)
+        # self.timer.setStyleSheet("""color: red;
+        #                             background: black;
+        #                             border-radius: 2px;
+        #                             font: bold 15px Tahoma;
+        #                             padding-left: 1px;""")
+        layout.addWidget(self.timer.label)
+
+class Timer(QTimer):
+    def __init__(self, parent):
+        super().__init__()
+        self.label = QLabel('000', parent)
+        self.label.setFixedSize(39, 26)
+        self.label.setStyleSheet("""color: red;
                                     background: black;
                                     border-radius: 2px;
                                     font: bold 15px Tahoma;
                                     padding-left: 1px;""")
-        layout.addWidget(self.timer)
+        self.timeout.connect(self.update)
+    def start(self):
+        self.start_time = tm.time()
+        super().start(100) #update every 0.1 seconds
+    def update(self):
+        elapsed = tm.time() - self.start_time
+        self.set_time(elapsed)
+    def set_time(self, time):
+        self.label.setText('{:03d}'.format(min(int(time) + 1, 999)))
 
 
 
@@ -478,5 +546,5 @@ if __name__ == '__main__':
 	# app = QApplication(sys.argv)
     from Testing.dummies import DummyProcessor
     win = GameGUI(DummyProcessor())
-    win.start_new_game()
+    win.prepare_new_game()
     win.start()

@@ -16,8 +16,8 @@ import time as tm
 from minefield import Minefield
 from cli import GameCLI
 from gui import GameGUI
-from utils import get_nbrs, prettify_grid
-from solver import ProbsGrid
+from utils import get_nbrs, prettify_grid, diff_settings
+# from solver import ProbsGrid
 
 
 # Import settings here.
@@ -40,7 +40,7 @@ default_settings = {
     }
 
 
-# GameUI = GameCLI         # Determine which UI to use with argv
+# GameUI = GameCLI         # [Determine which UI to use with argv]
 GameUI = GameGUI
 
 class Processor:
@@ -50,50 +50,41 @@ class Processor:
                      'max_per_cell']:
             setattr(self, attr, settings[attr])
             self.settings[attr] = settings[attr]
-        self.ui = GameCLI(self) #### HACK - use CLI to get settings
-        self.ui.choose_settings()
-        self.ui = GameUI(self)
         self.nr_flags = 0
-        self.start_new_game()
+        for d in diff_settings:
+            if diff_settings[d] == (self.x_size, self.y_size, self.nr_mines):
+                self.diff = d
+                break
+        else:
+            self.diff = 'c'
+        self.ui = GameUI(self)
+        self.prepare_new_game()
         self.ui.start()
-
     def update_settings(self):
         for attr in self.settings:
             self.settings[attr] = getattr(self, attr)
-
     def change_difficulty(self, diff, x_size=None, y_size=None, nr_mines=None):
         """Change difficulty, creating a new game with new settings. Arguments
         x_size, y_size, nr_mines are ignored unless diff=='c'."""
-        if diff == 'b':
-            self.x_size = 8
-            self.y_size = 8
-            self.nr_mines = 10
-        elif diff == 'i':
-            self.x_size = 16
-            self.y_size = 16
-            self.nr_mines = 40
-        elif diff == 'e':
-            self.x_size = 30
-            self.y_size = 16
-            self.nr_mines = 99
-        elif diff == 'm':
-            self.x_size = 30
-            self.y_size = 30
-            self.nr_mines = 200
-        elif diff == 'c':
-            self.x_size = x_size
-            self.y_size = y_size
+        if diff == 'c':
+            for d in diff_settings:
+                if diff_settings[d] == (x_size, y_size, nr_mines):
+                    self.change_difficulty(d)
+                    return
+            self.x_size, self.y_size = x_size, y_size
             self.nr_mines = nr_mines
+            self.diff = 'c'
+        elif diff in diff_settings:
+            self.x_size, self.y_size, self.nr_mines = diff_settings[diff]
+            self.diff = diff
         else:
             raise ValueError('Invalid difficulty character, {}.'.format(diff))
         self.update_settings()
-        self.start_new_game()
-
-    def start_new_game(self):
+        self.prepare_new_game()
+    def prepare_new_game(self):
         self.game = Game(**self.settings)
         self.nr_flags = 0
-        self.ui.start_new_game()
-
+        self.ui.prepare_new_game()
     def click(self, x, y, check_for_win=True):
         if self.game.board[y][x] != 'U':
             return
@@ -103,6 +94,7 @@ class Processor:
             self.game.create_minefield(safe_coords)
             self.game.state = Game.ACTIVE
             self.game.start_time = tm.time()
+            self.ui.start_game()
         cell = self.game.mf.completed_board[y][x]
         if type(cell) is str:   # Mine hit, game over
             self.game.board[y][x] = '!' + str(self.game.mf[y][x])
@@ -122,37 +114,6 @@ class Processor:
             self.ui.reveal_cell(x, y)
         if check_for_win and self.check_is_game_won():
             self.finalise_win()
-
-    def finalise_loss(self):
-        self.game.end_time = tm.time()
-        self.game.state = Game.LOST
-        for (x, y) in self.game.mf.all_coords:
-            board_cell = self.game.board[y][x]
-            mines = self.game.mf[y][x]
-            if mines > 0 and board_cell == 'U':
-                self.game.board[y][x] = 'M' + str(mines)
-            elif (str(board_cell)[0] == 'F'
-                  and board_cell != self.game.mf.completed_board[y][x]):
-                self.game.board[y][x] = 'X' + board_cell[1]
-        # print(prettify_grid(self.game.board))
-        self.ui.finalise_loss()
-
-    def finalise_win(self):
-        self.game.end_time = tm.time()
-        self.game.state = Game.WON
-        for (x, y) in self.game.mf.all_coords:
-            mines = self.game.mf[y][x]
-            if mines > 0 and self.game.board[y][x][0] in ['U','F']:
-                self.game.board[y][x] = 'F' + str(mines)
-        self.nr_flags = self.nr_mines #all flags displayed
-        self.ui.finalise_win()
-
-    def check_is_game_won(self):
-        for (x, y) in self.game.mf.all_coords:
-            if self.game.board[y][x] == 'U' and self.game.mf[y][x] == 0:
-                return False
-        return True
-
     def toggle_flag(self, x, y):
         """The given cell must either be unclicked or flagged (otherwise it is
         unclickable)."""
@@ -170,7 +131,6 @@ class Processor:
             self.game.board[y][x] = 'F' + str(flags)
             self.nr_flags += 1
             self.ui.flag(x, y, flags)
-
     def chord(self, x, y):
         """Receive an attempt to chord at (x, y). If the number of flags is
         correct, return True and send the required signals to the UI, otherwise
@@ -191,7 +151,33 @@ class Processor:
             return True
         else:
             return False
-
+    def check_is_game_won(self):
+        for (x, y) in self.game.mf.all_coords:
+            if self.game.board[y][x] == 'U' and self.game.mf[y][x] == 0:
+                return False
+        return True
+    def finalise_loss(self):
+        self.game.state = Game.LOST
+        self.game.finalise()
+        for (x, y) in self.game.mf.all_coords:
+            board_cell = self.game.board[y][x]
+            mines = self.game.mf[y][x]
+            if mines > 0 and board_cell == 'U':
+                self.game.board[y][x] = 'M' + str(mines)
+            elif (str(board_cell)[0] == 'F'
+                  and board_cell != self.game.mf.completed_board[y][x]):
+                self.game.board[y][x] = 'X' + board_cell[1]
+        # print(prettify_grid(self.game.board))
+        self.ui.finalise_loss()
+    def finalise_win(self):
+        self.game.state = Game.WON
+        self.game.finalise()
+        for (x, y) in self.game.mf.all_coords:
+            mines = self.game.mf[y][x]
+            if mines > 0 and self.game.board[y][x][0] in ['U','F']:
+                self.game.board[y][x] = 'F' + str(mines)
+        self.nr_flags = self.nr_mines #all flags displayed
+        self.ui.finalise_win()
     def calculate_probs(self):
         print(ProbsGrid(board, **settings))
 
@@ -203,7 +189,6 @@ class Game:
     ACTIVE = 'active'
     LOST = 'lost'
     WON = 'won'
-
     def __init__(self, **settings):
         for attr in ['x_size', 'y_size', 'nr_mines', 'first_success',
                      'max_per_cell']:
@@ -212,41 +197,31 @@ class Game:
         self.board = []
         for j in range(self.y_size):
             self.board.append(self.x_size*['U'])
-        # Instantiate a new mf.
+        # Instantiate a new minefield
         self.mf = Minefield(self.x_size, self.y_size)
         self.state = Game.READY
-        self.start_time = self.finish_time = None
-
     def __repr__(self):
         return "<Game object%s>" % (", started at %s" % tm.strftime(
             '%H:%M, %d %b %Y', tm.localtime(self.start_time))
             if self.start_time else "")
-
     def __str__(self):
         ret = "Game with " + str(self.mf).lower()
         if self.start_time:
             ret += " Started at %s." % tm.strftime('%H:%M, %d %b %Y', tm.localtime(self.start_time))
         return ret
-
     def print_board(self):
         replace = {0:'-', 'U':'#'}
         if self.max_per_cell == 1:
             for char in ['M', 'F', '!', 'X', 'L']:
                 replace[char + '1'] = char
         print(prettify_grid(self.board, replace))
+    def finalise(self):
+        """Game should be either lost or won to get a finish time."""
+        self.end_time = tm.time()
+        self.elapsed = self.end_time - self.start_time
 
     def create_minefield(self, safe_coords=[]):
         self.mf.create(self.nr_mines, self.max_per_cell, safe_coords)
-
-    def get_time_passed(self):
-        """Return the time that has passed since the game was started."""
-        if not self.start_time:
-            return None
-        elif self.finish_time:
-            return self.finish_time - self.start_time
-        else:
-            return tm.time() - self.start_time
-
     def get_rem_3bv(self):
         """Calculate the minimum remaining number of clicks needed to solve."""
         if self.state == Game.WON:
@@ -270,11 +245,9 @@ class Game:
             completed_3bv = len({c for c in where_coords(self.grid >= 0)
                 if c not in rem_opening_coords})
             return lost_mf.get_3bv() - completed_3bv
-
     def get_prop_complete(self):
         """Calculate the progress of solving the board using 3bv."""
         return float(self.mf.bbbv - self.get_rem_3bv())/self.mf.bbbv
-
     def get_3bvps(self):
         """Return the 3bv/s."""
         if self.start_time:

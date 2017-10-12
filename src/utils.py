@@ -1,7 +1,21 @@
 
+import sys
 
 
-img_direc = r'../images/'
+__version__ = '2.0'
+IN_EXE = hasattr(sys, 'frozen')
+if IN_EXE:
+    img_direc = r'images/'
+else:
+    img_direc = r'../images/'
+
+diff_settings = {
+    'b': ( 8,  8,  10),
+    'i': (16, 16,  40),
+    'e': (30, 16,  99),
+    'm': (30, 30, 200),
+    'c': None
+}
 
 
 def prettify_grid(grid, repr_map=dict(), cell_size=1):
