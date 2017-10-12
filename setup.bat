@@ -1,5 +1,8 @@
-pyinstaller --distpath=bin/2.0/dist MineGauler.spec
+@ECHO off
 
-@echo Removing build folder...
+SET destn=bin/2.0/dist
 
-rmdir \S \Q build
+pyinstaller --distpath=%destn% MineGauler.spec
+
+COPY /Y files/README.txt %destn%/README.txt
+COPY /Y CHANGELOG.txt %destn%/CHANGELOG.txt

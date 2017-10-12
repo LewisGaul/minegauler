@@ -3,8 +3,7 @@
 block_cipher = None
 
 
-included_files = [('files/README.txt', '..'),
-                  ('images/icon.ico', 'images/')]
+included_files = [('images/icon.ico', 'images/')]
 for folder in ['buttons', 'faces', 'markers', 'numbers']:
     path = 'images/' + folder
     included_files.append((path, path))
