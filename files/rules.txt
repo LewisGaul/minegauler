@@ -1,0 +1,9 @@
+Aim:
+Click all the cells that don't contain any mines as quickly as possible, avoiding clicking cells containing mines.
+
+How to play:
+- The board contains a number of mines (displayed to the left of the face) which are placed randomly in the grid.
+- If you click a mine you lose a life. The game ends when you have no lives left. By default you will only have 1 life.
+- If you click a safe cell, either a number is displayed or an opening is revealed (effectively a number 0). The displayed number tells you how many mines are in the surrounding cells (the surrounding 8 cells in the basic game). This information can then be used to deduce which nearby squares are safe to click.
+- Right click to flag a cell which you believe to be a mine, which also protects you from clicking it accidentally.
+- If you have found and flagged all the mines next to a number you can click on the number with the left and right mouse buttons together to select the rest of the cells surrounding it, which you know to be safe. This is called chording.

@@ -1,4 +1,10 @@
 __pycache__/
 venv/
 build/
+bin/**/*
+!bin/**/*.zip
+LaTex/*
+!LaTex/*.pdf
+images/raw/
+images/frames/
 test.*

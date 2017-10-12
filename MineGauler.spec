@@ -3,7 +3,12 @@
 block_cipher = None
 
 
-included_files = [('images/', 'images/')]
+included_files = [('files/README.txt', '..'),
+                  ('images/icon.ico', 'images/')]
+for folder in ['buttons', 'faces', 'markers', 'numbers']:
+    path = 'images/' + folder
+    included_files.append((path, path))
+
 
 a = Analysis(['src\\main.py'],
              pathex=['C:\\Users\\User\\SkyDrive\\Documents\\Python\\minegaulerQt'],
