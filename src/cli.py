@@ -6,7 +6,7 @@ from utils import prettify_grid
 
 
 class GameCLI:
-    def __init__(self, processor):
+    def __init__(self, processor, **settings):
         self.procr = processor
     def choose_settings(self):
         diff = None

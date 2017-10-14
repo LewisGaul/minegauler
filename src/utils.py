@@ -1,13 +1,15 @@
 
 import sys
+from os.path import join
 
 
 __version__ = '2.0'
 IN_EXE = hasattr(sys, 'frozen')
 if IN_EXE:
-    img_direc = r'images/'
+    base_direc = r'/'
 else:
-    img_direc = r'../images/'
+    base_direc = r'../'
+img_direc = join(base_direc, 'images')
 
 diff_settings = {
     'b': ( 8,  8,  10),
@@ -16,7 +18,22 @@ diff_settings = {
     'm': (30, 30, 200),
     'c': None
 }
-
+default_settings = {
+'x_size': 8,
+'y_size': 8,
+'nr_mines': 10,
+'first_success': True,
+'max_per_cell': 1,
+# 'detection': 1,    # Implement later
+'drag_select': False,     # Belongs in game_gui
+'btn_size': 16, #pixels   # ...and this too
+# 'name': '',               # Ignore for now
+'styles': {               # Also belongs in game_gui
+    'buttons': 'standard',
+    'numbers': 'standard',
+    'markers': 'standard'
+    }
+}
 
 def prettify_grid(grid, repr_map=dict(), cell_size=1):
     ret = ''

@@ -11,37 +11,25 @@ The following character representations are used:
 """
 
 import sys
+from os.path import join
 import time as tm
+import json
 
 from minefield import Minefield
 from cli import GameCLI
 from gui import GameGUI
-from utils import get_nbrs, prettify_grid, diff_settings
-# from solver import ProbsGrid
+from utils import (get_nbrs, prettify_grid, diff_settings, default_settings,
+                   base_direc)
+# from solver.probabilities import ProbsGrid
 
 
-# Import settings here.
-imported_settings = {}
-default_settings = {
-    'x_size': 8,
-    'y_size': 8,
-    'nr_mines': 10,
-    'first_success': True,
-    'max_per_cell': 1,
-    # 'detection': 1,    # Implement later
-    # 'drag_select': False,     # Belongs in game_gui
-    # 'btn_size': 16, #pixels   # ...and this too
-    # 'name': '',               # Ignore for now
-    # 'styles': {               # Also belongs in game_gui
-    #     'buttons': 'standard',
-    #     'numbers': 'standard',
-    #     'images': 'standard'
-    #     }
-    }
+# Determine which UI to use
+if '--cli' in sys.argv:
+    sys.argv.remove('--cli')
+    GameUI = GameCLI
+else:
+    GameUI = GameGUI
 
-
-# GameUI = GameCLI         # [Determine which UI to use with argv]
-GameUI = GameGUI
 
 class Processor:
     def __init__(self, **settings):
@@ -57,9 +45,15 @@ class Processor:
                 break
         else:
             self.diff = 'c'
-        self.ui = GameUI(self)
+        self.ui = GameUI(self, **settings)
         self.prepare_new_game()
         self.ui.start()
+    def save_settings(self, settings={}):
+        for attr in ['x_size', 'y_size', 'nr_mines', 'first_success',
+                     'max_per_cell']:
+            settings[attr] = getattr(self, attr)
+        with open(join(base_direc, 'settings.cfg'), 'w') as f:
+            json.dump(settings, f)
     def update_settings(self):
         for attr in self.settings:
             self.settings[attr] = getattr(self, attr)
@@ -79,7 +73,7 @@ class Processor:
             self.diff = diff
         else:
             raise ValueError('Invalid difficulty character, {}.'.format(diff))
-        self.update_settings()
+        # self.update_settings()
         self.prepare_new_game()
     def prepare_new_game(self):
         self.game = Game(**self.settings)
@@ -256,11 +250,13 @@ class Game:
 
 
 
-
-if __name__ == '__main__':
-    settings = dict()
-    for attr in ['x_size', 'y_size', 'nr_mines', 'first_success',
-                 'max_per_cell']:
-        settings[attr] = (imported_settings[attr] if attr in imported_settings
-                          else default_settings[attr])
-    p = Processor(**settings)
+# Import settings
+try:
+    with open(join(base_direc, 'settings.cfg'), 'r') as f:
+        settings = json.load(f)
+except: #catch any error
+    settings = {}
+for attr in default_settings:
+    if attr not in settings:
+        settings[attr] = default_settings[attr]
+p = Processor(**settings)

@@ -9,6 +9,8 @@ class DummyProcessor:
         self.diff = None
         self.first_success = False
         self.game = DummyGame(self)
+    def save_settings(self):
+        pass
     def prepare_new_game(self):
         pass
     def chord(self, x, y):

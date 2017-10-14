@@ -25,20 +25,16 @@ def QMouseButton_to_int(QMouseButton):
 
 
 class GameGUI(QMainWindow):
-    btn_size = 16
-    styles = {'buttons': 'pi',
-              'numbers': 'standard',
-              'markers':  'standard'}
-    drag_select = True
-    def __init__(self, processor):
+    def __init__(self, processor, **settings):
         global app
         app = QApplication(sys.argv)
         super().__init__()
         self.setWindowTitle('MineGaulerQt')
         self.procr = processor
         self.settings = dict()
-        for attr in ['btn_size', 'styles', 'drag_select']:
-            self.settings[attr] = getattr(self, attr)
+        for attr in ['btn_size', 'drag_select', 'styles']:
+            setattr(self, attr, settings[attr])
+            self.settings[attr] = settings[attr]
         self.setWindowIcon(QIcon(join(img_direc, 'icon.ico')))
         self.setupUI()
     def setupUI(self):
@@ -140,6 +136,10 @@ class GameGUI(QMainWindow):
         app.exec_()
     def closeEvent(self, event):
         event.accept()
+        settings = {}
+        for attr in ['btn_size', 'drag_select', 'styles']:
+            settings[attr] = getattr(self, attr)
+        self.procr.save_settings(settings)
     def toggle_drag_select(self):
         # [Should check if a game is in play]
         # print(self.drag_select)
@@ -429,7 +429,6 @@ class MinefieldWidget(QWidget):
                     self.buttons[y][x].setVisible(False)
         self.setFixedSize(x_size*self.btn_size, y_size*self.btn_size)
 
-
 class CellButton(QLabel):
     pressed = pyqtSignal()      # Left mouse button pressed down over button
     released = pyqtSignal()     # Left mouse button moved away from button
@@ -544,7 +543,8 @@ class Timer(QTimer):
 
 if __name__ == '__main__':
 	# app = QApplication(sys.argv)
-    from Testing.dummies import DummyProcessor
-    win = GameGUI(DummyProcessor())
+    from testing.dummies import DummyProcessor
+    from utils import default_settings
+    win = GameGUI(DummyProcessor(), **default_settings)
     win.prepare_new_game()
     win.start()
