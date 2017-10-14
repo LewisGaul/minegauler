@@ -33,11 +33,10 @@ else:
 
 class Processor:
     def __init__(self, **settings):
-        self.settings = dict()
-        for attr in ['x_size', 'y_size', 'nr_mines', 'first_success',
-                     'max_per_cell']:
+        self.settings = ['x_size', 'y_size', 'nr_mines', 'first_success',
+                         'per_cell']
+        for attr in self.settings:
             setattr(self, attr, settings[attr])
-            self.settings[attr] = settings[attr]
         self.nr_flags = 0
         for d in diff_settings:
             if diff_settings[d] == (self.x_size, self.y_size, self.nr_mines):
@@ -49,9 +48,9 @@ class Processor:
         self.prepare_new_game()
         self.ui.start()
     def save_settings(self, settings={}):
-        for attr in ['x_size', 'y_size', 'nr_mines', 'first_success',
-                     'max_per_cell']:
-            settings[attr] = getattr(self, attr)
+        for attr in self.settings:
+            if attr not in settings:
+                settings[attr] = getattr(self, attr)
         with open(join(base_direc, 'settings.cfg'), 'w') as f:
             json.dump(settings, f)
     def update_settings(self):
@@ -76,9 +75,9 @@ class Processor:
         # self.update_settings()
         self.prepare_new_game()
     def prepare_new_game(self):
-        self.game = Game(**self.settings)
-        self.nr_flags = 0
         self.ui.prepare_new_game()
+        self.game = Game(**{attr:getattr(self,attr) for attr in self.settings})
+        self.nr_flags = 0
     def click(self, x, y, check_for_win=True):
         if self.game.board[y][x] != 'U':
             return
@@ -116,9 +115,9 @@ class Processor:
             self.game.board[y][x] = 'F1'
             self.nr_flags += 1
             self.ui.flag(x, y, 1)
-        elif val == 'F' + str(self.max_per_cell):
+        elif val == 'F' + str(self.per_cell):
             self.game.board[y][x] = 'U'
-            self.nr_flags -= self.max_per_cell
+            self.nr_flags -= self.per_cell
             self.ui.unflag(x, y)
         else:
             flags = int(val[1]) + 1
@@ -185,9 +184,8 @@ class Game:
     WON = 'won'
     def __init__(self, **settings):
         for attr in ['x_size', 'y_size', 'nr_mines', 'first_success',
-                     'max_per_cell']:
+                     'per_cell']:
             setattr(self, attr, settings[attr])
-            self.settings = settings[attr]
         self.board = []
         for j in range(self.y_size):
             self.board.append(self.x_size*['U'])
@@ -205,17 +203,17 @@ class Game:
         return ret
     def print_board(self):
         replace = {0:'-', 'U':'#'}
-        if self.max_per_cell == 1:
+        if self.per_cell == 1:
             for char in ['M', 'F', '!', 'X', 'L']:
                 replace[char + '1'] = char
         print(prettify_grid(self.board, replace))
+    def create_minefield(self, safe_coords=[]):
+        self.mf.create(self.nr_mines, self.per_cell, safe_coords)
     def finalise(self):
         """Game should be either lost or won to get a finish time."""
         self.end_time = tm.time()
         self.elapsed = self.end_time - self.start_time
 
-    def create_minefield(self, safe_coords=[]):
-        self.mf.create(self.nr_mines, self.max_per_cell, safe_coords)
     def get_rem_3bv(self):
         """Calculate the minimum remaining number of clicks needed to solve."""
         if self.state == Game.WON:
@@ -247,7 +245,6 @@ class Game:
         if self.start_time:
             return (self.mf.bbbv *
                 self.get_prop_complete() / self.get_time_passed())
-
 
 
 # Import settings

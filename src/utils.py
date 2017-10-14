@@ -23,7 +23,7 @@ default_settings = {
 'y_size': 8,
 'nr_mines': 10,
 'first_success': True,
-'max_per_cell': 1,
+'per_cell': 1,
 # 'detection': 1,    # Implement later
 'drag_select': False,     # Belongs in game_gui
 'btn_size': 16, #pixels   # ...and this too

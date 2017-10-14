@@ -1,4 +1,4 @@
 2.0.0 (unreleased 11/10/17)
-
 - Basic game features
 - Drag-select feature included
+- Max mines per cell option included
