@@ -1,7 +1,9 @@
 # -*- mode: python -*-
 
-block_cipher = None
+import platform
 
+
+block_cipher = None
 
 included_files = [('images/icon.ico', 'images/')]
 for folder in ['buttons', 'faces', 'markers', 'numbers']:
@@ -9,8 +11,13 @@ for folder in ['buttons', 'faces', 'markers', 'numbers']:
     included_files.append((path, path))
 
 
-a = Analysis(['src\\main.py'],
-             pathex=['C:\\Users\\User\\SkyDrive\\Documents\\Python\\minegaulerQt'],
+if platform.system() == 'Windows':
+    base_direc = 'C:\\Users\\User\\Dropbox\\MineGauler\\minegaulerQt'
+elif platform.system() == 'Darwin':
+    base_direc = '/Users/lewisgaul/Dropbox/MineGauler/minegaulerQt'
+
+a = Analysis(['src/main.py'],
+             pathex=[base_direc],
              binaries=[],
              datas=included_files,
              hiddenimports=[],
@@ -30,7 +37,7 @@ exe = EXE(pyz,
           strip=False,
           upx=True,
           console=False,
-          icon='images\\icon.ico')
+          icon='images/icon.ico') #icon arg may give error on mac?
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
