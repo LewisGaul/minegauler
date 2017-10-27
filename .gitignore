@@ -3,9 +3,5 @@ __pycache__/
 build/
 bin/**/*
 !bin/**/*.zip
-LaTex/*
-!LaTex/*.pdf
 images/raw/
-images/frames/
-test.*
 settings.cfg

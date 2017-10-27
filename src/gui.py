@@ -7,6 +7,7 @@ import sys
 from os.path import join, exists, basename
 from glob import glob
 import time as tm
+import logging
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -302,7 +303,9 @@ class MinefieldWidget(QWidget):
             base = join(img_direc, im_type)
             path = join(base, self.gui.styles[im_type], fname)
             if not exists(path):
-                path = join(base, 'standard', fname)
+                logging.warn(
+                    'Missing image file at {}, using standard style.'.format(path))
+                path = join(base, 'Standard', fname)
             return path
         path1 = get_path('buttons', fname1)
         if fname2:
@@ -422,14 +425,14 @@ class MinefieldWidget(QWidget):
         # First add on to the end of every row that already exists
         for j, row in enumerate(self.buttons):
             for i in range(len(row), x_size): #extra in x-direction
-                b = CellButton(self, self.procr, i, j)
+                b = CellButton(self, i, j)
                 self.layout.addWidget(b, j, i)
                 row.append(b)
         # Next create any new rows that are needed at same length as the others
         for j in range(len(self.buttons), y_size):
             row = []
             for i in range(len(self.buttons[0])): #keep self.buttons square
-                b = CellButton(self, self.procr, i, j)
+                b = CellButton(self, i, j)
                 self.layout.addWidget(b, j, i)
                 row.append(b)
             self.buttons.append(row)
@@ -454,6 +457,7 @@ class CellButton(QLabel):
         self.parent = parent #stores data such as images, settings
         self.procr = parent.procr
         self.gui = parent.gui
+        # self.setFixedSize(self.gui.btn_size, self.gui.btn_size)
         self.x, self.y = x, y
     def press(self):
         if self.gui.drag_select:

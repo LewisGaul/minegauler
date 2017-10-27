@@ -1,13 +1,15 @@
+
 @ECHO off
 
-SET destn=bin/2.0/dist
+SET destn=bin/2.0/linux
 
-pyinstaller --distpath=%destn% MineGauler.spec
+pyinstaller --distpath=$destn MineGauler.spec
 
-COPY /Y files/README.txt %destn%/README.txt
-COPY /Y CHANGELOG.txt %destn%/CHANGELOG.txt
+CP /Y files/README.txt $destn/README.txt
+CP /Y CHANGELOG.txt $destn/CHANGELOG.txt
 
-IF %1==--cli (
+IF $1==--cli;
+THEN (
     pyinstaller --distpath=build/dist MineGaulerCLI.spec
-    COPY /Y build/dist/MineGaulerCLI/MineGaulerCLI.exe %destn%/MineGauler/MineGaulerCLI.exe
+    CP /Y build/dist/MineGaulerCLI/MineGaulerCLI.exe $destn/MineGauler/MineGaulerCLI.exe
     )

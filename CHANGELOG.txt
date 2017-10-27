@@ -1,4 +1,28 @@
-2.0.0 (unreleased 11/10/17)
+Coming soon:
+- Custom boards
+- Highscores
+- Styles/themes
+- Hide timer
+- Help windows
+- Probability calculations
+- Lives
+- Radius of detection option
+- Pause
+
+Future plans:
+- Create, save and load boards
+- Zoom
+- Improved command-line game
+- Achievement tracking
+- Race the computer in real-time
+- Track clicks to allow for creating video of played game
+- Scrollbars allowing resizing of window
+
+
+2.0.1.b0 (15/10/17)
+- Added max mines per cell option
+
+2.0.0.b0 (11/10/17)
 - Basic game features
-- Drag-select feature included
-- Max mines per cell option included
+- Drag-select feature
+- Basic command-line gameplay (not ready for release)

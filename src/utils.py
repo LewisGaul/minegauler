@@ -1,15 +1,17 @@
 
 import sys
-from os.path import join
+from os.path import join, dirname, abspath
 
 
-__version__ = '2.0'
+__version__ = '2.0.1'
 IN_EXE = hasattr(sys, 'frozen')
+src_direc = dirname(abspath(__file__))
 if IN_EXE:
-    base_direc = r'/'
+    base_direc = src_direc
 else:
-    base_direc = r'../'
+    base_direc = dirname(src_direc)
 img_direc = join(base_direc, 'images')
+file_direc = join(base_direc, 'files')
 
 diff_settings = {
     'b': ( 8,  8,  10),
@@ -19,20 +21,20 @@ diff_settings = {
     'c': None
 }
 default_settings = {
-'x_size': 8,
-'y_size': 8,
-'nr_mines': 10,
-'first_success': True,
-'per_cell': 1,
-# 'detection': 1,    # Implement later
-'drag_select': False,     # Belongs in game_gui
-'btn_size': 16, #pixels   # ...and this too
-# 'name': '',               # Ignore for now
-'styles': {               # Also belongs in game_gui
-    'buttons': 'standard',
-    'numbers': 'standard',
-    'markers': 'standard'
-    }
+    'x_size': 8,
+    'y_size': 8,
+    'nr_mines': 10,
+    'first_success': True,
+    'per_cell': 1,
+    # 'radius': 1,    # Implement later
+    'drag_select': False,
+    'btn_size': 16, #pixels
+    # 'name': '',               # Ignore for now
+    'styles': {
+        'buttons': 'Standard',
+        'numbers': 'Standard',
+        'markers': 'Standard'
+        }
 }
 
 def prettify_grid(grid, repr_map=dict(), cell_size=1):

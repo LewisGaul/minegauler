@@ -72,7 +72,6 @@ class Processor:
             self.diff = diff
         else:
             raise ValueError('Invalid difficulty character, {}.'.format(diff))
-        # self.update_settings()
         self.prepare_new_game()
     def prepare_new_game(self):
         self.ui.prepare_new_game()
@@ -177,7 +176,7 @@ class Processor:
 
 class Game:
     """Store attributes of a game such as the minefield, the start and end time
-    etc.""" ###### Needs tidying up.
+    etc."""
     READY = 'ready'
     ACTIVE = 'active'
     LOST = 'lost'
@@ -213,7 +212,7 @@ class Game:
         """Game should be either lost or won to get a finish time."""
         self.end_time = tm.time()
         self.elapsed = self.end_time - self.start_time
-
+    #[Check the following methods]
     def get_rem_3bv(self):
         """Calculate the minimum remaining number of clicks needed to solve."""
         if self.state == Game.WON:
@@ -247,13 +246,18 @@ class Game:
                 self.get_prop_complete() / self.get_time_passed())
 
 
-# Import settings
-try:
-    with open(join(base_direc, 'settings.cfg'), 'r') as f:
-        settings = json.load(f)
-except: #catch any error
-    settings = {}
-for attr in default_settings:
-    if attr not in settings:
-        settings[attr] = default_settings[attr]
-p = Processor(**settings)
+def run():
+    # Import settings
+    try:
+        with open(join(base_direc, 'settings.cfg'), 'r') as f:
+            settings = json.load(f)
+    except: #catch any error
+        settings = {}
+    for attr in default_settings:
+        if attr not in settings:
+            settings[attr] = default_settings[attr]
+    p = Processor(**settings)
+
+
+if __name__ == '__main__':
+    run()
