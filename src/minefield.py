@@ -90,7 +90,9 @@ class Minefield(list):
                     opening |= nbrs
                 self.openings.append(sorted(opening))
                 all_found |= opening
-    def get_3bv(self):        # Move to C
+    def get_3bv(self):        #[Move to C?]
+        if hasattr(self, 'bbbv'):
+            return self.bbbv
         self.get_openings()
         clicks = len(self.openings)
         exposed = len({c for opening in self.openings for c in opening})

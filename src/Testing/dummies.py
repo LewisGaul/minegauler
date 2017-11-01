@@ -9,20 +9,30 @@ class DummyProcessor:
         self.diff = None
         self.first_success = False
         self.game = DummyGame(self)
-    def save_settings(self):
-        pass
+    def change_difficulty(self, diff):
+        if diff in diff_settings:
+            self.x_size, self.y_size, self.nr_mines = diff_settings[diff]
+            self.diff = diff
     def prepare_new_game(self):
-        pass
-    def chord(self, x, y):
         pass
     def click(self, x, y):
         pass
     def toggle_flag(self, x, y):
         pass
-    def change_difficulty(self, diff):
-        if diff in diff_settings:
-            self.x_size, self.y_size, self.nr_mines = diff_settings[diff]
-            self.diff = diff
+    def chord(self, x, y):
+        pass
+    def check_is_game_won(self):
+        pass
+    def finalise_loss(self):
+        pass
+    def finalise_win(self):
+        pass
+    def calculate_probs(self):
+        pass
+    def save_settings(self):
+        pass
+    def close_game(self):
+        pass
 
 class DummyGame:
     def __init__(self, processor):

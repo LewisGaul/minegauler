@@ -6,6 +6,7 @@ from utils import prettify_grid
 
 
 class GameCLI:
+    extra_game_settings = []
     def __init__(self, processor, **settings):
         self.procr = processor
     def choose_settings(self):
@@ -82,3 +83,16 @@ class GameCLI:
     def finalise_win(self):
         print("\nYou won!")
         self.procr.game.print_board()
+    def highscore_added(self, h):
+        pass
+
+
+# Dummy highscore facilities
+class HighscoresModel:
+    def __init__(self, *args, **kwargs):
+        pass
+    def update_hscores_group(self, settings):
+        pass
+
+def save_all_highscores():
+    pass

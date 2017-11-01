@@ -13,7 +13,9 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
-from utils import img_direc, get_nbrs, diff_settings
+from utils import img_direc, get_nbrs
+from highscores import (HighscoresWindow, get_hscore_position,
+                        settings_keys as hscore_group_keys)
 
 
 def QMouseButton_to_int(QMouseButton):
@@ -26,17 +28,18 @@ def QMouseButton_to_int(QMouseButton):
 
 
 class GameGUI(QMainWindow):
-    def __init__(self, processor, **settings):
+    def __init__(self, processor):
         global app
         app = QApplication(sys.argv)
         super().__init__()
         self.setWindowTitle('MineGaulerQt')
         self.procr = processor
-        self.settings = ['btn_size', 'drag_select', 'styles', 'per_cell']
-        for attr in self.settings:
-            setattr(self, attr, settings[attr])
-        self.setWindowIcon(QIcon(join(img_direc, 'icon.ico')))
+        for s in ['btn_size', 'styles']:
+            setattr(self, s, getattr(self.procr, s))
+        self.icon = QIcon(join(img_direc, 'icon.ico'))
+        self.setWindowIcon(self.icon)
         self.setupUI()
+        self.open_windows = {'main': self}
     def setupUI(self):
         centralWidget = QWidget(self)
         self.setCentralWidget(centralWidget)
@@ -81,15 +84,24 @@ class GameGUI(QMainWindow):
         game_menu = menu.addMenu('Game')
         opts_menu = menu.addMenu('Options')
         # help_menu = menu.addMenu('Help')
+        # GAME MENU
+        # New game action
         new_act = QAction('New', self)
-        game_menu.addAction(new_act)
         new_act.triggered.connect(self.procr.prepare_new_game)
         new_act.setShortcut('F2')
+        game_menu.addAction(new_act)
+        # Replay game action
         # replay_act = QAction('Replay', self)
-        # game_menu.addAction(replay_act)
         # replay_act.triggered.connect(SOMETHING)
         # replay_act.setShortcut('F3')
-        game_menu.addSeparator()
+        # game_menu.addAction(replay_act)
+        # Show highscores action
+        hs_act = QAction('Highscores', self)
+        hs_act.triggered.connect(self.show_highscores)
+        hs_act.setShortcut('F6')
+        game_menu.addAction(hs_act)
+        game_menu.addSeparator() #new section
+        # Difficulty radiobuttons
         self.diff_group = QActionGroup(self, exclusive=True)
         for diff in ['Beginner', 'Intermediate', 'Expert', 'Master']:#, 'Custom']:
             diff_act = QAction(diff, self.diff_group, checkable=True)
@@ -99,10 +111,12 @@ class GameGUI(QMainWindow):
                 diff_act.setChecked(True)
             diff_act.triggered.connect(lambda e: self.change_difficulty())
             diff_act.setShortcut(diff[0])
-        game_menu.addSeparator()
+        game_menu.addSeparator() #new section
+        # Zoom board action
         # zoom_act = QAction('Zoom', self)
-        # game_menu.addAction(zoom_act)
         # zoom_act.triggered.connect(SOMETHING)
+        # game_menu.addAction(zoom_act)
+        # Change styles options
         # styles_menu = QMenu('Styles', self)
         # game_menu.addMenu(styles_menu)
         # for img_group in ['buttons']:
@@ -120,11 +134,19 @@ class GameGUI(QMainWindow):
         game_menu.addAction(exit_act)
         exit_act.triggered.connect(self.close)
         exit_act.setShortcut('Alt+F4')
+        # OPTIONS MENU
+        # First-click success option
         first_act = QAction('Safe start', self, checkable=True)
         opts_menu.addAction(first_act)
         first_act.setChecked(self.procr.first_success)
         first_act.triggered.connect(lambda: setattr(self.procr,
             'first_success', not(self.procr.first_success)))
+        # Drag-select option
+        drag_act = QAction('Drag-select', self, checkable=True)
+        drag_act.setChecked(self.procr.drag_select)
+        drag_act.triggered.connect(self.toggle_drag_select)
+        opts_menu.addAction(drag_act)
+        # Max mines per cell option
         per_cell_menu = QMenu('Max per cell', self)
         opts_menu.addMenu(per_cell_menu)
         self.per_cell_group = QActionGroup(self, exclusive=True)
@@ -133,23 +155,45 @@ class GameGUI(QMainWindow):
             per_cell_menu.addAction(action)
             self.per_cell_group.addAction(action)
             action.num = i
-            if self.per_cell == i:
+            if self.procr.per_cell == i:
                 action.setChecked(True)
             action.triggered.connect(self.change_per_cell)
-        drag_act = QAction('Drag-select', self, checkable=True)
-        opts_menu.addAction(drag_act)
-        drag_act.setChecked(self.drag_select)
-        drag_act.triggered.connect(self.toggle_drag_select)
     def start(self):
         self.move(500, 150)
         self.show()
         app.exec_()
     def closeEvent(self, event):
+        self.procr.close_game()
         event.accept()
-        settings = {}
-        for attr in self.settings:
-            settings[attr] = getattr(self, attr)
-        self.procr.save_settings(settings)
+    def show_highscores(self, event=None, sort_by='time', filters={}):
+        """Show the highscores window (or update if already open)."""
+        if 'highscores' in self.open_windows:
+            # Set the highscores data to the current settings
+            model = self.open_windows['highscores'].model
+            model.all_data = self.procr.current_hscores
+            model.set_filters(filters)
+            model.filter_and_sort(sort_by=sort_by)
+            return
+        highscores_window = HighscoresWindow(sort_by, filters)
+        if self.procr.game.state == 'ready':
+            settings_source = self.procr
+        else:
+            settings_source = self.procr.game
+        highscores_window.model.update_hscores_group(settings_source)
+        highscores_window.model.set_current_hscore(self.procr.hscore)
+        highscores_window.setWindowIcon(self.icon)
+        self.open_windows['highscores'] = highscores_window
+        # Remove from open_windows when closed
+        def close_hscore_win(event):
+            event.accept()
+            self.open_windows.pop('highscores')
+        highscores_window.closeEvent = close_hscore_win
+    def highscore_added(self, h):
+        if 'highscores' in self.open_windows:
+            self.open_windows['highscores'].model.set_current_hscore(h)
+        top_in = get_hscore_position(h, self.procr.game, filters={'name':''})
+        if top_in is not None:
+            self.show_highscores(sort_by=top_in)
     def change_difficulty(self):
         diff = self.diff_group.checkedAction().id
         if diff == self.procr.diff:
@@ -168,14 +212,10 @@ class GameGUI(QMainWindow):
         self.mf_widget.reshape(x, y)
         self.prepare_new_game()
     def toggle_drag_select(self):
-        # [Should check if a game is in play]
-        # print(self.drag_select)
-        self.drag_select = not(self.drag_select)
-        self.mf_widget.drag_select = self.drag_select
+        self.procr.change_setting('drag_select', not(self.procr.drag_select))
     def change_per_cell(self):
-        self.per_cell = self.per_cell_group.checkedAction().num
-        if self.procr.game.state == 'ready':
-            self.procr.per_cell = self.procr.game.per_cell = self.per_cell
+        self.procr.change_setting('per_cell',
+                                  self.per_cell_group.checkedAction().num)
     def prepare_new_game(self):
         self.timer.stop()
         self.timer.label.setText('000')
@@ -183,7 +223,8 @@ class GameGUI(QMainWindow):
             self.mf_widget.buttons[y][x].refresh()
         self.set_face('ready')
         self.set_mines_counter()
-        self.procr.per_cell = self.per_cell
+        if 'highscores' in self.open_windows:
+            self.open_windows['highscores'].model.set_current_hscore(None)
     def start_game(self):
         self.timer.start()
     def reveal_cell(self, x, y):
@@ -357,7 +398,7 @@ class MinefieldWidget(QWidget):
         self.mouse_buttons_down = QMouseButton_to_int(event.buttons())
         if self.mouse_buttons_down == int(Qt.LeftButton):
             self.both_mouse_buttons_pressed = False
-            if self.gui.drag_select:
+            if self.procr.drag_select:
                 self.gui.set_face('active', check_game_state=True)
             b.pressed.emit()
         elif self.mouse_buttons_down == int(Qt.RightButton):
@@ -368,7 +409,7 @@ class MinefieldWidget(QWidget):
             # Reset face to account for case drag_select=True
             self.gui.set_face('ready', check_game_state=True)
             self.sink_area(x, y)
-            if self.gui.drag_select:
+            if self.procr.drag_select:
                 self.procr.chord(x, y)
     def mouseReleaseEvent(self, event):
         if not self.mouse_coord:
@@ -381,12 +422,12 @@ class MinefieldWidget(QWidget):
         self.gui.set_face('ready', check_game_state=True)
         if self.mouse_buttons_down != int(Qt.NoButton): # Both buttons were down
             self.raise_area(x, y)
-            if not self.gui.drag_select:
+            if not self.procr.drag_select:
                 self.procr.chord(x, y)
-            elif self.gui.drag_select and event.button() == Qt.RightButton:
+            elif self.procr.drag_select and event.button() == Qt.RightButton:
                 self.gui.set_face('active', check_game_state=True)
         elif event.button() == Qt.LeftButton:
-            if self.gui.drag_select or not self.both_mouse_buttons_pressed:
+            if self.procr.drag_select or not self.both_mouse_buttons_pressed:
                 b.clicked.emit()
     def mouseMoveEvent(self, event):
         old_coord = self.mouse_coord
@@ -395,7 +436,7 @@ class MinefieldWidget(QWidget):
         self.mouse_coord = (x, y) if (x, y) in self.all_coords else None
         if old_coord != self.mouse_coord:
             if (event.buttons() != Qt.LeftButton | Qt.RightButton
-                and self.both_mouse_buttons_pressed and not self.gui.drag_select):
+                and self.both_mouse_buttons_pressed and not self.procr.drag_select):
                 # Do nothing if both buttons were pressed but aren't currently
                 return
             if old_coord:
@@ -407,7 +448,7 @@ class MinefieldWidget(QWidget):
             if self.mouse_coord:
                 if event.buttons() == Qt.LeftButton:
                     self.buttons[y][x].pressed.emit()
-                elif event.buttons() == Qt.RightButton and self.gui.drag_select:
+                elif event.buttons() == Qt.RightButton and self.procr.drag_select:
                     self.buttons[y][x].rightPressed.emit()
                 elif event.buttons() == Qt.LeftButton | Qt.RightButton:
                     self.sink_area(x, y)
@@ -460,7 +501,7 @@ class CellButton(QLabel):
         # self.setFixedSize(self.gui.btn_size, self.gui.btn_size)
         self.x, self.y = x, y
     def press(self):
-        if self.gui.drag_select:
+        if self.procr.drag_select:
             self.procr.click(self.x, self.y)
         else:
             self.gui.set_face('active')

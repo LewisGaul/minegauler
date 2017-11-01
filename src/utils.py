@@ -13,7 +13,7 @@ else:
 img_direc = join(base_direc, 'images')
 file_direc = join(base_direc, 'files')
 
-diff_settings = {
+diff_values = {
     'b': ( 8,  8,  10),
     'i': (16, 16,  40),
     'e': (30, 16,  99),
@@ -24,12 +24,13 @@ default_settings = {
     'x_size': 8,
     'y_size': 8,
     'nr_mines': 10,
+    'diff': 'b',
     'first_success': True,
     'per_cell': 1,
     # 'radius': 1,    # Implement later
     'drag_select': False,
     'btn_size': 16, #pixels
-    # 'name': '',               # Ignore for now
+    'name': '',
     'styles': {
         'buttons': 'Standard',
         'numbers': 'Standard',
@@ -56,3 +57,7 @@ def get_nbrs(x, y, x_size, y_size):
         for j in range(max(0,y-1), min(y_size,y+2)):
             nbrs.append((i, j))
     return nbrs
+
+def calc_3bvps(h):
+    # Round up to 2 d.p. (converting time to seconds)
+    return (1e5 * h['3bv'] // h['time']) / 100 + 0.01

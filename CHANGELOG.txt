@@ -1,23 +1,24 @@
 Coming soon:
+- Probability calculations
 - Custom boards
-- Highscores
 - Styles/themes
 - Hide timer
 - Help windows
-- Probability calculations
+- Pause
 - Lives
 - Radius of detection option
-- Pause
 
 Future plans:
 - Create, save and load boards
 - Zoom
+- Track clicks to allow for creating video of played game
 - Improved command-line game
 - Achievement tracking
 - Race the computer in real-time
-- Track clicks to allow for creating video of played game
 - Scrollbars allowing resizing of window
 
+2.1.0.a0 (31/10/17)
+- Added local highscore functionality
 
 2.0.1.b0 (15/10/17)
 - Added max mines per cell option

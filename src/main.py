@@ -16,76 +16,76 @@ import time as tm
 import json
 
 from minefield import Minefield
-from cli import GameCLI
-from gui import GameGUI
-from utils import (get_nbrs, prettify_grid, diff_settings, default_settings,
-                   base_direc)
+from utils import (get_nbrs, prettify_grid, diff_values, default_settings,
+                   base_direc, file_direc)
+from highscores import (enchs, get_highscores,
+                        settings_keys as hscore_group_keys)
 # from solver.probabilities import ProbsGrid
-
 
 # Determine which UI to use
 if '--cli' in sys.argv:
     sys.argv.remove('--cli')
-    GameUI = GameCLI
+    from cli import GameCLI as GameUI
+    from cli import HighscoresModel, save_all_highscores
 else:
-    GameUI = GameGUI
+    from gui import GameGUI as GameUI
+    from highscores import HighscoresModel, save_all_highscores
+
 
 
 class Processor:
     def __init__(self, **settings):
-        self.settings = ['x_size', 'y_size', 'nr_mines', 'first_success',
-                         'per_cell']
-        for attr in self.settings:
+        self.settings = settings.keys()
+        for attr in settings:
             setattr(self, attr, settings[attr])
-        self.nr_flags = 0
-        for d in diff_settings:
-            if diff_settings[d] == (self.x_size, self.y_size, self.nr_mines):
+        for d in diff_values:
+            if diff_values[d] == (self.x_size, self.y_size, self.nr_mines):
                 self.diff = d
                 break
         else:
             self.diff = 'c'
-        self.ui = GameUI(self, **settings)
+        self.ui = GameUI(self)
+        # Get the existing highscores for the current settings
+        self.current_hscores = get_highscores(self)
         self.prepare_new_game()
         self.ui.start()
-    def save_settings(self, settings={}):
-        for attr in self.settings:
-            if attr not in settings:
-                settings[attr] = getattr(self, attr)
-        with open(join(base_direc, 'settings.cfg'), 'w') as f:
-            json.dump(settings, f)
-    def update_settings(self):
-        for attr in self.settings:
-            self.settings[attr] = getattr(self, attr)
     def change_difficulty(self, diff, x_size=None, y_size=None, nr_mines=None):
         """Change difficulty, creating a new game with new settings. Arguments
         x_size, y_size, nr_mines are ignored unless diff=='c'."""
         if diff == 'c':
-            for d in diff_settings:
-                if diff_settings[d] == (x_size, y_size, nr_mines):
+            for d in diff_values:
+                if diff_values[d] == (x_size, y_size, nr_mines):
                     self.change_difficulty(d)
                     return
             self.x_size, self.y_size = x_size, y_size
             self.nr_mines = nr_mines
             self.diff = 'c'
-        elif diff in diff_settings:
-            self.x_size, self.y_size, self.nr_mines = diff_settings[diff]
+        elif diff in diff_values:
+            self.x_size, self.y_size, self.nr_mines = diff_values[diff]
             self.diff = diff
         else:
             raise ValueError('Invalid difficulty character, {}.'.format(diff))
         self.prepare_new_game()
+    def change_setting(self, setting, value):
+        setattr(self, setting, value)
+        if self.game.state == Game.READY:
+            # If game isn't active update current highscores for new settings
+            self.current_hscores = get_highscores(self)
     def prepare_new_game(self):
-        self.ui.prepare_new_game()
-        self.game = Game(**{attr:getattr(self,attr) for attr in self.settings})
         self.nr_flags = 0
+        self.ui.prepare_new_game()
+        self.game = Game(self)
+        # Update highscores for new settings (in case game was active when the
+        #  settings were changed).
+        self.current_hscores = get_highscores(self)
+        self.hscore = None
     def click(self, x, y, check_for_win=True):
         if self.game.board[y][x] != 'U':
             return
         if self.game.state == Game.READY:
             safe_coords = (get_nbrs(x, y, self.x_size, self.y_size)
                            if self.first_success else [])
-            self.game.create_minefield(safe_coords)
-            self.game.state = Game.ACTIVE
-            self.game.start_time = tm.time()
+            self.game.start_game(safe_coords)
             self.ui.start_game()
         cell = self.game.mf.completed_board[y][x]
         if type(cell) is str:   # Mine hit, game over
@@ -168,10 +168,23 @@ class Processor:
             mines = self.game.mf[y][x]
             if mines > 0 and self.game.board[y][x][0] in ['U','F']:
                 self.game.board[y][x] = 'F' + str(mines)
-        self.nr_flags = self.nr_mines #all flags displayed
         self.ui.finalise_win()
+        if self.diff != 'c':
+            # Add completed game to highscores
+            self.hscore = h = self.game.get_highscore()
+            self.current_hscores.append(h)
+            self.ui.highscore_added(h)
     def calculate_probs(self):
         print(ProbsGrid(board, **settings))
+    def close_game(self):
+        save_all_highscores()
+        self.save_settings()
+    def save_settings(self):
+        settings = {}
+        for s in self.settings:
+            settings[s] = getattr(self, s)
+        with open(join(file_direc, 'settings.cfg'), 'w') as f:
+            json.dump(settings, f)
 
 
 class Game:
@@ -181,24 +194,29 @@ class Game:
     ACTIVE = 'active'
     LOST = 'lost'
     WON = 'won'
-    def __init__(self, **settings):
-        for attr in ['x_size', 'y_size', 'nr_mines', 'first_success',
-                     'per_cell']:
-            setattr(self, attr, settings[attr])
+    def __init__(self, processor):
+        self.procr = processor
+        for s in ['x_size', 'y_size', 'nr_mines', 'diff']:
+            setattr(self, s, getattr(self.procr, s))
+        # Initialise the game board (all cells unclicked)
         self.board = []
         for j in range(self.y_size):
             self.board.append(self.x_size*['U'])
         # Instantiate a new minefield
         self.mf = Minefield(self.x_size, self.y_size)
         self.state = Game.READY
+        self.start_time = None
     def __repr__(self):
-        return "<Game object%s>" % (", started at %s" % tm.strftime(
-            '%H:%M, %d %b %Y', tm.localtime(self.start_time))
-            if self.start_time else "")
-    def __str__(self):
-        ret = "Game with " + str(self.mf).lower()
         if self.start_time:
-            ret += " Started at %s." % tm.strftime('%H:%M, %d %b %Y', tm.localtime(self.start_time))
+            return "<Game object, started at {}>".format(
+                tm.strftime('%H:%M, %d %b %Y', tm.localtime(self.start_time)))
+        else:
+            return "<Game object (not started)>"
+    def __str__(self):
+        ret = "Game:\n" + str(self.mf)
+        if self.start_time:
+            time = tm.strftime('%H:%M, %d %b %Y', tm.localtime(self.start_time))
+            ret += f"\nStarted at {time}."
         return ret
     def print_board(self):
         replace = {0:'-', 'U':'#'}
@@ -206,12 +224,25 @@ class Game:
             for char in ['M', 'F', '!', 'X', 'L']:
                 replace[char + '1'] = char
         print(prettify_grid(self.board, replace))
-    def create_minefield(self, safe_coords=[]):
+    def start_game(self, safe_coords=[]):
+        for s in ['first_success', 'drag_select', 'per_cell']:
+            setattr(self, s, getattr(self.procr, s))
         self.mf.create(self.nr_mines, self.per_cell, safe_coords)
+        self.state = Game.ACTIVE
+        self.start_time = tm.time()
     def finalise(self):
-        """Game should be either lost or won to get a finish time."""
+        assert self.state in [Game.WON, Game.LOST], "Can't finalise until game is over"
         self.end_time = tm.time()
         self.elapsed = self.end_time - self.start_time
+    def get_highscore(self):
+        h = {'name':     self.procr.name,
+             'time':     round(self.elapsed * 1000),
+             '3bv':      self.mf.get_3bv(),
+             'date':     int(self.end_time),
+             'flagging': 'F' if bool(self.procr.nr_flags) else 'NF'
+             }
+        h['key'] = enchs(self, h)
+        return h
     #[Check the following methods]
     def get_rem_3bv(self):
         """Calculate the minimum remaining number of clicks needed to solve."""
@@ -249,13 +280,14 @@ class Game:
 def run():
     # Import settings
     try:
-        with open(join(base_direc, 'settings.cfg'), 'r') as f:
+        with open(join(file_direc, 'settings.cfg'), 'r') as f:
             settings = json.load(f)
     except: #catch any error
         settings = {}
     for attr in default_settings:
         if attr not in settings:
             settings[attr] = default_settings[attr]
+    # settings['name'] = 'Siwel G'
     p = Processor(**settings)
 
 
