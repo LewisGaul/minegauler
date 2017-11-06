@@ -194,9 +194,11 @@ class GameGUI(QMainWindow):
             event.accept()
             self.open_windows.pop('highscores')
         highscores_window.closeEvent = close_hscore_win
-    def set_highscore_settings(self, sort_by, filters):
-        self.procr.hscore_sort = sort_by
-        self.procr.hscore_filters = filters
+    def set_highscore_settings(self, sort_by=None, filters=None):
+        if sort_by is not None:
+            self.procr.hscore_sort = sort_by
+        if filters is not None:
+            self.procr.hscore_filters = filters
     def change_difficulty(self):
         diff = self.diff_group.checkedAction().id
         if diff == self.procr.diff:
@@ -333,10 +335,11 @@ class GameGUI(QMainWindow):
             if top_in:
                 # Set temporary sort and filters
                 model.change_sort(top_in, temp=True)
-                model.filters = self.procr.hscore_filters.copy()
+                filters = self.procr.hscore_filters.copy()
                 # Show highscores for current name if there's any name filter
                 if self.procr.hscore_filters['name']:
-                    model.filters['name'] = self.procr.name
+                    filters['name'] = self.procr.name
+                model.apply_filters(filters, temp=True)
             model.set_current_hscore(self.procr.hscore)
 
 
@@ -418,6 +421,7 @@ class MinefieldWidget(QWidget):
                 self.cross_images.append(self.make_pixmap('btn_up.png',
                     'markers', 'cross{}.png'.format(i), 5/8))
     def mousePressEvent(self, event):
+        self.gui.focus_to_game()
         x, y = event.x() // self.gui.btn_size, event.y() // self.gui.btn_size
         self.mouse_coord = (x, y)
         b = self.buttons[y][x]
@@ -523,11 +527,9 @@ class CellButton(QLabel):
         super().__init__(parent)
         self.parent = parent #stores data such as images, settings
         self.procr = parent.procr
-        self.gui = parent.gui
         # self.setFixedSize(self.gui.btn_size, self.gui.btn_size)
         self.x, self.y = x, y
     def press(self):
-        self.gui.focus_to_game()
         if self.procr.drag_select:
             self.procr.click(self.x, self.y)
         else:
@@ -540,7 +542,6 @@ class CellButton(QLabel):
         self.gui.set_face('ready')
         self.procr.click(self.x, self.y)
     def rightPress(self):
-        self.gui.focus_to_game()
         self.procr.toggle_flag(self.x, self.y)
     def areaPress(self):
         self.gui.set_face('active')
@@ -642,22 +643,19 @@ class NameBar(QLineEdit):
         self.font = QFont()
         self.font.setBold(True)
         self.setFont(self.font)
-        self.setPlaceholderText('Name')
-        self.setText(self.gui.procr.name)
+        self.setPlaceholderText('Enter name here')
+        if self.gui.procr.name:
+            self.setText(self.gui.procr.name)
+            self.clearFocus()
         self.setMaxLength(12)
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Return:
-            self.focus_out()
-        else:
-            super().keyPressEvent(event)
+        self.returnPressed.connect(self.focus_out)
     def focus_out(self):
-        self.setReadOnly(True)
-        self.setFocus(False)
+        self.clearFocus()
+        self.deselect()
         self.gui.procr.name = self.gui.procr.game.name = self.text().strip()
     def mouseDoubleClickEvent(self, event):
-        self.setReadOnly(False)
         self.selectAll()
-        self.setFocus(True)
+        self.setFocus()
 
 
 
