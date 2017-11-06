@@ -1,16 +1,18 @@
 
-from utils import diff_settings
+from utils import diff_values
 
 
 class DummyProcessor:
-    def __init__(self):
+    def __init__(self, **settings):
         self.x_size, self.y_size = 8, 8
         self.nr_mines = self.nr_flags = 0
         self.diff = None
         self.first_success = False
+        for attr in settings:
+            setattr(self, attr, settings[attr])
         self.game = DummyGame(self)
     def change_difficulty(self, diff):
-        if diff in diff_settings:
+        if diff in diff_values:
             self.x_size, self.y_size, self.nr_mines = diff_settings[diff]
             self.diff = diff
     def prepare_new_game(self):

@@ -38,16 +38,19 @@ class GameGUI(QMainWindow):
             setattr(self, s, getattr(self.procr, s))
         self.icon = QIcon(join(img_direc, 'icon.ico'))
         self.setWindowIcon(self.icon)
+        # Disable maximise button
+        self.setWindowFlags(self.windowFlags() | Qt.CustomizeWindowHint)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowMaximizeButtonHint)
         self.setupUI()
         self.open_windows = {'main': self}
     def setupUI(self):
-        centralWidget = QWidget(self)
-        self.setCentralWidget(centralWidget)
-        vlayout = QVBoxLayout(centralWidget)
+        central_widget = QWidget(self)
+        self.setCentralWidget(central_widget)
+        vlayout = QVBoxLayout(central_widget)
         vlayout.setContentsMargins(0, 0, 0, 0)
         vlayout.setSpacing(0)
         # Top panel widget configuration
-        self.panel_frame = QFrame(centralWidget)
+        self.panel_frame = QFrame(central_widget)
         self.panel_frame.setFixedHeight(40)
         self.panel_frame.setFrameShadow(QFrame.Sunken)
         self.panel_frame.setFrameShape(QFrame.Panel)
@@ -57,28 +60,28 @@ class GameGUI(QMainWindow):
         lyt = QVBoxLayout(self.panel_frame)
         lyt.setContentsMargins(0, 0, 0, 0)
         lyt.addWidget(self.panel)
-        self.panel.pressed.connect(
-            lambda: self.face_button.setFrameShadow(QFrame.Sunken))
-        self.panel.released.connect(
-            lambda: self.face_button.setFrameShadow(QFrame.Raised))
-        self.panel.clicked.connect(self.procr.prepare_new_game)
         # Main body widget config - use horizontal layout for centre alignment
         hstretch = QHBoxLayout()
-        hstretch.addStretch()
-        self.body = QFrame(centralWidget)
+        hstretch.addStretch() #left-padding for centering
+        self.body = QFrame(central_widget) #minefield frame
         self.body.setFrameShadow(QFrame.Raised)
         self.body.setFrameShape(QFrame.Box)
         self.body.setLineWidth(5)
         hstretch.addWidget(self.body)
-        hstretch.addStretch()
+        hstretch.addStretch() #right-padding for centering
         vlayout.addLayout(hstretch)
         lyt = QVBoxLayout(self.body)
         self.mf_widget = MinefieldWidget(self.body, self.procr, self)
         lyt.setContentsMargins(0, 0, 0, 0)
         lyt.addWidget(self.mf_widget)
         self.make_menubar()
+        # Name entry bar underneath the minefield
+        self.namebar = NameBar(central_widget, self)
+        # self.namebar.mouseDoubleClickEvent = lambda e=None: self.namebar.setEnabled
+        vlayout.addWidget(self.namebar)
+        # Set window size
         self.setMaximumSize(self.body.width(),
-                            self.panel.height() + self.body.height())
+            self.panel.height() + self.body.height() + self.namebar.height())
     def make_menubar(self):
         menu = self.menuBar() #QMainWindow has QMenuBar already
         game_menu = menu.addMenu('Game')
@@ -165,16 +168,19 @@ class GameGUI(QMainWindow):
     def closeEvent(self, event):
         self.procr.close_game()
         event.accept()
-    def show_highscores(self, event=None, sort_by='time', filters={}):
+    def focus_to_game(self):
+        """Move the focus to the main game, away from the name bar or
+        probabilities."""
+        if self.namebar.isEnabled():
+            self.namebar.focus_out()
+            return
+    def show_highscores(self, event=None, sort_by=None, filters=None):
         """Show the highscores window (or update if already open)."""
         if 'highscores' in self.open_windows:
-            # Set the highscores data to the current settings
-            model = self.open_windows['highscores'].model
-            model.all_data = self.procr.current_hscores
-            model.set_filters(filters)
-            model.filter_and_sort(sort_by=sort_by)
             return
-        highscores_window = HighscoresWindow(sort_by, filters)
+        # Create highscores window
+        highscores_window = HighscoresWindow(self, self.procr.hscore_sort,
+                                             self.procr.hscore_filters)
         if self.procr.game.state == 'ready':
             settings_source = self.procr
         else:
@@ -188,12 +194,9 @@ class GameGUI(QMainWindow):
             event.accept()
             self.open_windows.pop('highscores')
         highscores_window.closeEvent = close_hscore_win
-    def highscore_added(self, h):
-        if 'highscores' in self.open_windows:
-            self.open_windows['highscores'].model.set_current_hscore(h)
-        top_in = get_hscore_position(h, self.procr.game, filters={'name':''})
-        if top_in is not None:
-            self.show_highscores(sort_by=top_in)
+    def set_highscore_settings(self, sort_by, filters):
+        self.procr.hscore_sort = sort_by
+        self.procr.hscore_filters = filters
     def change_difficulty(self):
         diff = self.diff_group.checkedAction().id
         if diff == self.procr.diff:
@@ -312,6 +315,29 @@ class GameGUI(QMainWindow):
             n = self.procr.game.mf[y][x]
             if n > 0:
                 self.reveal_cell(x, y)
+        filters = self.procr.hscore_filters.copy()
+        if filters['name']:
+            cut_off = 5
+        else:
+            cut_off = 1
+        # Show highscores for current name if there's any name filter
+        filters['name'] = self.procr.name
+        top_in = get_hscore_position(self.procr.hscore, self.procr.game,
+                                     filters, cut_off)
+        # print(top_in)
+        if top_in is not None:
+            self.show_highscores(sort_by=top_in)
+        if 'highscores' in self.open_windows:
+            # Make current highscore bold [and scroll to it]
+            model = self.open_windows['highscores'].model
+            if top_in:
+                # Set temporary sort and filters
+                model.change_sort(top_in, temp=True)
+                model.filters = self.procr.hscore_filters.copy()
+                # Show highscores for current name if there's any name filter
+                if self.procr.hscore_filters['name']:
+                    model.filters['name'] = self.procr.name
+            model.set_current_hscore(self.procr.hscore)
 
 
 class MinefieldWidget(QWidget):
@@ -501,6 +527,7 @@ class CellButton(QLabel):
         # self.setFixedSize(self.gui.btn_size, self.gui.btn_size)
         self.x, self.y = x, y
     def press(self):
+        self.gui.focus_to_game()
         if self.procr.drag_select:
             self.procr.click(self.x, self.y)
         else:
@@ -513,6 +540,7 @@ class CellButton(QLabel):
         self.gui.set_face('ready')
         self.procr.click(self.x, self.y)
     def rightPress(self):
+        self.gui.focus_to_game()
         self.procr.toggle_flag(self.x, self.y)
     def areaPress(self):
         self.gui.set_face('active')
@@ -540,13 +568,15 @@ class CellButton(QLabel):
         images = getattr(self.parent, im_type + '_images')
         self.setPixmap(images[num])
 
-
 class TopPanel(QAbstractButton):
     def __init__(self, parent, gui):
         super().__init__(parent)
         self.gui = gui
         self.setFixedHeight(40)
         self.populate()
+        self.pressed.connect(self.press)
+        self.released.connect(self.release)
+        self.clicked.connect(self.gui.procr.prepare_new_game)
     def paintEvent(self, e):
         # Must be implemented on QAbstractButton
         pass
@@ -576,6 +606,13 @@ class TopPanel(QAbstractButton):
         #                             font: bold 15px Tahoma;
         #                             padding-left: 1px;""")
         layout.addWidget(self.timer.label)
+    @pyqtSlot()
+    def press(self):
+        self.gui.face_button.setFrameShadow(QFrame.Sunken)
+        # self.gui.focus_to_game()
+    @pyqtSlot()
+    def release(self):
+        self.gui.face_button.setFrameShadow(QFrame.Raised)
 
 class Timer(QTimer):
     def __init__(self, parent):
@@ -597,6 +634,30 @@ class Timer(QTimer):
     def set_time(self, time):
         self.label.setText('{:03d}'.format(min(int(time) + 1, 999)))
 
+class NameBar(QLineEdit):
+    def __init__(self, parent, gui):
+        super().__init__(parent)
+        self.gui = gui
+        self.setAlignment(Qt.AlignCenter)
+        self.font = QFont()
+        self.font.setBold(True)
+        self.setFont(self.font)
+        self.setPlaceholderText('Name')
+        self.setText(self.gui.procr.name)
+        self.setMaxLength(12)
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Return:
+            self.focus_out()
+        else:
+            super().keyPressEvent(event)
+    def focus_out(self):
+        self.setReadOnly(True)
+        self.setFocus(False)
+        self.gui.procr.name = self.gui.procr.game.name = self.text().strip()
+    def mouseDoubleClickEvent(self, event):
+        self.setReadOnly(False)
+        self.selectAll()
+        self.setFocus(True)
 
 
 
@@ -604,6 +665,6 @@ if __name__ == '__main__':
 	# app = QApplication(sys.argv)
     from testing.dummies import DummyProcessor
     from utils import default_settings
-    win = GameGUI(DummyProcessor(), **default_settings)
+    win = GameGUI(DummyProcessor(**default_settings))
     win.prepare_new_game()
     win.start()

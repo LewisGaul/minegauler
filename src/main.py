@@ -168,12 +168,11 @@ class Processor:
             mines = self.game.mf[y][x]
             if mines > 0 and self.game.board[y][x][0] in ['U','F']:
                 self.game.board[y][x] = 'F' + str(mines)
-        self.ui.finalise_win()
         if self.diff != 'c':
             # Add completed game to highscores
-            self.hscore = h = self.game.get_highscore()
-            self.current_hscores.append(h)
-            self.ui.highscore_added(h)
+            self.hscore = self.game.get_highscore()
+            self.current_hscores.append(self.hscore)
+        self.ui.finalise_win()
     def calculate_probs(self):
         print(ProbsGrid(board, **settings))
     def close_game(self):
@@ -287,7 +286,6 @@ def run():
     for attr in default_settings:
         if attr not in settings:
             settings[attr] = default_settings[attr]
-    # settings['name'] = 'Siwel G'
     p = Processor(**settings)
 
 

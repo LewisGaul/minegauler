@@ -35,7 +35,12 @@ default_settings = {
         'buttons': 'Standard',
         'numbers': 'Standard',
         'markers': 'Standard'
-        }
+        },
+    'hscore_sort': 'time',
+    'hscore_filters': {
+        'name': '',
+        'flagging': '',
+    }
 }
 
 def prettify_grid(grid, repr_map=dict(), cell_size=1):

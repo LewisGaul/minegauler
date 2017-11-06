@@ -1,9 +1,0 @@
-from DO_NOT_EDIT import make_module
-
-encrypted_file_source = 'gAAAAABZ7NCVFRS5a7FAC7VFj7XkbO1xkFxNjNITDfJvn4SJhL-OrPuTPAPgr5K4090PMOT9RJjCAqRlffOuClRyrCRidAtxhsC3sc8DuETf-JuoT-2g5gBBUfg-oV8LmjxY98mREwjf3DweNM9HfknQOkcIBoWSqkBHHOwlNsaB7rerz_Wbtgliwu47vRDWHWQOTqJc7A7WG8WA1Vn5yV-fJ35AuIHIjF9TCdpyk9YB_5lSXqcOsnQ=' #to be filled in dynamically
-
-this_module = make_module(encrypted_file_source, globals())
-
-globals().update(this_module.__dict__)
-
-del make_module, encrypted_file_source, this_module

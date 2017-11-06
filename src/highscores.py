@@ -124,9 +124,10 @@ def save_all_highscores():
         if len(hscores) > num_imported_highscores[key]:
             write_highscores(key)
 
-def get_hscore_position(hscore, settings, filters={}):
+def get_hscore_position(hscore, settings, filters={}, cut_off=5):
     settings = settings_to_str(settings)
     highscores = []
+    filters = {k: v for k, v in filters.items() if v}
     for h in all_highscores[settings]:
         all_pass = True
         for key, f in filters.items():
@@ -135,10 +136,6 @@ def get_hscore_position(hscore, settings, filters={}):
                 break
         if all_pass:
             highscores.append(h) #all filters satisfied
-    if 'name' in filters:
-        cut_off = 5 #must be top 5
-    else:
-        cut_off = 1 #must be best for name
     highscores.sort(key=lambda h: (h['time'], -h['3bv']))
     if hscore in highscores[:cut_off]:
         return 'time'
@@ -150,16 +147,19 @@ def get_hscore_position(hscore, settings, filters={}):
 
 
 
-class HighscoresWindow(QWidget):
-    def __init__(self, sort_by='time', filters={}):
-        super().__init__()
+class HighscoresWindow(QMainWindow):
+    def __init__(self, parent, sort_by='time', filters={}):
+        super().__init__(parent)
         self.setWindowTitle('Highscores')
         self.view = QTableView()
-        self.model = HighscoresModel(self, sort_by, filters)
+        self.model = HighscoresModel(self, parent, sort_by, filters)
+        self.central_widget = QWidget(self)
+        self.setCentralWidget(self.central_widget)
         self.setupUI()
+        self.filter_menu = None
         self.show()
     def setupUI(self):
-        lyt = QHBoxLayout(self)
+        lyt = QHBoxLayout(self.central_widget)
         # settings_frame = QFrame(self)
         # lyt.addWidget(settings_frame) #[currently not implemented]
         # settings_frame.setLineWidth(2)
@@ -170,10 +170,10 @@ class HighscoresWindow(QWidget):
         self.view.setStyleSheet("""background: rgb(215,215,255);
                                    font: normal 9pt Sans-serif;""")
         # self.view.resizeColumnsToContents()
-        width = 75
+        # width = 75
         for col, size in enumerate([46, 37, 45, 68, 59]):
-            self.view.setColumnWidth(col, size)
-            width += size
+            self.view.setColumnWidth(col+1, size)
+            # width += size
         self.view.resizeRowsToContents()
         self.view.setAlternatingRowColors(True)
         self.view.setSelectionMode(QAbstractItemView.NoSelection)
@@ -191,11 +191,11 @@ class HighscoresWindow(QWidget):
         Hhead.sortIndicatorChanged.emit(self.model.sort_index, Qt.SortOrder())
         Vhead.setSectionsClickable(False)
         Hhead.setSectionResizeMode(QHeaderView.Fixed)
-        # Hhead.setSectionResizeMode(0, QHeaderView.Stretch)
+        Hhead.setSectionResizeMode(0, QHeaderView.Stretch)
         Vhead.setSectionResizeMode(QHeaderView.Fixed)
         Hhead.sectionClicked.connect(self.handleHeaderClicked)
-        # self.view.setFixedWidth(400)
-        self.view.setFixedWidth(width)
+        self.view.setFixedWidth(400)
+        # self.view.setFixedWidth(width)
         # Make settings/filter panel
         # lyt = QVBoxLayout(settings_frame)
         # settings_frame.setFixedSize(200, 200)
@@ -211,8 +211,12 @@ class HighscoresWindow(QWidget):
         key = self.model.header_clicked = self.model.headers[col]
         if key not in ['name', 'flagging']:
             return
-        menu = QMenu(self)
-        signal_mapper = QSignalMapper(self)
+        #[Doesn't work because clicking the header hides the menu, fix]
+        # if self.filter_menu and self.filter_menu.isVisible():
+        #     self.filter_menu.hide()
+            # return
+        self.filter_menu = QMenu(self)
+        signal_mapper = QSignalMapper(self) #[Remove use of this]
         if key == 'flagging':
             group = QActionGroup(self, exclusive=True)
             for action_num, action_name in enumerate(['All', 'F', 'NF']):
@@ -223,7 +227,7 @@ class HighscoresWindow(QWidget):
                     action.setChecked(True)
                 signal_mapper.setMapping(action, action_name)
                 action.triggered.connect(signal_mapper.map)
-                menu.addAction(action)
+                self.filter_menu.addAction(action)
         elif key == 'name':
             # Make button for resetting filter (show all)
             all_action = QAction('All', checkable=True)
@@ -231,22 +235,22 @@ class HighscoresWindow(QWidget):
                 all_action.setChecked(True)
             all_action.triggered.connect(signal_mapper.map)
             signal_mapper.setMapping(all_action, '') #pass empty string filter
-            menu.addAction(all_action) #add to menu
-            menu.addSeparator() #fix highlighting for mouse movement
+            self.filter_menu.addAction(all_action) #add to menu
+            self.filter_menu.addSeparator() #patch highlighting with mouse movement
             # Make entry bar for name filter
-            name_action = QWidgetAction(menu) #to contain a widget (QLineEdit)
+            name_action = QWidgetAction(self.filter_menu) #to contain QLineEdit
             # Create the entry bar with the existing filter as the text
             entry = QLineEdit(self.model.filters['name'], self)
             entry.selectAll() #select all the text
             # Set focus to the entry bar when the menu is opened
-            menu.aboutToShow.connect(entry.setFocus)
+            self.filter_menu.aboutToShow.connect(entry.setFocus)
             def set_name_filter():
                 # Emit signal for signal_mapper with text entered and hide menu
-                signal_mapper.mapped[str].emit(entry.text())
-                menu.hide()
+                signal_mapper.mapped[str].emit(entry.text().strip())
+                self.filter_menu.hide()
             entry.returnPressed.connect(set_name_filter) #enter applies filter
             name_action.setDefaultWidget(entry) #set widget on QAction
-            menu.addAction(name_action) #add the QAction to menu
+            self.filter_menu.addAction(name_action) #add the QAction to menu
         # Connect signal to the filter method, passing filter string
         signal_mapper.mapped[str].connect(self.model.filter_and_sort)
         # Display menu in appropriate position, below header in column 'col'
@@ -255,16 +259,17 @@ class HighscoresWindow(QWidget):
         posY = headerPos.y() + header.height()
         posX = headerPos.x() + header.sectionPosition(col)
         pos = QPoint(posX, posY)
-        menu.exec_(pos) #modal dialog
+        self.filter_menu.exec_(pos) #modal dialog
 
 
 class HighscoresModel(QAbstractTableModel):
     """Handles the sorting and filtering of the group of highscores being
     displayed."""
-    def __init__(self, parent, sort_by='time', filters={}):
+    def __init__(self, parent, gui, sort_by='time', filters={}):
         super().__init__(parent)
-        # self.headers = ['name', 'time', '3bv', '3bv/s', 'date', 'flagging']
-        self.headers = ['time', '3bv', '3bv/s', 'date', 'flagging']
+        self.parent = parent
+        self.gui = gui
+        self.headers = ['name', 'time', '3bv', '3bv/s', 'date', 'flagging']
         self.disp_headers = [h.capitalize() for h in self.headers]
         self.all_data = [] #list of dicts
         self.displayed_data = [] #filled in the filter_and_sort method
@@ -299,7 +304,8 @@ class HighscoresModel(QAbstractTableModel):
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 return QVariant(self.disp_headers[index])
-            elif role == Qt.FontRole and self.filters[self.headers[index]]:
+            elif role == Qt.FontRole and (
+                self.filters[self.headers[index]] or self.sort_index == index):
                 return bold_font
         elif orientation == Qt.Vertical:
             if role == Qt.DisplayRole:
@@ -314,35 +320,55 @@ class HighscoresModel(QAbstractTableModel):
         if key not in ['time', '3bv/s']: #sorting not allowed
             return
         # Store current sorting index and order
-        self.sort_index = col
-        # Perform the sort
-        self.layoutAboutToBeChanged.emit()
-        # Sort first by either time or 3bv/s, then by 3bv if there's a tie
-        #  (higher 3bv higher for equal time, lower for equal 3bv/s)
-        if key == 'time':
-            self.displayed_data.sort(key=lambda h:(h['time'], -1 * h['3bv']))
-        elif key == '3bv/s':
-            self.displayed_data.sort(
-                key=lambda h:(calc_3bvps(h), -1 * h['3bv']), reverse=True)
-        self.layoutChanged.emit()
+        self.change_sort(col)
+        self.filter_and_sort()
+        # # Perform the sort
+        # self.layoutAboutToBeChanged.emit()
+        # # Sort first by either time or 3bv/s, then by 3bv if there's a tie
+        # #  (higher 3bv higher for equal time, lower for equal 3bv/s)
+        # if key == 'time':
+        #     self.displayed_data.sort(key=lambda h:(h['time'], -1 * h['3bv']))
+        # elif key == '3bv/s':
+        #     self.displayed_data.sort(
+        #         key=lambda h:(calc_3bvps(h), -1 * h['3bv']), reverse=True)
+        # self.layoutChanged.emit()
     # New methods
     def set_filters(self, filters={}):
         self.filters = {}
         for h in self.headers:
             self.filters[h] = filters[h] if h in filters else ''
+    def add_filter(self, header, value):
+        self.filters[header] = value
+        if self.gui is not None:
+            self.gui.set_highscore_settings(self.headers[self.sort_index],
+                                            self.filters)
+    def change_sort(self, sort_by, temp=False):
+        if type(sort_by) == int:
+            self.sort_index = sort_by
+            header = self.headers[sort_by]
+        elif type(sort_by) == str:
+            self.sort_index = self.headers.index(sort_by)
+            header = sort_by
+        if temp:
+            self.parent.handleSortIndicatorChanged(self.sort_index, 0)
+        elif self.gui is not None:
+            self.gui.set_highscore_settings(header, self.filters)
     def update_hscores_group(self, settings):
-        """Argument settings can be dictionary of settings or an object
-        containing the required settings as attributes."""
+        """
+        Argument settings can be dictionary of settings or an object
+        containing the required settings as attributes.
+        """
         self.all_data = get_highscores(settings)
         self.filter_and_sort()
     def set_current_hscore(self, h):
         self.active_hscore = h
-        self.layoutAboutToBeChanged.emit()
-        self.layoutChanged.emit()
+        #[Scroll to this hscore if get_active_row()]
+        self.filter_and_sort()
     def get_active_row(self):
-        if self.active_hscore not in self.displayed_data:
+        if self.active_hscore in self.displayed_data:
+            return self.displayed_data.index(self.active_hscore)
+        else:
             return None
-        return self.displayed_data.index(self.active_hscore)
     def format_data(self, row, key):
         h = self.displayed_data[row]
         if key in ['name', 'flagging']:
@@ -360,9 +386,9 @@ class HighscoresModel(QAbstractTableModel):
     def filter_and_sort(self, filtr=None, sort_by=None):
         self.layoutAboutToBeChanged.emit()
         if filtr is not None:
-            self.filters[self.header_clicked] = filtr
+            self.add_filter(self.header_clicked, filtr)
         if sort_by is not None:
-            self.sort_index = self.headers.index(sort_by)
+            self.change_sort(sort_by)
         filters = {k: f for k, f in self.filters.items() if f}
         self.displayed_data = []
         for h in self.all_data:
@@ -373,7 +399,24 @@ class HighscoresModel(QAbstractTableModel):
                     break
             if all_pass:
                 self.displayed_data.append(h) #all filters satisfied
-        self.sort(self.sort_index) #re-sort
+        # Sort first by either time or 3bv/s, then by 3bv if there's a tie
+        #  (higher 3bv higher for equal time, lower for equal 3bv/s)
+        if self.headers[self.sort_index] == 'time':
+            self.displayed_data.sort(key=lambda h:(h['time'], -1 * h['3bv']))
+        elif self.headers[self.sort_index] == '3bv/s':
+            self.displayed_data.sort(
+                key=lambda h:(calc_3bvps(h), -1 * h['3bv']), reverse=True)
+        if 'name' not in filters:
+            names = []
+            i = 0
+            while i < len(self.displayed_data):
+                h = self.displayed_data[i]
+                name = h['name'].lower()
+                if name in names:
+                    self.displayed_data.pop(i)
+                else:
+                    names.append(name)
+                    i += 1
         self.layoutChanged.emit()
 
 
@@ -384,6 +427,6 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     # from utils import default_settings
     settings = {'diff': 'b', 'drag_select': True, 'per_cell': 1}
-    hw = HighscoresWindow()
+    hw = HighscoresWindow(None)
     hw.model.update_hscores_group(settings)
     app.exec_()
