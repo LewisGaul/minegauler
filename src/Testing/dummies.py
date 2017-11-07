@@ -13,7 +13,7 @@ class DummyProcessor:
         self.game = DummyGame(self)
     def change_difficulty(self, diff):
         if diff in diff_values:
-            self.x_size, self.y_size, self.nr_mines = diff_settings[diff]
+            self.x_size, self.y_size, self.nr_mines = diff_values[diff]
             self.diff = diff
     def prepare_new_game(self):
         pass

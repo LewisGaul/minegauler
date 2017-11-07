@@ -1,14 +1,17 @@
 # -*- mode: python -*-
 
 import platform
+from os.path import join
+from glob import glob
 
 
 block_cipher = None
 
 included_files = [('images/icon.ico', 'images/')]
 for folder in ['buttons', 'faces', 'markers', 'numbers']:
-    path = 'images/' + folder
+    path = join('images', folder)
     included_files.append((path, path))
+included_files.extend(map(lambda f: (f, 'files'), glob('files/*.txt')))
 
 
 if platform.system() == 'Windows':

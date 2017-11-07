@@ -1,24 +1,29 @@
 Coming soon:
+- Styles
 - Probability calculations
 - Custom boards
-- Styles/themes
+- Info about current game
+- Change displayed highscores group (settings beside the highscore table)
 - Hide timer
 - Help windows
 - Pause
 - Lives
+- Zoom
 - Radius of detection option
 
 Future plans:
 - Create, save and load boards
-- Zoom
 - Track clicks to allow for creating video of played game
-- Improved command-line game
+- Themes
 - Achievement tracking
 - Race the computer in real-time
 - Scrollbars allowing resizing of window
 
-2.1.0.a1 (06/11/17)
-- Improved highscores
+2.1.1.b0 ()
+- 
+
+2.1.0.b0 (06/11/17)
+- Improved highscores, adding name and improving filters
 
 2.1.0.a0 (31/10/17)
 - Added local highscore functionality

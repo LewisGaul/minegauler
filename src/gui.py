@@ -79,11 +79,8 @@ class GameGUI(QMainWindow):
         self.namebar = NameBar(central_widget, self)
         # self.namebar.mouseDoubleClickEvent = lambda e=None: self.namebar.setEnabled
         vlayout.addWidget(self.namebar)
-        # Set window size
-        self.setMaximumSize(self.body.width(),
-            self.panel.height() + self.body.height() + self.namebar.height())
     def make_menubar(self):
-        menu = self.menuBar() #QMainWindow has QMenuBar already
+        menu = self.menubar = self.menuBar() #QMainWindow has QMenuBar already
         game_menu = menu.addMenu('Game')
         opts_menu = menu.addMenu('Options')
         # help_menu = menu.addMenu('Help')
@@ -161,9 +158,13 @@ class GameGUI(QMainWindow):
             if self.procr.per_cell == i:
                 action.setChecked(True)
             action.triggered.connect(self.change_per_cell)
+    def resize(self):
+        self.setFixedSize(min(400, self.body.width()), self.menubar.height() +
+            self.panel.height() + self.body.height() + self.namebar.height())
     def start(self):
         self.move(500, 150)
         self.show()
+        self.resize()
         app.exec_()
     def closeEvent(self, event):
         self.procr.close_game()
@@ -212,9 +213,8 @@ class GameGUI(QMainWindow):
             return
         self.procr.change_difficulty(diff)
         x, y = self.procr.x_size, self.procr.y_size
-        self.setFixedSize(20+x*self.btn_size,
-            20 + self.panel.height() + 20+y*self.btn_size)
         self.mf_widget.reshape(x, y)
+        self.resize()
         self.prepare_new_game()
     def toggle_drag_select(self):
         self.procr.change_setting('drag_select', not(self.procr.drag_select))

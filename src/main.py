@@ -17,7 +17,7 @@ import json
 
 from minefield import Minefield
 from utils import (get_nbrs, prettify_grid, diff_values, default_settings,
-                   base_direc, file_direc)
+                   base_direc, file_direc, __version__)
 from highscores import (enchs, get_highscores,
                         settings_keys as hscore_group_keys)
 # from solver.probabilities import ProbsGrid
