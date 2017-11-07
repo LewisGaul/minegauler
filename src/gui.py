@@ -14,7 +14,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
 from utils import img_direc, get_nbrs
-from highscores import (HighscoresWindow, get_hscore_position,
+from highscores import (HighscoresWindow, get_hscore_position, enchs,
                         settings_keys as hscore_group_keys)
 
 
@@ -42,6 +42,10 @@ class GameGUI(QMainWindow):
         self.setWindowFlags(self.windowFlags() | Qt.CustomizeWindowHint)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowMaximizeButtonHint)
         self.setupUI()
+        # Create highscores window
+        self.hscores_window = HighscoresWindow(self)
+        self.hscores_window.setWindowIcon(self.icon)
+        self.hscores_window.hide()
         self.open_windows = {'main': self}
     def setupUI(self):
         central_widget = QWidget(self)
@@ -159,11 +163,13 @@ class GameGUI(QMainWindow):
                 action.setChecked(True)
             action.triggered.connect(self.change_per_cell)
     def resize(self):
-        self.setFixedSize(min(400, self.body.width()), self.menubar.height() +
-            self.panel.height() + self.body.height() + self.namebar.height())
+        width = max(100, self.mf_widget.width()+20)
+        height = (self.menubar.height() + self.panel.height()
+                  + self.mf_widget.height() + 20 + self.namebar.height())
+        self.setFixedSize(width, height)
     def start(self):
-        self.move(500, 150)
         self.show()
+        self.move(500, 150)
         self.resize()
         app.exec_()
     def closeEvent(self, event):
@@ -179,22 +185,19 @@ class GameGUI(QMainWindow):
         """Show the highscores window (or update if already open)."""
         if 'highscores' in self.open_windows:
             return
-        # Create highscores window
-        highscores_window = HighscoresWindow(self, self.procr.hscore_sort,
-                                             self.procr.hscore_filters)
         if self.procr.game.state == 'ready':
             settings_source = self.procr
         else:
             settings_source = self.procr.game
-        highscores_window.model.update_hscores_group(settings_source)
-        highscores_window.model.set_current_hscore(self.procr.hscore)
-        highscores_window.setWindowIcon(self.icon)
-        self.open_windows['highscores'] = highscores_window
+        self.hscores_window.model.update_hscores_group(settings_source)
+        self.hscores_window.model.set_current_hscore(self.procr.hscore)
+        self.hscores_window.show()
+        self.open_windows['highscores'] = self.hscores_window
         # Remove from open_windows when closed
         def close_hscore_win(event):
-            event.accept()
+            self.hscores_window.hide()
             self.open_windows.pop('highscores')
-        highscores_window.closeEvent = close_hscore_win
+        self.hscores_window.closeEvent = close_hscore_win
     def set_highscore_settings(self, sort_by=None, filters=None):
         if sort_by is not None:
             self.procr.hscore_sort = sort_by
@@ -318,6 +321,9 @@ class GameGUI(QMainWindow):
             if n > 0:
                 self.reveal_cell(x, y)
         filters = self.procr.hscore_filters.copy()
+        model = self.hscores_window.model
+        # Make current highscore bold [and scroll to it]
+        model.set_current_hscore(self.procr.hscore)
         if filters['name']:
             cut_off = 5
         else:
@@ -326,21 +332,13 @@ class GameGUI(QMainWindow):
         filters['name'] = self.procr.name
         top_in = get_hscore_position(self.procr.hscore, self.procr.game,
                                      filters, cut_off)
-        # print(top_in)
         if top_in is not None:
-            self.show_highscores(sort_by=top_in)
-        if 'highscores' in self.open_windows:
-            # Make current highscore bold [and scroll to it]
-            model = self.open_windows['highscores'].model
-            if top_in:
-                # Set temporary sort and filters
-                model.change_sort(top_in, temp=True)
-                filters = self.procr.hscore_filters.copy()
-                # Show highscores for current name if there's any name filter
-                if self.procr.hscore_filters['name']:
-                    filters['name'] = self.procr.name
-                model.apply_filters(filters, temp=True)
-            model.set_current_hscore(self.procr.hscore)
+            self.show_highscores()
+            # Set temporary sort header and filters
+            model.change_sort(top_in, temp=True)
+            # Show highscores for current name if there's any name filter
+            if self.procr.hscore_filters['name']:
+                model.apply_filters({'name': self.procr.name}, temp=True)
 
 
 class MinefieldWidget(QWidget):
@@ -644,15 +642,28 @@ class NameBar(QLineEdit):
         self.font.setBold(True)
         self.setFont(self.font)
         self.setPlaceholderText('Enter name here')
+        self.setMaxLength(12)
+        self.setFocusPolicy(Qt.NoFocus) #only focus in by double-clicking
         if self.gui.procr.name:
             self.setText(self.gui.procr.name)
-            self.clearFocus()
-        self.setMaxLength(12)
+        else:
+            self.setFocus()
         self.returnPressed.connect(self.focus_out)
     def focus_out(self):
         self.clearFocus()
         self.deselect()
-        self.gui.procr.name = self.gui.procr.game.name = self.text().strip()
+        procr = self.gui.procr
+        # old_name = procr.name
+        procr.name = procr.game.name = self.text().strip()
+        if procr.hscore:
+            h = procr.hscore
+            h['name'] = procr.name
+            h['key'] = enchs(procr.game, h)
+            self.gui.hscores_window.model.set_current_hscore(h)
+        if procr.hscore_filters['name']:# == old_name:
+            # Change highscores name filter to new name
+            # Satisfies case of temporary name filter too
+            self.gui.hscores_window.model.apply_filters({'name': procr.name})
     def mouseDoubleClickEvent(self, event):
         self.selectAll()
         self.setFocus()

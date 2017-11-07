@@ -19,11 +19,9 @@ Future plans:
 - Race the computer in real-time
 - Scrollbars allowing resizing of window
 
-2.1.1.b0 ()
-- 
-
-2.1.0.b0 (06/11/17)
+2.1.0.b1 (07/11/17)
 - Improved highscores, adding name and improving filters
+- Bug fixes
 
 2.1.0.a0 (31/10/17)
 - Added local highscore functionality

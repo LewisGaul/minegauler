@@ -160,8 +160,10 @@ class HighscoresWindow(QMainWindow):
         self.model.change_sort(sort_by)
         self.model.apply_filters(filters)
         self.filter_menu = None
-        self.close_filter_menu = False
+        # self.close_filter_menu = False
         self.show()
+        self.setFixedWidth(self.width())
+        self.setMinimumHeight(100)
     def setupUI(self):
         lyt = QHBoxLayout(self.central_widget)
         # settings_frame = QFrame(self)
@@ -193,7 +195,7 @@ class HighscoresWindow(QMainWindow):
         Vhead.setDefaultSectionSize(22)
         Vhead.setSectionResizeMode(QHeaderView.Fixed)
         Hhead.sectionClicked.connect(self.handleHeaderClicked)
-        self.view.setFixedWidth(400)
+        self.view.setFixedWidth(430)
         # Make settings/filter panel
         # lyt = QVBoxLayout(settings_frame)
         # settings_frame.setFixedSize(200, 200)
@@ -248,12 +250,12 @@ class HighscoresWindow(QMainWindow):
             self.filter_menu.addSeparator() #patch highlighting with mouse movement
             ## Make entry bar for name filter
             # Create the entry bar with the existing filter as the text
-            if self.model.filters['name']:
-                text = self.model.filters['name']
-            elif self.gui:
+            if self.gui and self.gui.procr.name:
+                # Name in entry bar, if any
                 text = self.gui.procr.name
             else:
-                text = ''
+                # If no name in entry bar, name currently filtered by
+                text = self.model.filters['name']
             entry = QLineEdit(text, self)
             entry.selectAll() #select all the text
             # Set focus to the entry bar when the menu is opened
@@ -275,7 +277,13 @@ class HighscoresWindow(QMainWindow):
         pos = QPoint(posX, posY)
         self.close_filter_menu = False
         self.filter_menu.exec_(pos) #modal dialog
-
+    def keyPressEvent(self, event):
+        if event.key() in [Qt.Key_Return, Qt.Key_Enter, Qt.Key_Escape]:
+            self.hide()
+            if self.gui:
+                self.gui.open_windows.pop('highscores')
+        else:
+            super().keyPressEvent(event)
 
 class HighscoresModel(QAbstractTableModel):
     """Handles the sorting and filtering of the group of highscores being
@@ -331,21 +339,16 @@ class HighscoresModel(QAbstractTableModel):
                 return bold_font
         return QVariant()
     def apply_filters(self, filters, temp=False):
-        if temp:
-            self.old_filters = self.filters.copy() #store filters
-        else:
-            self.old_filters = None
         for h, f in filters.items():
             self.filters[h] = f
         self.filter_and_sort()
         if not temp and self.gui is not None:
-            self.gui.set_highscore_settings(filters=self.filters)
+            save_filters = self.gui.procr.hscore_filters
+            for k, f in filters.items():
+                save_filters[k] = f
+            self.gui.set_highscore_settings(filters=save_filters) #unnecessary
     def change_sort(self, sort_by, temp=False):
         """Argument sort_by can be column index or header string."""
-        if temp:
-            self.old_sort_index = self.sort_index
-        else:
-            self.old_sort_index = None
         if type(sort_by) == int:
             self.sort_index = sort_by
             header = self.headers[sort_by]
@@ -364,13 +367,12 @@ class HighscoresModel(QAbstractTableModel):
         self.all_data = get_highscores(settings)
         self.filter_and_sort()
     def set_current_hscore(self, h):
+        """Only to be called from a gui with a processor."""
         self.active_hscore = h
         if h is None:
             # Restore old sort order and filters on new game
-            if self.old_sort_index:
-                self.change_sort(self.old_sort_index)
-            if self.old_filters:
-                self.apply_filters(self.old_filters)
+            self.change_sort(self.gui.procr.hscore_sort)
+            self.apply_filters(self.gui.procr.hscore_filters)
         #[Scroll to this hscore if get_active_row()]
         self.filter_and_sort()
     def get_active_row(self):
