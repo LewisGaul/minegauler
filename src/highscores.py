@@ -11,6 +11,7 @@ from shutil import move as movefile
 import datetime as dt
 import csv
 import logging
+from distutils.version import LooseVersion
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -40,6 +41,7 @@ num_imported_highscores = {}
 
 # Settings used to group highscores (in order for string representation)
 settings_keys = ['diff', 'drag_select', 'per_cell']
+hscore_keys = ['name', 'time', '3bv', 'date', 'flagging', 'key']
 
 # Encode highscore, takes settings str and highscore dict
 # REMEMBER TO CHANGE THIS FOR OFFICIAL RELEASES BEFORE ENCRYPTING THE CODE
@@ -84,9 +86,9 @@ def get_highscores(settings):
             logging.warn("First line of highscores file doesn't match filename")
         reader = csv.reader(f, escapechar='\\')
         # The second line contains the headers, giving the key order
-        key_order = reader.__next__()
+        hscore_keys = reader.__next__()
         for row in reader:
-            h = {key: row[i] for i, key in enumerate(key_order)}
+            h = {key: row[i] for i, key in enumerate(hscore_keys)}
             for key in ['time', '3bv', 'date', 'key']:
                 h[key] = int(h[key])
             if enchs(settings, h) == h['key']:# or True:
@@ -99,7 +101,6 @@ def write_highscores(settings):
     """If file doesn't exist for these settings create it with expected
     headings. Append any new highscores to the file."""
     settings = settings_to_str(settings)
-    key_order = ['name', 'time', '3bv', 'date', 'flagging', 'key']
     fpath = join(file_direc, f'{settings}.csv')
     if not exists(fpath):
         # Highscores file lost (deleted?) - save all
@@ -108,12 +109,12 @@ def write_highscores(settings):
             # Put settings as the top line to check it matches filename
             f.write(settings + '\n')
             # Write the headings, giving the key order
-            writer = csv.DictWriter(f, key_order, quoting=csv.QUOTE_NONE,
+            writer = csv.DictWriter(f, hscore_keys, quoting=csv.QUOTE_NONE,
                                     escapechar='\\')
             writer.writeheader()
     # Append new highscores to file
     with open(fpath, 'a', newline='') as f:
-        writer = csv.DictWriter(f, key_order, quoting=csv.QUOTE_NONE,
+        writer = csv.DictWriter(f, hscore_keys, quoting=csv.QUOTE_NONE,
                                 escapechar='\\')
         new_hscores_start_index = num_imported_highscores[settings]
         hscores = all_highscores[settings][new_hscores_start_index:]
@@ -143,8 +144,6 @@ def get_hscore_position(hscore, settings, filters={}, cut_off=5):
     if hscore in highscores[:cut_off]:
         return '3bv/s'
     return None
-
-
 
 
 class HighscoresWindow(QMainWindow):
@@ -424,6 +423,73 @@ class HighscoresModel(QAbstractTableModel):
                     names.append(name)
                     i += 1
         self.layoutChanged.emit()
+
+
+def include_old_hscores(direc, version):
+    """Converts and adds hscores in the new format. Assumes the data file exists
+    in direc."""
+    version = LooseVersion(version)
+    if version < '1.1.2':
+        # Used to use eval. Support removed.
+        raise ValueError("Only supported for versions of at least 1.1.2")
+    assert settings_keys == ['diff', 'drag_select', 'per_cell']
+    assert hscore_keys == ['name', 'time', '3bv', 'date', 'flagging', 'key']
+    if '1.1' < version < '1.2':
+        import json
+        # Assume in exe
+        path = join(direc, 'files', 'data.txt')
+        with open(path, 'r') as f: #catch FileNotFoundError
+            old_data = json.load(f)
+        for h in old_data:
+            if (h['lives'] > 1 or h['per_cell'] > 3 or h['detection'] != 1
+                or h['distance_to'] != False or not h['name']
+                or (h.has_key('proportion') and h['proportion'] < 1)):
+                continue #don't include
+            settings = {k: h[k] for k in settings_keys}
+            new_h = {k: h[k] for k in hscore_keys}
+            new_h['time'] = int(1000 * float(h['time'])) #str (s) to int (ms)
+            new_h['date'] = int(h['date'])
+            new_h['flagging'] = 'F' if h['flagging'] else 'NF'
+            new_h['key'] = enchs(settings, new_h) #no check
+            hscores_list = get_highscores(settings)
+            if h not in hscores_list:
+                hscores_list.append(new_h)
+    elif '1.2.1' <= version < '2.0': #no highscores in early version 1.2
+        import json
+        # Assume in exe
+        path = join(direc, 'files', 'highscores.json')
+        with open(path, 'r') as f: #catch FileNotFoundError
+            old_data = json.load(f)
+        for k, h_list in old_data.items():
+            settings_list = k.split(',')
+            if len(settings_list) == 5:
+                settings_list.insert(2, 'False') #distance_to
+            (detection, diff, distance_to,
+             drag_select, lives, per_cell) = settings_list #unpack
+            if detection != '1' or lives != '1' or distance_to != 'False':
+                continue #don't include
+            if drag_select == 'True':
+                drag_select = True
+            elif drag_select == 'False':
+                drag_select = False
+            else:
+                drag_select = bool(int(drag))
+            settings = {'diff':        diff,
+                        'drag_select': drag_select,
+                        'per_cell':    int(per_cell)}
+            hscores_list = get_highscores(settings)
+            for h in h_list:
+                if not h['name']:
+                    continue
+                new_h = {k: h[k] for k in hscore_keys}
+                new_h['time'] = int(1000 * float(h['time'])) #str (s) to int (ms)
+                new_h['date'] = int(h['date'])
+                new_h['flagging'] = 'F' if h['flagging'] else 'NF'
+                new_h['key'] = enchs(settings, new_h) #no check
+                if h not in hscores_list:
+                    hscores_list.append(new_h)
+    elif verion >= '2.0':
+        pass
 
 
 

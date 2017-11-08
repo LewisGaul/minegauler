@@ -163,13 +163,13 @@ class GameGUI(QMainWindow):
                 action.setChecked(True)
             action.triggered.connect(self.change_per_cell)
     def resize(self):
-        width = max(100, self.mf_widget.width()+20)
+        width = max(140, self.mf_widget.width()+20)
         height = (self.menubar.height() + self.panel.height()
                   + self.mf_widget.height() + 20 + self.namebar.height())
         self.setFixedSize(width, height)
     def start(self):
-        self.show()
         self.move(500, 150)
+        self.show() #[Fix jerking]
         self.resize()
         app.exec_()
     def closeEvent(self, event):
@@ -322,8 +322,9 @@ class GameGUI(QMainWindow):
                 self.reveal_cell(x, y)
         filters = self.procr.hscore_filters.copy()
         model = self.hscores_window.model
-        # Make current highscore bold [and scroll to it]
-        model.set_current_hscore(self.procr.hscore)
+        if self.procr.name:
+            # Make current highscore bold [and scroll to it]
+            model.set_current_hscore(self.procr.hscore)
         if filters['name']:
             cut_off = 5
         else:
@@ -659,7 +660,10 @@ class NameBar(QLineEdit):
             h = procr.hscore
             h['name'] = procr.name
             h['key'] = enchs(procr.game, h)
-            self.gui.hscores_window.model.set_current_hscore(h)
+            if procr.name:
+                self.gui.hscores_window.model.set_current_hscore(h)
+            else:
+                self.gui.hscores_window.model.set_current_hscore(None)
         if procr.hscore_filters['name']:# == old_name:
             # Change highscores name filter to new name
             # Satisfies case of temporary name filter too

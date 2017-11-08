@@ -1,9 +1,10 @@
 Coming soon:
+- Retrieve old highscores
+- Change displayed highscores group (settings beside the highscore table)
 - Styles
 - Probability calculations
 - Custom boards
 - Info about current game
-- Change displayed highscores group (settings beside the highscore table)
 - Hide timer
 - Help windows
 - Pause
@@ -19,17 +20,17 @@ Future plans:
 - Race the computer in real-time
 - Scrollbars allowing resizing of window
 
-2.1.0.b1 (07/11/17)
+2.1.0b2 (07/11/17)
 - Improved highscores, adding name and improving filters
 - Bug fixes
 
-2.1.0.a0 (31/10/17)
+2.1.0a0 (31/10/17)
 - Added local highscore functionality
 
-2.0.1.b0 (15/10/17)
+2.0.1b0 (15/10/17)
 - Added max mines per cell option
 
-2.0.0.b0 (11/10/17)
+2.0.0b0 (11/10/17)
 - Basic game features
 - Drag-select feature
 - Basic command-line gameplay (not ready for release)
