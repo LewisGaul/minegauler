@@ -17,7 +17,8 @@ import json
 
 from minefield import Minefield
 from utils import (get_nbrs, prettify_grid, diff_values, default_settings,
-                   base_direc, file_direc, __version__)
+                   base_direc, file_direc, __version__, IN_EXE)
+# import highscores as hs
 from highscores import (enchs, get_highscores,
                         settings_keys as hscore_group_keys)
 # from solver.probabilities import ProbsGrid
@@ -277,6 +278,9 @@ class Game:
 
 
 def run():
+    # Ensure info.json file contains the version
+    with open(join(file_direc, 'info.json'), 'w') as f:
+        json.dump({'version': __version__, 'frozen': IN_EXE}, f)
     # Import settings
     try:
         with open(join(file_direc, 'settings.cfg'), 'r') as f:

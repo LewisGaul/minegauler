@@ -4,18 +4,19 @@ and the view and controller part of the app (GameGui).
 """
 
 import sys
-from os.path import join, exists, basename
+from os.path import join, exists, basename, dirname
 from glob import glob
 import time as tm
 import logging
+import json
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
-from utils import img_direc, get_nbrs
+from utils import base_direc, img_direc, get_nbrs
 from highscores import (HighscoresWindow, get_hscore_position, enchs,
-                        settings_keys as hscore_group_keys)
+                        include_old_hscores, save_all_highscores, LooseVersion)
 
 
 def QMouseButton_to_int(QMouseButton):
@@ -41,11 +42,10 @@ class GameGUI(QMainWindow):
         # Disable maximise button
         self.setWindowFlags(self.windowFlags() | Qt.CustomizeWindowHint)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowMaximizeButtonHint)
-        self.setupUI()
         # Create highscores window
         self.hscores_window = HighscoresWindow(self)
         self.hscores_window.setWindowIcon(self.icon)
-        self.hscores_window.hide()
+        self.setupUI()
         self.open_windows = {'main': self}
     def setupUI(self):
         central_widget = QWidget(self)
@@ -87,7 +87,7 @@ class GameGUI(QMainWindow):
         menu = self.menubar = self.menuBar() #QMainWindow has QMenuBar already
         game_menu = menu.addMenu('Game')
         opts_menu = menu.addMenu('Options')
-        # help_menu = menu.addMenu('Help')
+        help_menu = menu.addMenu('Help')
         # GAME MENU
         # New game action
         new_act = QAction('New', self)
@@ -162,6 +162,10 @@ class GameGUI(QMainWindow):
             if self.procr.per_cell == i:
                 action.setChecked(True)
             action.triggered.connect(self.change_per_cell)
+        # HELP MENU
+        retrieve_act = QAction('Retrieve highscores', self)
+        retrieve_act.triggered.connect(self.retrieve_highscores)
+        help_menu.addAction(retrieve_act)
     def resize(self):
         width = max(140, self.mf_widget.width()+20)
         height = (self.menubar.height() + self.panel.height()
@@ -181,49 +185,6 @@ class GameGUI(QMainWindow):
         if self.namebar.isEnabled():
             self.namebar.focus_out()
             return
-    def show_highscores(self, event=None, sort_by=None, filters=None):
-        """Show the highscores window (or update if already open)."""
-        if 'highscores' in self.open_windows:
-            return
-        if self.procr.game.state == 'ready':
-            settings_source = self.procr
-        else:
-            settings_source = self.procr.game
-        self.hscores_window.model.update_hscores_group(settings_source)
-        self.hscores_window.model.set_current_hscore(self.procr.hscore)
-        self.hscores_window.show()
-        self.open_windows['highscores'] = self.hscores_window
-        # Remove from open_windows when closed
-        def close_hscore_win(event):
-            self.hscores_window.hide()
-            self.open_windows.pop('highscores')
-        self.hscores_window.closeEvent = close_hscore_win
-    def set_highscore_settings(self, sort_by=None, filters=None):
-        if sort_by is not None:
-            self.procr.hscore_sort = sort_by
-        if filters is not None:
-            self.procr.hscore_filters = filters
-    def change_difficulty(self):
-        diff = self.diff_group.checkedAction().id
-        if diff == self.procr.diff:
-            return #not changed
-        if diff == 'c':
-            # Currently does nothing
-            # Find the old difficulty button and check it
-            for action in self.diff_group.actions():
-                if action.id == self.procr.diff:
-                    action.setChecked(True)
-            return
-        self.procr.change_difficulty(diff)
-        x, y = self.procr.x_size, self.procr.y_size
-        self.mf_widget.reshape(x, y)
-        self.resize()
-        self.prepare_new_game()
-    def toggle_drag_select(self):
-        self.procr.change_setting('drag_select', not(self.procr.drag_select))
-    def change_per_cell(self):
-        self.procr.change_setting('per_cell',
-                                  self.per_cell_group.checkedAction().num)
     def prepare_new_game(self):
         self.timer.stop()
         self.timer.label.setText('000')
@@ -340,6 +301,97 @@ class GameGUI(QMainWindow):
             # Show highscores for current name if there's any name filter
             if self.procr.hscore_filters['name']:
                 model.apply_filters({'name': self.procr.name}, temp=True)
+    def show_highscores(self, event=None, sort_by=None, filters=None):
+        """Show the highscores window (or update if already open)."""
+        if self.procr.game.state == 'ready':
+            settings_source = self.procr
+        else:
+            settings_source = self.procr.game
+        self.hscores_window.model.update_hscores_group(settings_source)
+        # self.hscores_window.model.set_current_hscore(self.procr.hscore)
+        self.hscores_window.show()
+        self.open_windows['highscores'] = self.hscores_window
+        # Remove from open_windows when closed
+        def close_hscore_win(event):
+            self.hscores_window.hide()
+            self.open_windows.pop('highscores')
+        self.hscores_window.closeEvent = close_hscore_win
+    def set_highscore_settings(self, sort_by=None, filters=None):
+        if sort_by is not None:
+            self.procr.hscore_sort = sort_by
+        if filters is not None:
+            self.procr.hscore_filters = filters
+    def change_difficulty(self):
+        diff = self.diff_group.checkedAction().id
+        if diff == self.procr.diff:
+            return #not changed
+        if diff == 'c':
+            # Currently does nothing
+            # Find the old difficulty button and check it
+            for action in self.diff_group.actions():
+                if action.id == self.procr.diff:
+                    action.setChecked(True)
+            return
+        self.procr.change_difficulty(diff)
+        x, y = self.procr.x_size, self.procr.y_size
+        self.mf_widget.reshape(x, y)
+        self.resize()
+        self.prepare_new_game()
+    def toggle_drag_select(self):
+        self.procr.change_setting('drag_select', not(self.procr.drag_select))
+    def change_per_cell(self):
+        self.procr.change_setting('per_cell',
+                                  self.per_cell_group.checkedAction().num)
+    def retrieve_highscores(self):
+        """Add highscores from another distribution without performing checks."""
+        #[Improve by giving error message before closing selection popup]
+        options = {
+            'parent': self,
+            'caption': (
+                  "Retrieve highscores"
+                + ": select the main folder of a previous version"
+                # + " (versions >= 1.1.2 only)"
+                ),
+            'directory': dirname(base_direc)
+            }
+        direc = QFileDialog.getExistingDirectory(**options)
+        # print(direc)
+        if not direc:
+            return #cancelled (presumed)
+        def show_msg(msg):
+            # print(msg)
+            popup = QMessageBox(self)
+            popup.setText(msg)
+            popup.exec_()
+        if not exists(join(direc, 'files')):
+            show_msg("Couldn't find folder expected to contain highscores. "
+                   + "Be sure to select the main directory - the one which "
+                   + "contains the folder named 'files'.")
+            return
+        try:
+            info_path = glob(join(direc, 'files', 'info.*'))[0]
+            with open(info_path, 'r') as f:
+                info = json.load(f)
+            version = info['version']
+            in_exe = info['frozen'] if 'frozen' in info else True
+        except:
+            show_msg("Unknown version, try running the old game first. "
+                   + "Contact minegauler@gmail.com if problems persist.")
+            return
+        if LooseVersion(version) < '1.1.2':
+            show_msg("Cannot retrieve highscores from versions older than 1.1.2 - "
+                   + "contact minegauler@gmail.com to have old highscores updated.")
+            return
+        try:
+            print(version)
+            added = include_old_hscores(direc, version, in_exe)
+            show_msg(f"Number of highscores added: {added}")
+            save_all_highscores()
+        except FileNotFoundError:
+            show_msg("Cannot find highscores files. "
+                   + "Contact minegauler@gmail.com if you expected this game "
+                   + "to have highscores.")
+
 
 
 class MinefieldWidget(QWidget):

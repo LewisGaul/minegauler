@@ -1,11 +1,10 @@
 Coming soon:
-- Retrieve old highscores
-- Change displayed highscores group (settings beside the highscore table)
 - Styles
 - Probability calculations
 - Custom boards
 - Info about current game
 - Hide timer
+- Change displayed highscores group (settings beside the highscore table)
 - Help windows
 - Pause
 - Lives
@@ -19,6 +18,10 @@ Future plans:
 - Achievement tracking
 - Race the computer in real-time
 - Scrollbars allowing resizing of window
+
+2.1.1.b0 (08/11/17)
+- Retrieve old highscores
+- Bug fixes
 
 2.1.0b2 (07/11/17)
 - Improved highscores, adding name and improving filters
