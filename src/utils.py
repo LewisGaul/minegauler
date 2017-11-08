@@ -3,7 +3,7 @@ import sys
 from os.path import join, dirname, abspath
 
 
-__version__ = '2.1.0'
+__version__ = '2.1.1'
 IN_EXE = hasattr(sys, 'frozen')
 src_direc = dirname(abspath(__file__))
 if IN_EXE:
