@@ -577,6 +577,7 @@ class CellButton(QLabel):
     def __init__(self, parent, x, y):
         super().__init__(parent)
         self.parent = parent #stores data such as images, settings
+        self.gui = parent.gui
         self.procr = parent.procr
         # self.setFixedSize(self.gui.btn_size, self.gui.btn_size)
         self.x, self.y = x, y
