@@ -283,6 +283,9 @@ class GameGUI(QMainWindow):
                 self.reveal_cell(x, y)
         filters = self.procr.hscore_filters.copy()
         model = self.hscores_window.model
+        if not self.procr.name:
+            # popup
+            pass
         if self.procr.name:
             # Make current highscore bold [and scroll to it]
             model.set_current_hscore(self.procr.hscore)

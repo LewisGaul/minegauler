@@ -454,8 +454,10 @@ def include_old_hscores(direc, version, frozen=True):
                 or ('proportion' in h and h['proportion'] < 1)):
                 continue #don't include
             settings = {k: h[k] for k in settings_keys}
-            new_h = {k: h[k] for k in hscore_keys}
+            # new_h = {k: h[k] for k in hscore_keys}
             new_h['time'] = int(1000 * float(h['time'])) #str (s) to int (ms)
+            new_h['3bv'] = h['3bv']
+            new_h['drag_select'] = bool(h['drag_select'])
             new_h['date'] = int(h['date'])
             new_h['flagging'] = 'F' if h['flagging'] else 'NF'
             new_h['key'] = enchs(settings, new_h) #no check
