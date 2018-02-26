@@ -1,4 +1,3 @@
-
 # Button states are:
 #     UNCLICKED
 #     CLICKED
@@ -52,18 +51,9 @@ msg_font = ('Times', 10, 'bold')
 class GameGui(BasicGui):
     def __init__(self, **kwargs):
         super(GameGui, self).__init__(**kwargs)
-        # Set variables.
-        self.first_success_var = tk.BooleanVar()
-        self.first_success_var.set(self.first_success)
         self.hide_timer = False
         # Create a minefield stored within the game.
         self.start_new_game()
-
-    def run(self):
-        # Create menubar.
-        self.menubar = MenuBar(self, 'full')
-        self.config(menu=self.menubar)
-        self.mainloop()
 
     # Make the GUI.
     def make_panel(self):
@@ -73,14 +63,42 @@ class GameGui(BasicGui):
         self.mines_label = tk.Label(self.panel, bg='black', fg='red', bd=5,
             relief='sunken', font=('Verdana',11,'bold'),
             textvariable=self.mines_var)
-        self.mines_label.place(x=7, rely=0.5, anchor='w')
+        self.mines_label.grid(row=0, padx=(6, 0))
         self.add_to_bindtags(self.mines_label, 'panel')
 
         # Create and place the timer.
         self.timer = Timer(self.panel)
-        self.timer.place(relx=1, x=-7, rely=0.5, anchor='e')
+        self.timer.grid(row=0, column=2, padx=(0, 6))
         self.timer.bind('<Button-%s>'%RIGHT_BTN_NUM, self.toggle_timer)
         self.add_to_bindtags(self.timer, 'panel')
+
+    def make_menubar(self):
+        super(GameGui, self).make_menubar()
+        menu = self.menubar
+        i = menu.game_items.index('New') + 1 - len(menu.game_items)
+        menu.add_item('game', 'command', 'Replay', i,
+            command=self.replay_game)
+        menu.add_item('game', 'command', 'Save board', i,
+            command=self.save_board)
+        menu.add_item('game', 'command', 'Load board', i,
+            command=self.load_board)
+        menu.add_item('game', 'separator', index=i)
+        menu.add_item('game', 'command', 'Current info', i,
+            command=self.show_info, accelerator='F4')
+        self.bind('<F4>', self.show_info)
+
+        self.first_success_var = tk.BooleanVar()
+        self.first_success_var.set(self.first_success)
+        menu.add_item('opts', 'checkbutton', 'FirstAuto', 0,
+            variable=self.first_success_var, command=self.update_settings)
+
+        menu.add_item('help', 'separator')
+        menu.add_item('help', 'command', 'Basic rules',
+            command=lambda: self.show_text('rules'))
+        menu.add_item('help', 'command', 'Special features',
+            command=lambda: self.show_text('features'))
+        menu.add_item('help', 'command', 'Tips',
+            command=lambda: self.show_text('tips'))
 
     # Button actions.
     def left_press(self, coord):
@@ -92,7 +110,7 @@ class GameGui(BasicGui):
                 self.click(coord)
         else:
             if b.state == UNCLICKED:
-                b.bg = self.set_cell_image(coord, self.bg_images['down'])
+                b.fg = self.set_cell_image(coord, self.btn_images['down'])
 
     def left_release(self, coord):
         super(GameGui, self).left_release(coord)
@@ -112,21 +130,20 @@ class GameGui(BasicGui):
     def right_press(self, coord):
         super(GameGui, self).right_press(coord)
         b = self.buttons[coord]
-        # Check whether drag-clicking should flag or unflag if drag is on.
-        if self.drag_select:
-            if b.state == UNCLICKED:
-                self.drag_flag = FLAG
-            elif b.state == FLAGGED and self.per_cell == 1:
-                self.drag_flag = UNFLAG
-            else:
-                self.drag_flag = None
-        else:
-            self.drag_flag = None
-
         if b.state == UNCLICKED:
             b.incr_flags()
         elif b.state == FLAGGED:
             b.refresh()
+        # Check whether drag-clicking should flag or unflag if drag is on.
+        if self.drag_select:
+            if b.state == UNCLICKED:
+                self.drag_flag = UNFLAG
+            elif b.state == FLAGGED:
+                self.drag_flag = FLAG
+            else:
+                self.drag_flag = None
+        else:
+            self.drag_flag = None
         self.set_mines_counter()
 
     def right_motion(self, coord, prev_coord):
@@ -144,14 +161,16 @@ class GameGui(BasicGui):
     def both_press(self, coord):
         super(GameGui, self).both_press(coord)
         self.face_button.config(image=self.face_images['active1face'])
+        b = self.buttons[coord]
+        if b.state == UNCLICKED:
+            b.refresh()
         # Buttons which neighbour the current selected button.
-        new_nbrs = self.get_nbrs(coord, include=True)
-        # Only consider unclicked cells.
-        new_nbrs = {c for c in new_nbrs if self.buttons[c].state == UNCLICKED}
+        nbrs = self.get_nbrs(coord, include=True)
         # Sink the new neighbouring buttons.
-        for c in new_nbrs:
-            self.buttons[c].bg = self.set_cell_image(c,
-                self.bg_images['down'])
+        for c in nbrs:
+            b = self.buttons[c]
+            if b.state == UNCLICKED:
+                b.fg = self.set_cell_image(c, self.btn_images['down'])
 
     def both_release(self, coord):
         super(GameGui, self).both_release(coord)
@@ -171,8 +190,7 @@ class GameGui(BasicGui):
         for c in {c for c in nbrs if self.buttons[c].state == UNCLICKED}:
             self.buttons[c].refresh()
         # Reset face.
-        if (self.game.state in [READY, ACTIVE] and
-            not (self.left_button_down and self.drag_select)):
+        if self.game.state in [READY, ACTIVE]:
             self.face_button.config(image=self.face_images['ready1face'])
 
     def both_motion(self, coord, prev_coord):
@@ -226,22 +244,12 @@ class GameGui(BasicGui):
 
     def reveal_safe_cell(self, coord):
         b = self.buttons[coord]
-        nr = self.game.mf.completed_grid[coord]
+        nr = self.game.mf.completed_grid.item(coord)
         # Assign the game grid with the numbers which are uncovered.
         self.game.grid.itemset(coord, nr)
-        b.bg = self.set_cell_image(coord, self.bg_images['down'])
+        b.fg = self.set_cell_image(coord, self.btn_images[nr])
         b.state = CLICKED
-        # Display the number unless it is a zero.
-        text = nr if nr else ''
-        try:
-            nr_colour = nr_colours[nr]
-        except KeyError:
-            # In case the number is unusually high.
-            nr_colour = 'black'
-        x = (coord[1] + 0.5) * self.button_size
-        y = (coord[0] + 0.5) * self.button_size - 1
-        b.text = self.board.create_text(x, y, text=text, fill=nr_colour,
-            tag='overlay', font=self.nr_font)
+        b.nr = nr
 
     def finalise_win(self):
         self.game.finish_time = tm.time()
@@ -249,15 +257,14 @@ class GameGui(BasicGui):
         self.timer.start_time = None
         self.game.state = WON
         self.face_button.config(image=self.face_images['won1face'])
-        for btn in [b for b in self.buttons.values()
-            if b.state in [UNCLICKED, FLAGGED]]:
-            n = self.game.mf.mines_grid[btn.coord]
-            btn.fg = self.set_cell_image(btn.coord, self.flag_images[1])
-            btn.state = FLAGGED
-            btn.num_of_flags = n
+        for b in self.buttons.values():
+            if b.state in [UNCLICKED, FLAGGED]:
+                n = b.num_of_flags = self.game.mf.mines_grid[b.coord]
+                b.fg = self.set_cell_image(b.coord, self.flag_image)
+                b.state = FLAGGED
         self.timer.set_var(min(int(self.game.get_time_passed() + 1), 999))
         self.timer.config(fg='red')
-        self.set_mines_counter()
+        self.mines_var.set('000')
 
     def finalise_loss(self, coord):
         self.game.finish_time = tm.time()
@@ -266,20 +273,18 @@ class GameGui(BasicGui):
         b = self.buttons[coord]
         b.state = MINE
         self.game.state = LOST
-        colour = self.get_tk_colour(bg_colours['red'])
-        b.bg = self.set_cell_image(coord, self.bg_images['red'])
-        b.fg = self.set_cell_image(coord, self.mine_images['red1'])
+        b.fg = self.set_cell_image(coord, self.mine_image_red)
         self.face_button.config(image=self.face_images['lost1face'])
         for c, b in [(btn.coord, btn) for btn in self.buttons.values()
             if btn.state != CLICKED]:
             # Check for incorrect flags.
             if b.state == FLAGGED and self.game.mf.mines_grid[c] == 0:
-                b.fg = self.set_cell_image(c, image=self.cross_images[1])
+                self.board.delete(b.fg)
+                b.fg = self.set_cell_image(c, image=self.cross_image)
             # Reveal remaining mines.
             elif b.state == UNCLICKED and self.game.mf.mines_grid[c] > 0:
                 b.state = MINE
-                b.bg = self.set_cell_image(c, self.bg_images['down'])
-                b.fg = self.set_cell_image(c, self.mine_images[1])
+                b.fg = self.set_cell_image(c, self.mine_image)
         self.timer.set_var(min(int(self.game.get_time_passed() + 1), 999))
         self.timer.config(fg='red')
 
@@ -310,10 +315,17 @@ class GameGui(BasicGui):
         else:
             self.timer.config(fg='red')
 
+    def close_root(self):
+        self.update_settings()
+        with open(join(direcs['main'], 'settings.cfg'), 'w') as f:
+            json.dump(self.settings, f)
+            # print "Saved settings."
+        super(GameGui, self).close_root()
+
     # Game menu methods.
     def start_new_game(self):
-        super(GameGui, self).start_new_game()
         self.game = Game(**self.settings)
+        super(GameGui, self).start_new_game()
 
     def replay_game(self):
         self.refresh_board()
@@ -442,12 +454,13 @@ if __name__ == '__main__':
         #print "Imported settings: ", settings
     except:
         settings = default_settings
-    # Check for corrupt info.txt file and ensure it contains the version.
+    # Ensure info.txt file contains the version number.
     try:
         with open(join(direcs['files'], 'info.txt'), 'r') as f:
             json.load(f)['version']
     except:
         with open(join(direcs['files'], 'info.txt'), 'w') as f:
             json.dump({'version': VERSION}, f)
+    print settings
     # Create and run the GUI.
-    GameGui(**settings).run()
+    GameGui(**settings).mainloop()

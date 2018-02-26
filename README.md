@@ -1,7 +1,7 @@
 # MineGauler
 
-Remake of the classic Minesweeper game, written in Python. The code made available is the standard game in good working order, with almost all of the extra features missing. If you have Python 2.7 and numpy installed you will be able to play the game by running main.pyw in the src folder. Otherwise check the releases for the executable, which should run on any computer running Windows.
+Remake of the classic Minesweeper game, written in Python. The code made available is the standard game, with almost all of the extra features removed. If you have Python 2.7 and numpy installed you will be able to play the game by running the script main.pyw in the src folder.
 
-Download the zip folder 'Latest full release' to try out the full scope of extra features (runs on Windows without Python). This version is less stable and I am currently working to update it.
+Download the zipped folders 'Latest stable release' or 'Latest full release' to try out the extra features (runs on Windows without needing Python). The stable release is still missing some features as I work to update it, and the full release is a less stable old version.
 
 Contact: minegauler@gmail.com, any questions/suggestions/requests welcome.

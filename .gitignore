@@ -8,6 +8,8 @@
 images/
 Latex/
 src2/
+data/
+boards/saved
 settings.cfg
 *.xlsx
 *.ods

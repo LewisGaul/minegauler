@@ -1,11 +1,24 @@
-1.2.1 - unreleased
-- Huge improvement in the speed of changing zoom or size of grid.
+1.2.2 - unreleased
+- Added pause function.
+- Added retrieve highscores.
+- Added scrollbars for large boards.
+- Improved highscores.
+- Improved probability calculator to work with multiple mines per cell.
+- Improved speed of showing openings.
+- Fixed missing icon bug.
+
+1.2.1
+- Added option to change button style.
+- Added back in multiple mines per cell and lives.
+- Improvemed speed of changing zoom or size of grid.
+- Improvemed reliability of creating, saving and loading boards.
+- Improved highscores.
 
 1.2.0
 - Added simplified game for code release.
 - Added scrollbars in customisation windows.
-- Added crossed flag images
-- Sped up probability calculator and fixed bugs.
+- Added crossed flag images.
+- Improved probability calculator speed and fixed bugs.
 
 1.1.3
 - Added option to save boards, and automatic save of highscores.
@@ -13,15 +26,15 @@
 - Added create boards.
 
 1.1.2
-- Retrieve highscores from friends' games or from your old versions.
+- Added option to retrieve highscores from friends' games or from your old versions.
 
 1.1.1
-- Fixed bug in probability calculation with few mines left.
 - Added show probabilities before game is started.
+- Fixed bug in probability calculation with few mines left.
 - Fixed bug in opening game on small custom boards.
 - Fixed bug in saving highscore with more than one life.
 
 1.1.0
-- Probabilities integrated into the game.
-- Improved reliability of highscores.
+- Added probabilities integration in the game.
 - Added text windows for help menu.
+- Improved reliability of highscores.

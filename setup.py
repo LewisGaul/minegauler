@@ -1,85 +1,118 @@
 from distutils.core import setup
 import py2exe, sys, os
-from os.path import join, isdir, dirname
+from os.path import join, isdir, exists
 from glob import glob
 import shutil
 import json
-import winshell
+import tempfile
+if sys.platform == 'win32':
+    import winshell
 
-import numpy # So that all 'dll's are found.
+import numpy # So that all dll files are found.
 
 # Determine which highscores and scripts to include.
 target = raw_input(
     "Who is this for?\n" +
-    "1) Home use (default)\n" +
-    "2) New user\n" +
-    "3) Other user\n" +
-    "4) Light\n" +
-    "5) Archive\n"
+    "1) New user (default)\n" +
+    "2) Other user\n" +
+    "3) Home use\n" +
+    "4) Archive\n"
+    "5) Light\n"
     )
 
-src_direc = 'src' if target == '4' else 'src2'
-sys.path.append(src_direc)
+names = []
+if target == '2':
+    name = True
+    while name:
+        name = raw_input("Input user's name: ").strip()
+        names.append(name)
+    target = names[0] if names else ''
+elif target == '3':
+    target = 'home'
+elif target == '4':
+    target = 'archive'
+elif target == '5':
+    target = 'light'
+else:
+    target = ''
+
+sys.argv.append('py2exe') #no need to type in command line
+
+# Ensure icon works by running setup twice (py2exe bug).
+tf = tempfile.NamedTemporaryFile(delete=False)
+tf.close()
+print "RUNNING DUMMY COMPILE"
+setup(windows = [{
+    'script': tf.name,
+    'icon_resources': [(1, join('images', 'icon.ico'))]}]
+)
+os.remove(tf.name)
+
+src_direc = 'src' if target == 'light' else 'src2'
+sys.path.append(src_direc) #allow the following imports
 from constants import *
+if target != 'light':
+    import highscore_utils
 
 # Destination directory.
-destn = join('bin', str(VERSION))
+destn = join('bin', str(VERSION) + target)
 if isdir(destn):
     shutil.rmtree(destn, ignore_errors=False)
 if not isdir(destn):
     os.mkdir(destn)
 desktop = winshell.desktop()
 
-sys.argv.append('py2exe') #no need to type in command line
-
-if target == '2':
-    target = ''
-    # with open(join(data_direc, 'data.txt'), 'r') as f:
-    #     highscores = get_highscores(json.load(f), 1, 'Siwel G')
-elif target == '3':
-    target = raw_input("Input user's name: ")
-    # with open(join(data_direc, 'data.txt'), 'r') as f:
-    #     highscores = get_highscores(json.load(f), name=target)
-elif target == '4':
-    target = 'light'
-elif target == '5':
-    target = 'archive'
-else:
-    target = 'home'
-    # with open(join(direcs['data'], 'data.txt'), 'r') as f:
-    #     highscores = get_highscores(json.load(f))
-
+def get_data_files(folder, files, pattern=None):
+    if not type(files) is list:
+        pattern = files
+    if pattern:
+        files = glob(join(folder, pattern))
+    else:
+        files = map(lambda f: join(folder, f), files)
+    return (folder, files)
 
 data_files = [
-    ('images', [join('images', 'icon.ico')]),
-    (join('images', 'faces'), glob(join('images', 'faces', '*.ppm'))),
-    (join('boards', 'sample'), glob(join('boards', 'sample', '*.mgb'))),
-    ('files', glob(join('files', '*.txt'))),
-    ('..', [
-        join('files', 'README.txt'),
-        'CHANGELOG.txt'
-        ])
+    ('..', [join('files', 'README.txt'), 'CHANGELOG.txt']),
+    get_data_files(join('boards', 'sample'), '*.mgb'),
+    get_data_files('images', 'icon.ico'),
+    get_data_files('files', '*.txt')
     ]
 
-if target == 'light':
-    data_files += [
-        ('images', map(lambda x: join('images', x + '.png'), [
-            'mine1',
-            'flag1',
-            'cross1',
-            'btn_up',
-            'btn_down',
-            'btn_down_red'
-            ])),
-        ]
+if target == 'light': #sort out
+    data_files.append(get_data_files(join('images', 'faces'), [
+        'active1face.ppm',
+        'ready1face.ppm',
+        'won1face.ppm',
+        'lost1face.ppm'
+        ]))
+    for i in glob(join('images', 'buttons', '*')):
+        exist_files = []
+        for f in ['btn_down.png', 'btn_up.png', 'btn_down_red.png']:
+            if exists(join(i, f)):
+                exist_files.append(f)
+        data_files.append(get_data_files(i, exist_files))
+    for i in glob(join('images', 'numbers', '*')):
+        data_files.append(get_data_files(i,
+            map(lambda n: 'num%s.png'%n, range(1, 9))))
+    for i in glob(join('images', 'images', '*')):
+        data_files.append(get_data_files(i, '*1.png'))
 else:
-    data_files += [
-        ('images', glob(join('images', '*.png')))
-        ]
+    data_files.append(get_data_files(join('images', 'faces'), '*.ppm'))
+    for i in ['buttons', 'images', 'numbers']:
+        for j in glob(join('images', i, '*')):
+            data_files.append(get_data_files(j, '*.png'))
+    # Move this above if needed in light version.
+    for i in glob(join('images', 'frames', '*')):
+        exist_files = []
+        for f in ['frame_topleft.png', 'frame_right.png', 'frame_bottom.png',
+            'frame_corner.png']:
+            if exists(join(i, f)):
+                exist_files.append(f)
+        data_files.append(get_data_files(i, exist_files))
 if target == 'archive':
-    data_files += [
-        (join(destn, 'dist', 'src'), glob(join(src_direc, '*.*[!c]')))
-        ]
+    data_files.append(('src', glob(join(src_direc, '*.*[!c]'))))
+if target in ['home', 'archive']:
+    data_files.append(('files', [join('data', 'highscores.json')]))
 
 
 py2exe_options = {
@@ -101,6 +134,7 @@ if target in ['home', 'archive']:
         'script': join(src_direc, 'probabilities.pyw')
         })
 
+print "\nRUNNING MINEGAULER COMPILE"
 setup(
     windows=scripts,
     options={'py2exe': py2exe_options},
@@ -109,21 +143,27 @@ setup(
     name='MineGauler',
     version=VERSION,
     author='Lewis H. Gaul',
-    author_email='minegauler@gmail.com',
-    url='github.com/LewisGaul'
+    url=r'github.com/LewisGaul',
+    author_email=r'minegauler@gmail.com'
     )
 
-# if target not in ['light', 'archive']:
-#     with open(join(destn, 'dist', 'files', 'data.txt'), 'w') as f:
-#         json.dump(highscores, f)
+if target not in ['light', 'home', 'archive']:
+    names.append('Siwel G')
+    highscores = highscore_utils.get_personal(names)
+    with open(join(destn, 'dist', 'files', 'highscores.json'), 'w') as f:
+        json.dump(highscores, f)
 
+print "\nREMOVING BUILD FOLDERS"
 shutil.rmtree('build', ignore_errors=True)
+shutil.rmtree('dist', ignore_errors=True) #dummy exe
 
+print "COMPRESSING"
 shutil.make_archive(join('bin', '%sMineGauler%s'%(target, VERSION)),
     'zip', destn)
 
-
-# with winshell.shortcut(
-#     join(winshell.desktop(), 'MineGauler.lnk')) as shortcut:
-#     shortcut.working_directory = join(dest_direc, 'dist')
-#     shortcut.path = join(shortcut.working_directory, 'MineGauler.exe')
+if target in ['home', 'archive']:
+    print "CREATING SHORTCUT"
+    with winshell.shortcut(
+        join(winshell.desktop(), 'MineGauler.lnk')) as shortcut:
+        shortcut.working_directory = join(os.getcwd(), destn, 'dist')
+        shortcut.path = join(shortcut.working_directory, 'MineGauler.exe')

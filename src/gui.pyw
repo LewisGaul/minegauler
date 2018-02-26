@@ -1,6 +1,6 @@
 
 import os
-from os.path import join, split, splitext, exists
+from os.path import join, split, splitext, exists, basename
 import Tkinter as tk
 import tkFileDialog, tkMessageBox
 from PIL import Image as PILImage, ImageTk
@@ -23,22 +23,13 @@ diff_names = [
     ('m', 'Master'),
     ('c', 'Custom')
     ]
-nr_font = ('Tahoma', 9, 'bold')
 msg_font = ('Times', 10, 'bold')
 
 
 class BasicGui(tk.Tk, object):
     def __init__(self, **kwargs):
         # Defaults which may be overwritten below.
-        self.settings = {
-            'diff': 'b',
-            'per_cell': 1,
-            'detection': 1,
-            'drag_select': False,
-            'distance_to': False,
-            'button_size': 16, #pixels
-            'first_success': True
-            }
+        self.settings = default_settings.copy()
         # Force standard settings (basic version).
         kwargs['per_cell'] = 1
         kwargs['detection'] = 1
@@ -51,7 +42,7 @@ class BasicGui(tk.Tk, object):
         # Prioritise the difficulty given.
         if self.diff in ['b', 'i', 'e', 'm']:
             self.dims = self.settings['dims'] = diff_dims[self.diff]
-            self.mines = nr_mines[self.diff][self.detection]
+            self.mines = nr_mines[self.diff]
             self.settings['mines'] = self.mines
 
         self.all_coords = [(i, j) for i in range(self.dims[0])
@@ -71,32 +62,34 @@ class BasicGui(tk.Tk, object):
         self.protocol('WM_DELETE_WINDOW', self.close_root)
         # Set default to be that menus cannot be 'torn off'.
         self.option_add('*tearOff', False)
-        self.nr_font = (nr_font[0], 10*self.button_size/17, nr_font[2])
         self.msg_font = msg_font
 
         # Set variables.
         self.diff_var = tk.StringVar()
         self.diff_var.set(self.diff)
         self.zoom_var = tk.BooleanVar()
-        if self.button_size != 16:
+        if self.btn_size != 16:
             self.zoom_var.set(True)
         self.drag_select_var = tk.BooleanVar()
         self.drag_select_var.set(self.drag_select)
 
         # t = tm.time()
+        self.face_images = dict()
+        self.btn_images = dict()
         self.get_images()
         # print "Time to get images was {:.2f}s.".format(tm.time() - t)
         # Make main body of GUI.
         self.make_panel()
         self.make_minefield()
+        self.make_menubar()
 
         # Turn off option of resizing window.
         self.resizable(False, False)
         self.block_windows = False
 
         # Keep track of mouse clicks.
-        self.left_button_down = False
-        self.right_button_down = False
+        self.left_btn_down = False
+        self.right_btn_down = False
         self.mouse_coord = None
         self.is_both_click = False
         self.drag_flag = None
@@ -146,21 +139,49 @@ class BasicGui(tk.Tk, object):
             nbrs.remove(coord)
         return nbrs
 
-    def run(self):
-        """
-        Final method to finish off any bits that are unique to the class
-        before running the app with mainloop. Every subclass should have its
-        own run method.
-        """
-        # Create menubar.
-        self.menubar = MenuBar(self)
-        self.config(menu=self.menubar)
-        self.mainloop()
-
     # Make the GUI.
+    def make_menubar(self):
+        menu = self.menubar = MenuBar(self)
+        self.config(menu=menu)
+        menu.add_item('game', 'command', 'New',
+            command=self.start_new_game, accelerator='F2')
+        self.bind('<F2>', self.start_new_game)
+        menu.add_item('game', 'separator')
+        for i in diff_names:
+            menu.add_item('game', 'radiobutton', i[1], value=i[0],
+                command=self.set_difficulty, variable=self.diff_var)
+        menu.add_item('game', 'separator')
+        menu.add_item('game', 'checkbutton', 'Zoom',
+            command=self.get_zoom, variable=self.zoom_var)
+        styles_menu = tk.Menu(menu)
+        menu.add_item('game', 'cascade', 'Styles', menu=styles_menu)
+        self.style_vars = dict()
+        for i in ['buttons']:
+            submenu = tk.Menu(styles_menu)
+            styles_menu.add_cascade(label=i.capitalize(), menu=submenu)
+            self.style_vars[i] = tk.StringVar()
+            self.style_vars[i].set(self.styles[i])
+            for j in glob(join(direcs['images'], i, '*')):
+                style = basename(j)
+                submenu.add_radiobutton(label=style.capitalize(),
+                    variable=self.style_vars[i], value=style,
+                    command=self.update_style(i))
+        menu.add_item('game', 'separator')
+        menu.add_item('game', 'command', 'Exit', command=self.destroy)
+
+        menu.add_item('opts', 'checkbutton', 'Drag-select',
+            variable=self.drag_select_var, command=self.update_settings)
+
+        show_about = lambda: self.show_text('about', 40, 5)
+        menu.add_item('help', 'command', 'About', accelerator='F1',
+            command=show_about)
+        self.bind_all('<F1>', show_about)
+
     def make_panel(self):
-        self.panel = tk.Frame(self, pady=4, height=40)
+        self.panel = tk.Frame(self, height=40, pady=4)
         self.panel.pack(fill='both')
+        # Make the gridded widgets fill the panel.
+        self.panel.columnconfigure(1, weight=1)
         self.face_images = dict()
         # Collect all faces that are in the folder and store in dictionary
         # under filename.
@@ -187,22 +208,21 @@ class BasicGui(tk.Tk, object):
         self.panel.bind_class('panel', '<ButtonRelease-1>', panel_click)
 
     def set_cell_image(self, coord, image, tag=True):
-        x = (coord[1] + 0.5) * self.button_size
-        y = (coord[0] + 0.5) * self.button_size
+        y, x = [(p + 0.5)*self.btn_size for p in coord]
         tag = 'overlay' if tag else ''
         return self.board.create_image(x, y, image=image, tag=tag)
 
     def make_minefield(self):
-        btn_size = self.button_size
         self.mainframe = tk.Frame(self, bd=10, relief='ridge')
         self.mainframe.pack()
-        self.board = tk.Canvas(self.mainframe, height=self.dims[0]*btn_size,
-            width=self.dims[1]*btn_size, highlightthickness=0)
+        h, w = (i*self.btn_size for i in self.dims)
+        self.board = tk.Canvas(self.mainframe, height=h, width=w,
+            highlightthickness=0)
         self.board.pack()
         self.buttons = dict()
         for coord in self.all_coords:
-            self.buttons[coord] = Cell(coord, self)
-            self.set_cell_image(coord, self.bg_images['up'], tag=False)
+            b = self.buttons[coord] = Cell(coord, self)
+            b.fg = self.set_cell_image(coord, self.btn_images['up'], tag=False)
         self.set_button_bindings()
 
     def set_button_bindings(self):
@@ -225,65 +245,85 @@ class BasicGui(tk.Tk, object):
         self.board.unbind('<Control-1>')
 
     @staticmethod
-    def get_photoimage(filename, size, bg=None):
+    def get_photoimage(filename, size, overlay=None):
         im = PILImage.open(join(direcs['images'], filename))
-        if bg is None:
-            bg = ''
-        else:
-            col = bg_colours[bg]
-            data = np.array(im)
-            # Set background colour.
-            data[(data == (255, 255, 255, 0)).all(axis=-1)] = tuple(
-                list(col) + [0])
-            # Remove alpha (transparency) channel.
-            im = PILImage.fromarray(data, mode='RGBA').convert('RGB')
+        if overlay:
+            overlay = PILImage.open(join(direcs['images'], overlay))
+            if overlay.mode == 'RGB':
+                overlay = overlay.convert('RGBA')
+            pos = (80 - overlay.size[0]) / 2
+            # Place the overlay on top of the image.
+            im.paste(overlay, (pos, pos), overlay)
         im = im.resize((size, size), PILImage.ANTIALIAS)
-        return ImageTk.PhotoImage(im, name=filename + bg)
+        return ImageTk.PhotoImage(im)
 
-    def get_images(self):
+    def get_images(self, change='all'):
+        if change in ['all', 'faces']:
+            # Collect all faces that are in the folder and store in dictionary
+            # under filename.
+            for path in glob(join(direcs['images'], 'faces', '*.ppm')):
+                # Remove 'face.ppm' from end of filename.
+                im_name = splitext(basename(path))[0][:-4]
+                self.face_images[im_name] = tk.PhotoImage(name=im_name,
+                    file=join(direcs['images'], 'faces', im_name + 'face.ppm'))
+
         # Create the PhotoImages from the png files.
-        self.bg_images = dict() #backgrounds
-        self.bg_images['up'] = self.get_photoimage('btn_up.png',
-            self.button_size)
-        self.bg_images['down'] = self.get_photoimage('btn_down.png',
-            self.button_size)
-        self.bg_images['red'] = self.get_photoimage('btn_down_red.png',
-            self.button_size)
-
-        self.mine_images = dict() #mines
-        size = self.button_size - 2
-        for c in bg_colours:
-            if not c:
-                key = 1
+        def get_im(f1, im_type=None, f2=None):
+            # If image isn't present in current style use standard style.
+            path1 = join(direcs['images'], 'buttons',
+                self.styles['buttons'], f1)
+            if not exists(path1):
+                path1 = join(direcs['images'], 'buttons', 'standard', f1)
+            if im_type and f2:
+                path2 = join(direcs['images'], im_type,
+                    self.styles[im_type], f2)
+                if not exists(path2):
+                    path2 = join(direcs['images'], im_type, 'standard', f2)
             else:
-                key = '%s1' % c
-            self.mine_images[key] = self.get_photoimage('mine1.png', size, c)
+                path2 = None
+            return self.get_photoimage(path1, self.btn_size, path2)
+        if change in ['all', 'buttons']:
+            self.btn_images['up'] = get_im('btn_up.png')
+            self.btn_images['down'] = get_im('btn_down.png')
+            self.btn_images['red'] = get_im('btn_down_red.png')
+            self.btn_images[0] = self.btn_images['down']
+        if change in ['all', 'numbers', 'buttons']:
+            for i in range(1, 9):
+                self.btn_images[i] = get_im('btn_down.png',
+                    'numbers', 'num%s.png'%i)
 
-        self.flag_images = dict() #flags
-        self.cross_images = dict() #wrong flags
-        size = self.button_size - 6
-        self.flag_images[1] = self.get_photoimage('flag1.png', size, bg='')
-        self.cross_images[1] = self.get_photoimage('cross1.png', size, bg='')
+        if change in ['all', 'images', 'buttons']:
+            self.mine_image = get_im('btn_down.png',
+                    'images', 'mine1.png')
+            self.mine_image_red = get_im('btn_down_red.png',
+                    'images', 'mine1.png')
+            self.flag_image = get_im('btn_up.png',
+                'images', 'flag1.png')
+            self.cross_image = get_im('btn_up.png',
+                'images', 'cross1.png')
 
     # Button actions.
     def get_mouse_coord(self, event):
-        return tuple(
-            map(lambda p: getattr(event, p)/self.button_size, ['y', 'x']))
+        return tuple(getattr(event, p)/self.btn_size for p in ['y', 'x'])
 
     def detect_left_press(self, event=None):
-        self.left_button_down = True
-        if self.right_button_down:
+        self.left_btn_down = True
+        if self.right_btn_down:
             self.both_press(self.mouse_coord)
         else:
             self.mouse_coord = self.get_mouse_coord(event)
             self.left_press(self.mouse_coord)
 
     def detect_left_release(self, event=None):
-        self.left_button_down = False
+        # Catch the case the click wasn't received as a button click.
+        if not self.left_btn_down:
+            return
+        self.left_btn_down = False
         if not self.mouse_coord:
             self.is_both_click = False
+            self.right_btn_down = False
             return
-        if self.right_button_down:
+        if self.right_btn_down:
             self.both_release(self.mouse_coord)
         elif self.is_both_click:
             self.is_both_click = False
@@ -293,19 +333,20 @@ class BasicGui(tk.Tk, object):
             self.mouse_coord = None
 
     def detect_right_press(self, event=None):
-        self.right_button_down = True
-        if self.left_button_down:
+        self.right_btn_down = True
+        if self.left_btn_down:
             self.both_press(self.mouse_coord)
         else:
             self.mouse_coord = self.get_mouse_coord(event)
             self.right_press(self.mouse_coord)
 
     def detect_right_release(self, event=None):
-        self.right_button_down = False
+        self.right_btn_down = False
         if not self.mouse_coord:
             self.is_both_click = False
+            self.left_btn_down = False
             return
-        if self.left_button_down:
+        if self.left_btn_down:
             self.both_release(self.mouse_coord)
         elif self.is_both_click:
             self.is_both_click = False
@@ -323,18 +364,18 @@ class BasicGui(tk.Tk, object):
             return
         if cur_coord is None:
             self.face_button.config(image=self.face_images['ready1face'])
-        if self.left_button_down:
-            if self.right_button_down: #both
+        if self.left_btn_down:
+            if self.right_btn_down: #both
                 self.both_motion(cur_coord, self.mouse_coord)
-            elif not self.is_both_click or self.drag_select: #left
+            elif not self.is_both_click: #left
                 self.left_motion(cur_coord, self.mouse_coord)
-        elif not self.is_both_click: #right
+        elif self.right_btn_down and not self.is_both_click: #right
             self.right_motion(cur_coord, self.mouse_coord)
         self.mouse_coord = cur_coord
 
     def detect_ctrl_left_press(self, event=None):
         coord = self.get_mouse_coord(event)
-        if not self.right_button_down:
+        if not self.right_btn_down:
             self.ctrl_left_press(coord)
 
     def left_press(self, coord):
@@ -371,12 +412,12 @@ class BasicGui(tk.Tk, object):
     # GUI and game methods.
     def refresh_board(self, event=None):
         self.board.delete('overlay')
-        for btn in [b for b in self.buttons.values() if b.state != UNCLICKED]:
-            btn.refresh(del_imgs=False)
+        for b in self.buttons.values():
+            b.refresh(del_imgs=False)
         self.update_settings()
         self.set_button_bindings()
-        self.left_button_down = self.right_button_down = False
-        self.mouse_coord = None
+        self.left_btn_down = self.right_btn_down = False
+        self.mouse_coord = self.drag_flag = None
         self.is_both_click = False
 
     def close_root(self):
@@ -404,14 +445,13 @@ class BasicGui(tk.Tk, object):
     def set_difficulty(self):
         if self.diff_var.get() in diff_dims: #standard board
             self.diff = self.diff_var.get()
-            self.mines = nr_mines[self.diff][self.detection]
+            self.mines = nr_mines[self.diff]
             self.reshape(diff_dims[self.diff])
+            self.start_new_game()
         else: #custom, open popup window
             # Don't change the radiobutton until custom is confirmed.
             self.diff_var.set(self.diff)
-            if not self.block_windows:
-                self.get_custom()
-        self.start_new_game()
+            self.get_custom()
 
     def get_custom(self):
         def size_slide(num):
@@ -449,7 +489,12 @@ class BasicGui(tk.Tk, object):
             self.close_window(title)
             self.mines = mines
             self.reshape(dims)
+            # Needed here - after window is closed.
+            self.start_new_game()
 
+        if self.block_windows:
+            self.focus.focus_set()
+            return
         title = 'Custom'
         win = Window(self, title)
         tk.Message(win.mainframe, width=200, text=(
@@ -495,26 +540,27 @@ class BasicGui(tk.Tk, object):
         self.focus.focus_set()
 
     def reshape(self, dims):
-        # This runs if one of the dimensions was previously larger.
+        old_dims = self.dims
+        # This is non-empty if one of the dimensions was previously larger.
         extras = [c for c in self.all_coords if c[0] >= dims[0] or
             c[1] >= dims[1]]
         for coord in extras:
-            self.buttons.pop(coord)
-        # This runs if one of the dimensions of the new shape is larger than
-        # the previous.
+            b = self.buttons.pop(coord)
+            b.refresh()
+            self.board.delete(b.bg)
         self.all_coords = [(i, j) for i in range(dims[0])
             for j in range(dims[1])]
-        new = [c for c in self.all_coords if c[0] >= self.dims[0] or
-            c[1] >= self.dims[1]]
+        new = [c for c in self.all_coords if c[0] >= old_dims[0] or
+            c[1] >= old_dims[1]]
         for coord in new:
-            self.set_cell_image(coord, self.bg_images['up'], tag=False)
-            self.buttons[coord] = Cell(coord, self)
-        self.board.config(height=self.button_size*dims[0],
-            width=self.button_size*dims[1])
+            b = self.buttons[coord] = Cell(coord, self)
+            b.bg = self.set_cell_image(coord, self.btn_images['up'], tag=False)
+        self.board.config(height=self.btn_size*dims[0],
+            width=self.btn_size*dims[1])
         self.dims = dims
         # Check if this is custom.
         if (dims in diff_dims and
-            self.mines == nr_mines[diff_dims[dims]][self.detection]):
+            self.mines == nr_mines[diff_dims[dims]]):
             self.diff = diff_dims[dims]
             self.diff_var.set(self.diff)
         else:
@@ -534,32 +580,31 @@ class BasicGui(tk.Tk, object):
                 text = '100'
             if text not in map(str, range(60, 501)): #invalid
                 return
-            old_button_size = self.button_size
-            self.button_size = int(round(int(text)*16.0/100, 0))
-            self.settings['button_size'] = self.button_size
-            if self.button_size == 16:
+            old_btn_size = self.btn_size
+            self.btn_size = int(round(int(text)*16.0/100, 0))
+            self.settings['btn_size'] = self.btn_size
+            if self.btn_size == 16:
                 self.zoom_var.set(False)
             else:
                 self.zoom_var.set(True)
-            if old_button_size != self.button_size:
-                self.board.config(height=self.button_size*self.dims[0],
-                    width=self.button_size*self.dims[1])
+            if old_btn_size != self.btn_size:
+                self.board.config(height=self.btn_size*self.dims[0],
+                    width=self.btn_size*self.dims[1])
                 self.board.delete('all')
-                for coord in self.buttons:
-                    self.set_cell_image(coord, self.bg_images['up'],
-                        tag=False)
                 self.get_images()
-                self.nr_font = (self.nr_font[0], 10*self.button_size/17,
-                    self.nr_font[2])
+                for coord, b in self.buttons.items():
+                    b.bg = self.set_cell_image(coord, self.btn_images['up'],
+                        tag=False)
             self.close_window(title)
             self.start_new_game()
 
         # Ensure tick on radiobutton is correct.
-        if self.button_size == 16:
+        if self.btn_size == 16:
             self.zoom_var.set(False)
         else:
             self.zoom_var.set(True)
         if self.block_windows:
+            self.focus.focus_set()
             return
         title = 'Zoom'
         win = Window(self, title)
@@ -567,7 +612,7 @@ class BasicGui(tk.Tk, object):
             "Select the desired increase in button size compared to the "
             "default, which should be an integer from 60 to 500."
             )).pack(pady=10)
-        zoom = int(round(100*self.button_size/16.0, 0))
+        zoom = int(round(100*self.btn_size/16.0, 0))
         slider = tk.Scale(win.mainframe, from_=60, to=200, length=140,
             orient='horizontal', showvalue=False, command=slide)
         zoom_entry = tk.Entry(win.mainframe, width=4, justify='right')
@@ -584,6 +629,22 @@ class BasicGui(tk.Tk, object):
         self.bind_class('zoom','<Return>', set_zoom)
         self.focus = zoom_entry
         self.focus.focus_set()
+
+    def update_style(self, change):
+        def run():
+            new_style = self.style_vars[change].get()
+            if new_style == self.styles[change]: #no change
+                return
+            self.styles[change] = new_style
+            self.settings['styles'] = self.styles
+            self.get_images(change)
+            if change == 'buttons':
+                self.board.delete('all')
+                for coord in self.all_coords:
+                    self.buttons[coord].bg = self.set_cell_image(coord,
+                        self.btn_images['up'], tag=False)
+            self.start_new_game()
+        return run
 
     # Options menu methods.
     def update_settings(self):
@@ -626,7 +687,7 @@ class TestGui(BasicGui):
                 self.click(coord)
         else:
             if b.state == UNCLICKED:
-                b.bg = self.set_cell_image(coord, self.bg_images['down'])
+                b.fg = self.set_cell_image(coord, self.btn_images['down'])
 
     def left_release(self, coord):
         super(TestGui, self).left_release(coord)
@@ -644,27 +705,22 @@ class TestGui(BasicGui):
     def right_press(self, coord):
         super(TestGui, self).right_press(coord)
         b = self.buttons[coord]
-
+        if b.state == UNCLICKED:
+            b.fg = self.set_cell_image(coord, self.flag_image)
+            b.state = FLAGGED
+            b.num_of_flags = 1
+        elif b.state == FLAGGED:
+            b.refresh()
         # Check whether drag-clicking should flag or unflag if drag is on.
         if self.drag_select:
             if b.state == UNCLICKED:
-                self.drag_flag = FLAG
-            elif b.state == FLAGGED and self.per_cell == 1:
                 self.drag_flag = UNFLAG
+            elif b.state == FLAGGED:
+                self.drag_flag = FLAG
             else:
                 self.drag_flag = None
         else:
             self.drag_flag = None
-
-        if b.state == UNCLICKED:
-            b.fg = self.set_cell_image(coord, self.flag_images[1])
-            b.state = FLAGGED
-            b.num_of_flags = 1
-        elif b.state == FLAGGED:
-            self.board.delete(b.fg)
-            b.fg = None
-            b.state = UNCLICKED
-            b.num_of_flags = 0
 
     def right_motion(self, coord, prev_coord):
         super(TestGui, self).right_motion(coord, prev_coord)
@@ -672,31 +728,26 @@ class TestGui(BasicGui):
         if not coord:
             return
         b = self.buttons[coord]
-        # If the window was left, stop drag flagging. Could be altered to allow
-        # cursor to go over the frame.
-        # if not prev_coord:
-        #     self.drag_flag = None
         # Flag or unflag as appropriate.
         if self.drag_flag == FLAG and b.state == UNCLICKED:
-            b.fg = self.set_cell_image(coord, self.flag_images[1])
+            b.fg = self.set_cell_image(coord, self.flag_image)
             b.state = FLAGGED
             b.num_of_flags = 1
         elif self.drag_flag == UNFLAG and b.state == FLAGGED:
             b.refresh()
-            b.state = UNCLICKED
-            b.num_of_flags = 0
 
     def both_press(self, coord):
         super(TestGui, self).both_press(coord)
+        b = self.buttons[coord]
+        if b.state == UNCLICKED:
+            b.refresh()
         # Buttons which neighbour the current selected button.
         new_nbrs = self.get_nbrs(coord, include=True)
-        # Only consider unclicked cells.
-        new_nbrs = {c for c in new_nbrs
-            if self.buttons[c].state == UNCLICKED}
         # Sink the new neighbouring buttons.
         for c in new_nbrs:
-            self.buttons[c].bg = self.set_cell_image(c,
-                self.bg_images['down'])
+            b = self.buttons[c]
+            if b.state == UNCLICKED:
+                b.fg = self.set_cell_image(c, self.btn_images['down'])
 
     def both_release(self, coord):
         super(TestGui, self).both_release(coord)
@@ -725,79 +776,42 @@ class TestGui(BasicGui):
 
     def click(self, coord):
         b = self.buttons[coord]
-        b.bg = self.set_cell_image(coord, self.bg_images['down'])
-        b.fg = self.set_cell_image(coord, self.mine_images[1])
+        b.fg = self.set_cell_image(coord, self.mine_image)
         b.state = CLICKED
 
 
 
 class MenuBar(tk.Menu, object):
-    def __init__(self, parent, config='basic'):
+    def __init__(self, parent):
         super(MenuBar, self).__init__(parent)
         self.parent = parent
-        self.config = config
-        self.make_game_menu()
-        self.make_options_menu()
-        self.make_help_menu()
+        self.game_menu = tk.Menu(self)
+        self.opts_menu = tk.Menu(self)
+        self.help_menu = tk.Menu(self)
+        self.add_cascade(label='Game', menu=self.game_menu)
+        self.add_cascade(label='Options', menu=self.opts_menu)
+        self.add_cascade(label='Help', menu=self.help_menu)
+        self.game_items = []
+        self.opts_items = []
+        self.help_items = []
 
-    def make_game_menu(self):
-        self.g_menu = tk.Menu(self)
-        self.add_cascade(label='Game', menu=self.g_menu)
+    def add_item(self, menu_, typ, label=None, index='end', **kwargs):
+        items = getattr(self, menu_ + '_items')
+        menu_ = getattr(self, menu_ + '_menu')
+        if type(index) is int and index < 0:
+            index += len(items)
+        menu_.insert(index, typ, label=label, **kwargs)
+        if index == 'end':
+            items.append(label)
+        else:
+            items.insert(index, label)
 
-        self.g_menu.add_command(label='New',
-            command=self.parent.start_new_game, accelerator='F2')
-        self.parent.bind('<F2>', self.parent.start_new_game)
-        if self.config == 'full':
-            self.g_menu.add_command(label='Replay',
-                command=self.parent.replay_game)
-            self.g_menu.add_command(label='Save board',
-                command=self.parent.save_board)
-            self.g_menu.add_command(label='Load board',
-                command=self.parent.load_board)
-            self.g_menu.add_separator()
-            self.g_menu.add_command(label='Current info',
-                command=self.parent.show_info, accelerator='F4')
-            self.parent.bind('<F4>', self.parent.show_info)
-
-        self.g_menu.add_separator()
-        for i in diff_names:
-            self.g_menu.add_radiobutton(label=i[1], value=i[0],
-                variable=self.parent.diff_var, command=self.parent.set_difficulty)
-        self.g_menu.add_separator()
-        self.g_menu.add_checkbutton(label='Zoom', variable=self.parent.zoom_var,
-            command=self.parent.get_zoom)
-        self.g_menu.add_separator()
-        self.g_menu.add_command(label='Exit', command=self.parent.destroy)
-
-    def make_options_menu(self):
-        self.o_menu = tk.Menu(self)
-        self.add_cascade(label='Options', menu=self.o_menu)
-
-        if self.config == 'full':
-            self.o_menu.add_checkbutton(label='FirstAuto',
-                variable=self.parent.first_success_var,
-                command=self.parent.update_settings)
-        self.o_menu.add_checkbutton(label='Drag select',
-            variable=self.parent.drag_select_var,
-            command=self.parent.update_settings)
-
-    def make_help_menu(self):
-        self.h_menu = tk.Menu(self)
-        self.add_cascade(label='Help', menu=self.h_menu)
-        self.h_menu.add_command(label='About', accelerator='F1',
-            command=lambda: self.parent.show_text('about', 40, 5))
-        self.bind_all('<F1>', lambda: self.parent.show_text('about', 40, 5))
-        if self.config == 'full':
-            self.h_menu.add_separator()
-            self.h_menu.add_command(label='Basic rules',
-                command=lambda: self.parent.show_text('rules'))
-            self.h_menu.add_command(label='Special features',
-                command=lambda: self.parent.show_text('features'))
-            self.h_menu.add_command(label='Tips',
-                command=lambda: self.parent.show_text('tips'))
-
-    def set_to_official(self):
-        pass
+    def del_item(self, menu, index):
+        menu = getattr(self, menu + '_menu')
+        items = getattr(self, menu + '_items')
+        menu.delete(index)
+        if index == 'end':
+            items.pop(index)
 
 
 
@@ -812,25 +826,20 @@ class Cell(object):
         self.nr = None
         self.bg = None
         self.fg = None
-        self.text = None
 
     def refresh(self, del_imgs=True):
         if del_imgs:
-            self.board.delete(self.bg)
             self.board.delete(self.fg)
-            self.board.delete(self.text)
-        self.bg = self.fg = self.text = None
+        self.fg = None
         self.state = UNCLICKED
         self.num_of_flags = 0
         self.mines = 0
         self.nr = None
 
     def incr_flags(self):
-        if self.fg:
-            self.board.delete(self.fg)
         self.num_of_flags += 1
         self.fg = self.root.set_cell_image(self.coord,
-            self.root.flag_images[self.num_of_flags])
+            self.root.flag_image)
         self.state = FLAGGED
         self.mines = self.num_of_flags
 
@@ -859,4 +868,4 @@ class Window(tk.Toplevel, object):
 
 if __name__ == '__main__':
     t = TestGui()
-    t.run()
+    t.mainloop()
