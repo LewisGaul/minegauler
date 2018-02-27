@@ -1,6 +1,7 @@
 __pycache__/
 *venv/
 build/
+bin/
 images/raw/
 settings.cfg
 files/*.csv
