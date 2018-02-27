@@ -1,9 +1,7 @@
 __pycache__/
 *venv/
 build/
-bin/2.0/**/*
-bin/2.1/**/*
-!bin/2.1/**/*.zip
 images/raw/
 settings.cfg
 files/*.csv
+LaTex/
