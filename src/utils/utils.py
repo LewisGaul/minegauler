@@ -1,5 +1,5 @@
 """
-utils.py - General utils to be * imported from any file in the app
+utils.py - General utils
 
 March 2018, Lewis Gaul
 """

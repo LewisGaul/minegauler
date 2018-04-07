@@ -1,5 +1,5 @@
 """
-minefield.py -
+minefield.py - Implementation of a minefield object.
 
 March 2018, Lewis Gaul
 """
@@ -18,15 +18,15 @@ class Minefield(Grid):
     Grid representation of a minesweeper minefield, each cell contains an
     integer representing the number of mines at that cell.
     Attributes:
-        mines           - number of mines
-        per_cell        - maximum number of mines per cell
-        mine_coords     - list of mine coordinates in (x, y) format
-        completed_board - grid containing the state of the board when completed
-        openings        - a list of openings, each of which is a list of
-                          coordinates which are part of the opening, i.e. all
-                          the cells which would be revealed if one of the cells
-                          within the opening was clicked
-        bbbv            - the 3bv of the game
+      mines           - number of mines
+      per_cell        - maximum number of mines per cell
+      mine_coords     - list of mine coordinates in (x, y) format
+      completed_board - grid containing the state of the board when completed
+      openings        - a list of openings, each of which is a list of
+                        coordinates which are part of the opening, i.e. all
+                        the cells which would be revealed if one of the cells
+                        within the opening was clicked
+      bbbv            - the 3bv of the game
     """
     def __init__(self, x_size, y_size):
         """
@@ -49,11 +49,11 @@ class Minefield(Grid):
         Fill in the minefield with a list of coordinates of where mines are to
         be hidden. Also get the completed board, openings and 3bv for the
         created minefield.
-
-        Argument: coords ([(int, int), ...])
+        Arguments:
+          coords ([(int, int), ...])
             List of mine coordinates, which must fit within the dimensions of
             the minefield.
-        Argument: per_cell (int > 0)
+          per_cell (int > 0)
             The maximum number of mines per cell. The number of occurrences of
             any of the coordinates in the list of coordinates must not exceed
             per_cell.
@@ -75,12 +75,12 @@ class Minefield(Grid):
         Fill in the minefield at random. Also get the completed board and 3bv
         for the created minefield. This is done by making a list of random
         coordinates and passing it to self.create_from_list().
-
-        Argument: mines (int > 0)
+        Arguments:
+          mines (int > 0)
             The number of mines to place in the minefield.
-        Argument: per_cell (int > 0)
+          per_cell (int > 0)
             The maximum number of mines allowed in a cell.
-        Argument: safe_coords ([(int, int), ...] | None)
+          safe_coords ([(int, int), ...] | None)
             List of coordinates which must not contain any mines.
         """
         # Perform some sanity checks.
@@ -112,14 +112,13 @@ class Minefield(Grid):
     def cell_contains_mine(self, x, y):
         """
         Does a cell contain at least one mine.
-
-        Argument: x (int, 0 <= x <= self.x_size)
+        Arguments:
+          x (int, 0 <= x <= self.x_size)
             x-coordinate
-        Argument: y (int, 0 <= y <= self.y_size)
+          y (int, 0 <= y <= self.y_size)
             y-coordinate
-
         Return: bool
-            Whether the cell contains a mine.
+          Whether the cell contains a mine.
         """
         return self[y][x] > 0
 

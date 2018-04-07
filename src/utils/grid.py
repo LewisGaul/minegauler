@@ -12,11 +12,12 @@ class Grid(list):
     """Grid representation using a list of lists (2D array)."""
     def __init__(self, x_size, y_size, fill=0):
         """
-        Argument: x_size (int > 0)
+        Arguments:
+          x_size (int > 0)
             The number of columns.
-        Argument: y_size (int > 0)
+          y_size (int > 0)
             The number of rows.
-        Argument: fill=0 (object)
+          fill=0 (object)
             What to fill the grid with.
         """
         super().__init__()
@@ -34,12 +35,12 @@ class Grid(list):
         Convert the grid to a string in an aligned format. The __repr__ method
         is used to display the objects inside the grid unless the mapping
         argument is given.
-
-        Argument: mapping=None (dict | callable | None)
+        Arguments:
+          mapping=None (dict | callable | None)
             A mapping to apply to all objects contained within the grid. The
             result of the mapping will be converted to a string and displayed.
             If a mapping is specified, a cell size should also be given.
-        Argument: cell_size=None (int | None)
+          cell_size=None (int | None)
             The size to display a grid cell as. Defaults to the maximum size of
             the representation of all the objects contained in the grid.
         """
@@ -67,8 +68,8 @@ class Grid(list):
     def fill(self, item):
         """
         Fill the grid with a given object.
-
-        Argument: item (object)
+        Arguments:
+          item (object)
             The item to fill the grid with.
         """
         for row in self:
@@ -78,16 +79,15 @@ class Grid(list):
     def get_nbrs(self, x, y, include_origin=False):
         """
         Get a list of the coordinates of neighbouring cells.
-
-        Argument: x (int, 0 <= x <= self.x_size)
+        Arguments:
+          x (int, 0 <= x <= self.x_size)
             x-coordinate
-        Argument: y (int, 0 <= y <= self.y_size)
+          y (int, 0 <= y <= self.y_size)
             y-coordinate
-        Argument: include_origin=False (bool)
+          include_origin=False (bool)
             Whether to include the original coordinate, (x, y), in the list.
-
         Return: [(int, int), ...]
-            List of coordinates within the boundaries of the grid.
+          List of coordinates within the boundaries of the grid.
         """
         nbrs = []
         for i in range(max(0, x - 1), min(self.x_size, x + 2)):
