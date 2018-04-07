@@ -7,9 +7,9 @@ March 2018, Lewis Gaul
 import random as rnd
 import logging
 
-from .utils.utils import *
-from .utils.enums import *
-from .utils.grid import Grid, Board
+from .shared.utils import *
+from .shared.enums import *
+from .shared.grid import Grid, Board
 
 
 
