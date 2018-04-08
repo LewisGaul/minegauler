@@ -44,7 +44,7 @@ class Minefield(Grid):
         mines_str = f" with {self.mines} mines" if self.mines else ""
         return f"<{self.x_size}x{self.y_size} minefield{mines_str}>"
 
-    def create_from_list(self, coords, per_cell):
+    def create_from_list(self, coords, per_cell=1):
         """
         Fill in the minefield with a list of coordinates of where mines are to
         be hidden. Also get the completed board, openings and 3bv for the
@@ -59,7 +59,7 @@ class Minefield(Grid):
             per_cell.
         """
         ASSERT(self.mines == 0, "Minefield already created.")
-        self.mine_coords = coords
+        self.mine_coords = sorted(coords)
         self.per_cell = per_cell
         self.mines = len(self.mine_coords)
         for (x, y) in coords:
@@ -70,7 +70,7 @@ class Minefield(Grid):
         self.find_openings()
         self.calc_3bv()
 
-    def create(self, mines, per_cell, safe_coords=None):
+    def create(self, mines, per_cell=1, safe_coords=None):
         """
         Fill in the minefield at random. Also get the completed board and 3bv
         for the created minefield. This is done by making a list of random
@@ -183,6 +183,7 @@ if __name__ == '__main__':
     print("Running minefield.py")
     dims_str = input("Input dimensions of minefield to create e.g. 8, 10:   ")
     dims = list(map(int, dims_str.replace(',', ' ').split()))
+    ASSERT(len(dims) == 2, "Require two dimensions")
     mf = Minefield(*dims)
     mines = int(input("Input number of mines:   "))
     mf.create(mines, per_cell=1)
