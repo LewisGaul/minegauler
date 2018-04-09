@@ -7,3 +7,4 @@ settings.cfg
 files/*.csv
 LaTex/
 _old.py
+*.diff
