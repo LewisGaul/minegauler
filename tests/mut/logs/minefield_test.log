@@ -1,0 +1,36 @@
+INFO:root:Initialising minefield
+DEBUG:root:<5x7 minefield>
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+INFO:root:Filling minefield with list of coords
+DEBUG:root:<5x7 minefield with 8 mines>
+0 0 1 0 0
+0 0 0 0 0
+1 0 0 1 0
+1 0 1 0 0
+0 0 0 1 0
+0 1 0 0 0
+0 0 1 0 0
+DEBUG:root:Minefield has 3bv of 18
+DEBUG:root:Completed board is:
+ -  1  F  1  -
+ 1  2  2  2  1
+ F  3  2  F  1
+ F  3  F  3  2
+ 2  3  3  F  1
+ 1  F  3  2  1
+ 1  2  F  1  -
+INFO:root:Initialising minefield with multiple mines per cell
+DEBUG:root:<4x1 minefield>
+0 0 0 0
+INFO:root:Filling minefield with list of coords
+DEBUG:root:<4x1 minefield with 5 mines>
+1 3 1 0
+DEBUG:root:Minefield has 3bv of 1
+DEBUG:root:Completed board is:
+F1 F3 F1  1

@@ -4,7 +4,7 @@ main.py - Entry point for the main application
 March 2018, Lewis Gaul
 """
 
-
+from .minefield import Minefield
 
 
 
