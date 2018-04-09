@@ -87,7 +87,7 @@ class Grid(list):
           include_origin=False (bool)
             Whether to include the original coordinate, (x, y), in the list.
         Return: [(int, int), ...]
-          List of coordinates within the boundaries of the grid.
+            List of coordinates within the boundaries of the grid.
         """
         nbrs = []
         for i in range(max(0, x - 1), min(self.x_size, x + 2)):

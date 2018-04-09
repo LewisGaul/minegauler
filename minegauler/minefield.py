@@ -118,7 +118,7 @@ class Minefield(Grid):
           y (int, 0 <= y <= self.y_size)
             y-coordinate
         Return: bool
-          Whether the cell contains a mine.
+            Whether the cell contains a mine.
         """
         return self[y][x] > 0
 
