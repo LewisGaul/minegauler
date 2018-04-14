@@ -7,7 +7,7 @@ March 2018, Lewis Gaul
 from os.path import dirname, abspath, join
 
 
-root_dir = dirname(dirname(dirname(abspath(__file__))))
+root_dir = dirname(dirname(abspath(__file__)))
 files_dir = join(root_dir, 'files')
 
 
