@@ -7,9 +7,8 @@ March 2018, Lewis Gaul
 import random as rnd
 import logging
 
-from .shared.utils import *
-from .shared.enums import *
-from .shared.grid import Grid, Board
+from minegauler.utils import ASSERT, Grid, CellState
+from .utils import Board
 
 
 
@@ -133,7 +132,7 @@ class Minefield(Grid):
         for (x, y) in self.all_coords:
             mines = self[y][x]
             if mines > 0:
-                self.completed_board[y][x] = CellContents.FLAGS[mines]
+                self.completed_board[y][x] = CellState.FLAGS[mines]
                 for (i, j) in self.get_nbrs(x, y):
                     # For cells that don't contain mines, increment their
                     #  numbers as appropriate.
