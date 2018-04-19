@@ -1,5 +1,5 @@
 """
-app.py - Base GUI application implementation
+main_window.py - Base GUI application implementation
 
 April 2018, Lewis Gaul
 """
@@ -173,6 +173,7 @@ class MainWindow(QMainWindow):
             The event object to be accepted if the window is to be closed.
         """
         event.accept()
+
                    
                    
 if __name__ == '__main__':

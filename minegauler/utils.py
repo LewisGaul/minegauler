@@ -1,11 +1,53 @@
 """
-grid.py - Grid functionality for minesweeper boards
+utils.py - General utils
 
 March 2018, Lewis Gaul
 """
 
-from .utils import *
-from .enums import *
+from os.path import dirname, abspath, join
+import enum
+
+
+def get_curdir(fpath):
+    return dirname(abspath(fpath))
+
+root_dir = dirname(get_curdir(__file__))
+files_dir = join(root_dir, 'files')
+
+
+def ASSERT(condition, message):
+    """
+    The built-in assert as a function.
+    """
+    assert condition, message
+
+
+CellState = enum.Enum('CellState',
+                      {'UNCLICKED': '#',
+                       **{'NUM%d' % i : i for i in range(21)},
+                       **{'FLAG%d' % i : 'F%d' % i for i in range(1, 11)},
+                       **{'CROSS%d' % i : 'X%d' % i for i in range(1, 11)},
+                       **{'MINE%d' % i : 'M%d' % i for i in range(1, 11)},
+                       **{'HIT%d' % i : 'H%d' % i for i in range(1, 11)},
+                       # **{'LIFE%d' % i : 'L%d' % i for i in range(1, 11)},
+                       'SPLIT': '+'
+                      })
+CellState.NUMS    = {i: getattr(CellState, 'NUM%d' % i) for i in range(21)}
+CellState.FLAGS   = {i: getattr(CellState, 'FLAG%d' % i) for i in range(1, 11)}
+CellState.CROSSES = {i: getattr(CellState, 'CROSS%d' % i) for i in range(1, 11)}
+CellState.MINES   = {i: getattr(CellState, 'MINE%d' % i) for i in range(1, 11)}
+CellState.HITS    = {i: getattr(CellState, 'HIT%d' % i) for i in range(1, 11)}
+# CellState.LIVES   = {i: getattr(CellState, 'LIFE%d' % i) for i in range(1, 11)}
+
+
+class GameCellMode(enum.Enum):
+    """
+    The layout and behaviour modes for the cells.
+    """
+    NORMAL = 'Original style'
+    SPLIT = 'Cells split instead of flagging'
+    SPLIT1 = SPLIT
+    SPLIT2 = 'Cells split twice'
 
 
 class Grid(list):
@@ -97,33 +139,3 @@ class Grid(list):
             nbrs.remove((x, y))
         return nbrs
 
-
-class Board(Grid):
-    """Board representation for handling displaying flags and openings."""
-    def __init__(self, x_size, y_size):
-        super().__init__(x_size, y_size)
-        self.per_cell = 0
-    def __repr__(self):
-        return f"<{self.x_size}x{self.y_size} board>"
-    def __str__(self):
-        def mapping(c):
-            # Display openings with dashes.
-            if c == 0:
-                return '-'
-            # Display the value from CellContents enum if it belongs to that class.
-            if type(c) is CellContents:
-                if self.per_cell == 1:
-                    return c.value[0]
-                else:
-                    return c.value
-            return c
-        return super().__str__(mapping, cell_size=2)
-
-
-class ProbBoard(Grid):
-    """ProbBoard class for handling displaying board probabilities."""
-    def __repr__(self):
-        return f"<{self.x_size}x{self.y_size} probability board>"
-    def __str__(self):
-        mapping = {}
-        return super().__str__(mapping, cell_size=4)
