@@ -2,6 +2,10 @@
 main_window.py - Base GUI application implementation
 
 April 2018, Lewis Gaul
+
+Exports:
+  MainWindow
+    Main window class
 """
 
 import sys
