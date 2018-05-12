@@ -2,6 +2,24 @@
 minefield.py - Implementation of a minefield object.
 
 March 2018, Lewis Gaul
+
+Exports:
+  Minefield
+    Minefield class, a 2D grid with a number of mines in each cell.
+    Arguments:
+      x_size - Number of columns
+      y_size - Number of rows
+    Attributes:
+      mines - Number of mines it contains
+      per_cell - Maximum number of mines allowed in a cell
+      mine_coords - A list of coordinates, one for each mine
+      completed_board - A grid representing the completed board
+      openings - A list of openings, each opening is a list of coordinates
+      bbbv - The 3bv of the game
+    Methods:
+      create(mines, per_cell=1, safe_coords=None) - Fill the minefield randomly
+      create_from_list(coords, per_cell=1) -
+          Fill the minefield with mines at the coordinates given
 """
 
 import random as rnd
@@ -127,6 +145,7 @@ class Minefield(Grid):
         should be seen upon game completion.
         """
         self.completed_board = Board(self.x_size, self.y_size)
+        self.completed_board.fill(0)
         # Store the per_cell on the completed board for nicer printing.
         self.completed_board.per_cell = self.per_cell
         for (x, y) in self.all_coords:

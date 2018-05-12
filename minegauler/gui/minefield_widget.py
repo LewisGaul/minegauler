@@ -2,6 +2,19 @@
 minefield_widget.py - Minefield widget implementation
 
 April 2018, Lewis Gaul
+
+Exports:
+  MinefieldWidget
+    A minefield widget class, to be packed in a parent container. Receives
+    clicks on the cells and calls any registered functions.
+    Arguments:
+      parent - Parent widget
+      x_size - Number of columns
+      y_size - Number of rows
+      btn_size (optional) - Size to display the cells, in pixels
+    Methods:
+      register_cb(cb_name, fn) - Register a callback function
+      register_all_cbs(ctrlr) - Attempt to register for all callbacks
 """
 
 import sys
@@ -14,14 +27,17 @@ from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QAction
 from .utils import init_or_update_cell_images
 
 
-cell_images = {}    
+# Initialise a dictionary to contain the cell images, which can only be created
+#  when a QApplication has been initialised.
+cell_images = {}
 
 
 class MinefieldWidget(QGraphicsView):
     """
     The minefield widget.
     """
-    def __init__(self, parent, procr, btn_size=16):
+    all_cb_names = ['leftclick_cb', 'rightclick_cb']
+    def __init__(self, parent, x_size, y_size, btn_size=16):
         """
         
         """
@@ -29,9 +45,7 @@ class MinefieldWidget(QGraphicsView):
         self.setStyleSheet("border: 0px")
         # self.setViewportMargins(0, 0, 0, 0)
         # self.setContentsMargins(0, 0, 0, 0)
-        self.procr = procr
-        procr.mf_ui = self
-        self.x_size, self.y_size = procr.x_size, procr.y_size
+        self.x_size, self.y_size = x_size, y_size
         self.all_coords = [(i, j) for i in range(self.x_size)
                                                     for j in range(self.y_size)]
         self.btn_size = btn_size
@@ -45,6 +59,40 @@ class MinefieldWidget(QGraphicsView):
         self.mouse_coord = None
         self.both_mouse_buttons_pressed = False
         self.mouse_buttons_down = Qt.NoButton
+        self.leftclick_cb_list = []
+        self.rightclick_cb_list = []
+        
+    def leftclick_cb(self, x, y):
+        """
+        A left mouse button click was received on the cell at coordinate (x, y).
+        Call all registered callback functions.
+        """
+        for cb in self.leftclick_cb_list:
+            cb(x, y)
+        
+    def rightclick_cb(self, x, y):
+        """
+        A right mouse button click was received on the cell at coordinate (x, y).
+        Call all registered callback functions.
+        """
+        for cb in self.rightclick_cb_list:
+            cb(x, y)
+            
+    def register_cb(self, cb_name, fn):
+        """
+        Register a callback function.
+        """
+        getattr(self, cb_name + '_list').append(fn)
+            
+    def register_all_cbs(self, ctrlr):
+        """
+        Register a callback for each callback specified in self.all_cb_names
+        using methods of the ctrlr which match the callback names. If any
+        methods are missing no callback is registered and no error is raised.
+        """
+        for cb_name in self.all_cb_names:
+            if hasattr(ctrlr, cb_name):
+                self.register_cb(cb_name, getattr(ctrlr, cb_name))
         
     def refresh(self):
         """
@@ -60,9 +108,9 @@ class MinefieldWidget(QGraphicsView):
         """
         x, y = event.x() // self.btn_size, event.y() // self.btn_size
         if event.buttons() & Qt.LeftButton:
-            self.procr.leftclick_received(x, y)
+            self.leftclick_cb(x, y)
         if event.buttons() & Qt.RightButton:
-            self.procr.rightclick_received(x, y)
+            self.rightclick_cb(x, y)
                 
     def set_cell_image(self, x, y, state):
         """
@@ -88,11 +136,11 @@ class MinefieldWidget(QGraphicsView):
     
        
 if __name__ == '__main__':
-    from .stubs import Processor
+    # from .stubs import Processor
     
     app = QApplication(sys.argv)
-    procr = Processor(None, 7, 2)
-    mf_widget = MinefieldWidget(None, procr, 100)
+    # procr = Processor(None, 7, 2)
+    mf_widget = MinefieldWidget(None, 7, 2, 100)
     # refresh_action = QAction('Refresh', mf_widget)
     # refresh_action.triggered.connect(mf_widget.refresh)
     # refresh_action.setShortcut('F1')
