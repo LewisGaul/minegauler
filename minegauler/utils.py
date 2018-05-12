@@ -27,9 +27,15 @@ class EnumLiteral(enum.Enum):
     
     """
     def __eq__(self, obj):
-        return self.value == obj
+        return super().__eq__(obj) or self.value == obj
     def __hash__(self):
         return hash(self.value)
+    def __add__(self, obj):
+        if type(obj) is int:
+            return getattr(self,
+                self.name[:-1] + str(int(self.value[-1]) + obj))
+        else:
+            return super().__add__(obj)
 
 #@@@
 CellState = EnumLiteral('CellState',

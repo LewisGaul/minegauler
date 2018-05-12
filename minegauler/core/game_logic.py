@@ -19,8 +19,10 @@ from .utils import Board, GameState
 from .minefield import Minefield
 
 
-mines = 10
+#@@@
+mines = 8
 per_cell = 2
+first_success = True
 
 
 class Controller:
@@ -32,9 +34,10 @@ class Controller:
         self.x_size = x_size
         self.y_size = y_size
         self.game_mode = game_mode
-        # self.grid = Grid(x_size, y_size, fill=None)
+        # Initialise empty minefield and game board.
         self.mf = Minefield(self.x_size, self.y_size)
         self.board = Board(x_size, y_size)
+        # Variables to be set to UI methods.
         self.set_cell_fn = None
         self.split_cell_fn = None
         self.new_game_fn = None
@@ -53,7 +56,7 @@ class Controller:
         
     def leftclick_cb(self, x, y):
         """
-        
+        Callback for a left-click on a cell.
         """
         if (self.game_state not in [GameState.READY, GameState.ACTIVE]
             or self.board[y][x] != CellState.UNCLICKED):
@@ -61,7 +64,11 @@ class Controller:
             
         # Check if first click.
         if self.game_state == GameState.READY:
-            self.mf.create(mines, per_cell, [(x, y)])
+            if first_success:
+                safe_coords = self.mf.get_nbrs(x, y, include_origin=True)
+            else:
+                safe_coords = []
+            self.mf.create(mines, per_cell, safe_coords)
             self.game_state = GameState.ACTIVE
         # Mine hit.
         if self.mf.cell_contains_mine(x, y):
@@ -80,8 +87,9 @@ class Controller:
                     break
             for coord in opening:
                 x, y = coord
-                self.set_cell(x, y, self.mf.completed_board[y][x])
-        # Cell with single number to reveal.
+                if self.board[y][x] == CellState.UNCLICKED:
+                    self.set_cell(x, y, self.mf.completed_board[y][x])
+        # Reveal clicked cell only.
         else:
             self.set_cell(x, y, self.mf.completed_board[y][x])
         
@@ -89,17 +97,34 @@ class Controller:
     
     def rightclick_cb(self, x, y):
         """
-        
+        Callback for a right-click on a cell.
         """
         if self.game_state not in [GameState.READY, GameState.ACTIVE]:
             return
-        if self.board[y][x] == CellState.UNCLICKED:
-            self.split_cell(x, y)
-            self.board[y][x] = CellState.SPLIT
+        if self.game_mode == GameCellMode.NORMAL:
+            if self.board[y][x] == CellState.UNCLICKED:
+                self.set_cell(x, y, CellState.FLAG1)
+            elif self.board[y][x] in CellState.FLAGS.values():
+                if self.board[y][x] == CellState.FLAGS[per_cell]:
+                    self.set_cell(x, y, CellState.UNCLICKED)
+                else:
+                    self.set_cell(x, y, self.board[y][x] + 1)
+        
+        elif self.game_mode == GameCellMode.SPLIT:
+            if self.board[y][x] == CellState.UNCLICKED:
+                self.split_cell(x, y)
+    
+    def bothclick_cb(self, x, y):
+        """
+        Callback for a left-and-right-click on a cell.
+        """
+        if (self.game_state not in [GameState.READY, GameState.ACTIVE]
+            or self.board[y][x] != CellState.UNCLICKED):
+            return
             
     def set_cell(self, x, y, state):
         """
-        
+        Set a cell to be in the given state, calling self.set_cell_fn.
         """
         self.board[y][x] = state
         if self.set_cell_fn:
@@ -107,14 +132,16 @@ class Controller:
             
     def split_cell(self, x, y):
         """
-        
+        Split a cell, calling self.split_cell_fn.
         """
         if self.split_cell_fn:
+            self.board[y][x] = CellState.SPLIT
             self.split_cell_fn(x, y)
             
     def check_for_completion(self):
         """
-        
+        Check if game is complete by comparing self.board to
+        self.mf.completed_board, and if it is call relevent 'end game' methods.
         """
         # Assume (for contradiction) that game is complete.
         is_complete = True
@@ -137,7 +164,7 @@ class Controller:
 
 
 if __name__ == '__main__':
-    from .stubs import StubUI, StubMinefieldUI
+    # from .stubs import StubUI, StubMinefieldUI
     ctrlr = Controller(3, 5)
     # ui = StubUI(procr)
     # mf_ui = StubMinefieldUI(procr)

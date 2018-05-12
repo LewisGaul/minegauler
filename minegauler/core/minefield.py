@@ -65,7 +65,7 @@ class Minefield(Grid):
         """
         Fill in the minefield with a list of coordinates of where mines are to
         be hidden. Also get the completed board, openings and 3bv for the
-        created minefield.
+        created minefield. Fails if minefield has already been created.
         Arguments:
           coords ([(int, int), ...])
             List of mine coordinates, which must fit within the dimensions of
@@ -91,7 +91,8 @@ class Minefield(Grid):
         """
         Fill in the minefield at random. Also get the completed board and 3bv
         for the created minefield. This is done by making a list of random
-        coordinates and passing it to self.create_from_list().
+        coordinates and passing it to self.create_from_list(). Fails if
+        minefield has already been created.
         Arguments:
           mines (int > 0)
             The number of mines to place in the minefield.
