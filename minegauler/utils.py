@@ -22,16 +22,32 @@ def ASSERT(condition, message):
     assert condition, message
 
 
-CellState = enum.Enum('CellState',
-                      {'UNCLICKED': '#',
-                       **{'NUM%d' % i : i for i in range(21)},
-                       **{'FLAG%d' % i : 'F%d' % i for i in range(1, 11)},
-                       **{'CROSS%d' % i : 'X%d' % i for i in range(1, 11)},
-                       **{'MINE%d' % i : 'M%d' % i for i in range(1, 11)},
-                       **{'HIT%d' % i : 'H%d' % i for i in range(1, 11)},
-                       # **{'LIFE%d' % i : 'L%d' % i for i in range(1, 11)},
-                       'SPLIT': '+'
-                      })
+class EnumLiteral(enum.Enum):
+    """
+    
+    """
+    def __eq__(self, obj):
+        return super().__eq__(obj) or self.value == obj
+    def __hash__(self):
+        return hash(self.value)
+    def __add__(self, obj):
+        if type(obj) is int:
+            return getattr(self,
+                self.name[:-1] + str(int(self.value[-1]) + obj))
+        else:
+            return super().__add__(obj)
+
+#@@@
+CellState = EnumLiteral('CellState',
+                        {'UNCLICKED': '#',
+                         **{'NUM%d' % i : i for i in range(21)},
+                         **{'FLAG%d' % i : 'F%d' % i for i in range(1, 11)},
+                         **{'CROSS%d' % i : 'X%d' % i for i in range(1, 11)},
+                         **{'MINE%d' % i : 'M%d' % i for i in range(1, 11)},
+                         **{'HIT%d' % i : 'H%d' % i for i in range(1, 11)},
+                         # **{'LIFE%d' % i : 'L%d' % i for i in range(1, 11)},
+                         'SPLIT': '+'
+                        })
 CellState.NUMS    = {i: getattr(CellState, 'NUM%d' % i) for i in range(21)}
 CellState.FLAGS   = {i: getattr(CellState, 'FLAG%d' % i) for i in range(1, 11)}
 CellState.CROSSES = {i: getattr(CellState, 'CROSS%d' % i) for i in range(1, 11)}
