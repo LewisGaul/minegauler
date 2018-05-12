@@ -38,23 +38,14 @@ class Controller:
         self.mf = Minefield(self.x_size, self.y_size)
         self.board = Board(x_size, y_size)
         # Variables to be set to UI methods.
-        self.set_cell_fn = None
-        self.split_cell_fn = None
-        self.new_game_fn = None
-        self.end_game_fn = None
+        self.set_cell_cb_list = []
+        self.split_cell_cb_list = []
+        self.new_game_cb_list = []
+        self.end_game_cb_list = []
         # Whether the minefield been created yet.
         self.game_state = GameState.READY
     
-    def new_game_cb(self):
-        """
-        
-        """
-        self.game_state = GameState.READY
-        self.mf = Minefield(self.x_size, self.y_size)
-        if self.new_game_fn:
-            self.new_game_fn()
-        
-    def leftclick_cb(self, x, y):
+    def leftclick(self, x, y):
         """
         Callback for a left-click on a cell.
         """
@@ -95,7 +86,7 @@ class Controller:
         
         self.check_for_completion()
     
-    def rightclick_cb(self, x, y):
+    def rightclick(self, x, y):
         """
         Callback for a right-click on a cell.
         """
@@ -114,7 +105,7 @@ class Controller:
             if self.board[y][x] == CellState.UNCLICKED:
                 self.split_cell(x, y)
     
-    def bothclick_cb(self, x, y):
+    def bothclick(self, x, y):
         """
         Callback for a left-and-right-click on a cell.
         """
@@ -124,19 +115,19 @@ class Controller:
             
     def set_cell(self, x, y, state):
         """
-        Set a cell to be in the given state, calling self.set_cell_fn.
+        Set a cell to be in the given state, calling registered callbacks.
         """
         self.board[y][x] = state
-        if self.set_cell_fn:
-            self.set_cell_fn(x, y, state)
+        for cb in self.set_cell_cb_list:
+            cb(x, y, state)
             
     def split_cell(self, x, y):
         """
-        Split a cell, calling self.split_cell_fn.
+        Split a cell, calling registered callbacks.
         """
-        if self.split_cell_fn:
+        for cb in self.split_cell_cb_list:
             self.board[y][x] = CellState.SPLIT
-            self.split_cell_fn(x, y)
+            cb(x, y)
             
     def check_for_completion(self):
         """
@@ -158,9 +149,24 @@ class Controller:
                 if self.mf.cell_contains_mine(x, y):
                     self.set_cell(x, y, CellState.FLAGS[self.mf[y][x]])
     
+    def new_game(self):
+        """
+        State a new game, calling registered callbacks.
+        """
+        self.game_state = GameState.READY
+        self.mf = Minefield(self.x_size, self.y_size)
+        for coord in self.board.all_coords:
+            x, y = coord
+            self.set_cell(x, y, CellState.UNCLICKED)
+        for cb in self.new_game_cb_list:
+            cb()
+            
     def end_game(self):
-        if self.end_game_fn:
-            self.end_game_fn()
+        """
+        End a game, calling registered callbacks.
+        """
+        for cb in self.end_game_cb_list:
+            cb()
 
 
 if __name__ == '__main__':

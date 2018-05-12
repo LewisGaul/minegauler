@@ -24,8 +24,6 @@ class MainWindow(QMainWindow):
     """
     Base class for the application.
     """
-    PANEL_HEIGHT = 40
-    PANEL_WIDTH_MIN = 140
     BODY_FRAME_WIDTH = 5
     ENTRYBAR_HEIGHT = 20
     
@@ -58,8 +56,6 @@ class MainWindow(QMainWindow):
         vlayout.setSpacing(0)
         # Top panel widget.
         self.panel_frame = QFrame(central_widget)
-        self.panel_frame.setFixedHeight(self.PANEL_HEIGHT)
-        self.panel_frame.setMinimumWidth(self.PANEL_WIDTH_MIN)
         self.panel_frame.setFrameShadow(QFrame.Sunken)
         self.panel_frame.setFrameShape(QFrame.Panel)
         self.panel_frame.setLineWidth(2)
@@ -177,7 +173,7 @@ class MainWindow(QMainWindow):
             The event object to be accepted if the window is to be closed.
         """
         event.accept()
-
+    
                    
                    
 if __name__ == '__main__':

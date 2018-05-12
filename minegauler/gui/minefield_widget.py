@@ -36,7 +36,7 @@ class MinefieldWidget(QGraphicsView):
     """
     The minefield widget.
     """
-    all_cb_names = ['leftclick_cb', 'rightclick_cb']
+    all_cb_names = ['leftclick_cb', 'rightclick_cb', 'bothclick_cb']
     def __init__(self, parent, x_size, y_size, btn_size=16):
         """
         
@@ -61,6 +61,7 @@ class MinefieldWidget(QGraphicsView):
         self.mouse_buttons_down = Qt.NoButton
         self.leftclick_cb_list = []
         self.rightclick_cb_list = []
+        self.bothclick_cb_list = []
         
     def leftclick_cb(self, x, y):
         """
@@ -78,6 +79,9 @@ class MinefieldWidget(QGraphicsView):
         for cb in self.rightclick_cb_list:
             cb(x, y)
             
+    def bothclick_cb(self, x, y):
+        pass
+            
     def register_cb(self, cb_name, fn):
         """
         Register a callback function.
@@ -91,9 +95,17 @@ class MinefieldWidget(QGraphicsView):
         methods are missing no callback is registered and no error is raised.
         """
         for cb_name in self.all_cb_names:
-            if hasattr(ctrlr, cb_name):
-                self.register_cb(cb_name, getattr(ctrlr, cb_name))
-        
+            if hasattr(ctrlr, cb_name[:-3]):
+                self.register_cb(cb_name, getattr(ctrlr, cb_name[:-3]))
+                
+    def mousePressEvent(self, event):
+        """Handle mouse press events."""
+        x, y = event.x() // self.btn_size, event.y() // self.btn_size
+        if event.buttons() & Qt.LeftButton:
+            self.leftclick_cb(x, y)
+        if event.buttons() & Qt.RightButton:
+            self.rightclick_cb(x, y)
+    
     def refresh(self):
         """
         Reset the cell images.
@@ -101,16 +113,6 @@ class MinefieldWidget(QGraphicsView):
         for i in range(self.x_size):
             for j in range(self.y_size):
                 self.set_cell_image(i, j, 'btn_up')
-                
-    def mousePressEvent(self, event):
-        """
-        
-        """
-        x, y = event.x() // self.btn_size, event.y() // self.btn_size
-        if event.buttons() & Qt.LeftButton:
-            self.leftclick_cb(x, y)
-        if event.buttons() & Qt.RightButton:
-            self.rightclick_cb(x, y)
                 
     def set_cell_image(self, x, y, state):
         """
@@ -132,6 +134,7 @@ class MinefieldWidget(QGraphicsView):
             for j in range(2):
                 b = self.scene.addPixmap(img)
                 b.setPos((x + i/2)*self.btn_size, (y + j/2)*self.btn_size)
+    
             
     
        
