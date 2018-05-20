@@ -24,6 +24,7 @@ from PyQt5.QtCore import Qt, QRectF, QRect
 from PyQt5.QtGui import QPixmap, QPainter, QImage
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QAction
 
+from minegauler.utils import CellState
 from .utils import init_or_update_cell_images
 
 
@@ -37,7 +38,7 @@ class MinefieldWidget(QGraphicsView):
     The minefield widget.
     """
     all_cb_names = ['leftclick_cb', 'rightclick_cb', 'bothclick_cb']
-    def __init__(self, parent, x_size, y_size, btn_size=16):
+    def __init__(self, parent, ctrlr, btn_size=16):
         """
         
         """
@@ -45,7 +46,9 @@ class MinefieldWidget(QGraphicsView):
         self.setStyleSheet("border: 0px")
         # self.setViewportMargins(0, 0, 0, 0)
         # self.setContentsMargins(0, 0, 0, 0)
-        self.x_size, self.y_size = x_size, y_size
+        self.ctrlr = ctrlr
+        self.board = ctrlr.board
+        self.x_size, self.y_size = ctrlr.x_size, ctrlr.y_size
         self.all_coords = [(i, j) for i in range(self.x_size)
                                                     for j in range(self.y_size)]
         self.btn_size = btn_size
@@ -56,30 +59,37 @@ class MinefieldWidget(QGraphicsView):
         self.refresh()
         # self.fitInView(self.scene.sceneRect())
         self.setFixedSize(self.x_size*self.btn_size, self.y_size*self.btn_size)
+        # Keep track of mouse button states.
         self.mouse_coord = None
         self.both_mouse_buttons_pressed = False
-        self.mouse_buttons_down = Qt.NoButton
-        self.leftclick_cb_list = []
-        self.rightclick_cb_list = []
-        self.bothclick_cb_list = []
+        # Set of coords for cells which are sunken.
+        self.sunken_cells = set()
+        # Flag indicating whether mouse clicks are received.
+        self.clicks_enabled = True
+        # Registered callbacks.
+        self.leftclick_cb_list = [ctrlr.leftclick]
+        self.rightclick_cb_list = [ctrlr.rightclick]
+        self.bothclick_cb_list = [ctrlr.bothclick]
+        self.at_risk_cb = lambda : None
+        self.no_risk_cb = lambda : None
         
-    def leftclick_cb(self, x, y):
+    def leftclick_cb(self, coord):
         """
         A left mouse button click was received on the cell at coordinate (x, y).
         Call all registered callback functions.
         """
         for cb in self.leftclick_cb_list:
-            cb(x, y)
+            cb(*coord)
         
-    def rightclick_cb(self, x, y):
+    def rightclick_cb(self, coord):
         """
         A right mouse button click was received on the cell at coordinate (x, y).
         Call all registered callback functions.
         """
         for cb in self.rightclick_cb_list:
-            cb(x, y)
+            cb(*coord)
             
-    def bothclick_cb(self, x, y):
+    def bothclick_cb(self, coord):
         pass
             
     def register_cb(self, cb_name, fn):
@@ -100,35 +110,136 @@ class MinefieldWidget(QGraphicsView):
                 
     def mousePressEvent(self, event):
         """Handle mouse press events."""
-        x, y = event.x() // self.btn_size, event.y() // self.btn_size
-        if event.buttons() & Qt.LeftButton:
-            self.leftclick_cb(x, y)
-        if event.buttons() & Qt.RightButton:
-            self.rightclick_cb(x, y)
+        
+        # Ignore any clicks which aren't the left or right mouse buttons.
+        if (event.button() not in [Qt.LeftButton, Qt.RightButton] or
+            not self.clicks_enabled):
+            return
+            
+        coord = event.x() // self.btn_size, event.y() // self.btn_size
+        # Store the mouse coordinate.
+        self.mouse_coord = coord
+        ## Bothclick
+        if (event.buttons() & Qt.LeftButton and
+            event.buttons() & Qt.RightButton):
+            self.both_mouse_buttons_pressed = True
+            self.both_buttons_down(coord)
+        ## Leftclick
+        elif event.button() == Qt.LeftButton:
+            self.left_button_down(coord)
+        ## Rightclick
+        elif event.button() == Qt.RightButton:
+            self.right_button_down(coord)
     
+    def mouseReleaseEvent(self, event):
+        """Handle mouse release events."""
+        
+        # Ignore any clicks which aren't the left or right mouse buttons.
+        if (event.button() not in [Qt.LeftButton, Qt.RightButton] or
+            not self.clicks_enabled):
+            return
+        
+        coord = event.x() // self.btn_size, event.y() // self.btn_size        
+        # Store the mouse coordinate.
+        self.mouse_coord = coord
+        ## Bothclick (one of the buttons still down)
+        if event.buttons() & (Qt.LeftButton | Qt.RightButton):
+            self.both_buttons_release(coord)
+        elif not self.both_mouse_buttons_pressed:
+            ## Leftclick
+            if event.button() == Qt.LeftButton:
+                self.left_button_release(coord)
+
+        # Reset variables if neither of the mouse buttons are down.
+        if not (event.buttons() & (Qt.LeftButton | Qt.RightButton)):
+            self.mouse_coord = None
+            self.both_mouse_buttons_pressed = False
+    
+    def mouseMoveEvent(self, event):
+        """Handle mouse move events."""
+        # print(event.x(), event.y(), event.localPos(), event.windowPos())
+        # import pdb; pdb.set_trace()
+    
+    def left_button_down(self, coord):
+        """
+        Left mouse button was pressed. Change display and call callback
+        functions as appropriate.
+        """
+        self.sink_unclicked_cell(coord)
+    
+    def left_button_release(self, coord):
+        """
+        Left mouse button was released. Change display and call callback
+        functions as appropriate.
+        """
+        self.raise_all_sunken_cells()
+        self.leftclick_cb(coord)
+    
+    def right_button_down(self, coord):
+        """
+        Right mouse button was pressed. Change display and call callback
+        functions as appropriate.
+        """
+        self.rightclick_cb(coord)
+    
+    def both_buttons_down(self, coord):
+        """
+        Both left and right mouse buttons were pressed. Change display and call
+        callback functions as appropriate.
+        """
+        if self.board[coord] in [CellState.UNCLICKED, *CellState.NUMS]:
+            for c in self.board.get_nbrs(*coord, include_origin=True):
+                self.sink_unclicked_cell(c)
+    
+    def both_buttons_release(self, coord):
+        """
+        One of the mouse buttons was released after both were pressed. Change
+        display and call callback functions as appropriate.
+        """
+        self.raise_all_sunken_cells()
+        
     def refresh(self):
         """
         Reset the cell images.
         """
-        for i in range(self.x_size):
-            for j in range(self.y_size):
-                self.set_cell_image(i, j, 'btn_up')
+        for coord in self.all_coords:
+            self.set_cell_image(coord, 'btn_up')
+    
+    def sink_unclicked_cell(self, coord):
+        """Set an unclicked cell to appear sunken."""
+        if self.board[coord] == CellState.UNCLICKED:
+            self.set_cell_image(coord, 'btn_down')
+            self.sunken_cells.add(coord)
+        if self.sunken_cells:
+            self.at_risk_cb()
+    
+    def raise_all_sunken_cells(self):
+        """Reset all sunken cells to appear raised."""
+        while self.sunken_cells:
+            self.set_cell_image(self.sunken_cells.pop(), 'btn_up')
+        self.no_risk_cb()
                 
-    def set_cell_image(self, x, y, state):
+    def set_cell_image(self, coord, state):
         """
         Set the image of a cell.
         Arguments:
-          x (int, 0 <= x < self.x_size)
-            The x-coordinate of the cell.
-          y (int, 0 <= y < self.y_size)
-            The y-coordinate of the cell.
-          state (CellState)
-            The cell contents to set the image for.
+          coord ((x, y) tuple in grid range)
+            The coordinate of the cell.
+          state
+            The cell_images key for the image to be set.
         """
+        x, y = coord
         b = self.scene.addPixmap(cell_images[state])
         b.setPos(x*self.btn_size, y*self.btn_size)
         
-    def split_cell(self, x, y):
+    def split_cell(self, coord):
+        """
+        Split a cell into 4 smaller cells.
+        Arguments:
+          coord ((x, y) tuple in grid range)
+            The coordinate of the cell.
+        """
+        x, y = coord
         img = cell_images['btn_up'].scaled(self.btn_size/2, self.btn_size/2)
         for i in range(2):
             for j in range(2):

@@ -25,14 +25,15 @@ class PanelWidget(QWidget):
     The panel widget.
     """
     all_cb_names = ['new_game_cb']
-    def __init__(self, parent):
+    def __init__(self, parent, ctrlr):
         super().__init__(parent)
+        self.ctrlr = ctrlr
         # self.setStyleSheet("border: 0px")
         # self.setFixedSize(1, 1)
         self.setFixedHeight(40)
         self.setMinimumWidth(140)
         # Callback to controller for starting a new game.
-        self.new_game_cb = None
+        self.new_game_cb = ctrlr.new_game
         self.setup_UI()
     
     def setup_UI(self):
@@ -73,16 +74,6 @@ class PanelWidget(QWidget):
         self.timer.setText("000")
         layout.addWidget(self.timer)    
     
-    def register_all_cbs(self, ctrlr):
-        """
-        Register a callback for each callback specified in self.all_cb_names
-        using methods of the ctrlr which match the callback names. If any
-        methods are missing no callback is registered and no error is raised.
-        """
-        for cb_name in self.all_cb_names:
-            if hasattr(ctrlr, cb_name[:-3]):
-                setattr(self, cb_name, getattr(ctrlr, cb_name[:-3]))
-
     def mousePressEvent(self, event):
         """Handle mouse press event."""
         if event.button() == Qt.LeftButton:
@@ -102,6 +93,9 @@ class PanelWidget(QWidget):
     def end_game(self):
         print("Ending")
         # Stop the timer.
+    
+    def set_face(self, state):
+        pass
 
         
        

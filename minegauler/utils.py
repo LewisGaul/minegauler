@@ -22,37 +22,39 @@ def ASSERT(condition, message):
     assert condition, message
 
 
-class EnumLiteral(enum.Enum):
-    """
-    
-    """
-    def __eq__(self, obj):
-        return super().__eq__(obj) or self.value == obj
-    def __hash__(self):
-        return hash(self.value)
+class AddEnum(enum.Enum):
     def __add__(self, obj):
         if type(obj) is int:
             return getattr(self,
                 self.name[:-1] + str(int(self.value[-1]) + obj))
-        else:
-            return super().__add__(obj)
+        raise TypeError("unsupported operand type(s) for +: "
+                        "'{}' and '{}'".format(type(self).__name__,
+                                               type(obj).__name__))
 
 #@@@
-CellState = EnumLiteral('CellState',
-                        {'UNCLICKED': '#',
-                         **{'NUM%d' % i : i for i in range(21)},
-                         **{'FLAG%d' % i : 'F%d' % i for i in range(1, 11)},
-                         **{'CROSS%d' % i : 'X%d' % i for i in range(1, 11)},
-                         **{'MINE%d' % i : 'M%d' % i for i in range(1, 11)},
-                         **{'HIT%d' % i : 'H%d' % i for i in range(1, 11)},
-                         # **{'LIFE%d' % i : 'L%d' % i for i in range(1, 11)},
-                         'SPLIT': '+'
-                        })
-CellState.NUMS    = {i: getattr(CellState, 'NUM%d' % i) for i in range(21)}
-CellState.FLAGS   = {i: getattr(CellState, 'FLAG%d' % i) for i in range(1, 11)}
-CellState.CROSSES = {i: getattr(CellState, 'CROSS%d' % i) for i in range(1, 11)}
-CellState.MINES   = {i: getattr(CellState, 'MINE%d' % i) for i in range(1, 11)}
-CellState.HITS    = {i: getattr(CellState, 'HIT%d' % i) for i in range(1, 11)}
+CellState = AddEnum('CellState',
+                    {'UNCLICKED': '#',
+                     **{'NUM%d' % i : 'N%d' % i for i in range(21)},
+                     **{'FLAG%d' % i : 'F%d' % i for i in range(1, 11)},
+                     **{'CROSS%d' % i : 'X%d' % i for i in range(1, 11)},
+                     **{'MINE%d' % i : 'M%d' % i for i in range(1, 11)},
+                     **{'HIT%d' % i : 'H%d' % i for i in range(1, 11)},
+                     # **{'LIFE%d' % i : 'L%d' % i for i in range(1, 11)},
+                     'SPLIT': '+'
+                    })
+CellState.NUMS    = [getattr(CellState, 'NUM%d' % i) for i in range(21)]
+CellState.FLAGS   = [None,
+                     *[getattr(CellState, 'FLAG%d' % i) for i in range(1, 11)]
+                    ]
+CellState.CROSSES = [None,
+                     *[getattr(CellState, 'CROSS%d' % i) for i in range(1, 11)]
+                    ]
+CellState.MINES   = [None,
+                     *[getattr(CellState, 'MINE%d' % i) for i in range(1, 11)]
+                    ]
+CellState.HITS    = [None,
+                     *[getattr(CellState, 'HIT%d' % i) for i in range(1, 11)]
+                    ]
 # CellState.LIVES   = {i: getattr(CellState, 'LIFE%d' % i) for i in range(1, 11)}
 
 
@@ -123,6 +125,18 @@ class Grid(list):
         ret = ret[:-1] # Remove trailing newline
         return ret
 
+    def __getitem__(self, key):
+        if type(key) is tuple and len(key) == 2:
+            return self[key[1]][key[0]]
+        else:
+            return super().__getitem__(key)
+
+    def __setitem__(self, key, value):
+        if type(key) is tuple and len(key) == 2:
+            self[key[1]][key[0]] = value
+        else:
+            super().__setitem__(key, value)
+            
     def fill(self, item):
         """
         Fill the grid with a given object.

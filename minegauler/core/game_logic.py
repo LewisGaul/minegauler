@@ -71,7 +71,7 @@ class Controller:
             self.end_game()
             self.game_state = GameState.LOST
         # Opening hit.
-        elif self.mf.completed_board[y][x] == 0:
+        elif self.mf.completed_board[y][x] == CellState.NUM0:
             for opening in self.mf.openings:
                 if (x, y) in opening:
                     # Found the opening, quit the loop here.
@@ -95,7 +95,7 @@ class Controller:
         if self.game_mode == GameCellMode.NORMAL:
             if self.board[y][x] == CellState.UNCLICKED:
                 self.set_cell(x, y, CellState.FLAG1)
-            elif self.board[y][x] in CellState.FLAGS.values():
+            elif self.board[y][x] in CellState.FLAGS:
                 if self.board[y][x] == CellState.FLAGS[per_cell]:
                     self.set_cell(x, y, CellState.UNCLICKED)
                 else:
@@ -119,7 +119,7 @@ class Controller:
         """
         self.board[y][x] = state
         for cb in self.set_cell_cb_list:
-            cb(x, y, state)
+            cb((x, y), state)
             
     def split_cell(self, x, y):
         """
@@ -127,7 +127,7 @@ class Controller:
         """
         for cb in self.split_cell_cb_list:
             self.board[y][x] = CellState.SPLIT
-            cb(x, y)
+            cb((x, y))
             
     def check_for_completion(self):
         """

@@ -22,6 +22,13 @@ class CellImageType(enum.Flag):
     NUMBER = enum.auto()
     MARKER = enum.auto()
     ALL = BUTTON | NUMBER | MARKER
+
+
+class FaceState(enum.Enum):
+    READY = enum.auto()
+    ACTIVE = enum.auto()
+    WON = enum.auto()
+    LOST = enum.auto()
     
 
 def init_or_update_cell_images(cell_images, size, required=CellImageType.ALL):
@@ -42,17 +49,15 @@ def init_or_update_cell_images(cell_images, size, required=CellImageType.ALL):
                                               'btn_down.png', size)
         cell_images[CellState.UNCLICKED] = cell_images['btn_up']
         cell_images[CellState.NUM0] = cell_images['btn_down']
-        cell_images[0] = cell_images[CellState.NUM0]
         
     if required & (CellImageType.BUTTON | CellImageType.NUMBER):
         for i in range(1, 19):
-            cell_images[i] = make_pixmap('numbers',
-                                         'standard',
-                                         'btn_down.png',
-                                         size,
-                                         'num%d.png' % i,
-                                         7/8)
-            cell_images[CellState.NUMS[i]] = i
+            cell_images[CellState.NUMS[i]] = make_pixmap('numbers',
+                                                         'standard',
+                                                         'btn_down.png',
+                                                         size,
+                                                         'num%d.png' % i,
+                                                         7/8)
                                                          
     if required & (CellImageType.BUTTON | CellImageType.MARKER):
         for i in range(1, 4):

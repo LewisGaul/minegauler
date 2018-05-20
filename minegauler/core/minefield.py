@@ -146,7 +146,7 @@ class Minefield(Grid):
         should be seen upon game completion.
         """
         self.completed_board = Board(self.x_size, self.y_size)
-        self.completed_board.fill(0)
+        self.completed_board.fill(CellState.NUM0)
         # Store the per_cell on the completed board for nicer printing.
         self.completed_board.per_cell = self.per_cell
         for (x, y) in self.all_coords:
@@ -166,22 +166,22 @@ class Minefield(Grid):
         Note that each cell can only belong to up to one opening.
         """
         self.openings = []
-        all_found = set()
-        for coord in self.all_coords:
-            x, y = coord
+        blanks_to_check = {c for c in self.all_coords
+                                   if self.completed_board[c] == CellState.NUM0}
+        while blanks_to_check:
+            orig_coord = blanks_to_check.pop()
             # If the coordinate is part of an opening and hasn't already been
             #  considered, start a new opening.
-            if self.completed_board[y][x] == 0 and coord not in all_found:
-                opening = {coord} # Coords belonging to the opening
-                check = {coord}   # Coords whose neighbours need checking
-                while check:
-                    c = check.pop()
-                    nbrs = set(self.get_nbrs(*c))
-                    check |= {(i, j) for (i, j) in nbrs - opening
-                                             if self.completed_board[j][i] == 0}
-                    opening |= nbrs
-                self.openings.append(sorted(opening))
-                all_found |= opening
+            opening = {orig_coord} # Coords belonging to the opening
+            check = {orig_coord}   # Coords whose neighbours need checking
+            while check:
+                coord = check.pop()
+                nbrs = set(self.get_nbrs(*coord))
+                check |= {c for c in nbrs - opening
+                                   if self.completed_board[c] == CellState.NUM0}
+                opening |= nbrs
+            self.openings.append(sorted(opening))
+            blanks_to_check -= opening
 
     def calc_3bv(self):
         """
