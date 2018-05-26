@@ -58,6 +58,13 @@ CellState.HITS    = [None,
 # CellState.LIVES   = {i: getattr(CellState, 'LIFE%d' % i) for i in range(1, 11)}
 
 
+class GameState(enum.Enum):
+    READY = enum.auto()
+    ACTIVE = enum.auto()
+    WON = enum.auto()
+    LOST = enum.auto()
+    
+
 class GameCellMode(enum.Enum):
     """
     The layout and behaviour modes for the cells.

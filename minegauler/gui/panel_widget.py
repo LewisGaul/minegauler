@@ -13,11 +13,15 @@ Exports:
 """
 
 import sys
+from os.path import join
 import logging
 
 from PyQt5.QtCore import Qt
-# from PyQt5.QtGui import QPixmap, QPainter, QImage
+from PyQt5.QtGui import QPixmap#, QPainter, QImage
 from PyQt5.QtWidgets import QApplication, QWidget, QFrame, QHBoxLayout, QLabel
+
+from minegauler.utils import GameState
+from .utils import img_dir, FaceState
 
 
 class PanelWidget(QWidget):
@@ -61,6 +65,7 @@ class PanelWidget(QWidget):
         self.face_button.setFrameShadow(QFrame.Raised)
         self.face_button.setLineWidth(3)
         layout.addWidget(self.face_button)
+        self.set_face(FaceState.READY)
         layout.addStretch()
         # Timer widget.
         # self.timer = TimerWidget(self)
@@ -87,15 +92,23 @@ class PanelWidget(QWidget):
                 self.new_game_cb()
 
     def new_game(self):
-        print('New')
-        # Reset mine counter and timer.
+        self.set_face(FaceState.READY)
+        #@@@ Reset mine counter and timer.
         
-    def end_game(self):
-        print("Ending")
-        # Stop the timer.
+    def end_game(self, game_state):
+        if game_state == GameState.LOST:
+            self.set_face(FaceState.LOST)
+        elif game_state == GameState.WON:
+            self.set_face(FaceState.WON)
+        #@@@ Stop the timer.
     
     def set_face(self, state):
-        pass
+        life = 1
+        fname = f'face{life}{state.value}.png'
+        pixmap = QPixmap(join(img_dir, 'faces', fname))
+        self.face_button.setPixmap(
+            pixmap.scaled(26, 26, transformMode=Qt.SmoothTransformation))
+        
 
         
        

@@ -28,7 +28,7 @@ ctrlr.new_game_cb_list.append(
     lambda : setattr(mf_widget, 'clicks_enabled', True))
 ctrlr.end_game_cb_list.append(panel_widget.end_game)
 ctrlr.end_game_cb_list.append(
-    lambda : setattr(mf_widget, 'clicks_enabled', False))
+    lambda s: setattr(mf_widget, 'clicks_enabled', False))
 ctrlr.set_cell_cb_list.append(mf_widget.set_cell_image)
 ctrlr.split_cell_cb_list.append(mf_widget.split_cell)
 # Start the app.

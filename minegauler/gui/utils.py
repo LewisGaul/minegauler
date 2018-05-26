@@ -25,10 +25,10 @@ class CellImageType(enum.Flag):
 
 
 class FaceState(enum.Enum):
-    READY = enum.auto()
-    ACTIVE = enum.auto()
-    WON = enum.auto()
-    LOST = enum.auto()
+    READY  = 'ready'
+    ACTIVE = 'active'
+    WON    = 'won'
+    LOST   = 'lost'
     
 
 def init_or_update_cell_images(cell_images, size, required=CellImageType.ALL):

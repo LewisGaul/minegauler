@@ -9,13 +9,6 @@ import enum
 from minegauler.utils import Grid, CellState
 
 
-class GameState(enum.Enum):
-    READY = enum.auto()
-    ACTIVE = enum.auto()
-    WON = enum.auto()
-    LOST = enum.auto()
-
-
 class Board(Grid):
     """Board representation for handling displaying flags and openings."""
     def __init__(self, x_size, y_size):

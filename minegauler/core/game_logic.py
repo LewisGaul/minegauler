@@ -14,8 +14,8 @@ Exports:
       board - The current board state
 """
 
-from minegauler.utils import Grid, GameCellMode, CellState
-from .utils import Board, GameState
+from minegauler.utils import Grid, GameCellMode, CellState, GameState
+from .utils import Board
 from .minefield import Minefield
 
 
@@ -68,8 +68,7 @@ class Controller:
                 p, q = coord
                 if self.mf.cell_contains_mine(p, q) and coord != (x, y):
                     self.set_cell(p, q, CellState.MINES[self.mf[q][p]])
-            self.end_game()
-            self.game_state = GameState.LOST
+            self.end_game(GameState.LOST)
         # Opening hit.
         elif self.mf.completed_board[y][x] == CellState.NUM0:
             for opening in self.mf.openings:
@@ -143,11 +142,11 @@ class Controller:
                 is_complete = False
                 break
         if is_complete:
-            self.game_state = GameState.WON
             for coord in self.mf.all_coords:
                 x, y = coord
                 if self.mf.cell_contains_mine(x, y):
                     self.set_cell(x, y, CellState.FLAGS[self.mf[y][x]])
+            self.end_game(GameState.WON)
     
     def new_game(self):
         """
@@ -161,12 +160,16 @@ class Controller:
         for cb in self.new_game_cb_list:
             cb()
             
-    def end_game(self):
+    def end_game(self, game_state):
         """
         End a game, calling registered callbacks.
+        Arguments:
+          game_state (GameState)
+            GameState.WON or GameState.LOST.
         """
+        self.game_state = game_state
         for cb in self.end_game_cb_list:
-            cb()
+            cb(game_state)
 
 
 if __name__ == '__main__':
