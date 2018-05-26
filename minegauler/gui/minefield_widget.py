@@ -73,6 +73,10 @@ class MinefieldWidget(QGraphicsView):
         self.at_risk_cb = lambda : None
         self.no_risk_cb = lambda : None
         
+    def is_coord_in_grid(self, coord):
+        x, y = coord
+        return (0 <= x < self.x_size and 0 <= y < self.y_size)
+        
     def leftclick_cb(self, coord):
         """
         A left mouse button click was received on the cell at coordinate (x, y).
@@ -131,6 +135,31 @@ class MinefieldWidget(QGraphicsView):
         elif event.button() == Qt.RightButton:
             self.right_button_down(coord)
     
+    def mouseMoveEvent(self, event):
+        """Handle mouse move events."""
+        
+        coord = event.x() // self.btn_size, event.y() // self.btn_size
+        if not self.is_coord_in_grid(coord):
+            coord = None
+            
+        # Return if not the left or right mouse buttons, or if the mouse wasn't
+        #  moved to a different cell.
+        if (not event.buttons() & (Qt.LeftButton | Qt.RightButton) or
+            not self.clicks_enabled or
+            coord == self.mouse_coord):
+            return
+            
+        ## Bothclick
+        if (event.buttons() & Qt.LeftButton and
+            event.buttons() & Qt.RightButton):
+            self.both_buttons_move(coord)
+        ## Leftclick
+        elif not self.both_mouse_buttons_pressed:
+            if event.buttons() & Qt.LeftButton:
+                self.left_button_move(coord)
+        
+        self.mouse_coord = coord
+    
     def mouseReleaseEvent(self, event):
         """Handle mouse release events."""
         
@@ -139,9 +168,10 @@ class MinefieldWidget(QGraphicsView):
             not self.clicks_enabled):
             return
         
-        coord = event.x() // self.btn_size, event.y() // self.btn_size        
-        # Store the mouse coordinate.
-        self.mouse_coord = coord
+        coord = event.x() // self.btn_size, event.y() // self.btn_size
+        if not self.is_coord_in_grid(coord):
+            coord = None
+        
         ## Bothclick (one of the buttons still down)
         if event.buttons() & (Qt.LeftButton | Qt.RightButton):
             self.both_buttons_release(coord)
@@ -154,18 +184,19 @@ class MinefieldWidget(QGraphicsView):
         if not (event.buttons() & (Qt.LeftButton | Qt.RightButton)):
             self.mouse_coord = None
             self.both_mouse_buttons_pressed = False
-    
-    def mouseMoveEvent(self, event):
-        """Handle mouse move events."""
-        # print(event.x(), event.y(), event.localPos(), event.windowPos())
-        # import pdb; pdb.set_trace()
-    
+        
     def left_button_down(self, coord):
         """
         Left mouse button was pressed. Change display and call callback
         functions as appropriate.
         """
         self.sink_unclicked_cell(coord)
+
+    def left_button_move(self, coord):
+        """Left mouse button was moved. Change display as appropriate."""
+        self.raise_all_sunken_cells()
+        if coord is not None:
+            self.left_button_down(coord)
     
     def left_button_release(self, coord):
         """
@@ -173,7 +204,8 @@ class MinefieldWidget(QGraphicsView):
         functions as appropriate.
         """
         self.raise_all_sunken_cells()
-        self.leftclick_cb(coord)
+        if coord is not None:
+            self.leftclick_cb(coord)
     
     def right_button_down(self, coord):
         """
@@ -191,12 +223,23 @@ class MinefieldWidget(QGraphicsView):
             for c in self.board.get_nbrs(*coord, include_origin=True):
                 self.sink_unclicked_cell(c)
     
+    def both_buttons_move(self, coord):
+        """
+        Both left and right mouse buttons were moved. Change display as
+        appropriate.
+        """
+        self.raise_all_sunken_cells()
+        if coord is not None:
+            self.both_buttons_down(coord)
+    
     def both_buttons_release(self, coord):
         """
         One of the mouse buttons was released after both were pressed. Change
         display and call callback functions as appropriate.
         """
         self.raise_all_sunken_cells()
+        if coord is not None:
+            self.bothclick_cb(coord)
         
     def refresh(self):
         """
@@ -259,4 +302,4 @@ if __name__ == '__main__':
     # refresh_action.triggered.connect(mf_widget.refresh)
     # refresh_action.setShortcut('F1')
     mf_widget.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec_())   
