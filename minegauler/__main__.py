@@ -26,11 +26,13 @@ mf_widget.no_risk_cb = lambda : panel_widget.set_face(FaceState.READY)
 ctrlr.new_game_cb_list.append(panel_widget.new_game)
 ctrlr.new_game_cb_list.append(
     lambda : setattr(mf_widget, 'clicks_enabled', True))
+ctrlr.start_game_cb_list.append(panel_widget.start_game)
 ctrlr.end_game_cb_list.append(panel_widget.end_game)
 ctrlr.end_game_cb_list.append(
     lambda s: setattr(mf_widget, 'clicks_enabled', False))
 ctrlr.set_cell_cb_list.append(mf_widget.set_cell_image)
 ctrlr.split_cell_cb_list.append(mf_widget.split_cell)
+ctrlr.set_mines_counter_cb = panel_widget.set_mines_counter
 # Start the app.
 main_window.show()
 sys.exit(app.exec_())

@@ -16,7 +16,7 @@ import sys
 from os.path import join
 import logging
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap#, QPainter, QImage
 from PyQt5.QtWidgets import QApplication, QWidget, QFrame, QHBoxLayout, QLabel
 
@@ -42,7 +42,7 @@ class PanelWidget(QWidget):
     
     def setup_UI(self):
         """
-        
+        Set up the widgets contained in the panel.
         """
         layout = QHBoxLayout(self)
         layout.setContentsMargins(6, 2, 6, 2)
@@ -55,8 +55,8 @@ class PanelWidget(QWidget):
                                             border-radius: 2px;
                                             font: bold 15px Tahoma;
                                             padding-left: 1px;""")
-        self.mines_counter.setText("000")
         layout.addWidget(self.mines_counter)
+        self.set_mines_counter(0)
         layout.addStretch()
         # Face button.
         self.face_button = QLabel(self)
@@ -68,16 +68,8 @@ class PanelWidget(QWidget):
         self.set_face(FaceState.READY)
         layout.addStretch()
         # Timer widget.
-        # self.timer = TimerWidget(self)
-        self.timer = QLabel(self)
-        self.timer.setFixedSize(39, 26)
-        self.timer.setStyleSheet("""color: red;
-                                    background: black;
-                                    border-radius: 2px;
-                                    font: bold 15px Tahoma;
-                                    padding-left: 1px;""")
-        self.timer.setText("000")
-        layout.addWidget(self.timer)    
+        self.timer = Timer(self)
+        layout.addWidget(self.timer.label)    
     
     def mousePressEvent(self, event):
         """Handle mouse press event."""
@@ -93,14 +85,18 @@ class PanelWidget(QWidget):
 
     def new_game(self):
         self.set_face(FaceState.READY)
-        #@@@ Reset mine counter and timer.
+        self.timer.stop()
+        self.timer.set_time(0)
+    
+    def start_game(self):
+        self.timer.start()
         
     def end_game(self, game_state):
         if game_state == GameState.LOST:
             self.set_face(FaceState.LOST)
         elif game_state == GameState.WON:
             self.set_face(FaceState.WON)
-        #@@@ Stop the timer.
+        self.timer.stop()
     
     def set_face(self, state):
         life = 1
@@ -108,7 +104,40 @@ class PanelWidget(QWidget):
         pixmap = QPixmap(join(img_dir, 'faces', fname))
         self.face_button.setPixmap(
             pixmap.scaled(26, 26, transformMode=Qt.SmoothTransformation))
+            
+    def set_mines_counter(self, num):
+        """
+        This method is to be registered as a callback with a controller, as
+        the widget itself can have no way of knowing how many mines are left to
+        be found.
+        """
+        self.mines_counter.setText(f"{min(999, num):03d}")
+            
         
+class Timer(QTimer):
+    def __init__(self, parent):
+        super().__init__()
+        self.label = QLabel('000', parent)
+        self.label.setFixedSize(39, 26)
+        self.label.setStyleSheet("""color: red;
+                                    background: black;
+                                    border-radius: 2px;
+                                    font: bold 15px Tahoma;
+                                    padding-left: 1px;""")
+        self.timeout.connect(self.update)
+        
+    def start(self):
+        self.seconds = 1
+        self.set_time(self.seconds)
+        super().start(1000) # Update every second
+        
+    def update(self):
+        self.seconds += 1
+        self.set_time(self.seconds)
+        
+    def set_time(self, seconds):
+        self.label.setText('{:03d}'.format(min(seconds, 999)))
+
 
         
        

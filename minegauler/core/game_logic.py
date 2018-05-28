@@ -34,15 +34,18 @@ class Controller:
         self.x_size = x_size
         self.y_size = y_size
         self.game_mode = game_mode
+        self.mines_remaining = mines
         # Initialise empty minefield and game board.
         self.mf = Minefield(self.x_size, self.y_size)
         self.board = Board(x_size, y_size)
-        # Variables to be set to UI methods.
+        # Callbacks for UI methods.
         self.set_cell_cb_list = []
         self.split_cell_cb_list = []
+        self.set_mines_counter_cb = lambda n: None
         self.new_game_cb_list = []
+        self.start_game_cb_list = []
         self.end_game_cb_list = []
-        # Whether the minefield been created yet.
+        # Keeps track of whether the minefield has been created yet.
         self.game_state = GameState.READY
     
     def leftclick(self, x, y):
@@ -55,12 +58,14 @@ class Controller:
             
         # Check if first click.
         if self.game_state == GameState.READY:
+            # Create the minefield.
             if first_success:
                 safe_coords = self.mf.get_nbrs(x, y, include_origin=True)
             else:
                 safe_coords = []
             self.mf.create(mines, per_cell, safe_coords)
-            self.game_state = GameState.ACTIVE
+            self.start_game()
+
         # Mine hit.
         if self.mf.cell_contains_mine(x, y):
             self.set_cell(x, y, CellState.HITS[self.mf[y][x]])
@@ -94,11 +99,15 @@ class Controller:
         if self.game_mode == GameCellMode.NORMAL:
             if self.board[y][x] == CellState.UNCLICKED:
                 self.set_cell(x, y, CellState.FLAG1)
+                self.mines_remaining -= 1
             elif self.board[y][x] in CellState.FLAGS:
                 if self.board[y][x] == CellState.FLAGS[per_cell]:
                     self.set_cell(x, y, CellState.UNCLICKED)
+                    self.mines_remaining += per_cell
                 else:
                     self.set_cell(x, y, self.board[y][x] + 1)
+                    self.mines_remaining -= 1
+            self.set_mines_counter_cb(self.mines_remaining)
         
         elif self.game_mode == GameCellMode.SPLIT:
             if self.board[y][x] == CellState.UNCLICKED:
@@ -153,11 +162,18 @@ class Controller:
         State a new game, calling registered callbacks.
         """
         self.game_state = GameState.READY
+        self.mines_remaining = mines
+        self.set_mines_counter_cb(mines)
         self.mf = Minefield(self.x_size, self.y_size)
         for coord in self.board.all_coords:
             x, y = coord
             self.set_cell(x, y, CellState.UNCLICKED)
         for cb in self.new_game_cb_list:
+            cb()
+            
+    def start_game(self):
+        self.game_state = GameState.ACTIVE
+        for cb in self.start_game_cb_list:
             cb()
             
     def end_game(self, game_state):
@@ -168,6 +184,8 @@ class Controller:
             GameState.WON or GameState.LOST.
         """
         self.game_state = game_state
+        if game_state == GameState.WON:
+            self.set_mines_counter_cb(0)
         for cb in self.end_game_cb_list:
             cb(game_state)
 
