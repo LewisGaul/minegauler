@@ -16,10 +16,11 @@ import sys
 from os.path import join
 import logging
 
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, pyqtSlot
 from PyQt5.QtGui import QPixmap#, QPainter, QImage
 from PyQt5.QtWidgets import QApplication, QWidget, QFrame, QHBoxLayout, QLabel
 
+from minegauler.callback_core import core as cb_core
 from minegauler.utils import GameState
 from .utils import img_dir, FaceState
 
@@ -28,17 +29,17 @@ class PanelWidget(QWidget):
     """
     The panel widget.
     """
-    all_cb_names = ['new_game_cb']
-    def __init__(self, parent, ctrlr):
+    def __init__(self, parent):
         super().__init__(parent)
-        self.ctrlr = ctrlr
-        # self.setStyleSheet("border: 0px")
-        # self.setFixedSize(1, 1)
         self.setFixedHeight(40)
         self.setMinimumWidth(140)
-        # Callback to controller for starting a new game.
-        self.new_game_cb = ctrlr.new_game
         self.setup_UI()
+        # Callback to controller for starting a new game.
+        cb_core.end_game.connect(self.end_game)
+        cb_core.start_game.connect(self.timer.start)
+        cb_core.set_mines_counter.connect(self.set_mines_counter)
+        cb_core.at_risk.connect(lambda: self.set_face(FaceState.ACTIVE))
+        cb_core.no_risk.connect(lambda: self.set_face(FaceState.READY))
     
     def setup_UI(self):
         """
@@ -80,22 +81,23 @@ class PanelWidget(QWidget):
         """Handle mouse release event."""
         if event.button() == Qt.LeftButton:
             self.face_button.setFrameShadow(QFrame.Raised)
-            if self.rect().contains(event.pos()) and self.new_game_cb:
-                self.new_game_cb()
+            if self.rect().contains(event.pos()):
+                self.new_game()
 
     def new_game(self):
+        """A new game has been requested, call registered callbacks."""
         self.set_face(FaceState.READY)
         self.timer.stop()
         self.timer.set_time(0)
-    
-    def start_game(self):
-        self.timer.start()
+        cb_core.new_game.emit()
         
+    @pyqtSlot(GameState)
     def end_game(self, game_state):
         if game_state == GameState.LOST:
             self.set_face(FaceState.LOST)
         elif game_state == GameState.WON:
             self.set_face(FaceState.WON)
+            self.set_mines_counter(0)
         self.timer.stop()
     
     def set_face(self, state):
@@ -105,6 +107,7 @@ class PanelWidget(QWidget):
         self.face_button.setPixmap(
             pixmap.scaled(26, 26, transformMode=Qt.SmoothTransformation))
             
+    @pyqtSlot(int)
     def set_mines_counter(self, num):
         """
         This method is to be registered as a callback with a controller, as

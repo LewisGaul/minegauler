@@ -20,10 +20,11 @@ Exports:
 import sys
 import logging
 
-from PyQt5.QtCore import Qt, QRectF, QRect
+from PyQt5.QtCore import Qt, QRectF, QRect, pyqtSlot
 from PyQt5.QtGui import QPixmap, QPainter, QImage
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QAction
 
+from minegauler.callback_core import core as cb_core
 from minegauler.utils import CellState
 from .utils import init_or_update_cell_images
 
@@ -37,18 +38,13 @@ class MinefieldWidget(QGraphicsView):
     """
     The minefield widget.
     """
-    all_cb_names = ['leftclick_cb', 'rightclick_cb', 'bothclick_cb']
-    def __init__(self, parent, ctrlr, btn_size=16):
-        """
-        
-        """
+    def __init__(self, parent, board, btn_size=16):
         super().__init__(parent)
         self.setStyleSheet("border: 0px")
         # self.setViewportMargins(0, 0, 0, 0)
         # self.setContentsMargins(0, 0, 0, 0)
-        self.ctrlr = ctrlr
-        self.board = ctrlr.board
-        self.x_size, self.y_size = ctrlr.x_size, ctrlr.y_size
+        self.board = board
+        self.x_size, self.y_size = board.x_size, board.y_size
         self.all_coords = [(i, j) for i in range(self.x_size)
                                                     for j in range(self.y_size)]
         self.btn_size = btn_size
@@ -66,51 +62,16 @@ class MinefieldWidget(QGraphicsView):
         self.sunken_cells = set()
         # Flag indicating whether mouse clicks are received.
         self.clicks_enabled = True
-        # Registered callbacks.
-        self.leftclick_cb_list = [ctrlr.leftclick]
-        self.rightclick_cb_list = [ctrlr.rightclick]
-        self.bothclick_cb_list = [ctrlr.bothclick]
-        self.at_risk_cb = lambda : None
-        self.no_risk_cb = lambda : None
+        # Register for callbacks.
+        cb_core.set_cell.connect(self.set_cell_image)
+        cb_core.new_game.connect(self.refresh)
+        cb_core.new_game.connect(lambda: setattr(self, 'clicks_enabled', True))
+        cb_core.end_game.connect(
+            lambda _: setattr(self, 'clicks_enabled', False))
         
     def is_coord_in_grid(self, coord):
         x, y = coord
         return (0 <= x < self.x_size and 0 <= y < self.y_size)
-        
-    def leftclick_cb(self, coord):
-        """
-        A left mouse button click was received on the cell at coordinate (x, y).
-        Call all registered callback functions.
-        """
-        for cb in self.leftclick_cb_list:
-            cb(*coord)
-        
-    def rightclick_cb(self, coord):
-        """
-        A right mouse button click was received on the cell at coordinate (x, y).
-        Call all registered callback functions.
-        """
-        for cb in self.rightclick_cb_list:
-            cb(*coord)
-            
-    def bothclick_cb(self, coord):
-        pass
-            
-    def register_cb(self, cb_name, fn):
-        """
-        Register a callback function.
-        """
-        getattr(self, cb_name + '_list').append(fn)
-            
-    def register_all_cbs(self, ctrlr):
-        """
-        Register a callback for each callback specified in self.all_cb_names
-        using methods of the ctrlr which match the callback names. If any
-        methods are missing no callback is registered and no error is raised.
-        """
-        for cb_name in self.all_cb_names:
-            if hasattr(ctrlr, cb_name[:-3]):
-                self.register_cb(cb_name, getattr(ctrlr, cb_name[:-3]))
                 
     def mousePressEvent(self, event):
         """Handle mouse press events."""
@@ -205,14 +166,14 @@ class MinefieldWidget(QGraphicsView):
         """
         self.raise_all_sunken_cells()
         if coord is not None:
-            self.leftclick_cb(coord)
+            cb_core.leftclick.emit(coord)
     
     def right_button_down(self, coord):
         """
         Right mouse button was pressed. Change display and call callback
         functions as appropriate.
         """
-        self.rightclick_cb(coord)
+        cb_core.rightclick.emit(coord)
     
     def both_buttons_down(self, coord):
         """
@@ -239,12 +200,11 @@ class MinefieldWidget(QGraphicsView):
         """
         self.raise_all_sunken_cells()
         if coord is not None:
-            self.bothclick_cb(coord)
+            cb_core.bothclick.emit(coord)
         
+    @pyqtSlot()
     def refresh(self):
-        """
-        Reset the cell images.
-        """
+        """Reset all cell images for a new game."""
         for coord in self.all_coords:
             self.set_cell_image(coord, 'btn_up')
     
@@ -254,14 +214,15 @@ class MinefieldWidget(QGraphicsView):
             self.set_cell_image(coord, 'btn_down')
             self.sunken_cells.add(coord)
         if self.sunken_cells:
-            self.at_risk_cb()
+            cb_core.at_risk.emit()
     
     def raise_all_sunken_cells(self):
         """Reset all sunken cells to appear raised."""
         while self.sunken_cells:
             self.set_cell_image(self.sunken_cells.pop(), 'btn_up')
-        self.no_risk_cb()
+        cb_core.no_risk.emit()
                 
+    @pyqtSlot(tuple, CellState)
     def set_cell_image(self, coord, state):
         """
         Set the image of a cell.
