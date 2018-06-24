@@ -26,10 +26,13 @@ class AddEnum(enum.Enum):
     def __add__(self, obj):
         if type(obj) is int:
             return getattr(self,
-                self.name[:-1] + str(int(self.value[-1]) + obj))
+                self.name[:-1] + str(self.num + obj))
         raise TypeError("unsupported operand type(s) for +: "
                         "'{}' and '{}'".format(type(self).__name__,
                                                type(obj).__name__))
+    @property
+    def num(self):
+        return int(self.value[-1])
 
 #@@@
 CellState = AddEnum('CellState',

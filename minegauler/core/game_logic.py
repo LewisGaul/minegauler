@@ -81,6 +81,8 @@ class Controller:
             self.check_for_completion()
 
     def leftclick_action(self, coord):
+        if self.board[coord] != CellState.UNCLICKED:
+            return
         if self.mf.cell_contains_mine(*coord):
             logger.debug("Mine hit")
             self.set_cell(coord, CellState.HITS[self.mf[coord]])
@@ -91,8 +93,7 @@ class Controller:
                     self.set_cell(c, CellState.MINES[self.mf[c]])
                 elif (self.board[c] in CellState.FLAGS and
                       self.board[c] != self.mf.completed_board[c]):
-                    self.set_cell(c,
-                        CellState.CROSSES[int(self.board[c].value[1])])
+                    self.set_cell(c, CellState.CROSSES[self.board[c].num])
             # if self.lives_remaining == 0:
             self.game_state = GameState.LOST
         elif self.mf.completed_board[coord] == CellState.NUM0:
@@ -135,17 +136,19 @@ class Controller:
     # @pyqtSlot(tuple)
     def bothclick_cb(self, coord):
         """Callback for a left-and-right-click on a cell."""
+        
         if (self.game_state not in [GameState.READY, GameState.ACTIVE]
             or self.board[coord] not in CellState.NUMS):
             return
+            
         logger.info("Valid bothclick received on cell %s", coord)
         nbrs = self.board.get_nbrs(*coord)
         num_flagged_nbrs = sum(
-            [int(self.board[c].value[1]) for c in nbrs
+            [self.board[c].num for c in nbrs
                                            if self.board[c] in CellState.FLAGS])
         logger.debug("%s flagged mine(s) around clicked cell showing number %s",
-                     num_flagged_nbrs, self.board[coord].value[1])
-        if num_flagged_nbrs == int(self.board[coord].value[1]):
+                     num_flagged_nbrs, self.board[coord].num)
+        if num_flagged_nbrs == self.board[coord].num:
             unclicked_nbrs = [c for c in nbrs
                                         if self.board[c] == CellState.UNCLICKED]
             logger.info("Successful chording, selecting cells %s",
