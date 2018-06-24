@@ -14,6 +14,8 @@ Exports:
       board - The current board state
 """
 
+import logging
+
 from PyQt5.QtCore import pyqtSlot
 
 from minegauler.callback_core import core as cb_core
@@ -21,6 +23,8 @@ from minegauler.utils import Grid, GameCellMode, CellState, GameState
 from .utils import Board
 from .minefield import Minefield
 
+
+logger = logging.getLogger(__name__)
 
 #@@@
 mines = 7
@@ -41,23 +45,22 @@ class Controller:
         # Initialise game board.
         self.board = Board(x_size, y_size)
         # Callbacks from the UI.
-        cb_core.leftclick.connect(self.leftclick)
-        cb_core.rightclick.connect(self.rightclick)
-        cb_core.bothclick.connect(self.bothclick)
-        cb_core.new_game.connect(self.new_game)
-        cb_core.end_game.connect(self.end_game)
+        cb_core.leftclick.connect(self.leftclick_cb)
+        cb_core.rightclick.connect(self.rightclick_cb)
+        cb_core.bothclick.connect(self.bothclick_cb)
+        cb_core.new_game.connect(self.new_game_cb)
+        cb_core.end_game.connect(self.end_game_cb)
         # Keeps track of whether the minefield has been created yet.
         self.game_state = GameState.READY
     
     # @pyqtSlot(tuple)
-    def leftclick(self, coord):
-        """
-        Callback for a left-click on a cell.
-        """
+    def leftclick_cb(self, coord):
+        """Callback for a left-click on a cell."""
         if (self.game_state not in [GameState.READY, GameState.ACTIVE]
             or self.board[coord] != CellState.UNCLICKED):
             return
             
+        logger.info("Valid leftclick received on cell %s", coord)
         # Check if first click.
         if self.game_state == GameState.READY:
             # Create the minefield.
@@ -68,36 +71,50 @@ class Controller:
             self.mf.create(mines, per_cell, safe_coords)
             self.game_state = GameState.ACTIVE
             cb_core.start_game.emit()
+            
+        self.leftclick_action(coord)
+        
+        if self.game_state == GameState.LOST:
+            logger.info("Game lost")
+            cb_core.end_game.emit(GameState.LOST)
+        else:
+            self.check_for_completion()
 
-        # Mine hit.
+    def leftclick_action(self, coord):
         if self.mf.cell_contains_mine(*coord):
+            logger.debug("Mine hit")
             self.set_cell(coord, CellState.HITS[self.mf[coord]])
             for c in self.mf.all_coords:
-                if self.mf.cell_contains_mine(*c) and c != coord:
+                if (self.mf.cell_contains_mine(*c) and
+                    c != coord and
+                    self.board[c] == CellState.UNCLICKED):
                     self.set_cell(c, CellState.MINES[self.mf[c]])
-            cb_core.end_game.emit(GameState.LOST)
-        # Opening hit.
+                elif (self.board[c] in CellState.FLAGS and
+                      self.board[c] != self.mf.completed_board[c]):
+                    self.set_cell(c,
+                        CellState.CROSSES[int(self.board[c].value[1])])
+            # if self.lives_remaining == 0:
+            self.game_state = GameState.LOST
         elif self.mf.completed_board[coord] == CellState.NUM0:
             for opening in self.mf.openings:
                 if coord in opening:
                     # Found the opening, quit the loop here.
                     break
+            logger.debug("Opening hit: %s", opening)
             for c in opening:
                 if self.board[c] == CellState.UNCLICKED:
                     self.set_cell(c, self.mf.completed_board[c])
-        # Reveal clicked cell only.
         else:
+            logger.debug("Regular cell revealed")
             self.set_cell(coord, self.mf.completed_board[coord])
-        
-        self.check_for_completion()
     
     # @pyqtSlot(tuple)
-    def rightclick(self, coord):
-        """
-        Callback for a right-click on a cell.
-        """
+    def rightclick_cb(self, coord):
+        """Callback for a right-click on a cell."""
         if self.game_state not in [GameState.READY, GameState.ACTIVE]:
             return
+            
+        logger.info("Valid rightclick received on cell %s", coord)
         if self.game_mode == GameCellMode.NORMAL:
             if self.board[coord] == CellState.UNCLICKED:
                 self.set_cell(coord, CellState.FLAG1)
@@ -116,13 +133,31 @@ class Controller:
                 self.split_cell(coord)
     
     # @pyqtSlot(tuple)
-    def bothclick(self, coord):
-        """
-        Callback for a left-and-right-click on a cell.
-        """
+    def bothclick_cb(self, coord):
+        """Callback for a left-and-right-click on a cell."""
         if (self.game_state not in [GameState.READY, GameState.ACTIVE]
-            or self.board[coord] != CellState.UNCLICKED):
+            or self.board[coord] not in CellState.NUMS):
             return
+        logger.info("Valid bothclick received on cell %s", coord)
+        nbrs = self.board.get_nbrs(*coord)
+        num_flagged_nbrs = sum(
+            [int(self.board[c].value[1]) for c in nbrs
+                                           if self.board[c] in CellState.FLAGS])
+        logger.debug("%s flagged mine(s) around clicked cell showing number %s",
+                     num_flagged_nbrs, self.board[coord].value[1])
+        if num_flagged_nbrs == int(self.board[coord].value[1]):
+            unclicked_nbrs = [c for c in nbrs
+                                        if self.board[c] == CellState.UNCLICKED]
+            logger.info("Successful chording, selecting cells %s",
+                        unclicked_nbrs)
+            for c in unclicked_nbrs:
+                self.leftclick_action(c)
+                
+            if self.game_state == GameState.LOST:
+                logger.info("Game lost")
+                cb_core.end_game.emit(GameState.LOST)
+            else:
+                self.check_for_completion()
             
     def set_cell(self, coord, state):
         """
@@ -144,13 +179,14 @@ class Controller:
                 is_complete = False
                 break
         if is_complete:
+            logger.info("Game won")
             for c in self.mf.all_coords:
                 if self.mf.cell_contains_mine(*c):
                     self.set_cell(c, CellState.FLAGS[self.mf[c]])
             cb_core.end_game.emit(GameState.WON)
     
     # @pyqtSlot()
-    def new_game(self):
+    def new_game_cb(self):
         """Create a new game."""
         self.game_state = GameState.READY
         self.mines_remaining = mines
@@ -160,7 +196,7 @@ class Controller:
             self.set_cell(c, CellState.UNCLICKED)
             
     # @pyqtSlot(GameState)
-    def end_game(self, game_state):
+    def end_game_cb(self, game_state):
         """
         End a game.
         Arguments:
