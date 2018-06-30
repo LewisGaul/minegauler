@@ -6,7 +6,7 @@ May 2018, Lewis Gaul
 
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
 
-from minegauler.utils import GameState, CellState
+from .types import GameState, CellState, Board
 
 
 class CallbackContainer(QObject):
@@ -30,6 +30,12 @@ class CallbackContainer(QObject):
     no_risk = pyqtSignal()
     # Set the state of a cell (coord and state passed in).
     set_cell = pyqtSignal(tuple, CellState)
+    # Resize the board (new dimensions and mines passed in: x, y, mines).
+    resize_board = pyqtSignal(int, int, int)
+    # Resize the minefield to match the resized board (new board passed in).
+    resize_minefield = pyqtSignal(Board)
+    # Update the size of the window after a widget changes size.
+    update_window_size = pyqtSignal()
         
         
 cb_core = CallbackContainer()

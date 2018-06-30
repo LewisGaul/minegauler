@@ -24,7 +24,7 @@ from PyQt5.QtCore import Qt, QRectF, QRect, pyqtSlot
 from PyQt5.QtGui import QPixmap, QPainter, QImage
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QAction
 
-from minegauler.core.callbacks import cb_core
+from minegauler.core import cb_core
 from minegauler.utils import CellState
 from .utils import init_or_update_cell_images
 
@@ -44,22 +44,17 @@ class MinefieldWidget(QGraphicsView):
         logger.info("Initialising minefield widget")
         super().__init__(parent)
         self.setStyleSheet("border: 0px")
-        # self.setViewportMargins(0, 0, 0, 0)
-        # self.setContentsMargins(0, 0, 0, 0)
         self.board = board
         self.x_size, self.y_size = board.x_size, board.y_size
-        self.all_coords = [(i, j) for i in range(self.x_size)
-                                                    for j in range(self.y_size)]
         self.btn_size = btn_size
         init_or_update_cell_images(cell_images, self.btn_size)
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
-        # self.setSceneRect(0, 0, self.x_size*self.btn_size, self.y_size*self.btn_size)
-        # self.fitInView(self.scene.sceneRect())
         self.setFixedSize(self.x_size*self.btn_size, self.y_size*self.btn_size)
         # Keep track of mouse button states.
         self.mouse_coord = None
         self.both_mouse_buttons_pressed = False
+        self.await_release_all_buttons = False
         # Set of coords for cells which are sunken.
         self.sunken_cells = set()
         # Flag indicating whether mouse clicks are received.
@@ -70,6 +65,7 @@ class MinefieldWidget(QGraphicsView):
         cb_core.new_game.connect(lambda: setattr(self, 'clicks_enabled', True))
         cb_core.end_game.connect(
             lambda _: setattr(self, 'clicks_enabled', False))
+        cb_core.resize_minefield.connect(self.resize)
         
     def is_coord_in_grid(self, coord):
         x, y = coord
@@ -81,6 +77,10 @@ class MinefieldWidget(QGraphicsView):
         # Ignore any clicks which aren't the left or right mouse buttons.
         if (event.button() not in [Qt.LeftButton, Qt.RightButton] or
             not self.clicks_enabled):
+            return
+        if event.button() == event.buttons():
+            self.await_release_all_buttons = False
+        elif self.await_release_all_buttons:
             return
             
         coord = event.x() // self.btn_size, event.y() // self.btn_size
@@ -111,6 +111,7 @@ class MinefieldWidget(QGraphicsView):
         #  moved to a different cell.
         if (not event.buttons() & (Qt.LeftButton | Qt.RightButton) or
             not self.clicks_enabled or
+            self.await_release_all_buttons or
             coord == self.mouse_coord):
             return
             
@@ -128,6 +129,9 @@ class MinefieldWidget(QGraphicsView):
     def mouseReleaseEvent(self, event):
         """Handle mouse release events."""
         
+        if self.await_release_all_buttons and not event.buttons():
+            self.await_release_all_buttons = False
+            return
         # Ignore any clicks which aren't the left or right mouse buttons.
         if (event.button() not in [Qt.LeftButton, Qt.RightButton] or
             not self.clicks_enabled):
@@ -216,8 +220,7 @@ class MinefieldWidget(QGraphicsView):
         logger.info("Resetting minefield widget")
         self.mouse_coord = None
         self.both_mouse_buttons_pressed = False
-        for coord in self.all_coords:
-            self.set_cell_image(coord, 'btn_up')
+        self.await_release_all_buttons = True
     
     def sink_unclicked_cell(self, coord):
         """Set an unclicked cell to appear sunken."""
@@ -261,7 +264,17 @@ class MinefieldWidget(QGraphicsView):
                 b = self.scene.addPixmap(img)
                 b.setPos((x + i/2)*self.btn_size, (y + j/2)*self.btn_size)
     
-            
+    def resize(self, board):
+        logger.info("Resizing minefield from %sx%s to %sx%s",
+                    self.x_size, self.y_size, board.x_size, board.y_size)
+        self.board = board
+        self.x_size, self.y_size = board.x_size, board.y_size
+        self.setFixedSize(self.x_size*self.btn_size, self.y_size*self.btn_size)
+        self.setSceneRect(0, 0,
+                          self.x_size*self.btn_size,
+                          self.y_size*self.btn_size)
+        cb_core.update_window_size.emit()
+
     
        
 if __name__ == '__main__':

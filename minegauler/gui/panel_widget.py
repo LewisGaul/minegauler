@@ -20,7 +20,7 @@ from PyQt5.QtCore import Qt, QTimer, pyqtSlot
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QFrame, QHBoxLayout, QLabel
 
-from minegauler.core.callbacks import cb_core
+from minegauler.core import cb_core
 from minegauler.utils import GameState
 from .utils import img_dir, FaceState
 
@@ -36,6 +36,7 @@ class PanelWidget(QWidget):
         self.setup_UI()
         # Callback to controller for starting a new game.
         cb_core.end_game.connect(self.end_game)
+        cb_core.new_game.connect(lambda: self.set_face(FaceState.READY))
         cb_core.start_game.connect(self.timer.start)
         cb_core.set_mines_counter.connect(self.set_mines_counter)
         cb_core.at_risk.connect(lambda: self.set_face(FaceState.ACTIVE))

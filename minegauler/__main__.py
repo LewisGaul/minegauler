@@ -5,21 +5,26 @@ March 2018, Lewis Gaul
 """
 
 import sys
+from types import SimpleNamespace
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-from .core.callbacks import cb_core 
-from .core.game_logic import Controller
+from .core import cb_core, Controller
 from .gui import app, MinegaulerGUI
-from .gui.utils import FaceState
+from .utils import GameCellMode
 
 
 logging.info("Running...")
 
-x, y = 8, 4
-ctrlr = Controller(x, y)
+opts = SimpleNamespace(x_size=8,
+                       y_size=4,
+                       mines=7,
+                       first_success=True,
+                       per_cell=1,
+                       game_mode=GameCellMode.NORMAL)
+ctrlr = Controller(opts)
 # Set up GUI.
-main_window = MinegaulerGUI(ctrlr.board, btn_size=56)
+main_window = MinegaulerGUI(ctrlr.board, btn_size=36)
 # Start the app.
 main_window.show()
 cb_core.new_game.emit()

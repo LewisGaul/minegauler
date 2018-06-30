@@ -4,28 +4,25 @@ utils.py - Enumerations, constants and other utils
 March 2018, Lewis Gaul
 """
 
-import enum
+import logging
 
-from minegauler.utils import Grid, CellState
+from .callbacks import cb_core
 
 
-class Board(Grid):
-    """Board representation for handling displaying flags and openings."""
-    def __init__(self, x_size, y_size):
-        super().__init__(x_size, y_size, CellState.UNCLICKED)
-        self.per_cell = 0
-    def __repr__(self):
-        return f"<{self.x_size}x{self.y_size} board>"
-    def __str__(self):
-        def mapping(c):
-            # Display openings with dashes.
-            if c == 0:
-                return '-'
-            # Display the value from CellContents enum if it belongs to that class.
-            if type(c) is CellState:
-                if self.per_cell == 1:
-                    return c.value[0]
-                else:
-                    return c.value
-            return c
-        return super().__str__(mapping, cell_size=2)
+logger = logging.getLogger(__name__)
+
+
+def change_difficulty(id):
+    logger.info("Changing difficulty to '%s'", id)
+    if id == 'b':
+        cb_core.resize_board.emit(8, 8, 10)
+    elif id == 'i':
+        cb_core.resize_board.emit(16, 16, 40)
+    elif id == 'e':
+        cb_core.resize_board.emit(30, 16, 99)
+    elif id == 'm':
+        cb_core.resize_board.emit(30, 30, 200)
+    elif id == 'c':
+        logger.warn("Custom board size not implemented")
+    else:
+        raise ValueError("Invalid difficulty ID")

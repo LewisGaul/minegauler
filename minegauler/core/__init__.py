@@ -5,3 +5,6 @@ April 2018, Lewis Gaul
 """
 
 from .game_logic import Controller
+from .callbacks import cb_core
+from .utils import change_difficulty
+from .types import Board

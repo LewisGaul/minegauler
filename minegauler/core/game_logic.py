@@ -18,18 +18,12 @@ import logging
 
 from PyQt5.QtCore import pyqtSlot
 
-from minegauler.core.callbacks import cb_core
-from minegauler.utils import Grid, GameCellMode, CellState, GameState
-from .utils import Board
+from .callbacks import cb_core
+from .types import Grid, GameCellMode, CellState, GameState, Board
 from .minefield import Minefield
 
 
 logger = logging.getLogger(__name__)
-
-#@@@
-mines = 7
-per_cell = 2
-first_success = True
 
 
 class Controller:
@@ -37,19 +31,20 @@ class Controller:
     Class for processing all game logic. Implements callback functions for
     'clicks'.
     """
-    def __init__(self, x_size, y_size, game_mode=GameCellMode.NORMAL):
-        self.x_size = x_size
-        self.y_size = y_size
-        self.game_mode = game_mode
-        self.mines_remaining = mines
+    def __init__(self, opts):
+        for kw in ['x_size', 'y_size', 'mines', 'first_success', 'per_cell']:
+            ASSERT(hasattr(opts, kw), f"Missing option {kw}")
+        self.opts = opts
+        self.mines_remaining = self.opts.mines
         # Initialise game board.
-        self.board = Board(x_size, y_size)
+        self.board = Board(opts.x_size, opts.y_size)
         # Callbacks from the UI.
         cb_core.leftclick.connect(self.leftclick_cb)
         cb_core.rightclick.connect(self.rightclick_cb)
         cb_core.bothclick.connect(self.bothclick_cb)
         cb_core.new_game.connect(self.new_game_cb)
         cb_core.end_game.connect(self.end_game_cb)
+        cb_core.resize_board.connect(self.resize_board)
         # Keeps track of whether the minefield has been created yet.
         self.game_state = GameState.READY
     
@@ -64,11 +59,11 @@ class Controller:
         # Check if first click.
         if self.game_state == GameState.READY:
             # Create the minefield.
-            if first_success:
+            if self.opts.first_success:
                 safe_coords = self.mf.get_nbrs(*coord, include_origin=True)
             else:
                 safe_coords = []
-            self.mf.create(mines, per_cell, safe_coords)
+            self.mf.create(self.opts.mines, self.opts.per_cell, safe_coords)
             self.game_state = GameState.ACTIVE
             cb_core.start_game.emit()
             
@@ -192,9 +187,9 @@ class Controller:
     def new_game_cb(self):
         """Create a new game."""
         self.game_state = GameState.READY
-        self.mines_remaining = mines
-        cb_core.set_mines_counter.emit(mines)
-        self.mf = Minefield(self.x_size, self.y_size)
+        self.mines_remaining = self.opts.mines
+        cb_core.set_mines_counter.emit(self.opts.mines)
+        self.mf = Minefield(self.opts.x_size, self.opts.y_size)
         for c in self.board.all_coords:
             self.set_cell(c, CellState.UNCLICKED)
             
@@ -209,6 +204,17 @@ class Controller:
         self.game_state = game_state
         if game_state == GameState.WON:
             cb_core.set_mines_counter.emit(0)
+    
+    def resize_board(self, x_size, y_size, mines):
+        logger.info("Resizing board from %sx%s with %s mines to "
+                    "%sx%s with %s mines",
+                    self.opts.x_size, self.opts.y_size, self.opts.mines,
+                    x_size, y_size, mines)
+        self.opts.x_size, self.opts.y_size = x_size, y_size
+        self.opts.mines = mines
+        self.board = Board(x_size, y_size)
+        cb_core.resize_minefield.emit(self.board)
+        cb_core.new_game.emit()
 
 
 if __name__ == '__main__':

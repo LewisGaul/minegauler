@@ -19,12 +19,15 @@ from glob import glob
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
-    QHBoxLayout, QFrame, QAction, QActionGroup, QMenu)
+    QHBoxLayout, QFrame, QAction, QActionGroup, QMenu, QSizePolicy)
 
-from minegauler.core.callbacks import cb_core
+from minegauler.core import cb_core, change_difficulty
 from .utils import img_dir
 from .panel_widget import PanelWidget
 from .minefield_widget import MinefieldWidget
+
+
+logger = logging.getLogger(__name__)
 
 
 def ignore_event_arg(cb):
@@ -39,7 +42,6 @@ class BaseMainWindow(QMainWindow):
     Base class for the application implementing the general layout.
     """
     BODY_FRAME_WIDTH = 5
-    ENTRYBAR_HEIGHT = 20
     
     def __init__(self, title=''):
         """
@@ -74,6 +76,7 @@ class BaseMainWindow(QMainWindow):
         self.panel_frame.setFrameShadow(QFrame.Sunken)
         self.panel_frame.setFrameShape(QFrame.Panel)
         self.panel_frame.setLineWidth(2)
+        self.panel_frame.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         vlayout.addWidget(self.panel_frame)
         # Main body widget config - use horizontal layout for centre alignment.
         hstretch = QHBoxLayout()
@@ -82,14 +85,14 @@ class BaseMainWindow(QMainWindow):
         self.body_frame.setFrameShadow(QFrame.Raised)
         self.body_frame.setFrameShape(QFrame.Box)
         self.body_frame.setLineWidth(self.BODY_FRAME_WIDTH)
+        self.body_frame.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         hstretch.addWidget(self.body_frame)
         hstretch.addStretch() #right-padding for centering
         vlayout.addLayout(hstretch)
         
         # Name entry bar underneath the minefield
-        self.entrybar_frame = QFrame(central_widget)
-        self.entrybar_frame.setFixedHeight(self.ENTRYBAR_HEIGHT)
-        vlayout.addWidget(self.entrybar_frame)
+        self.footer_frame = QFrame(central_widget)
+        vlayout.addWidget(self.footer_frame)
         
     def set_panel_widget(self, panel_widget):
         """
@@ -115,17 +118,17 @@ class BaseMainWindow(QMainWindow):
         lyt.addWidget(body_widget)
         self.body = body_widget
         
-    def set_entrybar_widget(self, entrybar_widget):
+    def set_footer_widget(self, footer_widget):
         """
         Set the widget to occupy the lower bar of the GUI.
         Arguments:
-          entrybar_widget (QWidget)
+          footer_widget (QWidget)
             The widget instance to place in the lower bar.
         """
-        lyt = QVBoxLayout(self.entrybar_frame)
+        lyt = QVBoxLayout(self.footer_frame)
         lyt.setContentsMargins(0, 0, 0, 0)
-        lyt.addWidget(entrybar_widget)
-        self.entrybar = entrybar_widget
+        lyt.addWidget(footer_widget)
+        self.footer = footer_widget
         
     def init_menubars(self):
         """
@@ -144,40 +147,18 @@ class BaseMainWindow(QMainWindow):
         exit_act.setShortcut('Alt+F4')
         ## HELP MENU
     
-    def get_game_menu(self):
-        """
-        Return: QMenuBar
-            The game menu to which can have actions added to it.
-        """
-        return self.game_menu
-    def get_options_menu(self):
-        """
-        Return: QMenuBar
-            The options menu to which can have actions added to it.
-        """
-        return self.opts_menu
-    def get_help_menu(self):
-        """
-        Return: QMenuBar
-            The help menu to which can have actions added to it.
-        """
-        return self.help_menu
-        
     def update_size(self):
-        """
-        Set the window to be a fixed size big enough to fit all of the widgets.
-        """
-        width = max(self.PANEL_WIDTH_MIN, self.body_frame.width())
-        height = (self.menubar.height() + self.PANEL_HEIGHT
-                  + self.body_frame.height() + self.ENTRYBAR_HEIGHT)
-        self.setFixedSize(width, height)
+        """Update the window size."""
+        self.panel_frame.adjustSize()
+        self.body_frame.adjustSize()
+        self.centralWidget().adjustSize()
+        self.adjustSize()
         
     def show(self):
-        """
-        Show the window.
-        """
+        """Show the window."""
         super().show()
-        self.setFixedSize(self.width(), self.height())
+        # Pack all widgets tightly, using minimum required space.
+        self.setFixedSize(0, 0)
         
     def closeEvent(self, event):
         """
@@ -196,6 +177,7 @@ class MinegaulerGUI(BaseMainWindow):
         super().__init__('MineGauler')
         self.set_panel_widget(PanelWidget(self))
         self.set_body_widget(MinefieldWidget(self, board, btn_size))
+        cb_core.update_window_size.connect(self.update_size)
         
     def populate_menubars(self):
         ## GAME MENU
@@ -212,15 +194,15 @@ class MinegaulerGUI(BaseMainWindow):
         hs_act.setShortcut('F6')
         self.game_menu.addSeparator()
         # Difficulty radiobuttons
-        self.diff_group = QActionGroup(self, exclusive=True)
+        diff_group = QActionGroup(self, exclusive=True)
         for diff in ['Beginner', 'Intermediate', 'Expert', 'Master']:#, 'Custom']:
-            diff_act = QAction(diff, self.diff_group, checkable=True)
+            diff_act = QAction(diff, diff_group, checkable=True)
             self.game_menu.addAction(diff_act)
             diff_act.id = diff[0].lower()
             # if diff_act.id == self.procr.diff:
             #     diff_act.setChecked(True)
-            # diff_act.triggered.connect(ignore_event_arg(
-            #                                     cb_core.change_difficulty.emit))
+            diff_act.triggered.connect(
+                lambda _: change_difficulty(diff_group.checkedAction().id))
             diff_act.setShortcut(diff[0])
         self.game_menu.addSeparator()
         # Zoom board action
@@ -244,10 +226,11 @@ class MinegaulerGUI(BaseMainWindow):
         exit_act.setShortcut('Alt+F4')
         
         ## HELP MENU
+    
                    
                    
 if __name__ == '__main__':
-    from minegauler.core.utils import Board
+    from minegauler.core import Board
     app = QApplication(sys.argv)
     main_window = MinegaulerGUI(Board(4, 4))
     main_window.show()

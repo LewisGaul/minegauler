@@ -25,8 +25,8 @@ Exports:
 import random as rnd
 import logging
 
-from minegauler.utils import ASSERT, Grid, CellState
-from .utils import Board
+from minegauler.utils import ASSERT
+from .types import Grid, CellState, Board
 
 
 
