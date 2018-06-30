@@ -8,9 +8,7 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 
-from .main_window import MainWindow
-from .minefield_widget import MinefieldWidget
-from .panel_widget import PanelWidget
+from .main_window import MinegaulerGUI
 
 
 app = QApplication(sys.argv)

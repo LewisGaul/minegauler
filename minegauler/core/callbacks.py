@@ -1,5 +1,5 @@
 """
-callback_core.py - The controller of the callbacks
+callbacks.py - The controller of the callbacks
 
 May 2018, Lewis Gaul
 """
@@ -9,7 +9,7 @@ from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
 from minegauler.utils import GameState, CellState
 
 
-class CallbackCore(QObject):
+class CallbackContainer(QObject):
     # A left-click was received on a cell (coord passed in).
     leftclick = pyqtSignal(tuple)
     # A right-click was received on a cell (coord passed in).
@@ -32,4 +32,4 @@ class CallbackCore(QObject):
     set_cell = pyqtSignal(tuple, CellState)
         
         
-core = CallbackCore()
+cb_core = CallbackContainer()

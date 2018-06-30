@@ -4,25 +4,39 @@ main_window.py - Base GUI application implementation
 April 2018, Lewis Gaul
 
 Exports:
-  MainWindow
+  BaseMainWindow
     Main window class
+    
+  MinegaulerGUI
+    Minegauler main window class
 """
 
 import sys
-from os.path import join, dirname
+from os.path import join, dirname, basename
 import logging
+from glob import glob
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
-    QHBoxLayout, QFrame, QAction)
+    QHBoxLayout, QFrame, QAction, QActionGroup, QMenu)
 
+from minegauler.core.callbacks import cb_core
 from .utils import img_dir
+from .panel_widget import PanelWidget
+from .minefield_widget import MinefieldWidget
 
 
-class MainWindow(QMainWindow):
+def ignore_event_arg(cb):
+    """Allow a callback to take in an event argument which is ignored."""
+    def new_cb(event):
+        cb()
+    return new_cb
+
+
+class BaseMainWindow(QMainWindow):
     """
-    Base class for the application.
+    Base class for the application implementing the general layout.
     """
     BODY_FRAME_WIDTH = 5
     ENTRYBAR_HEIGHT = 20
@@ -41,6 +55,7 @@ class MainWindow(QMainWindow):
         self.setWindowFlags(self.windowFlags() | Qt.CustomizeWindowHint)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowMaximizeButtonHint)
         self.setup_UI()
+        self.init_menubars()
         # Keep track of all subwindows that are open.
         self.open_subwindows = {}
         
@@ -75,8 +90,6 @@ class MainWindow(QMainWindow):
         self.entrybar_frame = QFrame(central_widget)
         self.entrybar_frame.setFixedHeight(self.ENTRYBAR_HEIGHT)
         vlayout.addWidget(self.entrybar_frame)
-        
-        self.init_menubar()
         
     def set_panel_widget(self, panel_widget):
         """
@@ -114,15 +127,18 @@ class MainWindow(QMainWindow):
         lyt.addWidget(entrybar_widget)
         self.entrybar = entrybar_widget
         
-    def init_menubar(self):
+    def init_menubars(self):
         """
         Initialise the menubar with 'Game', 'Options' and 'Help' menus, each
         accessible for adding actions to with 'Mainwindow.get_*_menu()'.
         """
-        self.menubar = self.menuBar() #QMainWindow has QMenuBar already
+        self.menubar = self.menuBar() # QMainWindow has QMenuBar already
         self.game_menu = self.menubar.addMenu('Game')
         self.opts_menu = self.menubar.addMenu('Options')
         self.help_menu = self.menubar.addMenu('Help')
+        self.populate_menubars()
+        
+    def populate_menubars(self):
         ## GAME MENU
         exit_act = self.game_menu.addAction('Exit', self.close)
         exit_act.setShortcut('Alt+F4')
@@ -174,10 +190,65 @@ class MainWindow(QMainWindow):
         """
         event.accept()
     
+    
+class MinegaulerGUI(BaseMainWindow):
+    def __init__(self, board, btn_size=16):
+        super().__init__('MineGauler')
+        self.set_panel_widget(PanelWidget(self))
+        self.set_body_widget(MinefieldWidget(self, board, btn_size))
+        
+    def populate_menubars(self):
+        ## GAME MENU
+        # New game action
+        new_game_act = self.game_menu.addAction('New game',
+                                                cb_core.new_game.emit)
+        new_game_act.setShortcut('F2')
+        # Replay game action
+        replay_act = self.game_menu.addAction('Replay', lambda: None)
+        #                                       cb_core.replay_game.emit)
+        replay_act.setShortcut('F3')
+        # Show highscores action
+        hs_act = self.game_menu.addAction('Highscores', lambda: None)
+        hs_act.setShortcut('F6')
+        self.game_menu.addSeparator()
+        # Difficulty radiobuttons
+        self.diff_group = QActionGroup(self, exclusive=True)
+        for diff in ['Beginner', 'Intermediate', 'Expert', 'Master']:#, 'Custom']:
+            diff_act = QAction(diff, self.diff_group, checkable=True)
+            self.game_menu.addAction(diff_act)
+            diff_act.id = diff[0].lower()
+            # if diff_act.id == self.procr.diff:
+            #     diff_act.setChecked(True)
+            # diff_act.triggered.connect(ignore_event_arg(
+            #                                     cb_core.change_difficulty.emit))
+            diff_act.setShortcut(diff[0])
+        self.game_menu.addSeparator()
+        # Zoom board action
+        zoom_act = self.game_menu.addAction('Zoom', lambda: None)
+        # Change styles options
+        styles_menu = QMenu('Styles', self)
+        self.game_menu.addMenu(styles_menu)
+        for img_group in ['buttons']:
+            submenu = QMenu(img_group.capitalize(), self)
+            styles_menu.addMenu(submenu)
+            group = QActionGroup(self, exclusive=True)
+            for folder in glob(join(img_dir, img_group, '*')):
+                style = basename(folder)
+                style_act = QAction(style, self, checkable=True)
+                group.addAction(style_act)
+                # style_act.triggered.connect(SOMETHING)
+                submenu.addAction(style_act)
+        self.game_menu.addSeparator()
+        # Exit window action
+        exit_act = self.game_menu.addAction('Exit', self.close)
+        exit_act.setShortcut('Alt+F4')
+        
+        ## HELP MENU
                    
                    
 if __name__ == '__main__':
+    from minegauler.core.utils import Board
     app = QApplication(sys.argv)
-    main_window = MainWindow()
+    main_window = MinegaulerGUI(Board(4, 4))
     main_window.show()
     sys.exit(app.exec_())

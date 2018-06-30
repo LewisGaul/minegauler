@@ -17,10 +17,10 @@ from os.path import join
 import logging
 
 from PyQt5.QtCore import Qt, QTimer, pyqtSlot
-from PyQt5.QtGui import QPixmap#, QPainter, QImage
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QFrame, QHBoxLayout, QLabel
 
-from minegauler.callback_core import core as cb_core
+from minegauler.core.callbacks import cb_core
 from minegauler.utils import GameState
 from .utils import img_dir, FaceState
 

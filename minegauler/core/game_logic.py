@@ -18,7 +18,7 @@ import logging
 
 from PyQt5.QtCore import pyqtSlot
 
-from minegauler.callback_core import core as cb_core
+from minegauler.core.callbacks import cb_core
 from minegauler.utils import Grid, GameCellMode, CellState, GameState
 from .utils import Board
 from .minefield import Minefield
