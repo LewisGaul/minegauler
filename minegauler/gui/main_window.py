@@ -21,6 +21,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
     QHBoxLayout, QFrame, QAction, QActionGroup, QMenu, QSizePolicy)
 
+from minegauler.utils import ASSERT
 from minegauler.core import cb_core, change_difficulty
 from .utils import img_dir
 from .panel_widget import PanelWidget
@@ -186,9 +187,9 @@ class MinegaulerGUI(BaseMainWindow):
                                                 cb_core.new_game.emit)
         new_game_act.setShortcut('F2')
         # Replay game action
-        replay_act = self.game_menu.addAction('Replay', lambda: None)
+        # replay_act = self.game_menu.addAction('Replay', lambda: None)
         #                                       cb_core.replay_game.emit)
-        replay_act.setShortcut('F3')
+        # replay_act.setShortcut('F3')
         # Show highscores action
         hs_act = self.game_menu.addAction('Highscores', lambda: None)
         hs_act.setShortcut('F6')
@@ -206,7 +207,7 @@ class MinegaulerGUI(BaseMainWindow):
             diff_act.setShortcut(diff[0])
         self.game_menu.addSeparator()
         # Zoom board action
-        zoom_act = self.game_menu.addAction('Zoom', lambda: None)
+        # zoom_act = self.game_menu.addAction('Zoom', lambda: None)
         # Change styles options
         styles_menu = QMenu('Styles', self)
         self.game_menu.addMenu(styles_menu)
