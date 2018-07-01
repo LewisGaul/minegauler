@@ -6,7 +6,7 @@ May 2018, Lewis Gaul
 
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
 
-from .types import GameState, CellState, Board
+from .types import GameState, CellState, Board, CellImageType
 
 
 class CallbackContainer(QObject):
@@ -28,14 +28,16 @@ class CallbackContainer(QObject):
     at_risk = pyqtSignal()
     # There is no longer a risk of losing based on the mouse state.
     no_risk = pyqtSignal()
-    # Set the state of a cell (coord and state passed in).
-    set_cell = pyqtSignal(tuple, CellState)
+    # Set the state of a cell (coord passed in).
+    set_cell = pyqtSignal(tuple)
     # Resize the board (new dimensions and mines passed in: x, y, mines).
     resize_board = pyqtSignal(int, int, int)
     # Resize the minefield to match the resized board (new board passed in).
     resize_minefield = pyqtSignal(Board)
     # Update the size of the window after a widget changes size.
     update_window_size = pyqtSignal()
+    # Change a minefield style (element to change and new style passed in)
+    change_mf_style = pyqtSignal(CellImageType, str)
         
         
 cb_core = CallbackContainer()

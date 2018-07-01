@@ -6,6 +6,7 @@ March 2018, Lewis Gaul
 
 from os.path import dirname, abspath, join
 import enum
+from types import SimpleNamespace
 
 
 def get_curdir(fpath):
@@ -76,6 +77,13 @@ class GameCellMode(enum.Enum):
     SPLIT = 'Cells split instead of flagging'
     SPLIT1 = SPLIT
     SPLIT2 = 'Cells split twice'
+    
+
+class CellImageType(enum.Flag):
+    BUTTON = enum.auto()
+    NUMBER = enum.auto()
+    MARKER = enum.auto()
+    ALL = BUTTON | NUMBER | MARKER
 
 
 class Grid(list):

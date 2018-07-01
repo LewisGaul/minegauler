@@ -24,30 +24,32 @@ from PyQt5.QtCore import Qt, QRectF, QRect, pyqtSlot
 from PyQt5.QtGui import QPixmap, QPainter, QImage
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QAction
 
-from minegauler.core import cb_core
+from minegauler.core import cb_core, Board
 from minegauler.utils import CellState
-from .utils import init_or_update_cell_images
+from .utils import init_or_update_cell_images, CellImageType
 
 
 logger = logging.getLogger(__name__)
-
-# Initialise a dictionary to contain the cell images, which can only be created
-#  when a QApplication has been initialised.
-cell_images = {}
 
 
 class MinefieldWidget(QGraphicsView):
     """
     The minefield widget.
     """
-    def __init__(self, parent, board, btn_size=16):
+    def __init__(self, parent, board, btn_size=16, styles=None):
         logger.info("Initialising minefield widget")
         super().__init__(parent)
         self.setStyleSheet("border: 0px")
         self.board = board
         self.x_size, self.y_size = board.x_size, board.y_size
         self.btn_size = btn_size
-        init_or_update_cell_images(cell_images, self.btn_size)
+        if styles:
+            for kw in [CellImageType.BUTTON]:
+                ASSERT(kw in styles, "Missing image style")
+        else:
+            self.img_styles = {CellImageType.BUTTON: 'standard'}
+        self.cell_images = {}
+        init_or_update_cell_images(self.cell_images, btn_size, self.img_styles)
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
         self.setFixedSize(self.x_size*self.btn_size, self.y_size*self.btn_size)
@@ -66,6 +68,7 @@ class MinefieldWidget(QGraphicsView):
         cb_core.end_game.connect(
             lambda _: setattr(self, 'clicks_enabled', False))
         cb_core.resize_minefield.connect(self.resize)
+        cb_core.change_mf_style.connect(self.update_style)
         
     def is_coord_in_grid(self, coord):
         x, y = coord
@@ -233,21 +236,24 @@ class MinefieldWidget(QGraphicsView):
     def raise_all_sunken_cells(self):
         """Reset all sunken cells to appear raised."""
         while self.sunken_cells:
-            self.set_cell_image(self.sunken_cells.pop(), 'btn_up')
+            self.set_cell_image(self.sunken_cells.pop(), CellState.UNCLICKED)
         cb_core.no_risk.emit()
                 
-    @pyqtSlot(tuple, CellState)
-    def set_cell_image(self, coord, state):
+    @pyqtSlot(tuple)
+    def set_cell_image(self, coord, state=None):
         """
         Set the image of a cell.
         Arguments:
           coord ((x, y) tuple in grid range)
             The coordinate of the cell.
           state
-            The cell_images key for the image to be set.
+            The cell_images key for the image to be set, or None to get the
+            state from the board.
         """
         x, y = coord
-        b = self.scene.addPixmap(cell_images[state])
+        if not state:
+            state = self.board[coord]
+        b = self.scene.addPixmap(self.cell_images[state])
         b.setPos(x*self.btn_size, y*self.btn_size)
         
     def split_cell(self, coord):
@@ -258,12 +264,14 @@ class MinefieldWidget(QGraphicsView):
             The coordinate of the cell.
         """
         x, y = coord
-        img = cell_images['btn_up'].scaled(self.btn_size/2, self.btn_size/2)
+        img = self.cell_images['btn_up'].scaled(self.btn_size/2,
+                                                self.btn_size/2)
         for i in range(2):
             for j in range(2):
                 b = self.scene.addPixmap(img)
                 b.setPos((x + i/2)*self.btn_size, (y + j/2)*self.btn_size)
     
+    @pyqtSlot(Board)
     def resize(self, board):
         logger.info("Resizing minefield from %sx%s to %sx%s",
                     self.x_size, self.y_size, board.x_size, board.y_size)
@@ -274,17 +282,22 @@ class MinefieldWidget(QGraphicsView):
                           self.x_size*self.btn_size,
                           self.y_size*self.btn_size)
         cb_core.update_window_size.emit()
+    
+    @pyqtSlot(CellImageType, str)
+    def update_style(self, img_type, style):
+        logger.info("Updating %s style to '%s'", img_type.name, style)
+        self.img_styles[img_type] = style
+        init_or_update_cell_images(self.cell_images, self.btn_size,
+                                   self.img_styles, img_type)
+        for coord in self.board.all_coords:
+            self.set_cell_image(coord)
 
     
        
 if __name__ == '__main__':
-    # from .stubs import Processor
+    from minegauler.core import Board
     
     app = QApplication(sys.argv)
-    # procr = Processor(None, 7, 2)
-    mf_widget = MinefieldWidget(None, 7, 2, 100)
-    # refresh_action = QAction('Refresh', mf_widget)
-    # refresh_action.triggered.connect(mf_widget.refresh)
-    # refresh_action.setShortcut('F1')
+    mf_widget = MinefieldWidget(None, Board(2, 7), 100)
     mf_widget.show()
     sys.exit(app.exec_())   

@@ -8,9 +8,8 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 
+from .utils import CellImageType
 from .main_window import MinegaulerGUI
 
 
 app = QApplication(sys.argv)
-
-# __all__ = ['app', 'MainWindow', 'MinefieldWidget']

@@ -6,7 +6,8 @@ June 2018, Lewis Gaul
 
 import enum
 
-from minegauler.utils import Grid, CellState, GameCellMode, GameState
+from minegauler.utils import (Grid, CellState, GameCellMode, GameState,
+    CellImageType)
 
 
 class Board(Grid):

@@ -163,7 +163,7 @@ class Controller:
         Set a cell to be in the given state, calling registered callbacks.
         """
         self.board[coord] = state
-        cb_core.set_cell.emit(coord, state)
+        cb_core.set_cell.emit(coord)
                         
     def check_for_completion(self):
         """

@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 
 from minegauler.utils import ASSERT
 from minegauler.core import cb_core, change_difficulty
-from .utils import img_dir
+from .utils import img_dir, CellImageType
 from .panel_widget import PanelWidget
 from .minefield_widget import MinefieldWidget
 
@@ -36,6 +36,15 @@ def ignore_event_arg(cb):
     def new_cb(event):
         cb()
     return new_cb
+
+
+def get_change_style_cb(img_group, style):
+    def cb(event=None):
+        if img_group == 'buttons':
+            cb_core.change_mf_style.emit(CellImageType.BUTTON, style)
+        else:
+            raise ValueError("Unexpected image group name")
+    return cb
 
 
 class BaseMainWindow(QMainWindow):
@@ -218,8 +227,11 @@ class MinegaulerGUI(BaseMainWindow):
             for folder in glob(join(img_dir, img_group, '*')):
                 style = basename(folder)
                 style_act = QAction(style, self, checkable=True)
+                if style == 'standard':
+                    style_act.setChecked(True)
                 group.addAction(style_act)
-                # style_act.triggered.connect(SOMETHING)
+                style_act.triggered.connect(
+                    get_change_style_cb(img_group, style))
                 submenu.addAction(style_act)
         self.game_menu.addSeparator()
         # Exit window action
