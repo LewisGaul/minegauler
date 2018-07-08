@@ -19,8 +19,9 @@ import logging
 from PyQt5.QtCore import pyqtSlot
 
 from minegauler.utils import ASSERT
+from minegauler.types import (Grid, GameCellMode, CellState, GameState, Board,
+    GameOptionsStruct)
 from .callbacks import cb_core
-from .types import Grid, GameCellMode, CellState, GameState, Board
 from .minefield import Minefield
 
 
@@ -32,10 +33,11 @@ class Controller:
     Class for processing all game logic. Implements callback functions for
     'clicks'.
     """
-    def __init__(self, opts):
-        for kw in ['x_size', 'y_size', 'mines', 'first_success', 'per_cell']:
-            ASSERT(hasattr(opts, kw), f"Missing option {kw}")
-        self.opts = opts
+    def __init__(self, opts=None):
+        if opts:
+            self.opts = opts
+        else:
+            self.opts = GameOptionsStruct()
         self.mines_remaining = self.opts.mines
         # Initialise game board.
         self.board = Board(opts.x_size, opts.y_size)
@@ -221,7 +223,7 @@ class Controller:
 
 if __name__ == '__main__':
     # from .stubs import StubUI, StubMinefieldUI
-    ctrlr = Controller(3, 5)
+    ctrlr = Controller()
     # ui = StubUI(procr)
     # mf_ui = StubMinefieldUI(procr)
 

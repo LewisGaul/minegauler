@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from minegauler import core
 from minegauler.core import cb_core
 from minegauler.utils import ASSERT
+from minegauler.types import GUIOptionsStruct
 from .utils import img_dir, CellImageType
 from .panel_widget import PanelWidget
 from .minefield_widget import MinefieldWidget
@@ -184,10 +185,14 @@ class BaseMainWindow(QMainWindow):
     
     
 class MinegaulerGUI(BaseMainWindow):
-    def __init__(self, board, btn_size=16):
+    def __init__(self, board, opts=None):
         super().__init__('MineGauler')
+        if opts:
+            self.opts = opts
+        else:
+            self.opts = GUIOptionsStruct()
         self.set_panel_widget(PanelWidget(self))
-        self.set_body_widget(MinefieldWidget(self, board, btn_size))
+        self.set_body_widget(MinefieldWidget(self, board, self.opts.btn_size))
         cb_core.update_window_size.connect(self.update_size)
         
     def populate_menubars(self):

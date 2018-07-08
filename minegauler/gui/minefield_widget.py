@@ -24,7 +24,8 @@ from PyQt5.QtCore import Qt, QRectF, QRect, pyqtSlot
 from PyQt5.QtGui import QPixmap, QPainter, QImage
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QAction
 
-from minegauler.core import cb_core, Board
+from minegauler.core import cb_core
+from minegauler.types import Board
 from minegauler.utils import CellState
 from .utils import init_or_update_cell_images, CellImageType
 

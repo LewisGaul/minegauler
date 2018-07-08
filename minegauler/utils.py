@@ -187,3 +187,39 @@ class Grid(list):
             nbrs.remove((x, y))
         return nbrs
 
+
+class Struct(dict):
+    elements = []
+    defaults = {}
+    def __init__(self, **kwargs):
+        super().__init__()
+        for k, v in kwargs.items():
+            self[k] = v
+        for k, v in self.defaults.items():
+            if k not in self:
+                self[k] = v
+    def __getitem__(self, name):
+        if name in self.elements:
+            if name in self:
+                return super().__getitem__(name)
+            else:
+                return None
+        else:
+            raise KeyError("Unexpected element")
+    def __setitem__(self, name, value):
+        if name in self.elements:
+            super().__setitem__(name, value)
+        else:
+            raise KeyError("Unexpected element")
+    def __getattr__(self, name):
+        if name in self.elements:
+            return self[name]
+        else:
+            raise AttributeError("Unexpected element")
+    def __setattr__(self, name, value):
+        if name in self.elements:
+            self[name] = value
+        else:
+            raise AttributeError("Unexpected element")
+        
+        

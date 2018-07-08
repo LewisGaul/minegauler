@@ -5,10 +5,9 @@ June 2018, Lewis Gaul
 """
 
 import enum
-from types import SimpleNamespace
 
 from minegauler.utils import (Grid, CellState, GameCellMode, GameState,
-    CellImageType)
+    CellImageType, Struct)
 
 
 class Board(Grid):
@@ -31,4 +30,20 @@ class Board(Grid):
                     return c.value
             return c
         return super().__str__(mapping, cell_size=2)
+
+                
+class GameOptionsStruct(Struct):
+    elements = ['x_size', 'y_size', 'mines',
+                'first_success', 'per_cell']
+    defaults = {'x_size': 8, 'y_size': 8, 'mines': 10,
+                'first_success': True, 'per_cell': 1}
+                
+class GUIOptionsStruct(Struct):
+    elements = ['btn_size']
+    defaults = {'btn_size': 32}
+
+class PersistSettingsStruct(Struct):
+    elements = GameOptionsStruct.elements + GUIOptionsStruct.elements
+    defaults = {**GameOptionsStruct.defaults, **GUIOptionsStruct.defaults}
+
 

@@ -26,7 +26,7 @@ import random as rnd
 import logging
 
 from minegauler.utils import ASSERT
-from .types import Grid, CellState, Board
+from minegauler.types import Grid, CellState, Board
 
 
 

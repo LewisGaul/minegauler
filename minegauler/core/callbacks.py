@@ -6,7 +6,7 @@ May 2018, Lewis Gaul
 
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
 
-from .types import GameState, CellState, Board, CellImageType, SimpleNamespace
+from minegauler.types import (GameState, CellState, Board, CellImageType)
 
 
 class CallbackContainer(QObject):
