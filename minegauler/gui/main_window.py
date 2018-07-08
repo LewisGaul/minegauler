@@ -21,8 +21,9 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
     QHBoxLayout, QFrame, QAction, QActionGroup, QMenu, QSizePolicy)
 
+from minegauler import core
+from minegauler.core import cb_core
 from minegauler.utils import ASSERT
-from minegauler.core import cb_core, change_difficulty
 from .utils import img_dir, CellImageType
 from .panel_widget import PanelWidget
 from .minefield_widget import MinefieldWidget
@@ -212,7 +213,7 @@ class MinegaulerGUI(BaseMainWindow):
             # if diff_act.id == self.procr.diff:
             #     diff_act.setChecked(True)
             diff_act.triggered.connect(
-                lambda _: change_difficulty(diff_group.checkedAction().id))
+                lambda _: core.change_difficulty(diff_group.checkedAction().id))
             diff_act.setShortcut(diff[0])
         self.game_menu.addSeparator()
         # Zoom board action
@@ -239,6 +240,10 @@ class MinegaulerGUI(BaseMainWindow):
         exit_act.setShortcut('Alt+F4')
         
         ## HELP MENU
+        
+    def closeEvent(self, event):
+        cb_core.save_settings.emit()
+        super().closeEvent(event)
     
                    
                    

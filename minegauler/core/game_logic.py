@@ -216,6 +216,7 @@ class Controller:
         self.board = Board(x_size, y_size)
         cb_core.resize_minefield.emit(self.board)
         cb_core.new_game.emit()
+    
 
 
 if __name__ == '__main__':

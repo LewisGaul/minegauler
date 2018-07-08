@@ -6,7 +6,7 @@ May 2018, Lewis Gaul
 
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
 
-from .types import GameState, CellState, Board, CellImageType
+from .types import GameState, CellState, Board, CellImageType, SimpleNamespace
 
 
 class CallbackContainer(QObject):
@@ -36,8 +36,10 @@ class CallbackContainer(QObject):
     resize_minefield = pyqtSignal(Board)
     # Update the size of the window after a widget changes size.
     update_window_size = pyqtSignal()
-    # Change a minefield style (element to change and new style passed in)
+    # Change a minefield style (element to change and new style passed in).
     change_mf_style = pyqtSignal(CellImageType, str)
+    # Call to save current settings to file.
+    save_settings = pyqtSignal()
         
         
 cb_core = CallbackContainer()

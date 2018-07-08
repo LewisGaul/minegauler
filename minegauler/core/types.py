@@ -5,6 +5,7 @@ June 2018, Lewis Gaul
 """
 
 import enum
+from types import SimpleNamespace
 
 from minegauler.utils import (Grid, CellState, GameCellMode, GameState,
     CellImageType)
