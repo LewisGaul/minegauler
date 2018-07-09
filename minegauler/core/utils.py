@@ -11,7 +11,7 @@ except: #@@@ exception
     import pickle
 import logging
 
-from minegauler.utils import root_dir
+from minegauler.utils import files_dir
 from .callbacks import cb_core
 
 
@@ -42,5 +42,5 @@ def save_settings(settings):
         Dictionary of settings to save.
     """
     logger.info("Saving settings to file: %s", settings)
-    with open(join(root_dir, 'settings.cfg'), 'wb') as f:
+    with open(join(files_dir, 'settings.cfg'), 'wb') as f:
         pickle.dump(settings, f)

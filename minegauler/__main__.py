@@ -6,7 +6,6 @@ March 2018, Lewis Gaul
 
 import sys
 from os.path import join
-#@@@import json
 try:
     import cPickle as pickle
 except:
@@ -16,7 +15,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 from minegauler import core
-from .utils import root_dir, GameCellMode
+from .utils import files_dir, GameCellMode
 from .types import GameOptionsStruct, GUIOptionsStruct, PersistSettingsStruct
 from .core import cb_core, Controller
 from .gui import app, MinegaulerGUI
@@ -27,12 +26,12 @@ logging.info("Running...")
 
 settings = {}
 try:
-    logging.info("Reading settings from file")
-    with open(join(root_dir, 'settings.cfg'), 'rb') as f:
+    with open(join(files_dir, 'settings.cfg'), 'rb') as f:
         settings = pickle.load(f)
+    logging.info("Settings read from file: %s", settings)
 except FileNotFoundError:
     logging.info("Unable to read settings from file, will use defaults")
-except json.JSONDecodeError:
+except pickle.UnpicklingError:
     logging.info("Unable to decode settings from file, will use defaults")
 
 game_opts = GameOptionsStruct(
