@@ -24,9 +24,9 @@ from PyQt5.QtCore import Qt, QRectF, QRect, pyqtSlot
 from PyQt5.QtGui import QPixmap, QPainter, QImage
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QAction
 
+from minegauler.utils import CellState, ASSERT
 from minegauler.core import cb_core
 from minegauler.types import Board
-from minegauler.utils import CellState
 from .utils import init_or_update_cell_images, CellImageType
 
 
@@ -45,10 +45,11 @@ class MinefieldWidget(QGraphicsView):
         self.x_size, self.y_size = board.x_size, board.y_size
         self.btn_size = btn_size
         if styles:
-            for kw in [CellImageType.BUTTON]:
+            for kw in [CellImageType.BUTTONS]:
                 ASSERT(kw in styles, "Missing image style")
+            self.img_styles = styles
         else:
-            self.img_styles = {CellImageType.BUTTON: 'standard'}
+            self.img_styles = {CellImageType.BUTTONS: 'standard'}
         self.cell_images = {}
         init_or_update_cell_images(self.cell_images, btn_size, self.img_styles)
         self.scene = QGraphicsScene()

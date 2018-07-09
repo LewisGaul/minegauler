@@ -41,9 +41,14 @@ def ignore_event_arg(cb):
 
 
 def get_change_style_cb(img_group, style):
+    """
+    Get a callback function for changing changing the button style.
+    Return:
+      Callback function to change the button style.
+    """
     def cb(event=None):
-        if img_group == 'buttons':
-            cb_core.change_mf_style.emit(CellImageType.BUTTON, style)
+        if img_group == CellImageType.BUTTONS:
+            cb_core.change_mf_style.emit(img_group, style)
         else:
             raise ValueError("Unexpected image group name")
     return cb
@@ -186,14 +191,18 @@ class BaseMainWindow(QMainWindow):
     
 class MinegaulerGUI(BaseMainWindow):
     def __init__(self, board, opts=None):
-        super().__init__('MineGauler')
         if opts:
             self.opts = opts
         else:
             self.opts = GUIOptionsStruct()
+        super().__init__('MineGauler')
         self.set_panel_widget(PanelWidget(self))
-        self.set_body_widget(MinefieldWidget(self, board, self.opts.btn_size))
+        self.set_body_widget(MinefieldWidget(self,
+                                             board,
+                                             self.opts.btn_size,
+                                             self.opts.styles))
         cb_core.update_window_size.connect(self.update_size)
+        cb_core.change_mf_style.connect(self.update_style)
         
     def populate_menubars(self):
         ## GAME MENU
@@ -226,14 +235,15 @@ class MinegaulerGUI(BaseMainWindow):
         # Change styles options
         styles_menu = QMenu('Styles', self)
         self.game_menu.addMenu(styles_menu)
-        for img_group in ['buttons']:
-            submenu = QMenu(img_group.capitalize(), self)
+        for img_group in [CellImageType.BUTTONS]:
+            img_group_name = img_group.name.capitalize() 
+            submenu = QMenu(img_group_name, self)
             styles_menu.addMenu(submenu)
             group = QActionGroup(self, exclusive=True)
-            for folder in glob(join(img_dir, img_group, '*')):
+            for folder in glob(join(img_dir, img_group_name, '*')):
                 style = basename(folder)
                 style_act = QAction(style, self, checkable=True)
-                if style == 'standard':
+                if style == self.opts.styles[img_group]:
                     style_act.setChecked(True)
                 group.addAction(style_act)
                 style_act.triggered.connect(
@@ -245,6 +255,9 @@ class MinegaulerGUI(BaseMainWindow):
         exit_act.setShortcut('Alt+F4')
         
         ## HELP MENU
+        
+    def update_style(self, img_type, style):
+        self.opts.styles[img_type] = style
         
     def closeEvent(self, event):
         cb_core.save_settings.emit()

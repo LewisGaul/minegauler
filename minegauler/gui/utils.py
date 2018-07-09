@@ -39,8 +39,8 @@ def init_or_update_cell_images(cell_images, size, styles,
         Which images types require updating.
     """
     #@@@ Currently only allows setting button styles.
-    btn_style = styles[CellImageType.BUTTON]
-    if required & CellImageType.BUTTON:
+    btn_style = styles[CellImageType.BUTTONS]
+    if required & CellImageType.BUTTONS:
         cell_images['btn_up'] = make_pixmap('buttons',
                                             btn_style,
                                             'btn_up.png',
@@ -52,7 +52,7 @@ def init_or_update_cell_images(cell_images, size, styles,
         cell_images[CellState.UNCLICKED] = cell_images['btn_up']
         cell_images[CellState.NUM0] = cell_images['btn_down']
         
-    if required & (CellImageType.BUTTON | CellImageType.NUMBER):
+    if required & (CellImageType.BUTTONS | CellImageType.NUMBERS):
         for i in range(1, 19):
             cell_images[CellState.NUMS[i]] = make_pixmap('numbers',
                                                          btn_style,
@@ -61,7 +61,7 @@ def init_or_update_cell_images(cell_images, size, styles,
                                                          'num%d.png' % i,
                                                          7/8)
                                                          
-    if required & (CellImageType.BUTTON | CellImageType.MARKER):
+    if required & (CellImageType.BUTTONS | CellImageType.MARKERS):
         for i in range(1, 4):
             cell_images[CellState.FLAGS[i]] = make_pixmap('markers',
                                                           btn_style,

@@ -33,17 +33,20 @@ class Board(Grid):
 
                 
 class GameOptionsStruct(Struct):
-    elements = ['x_size', 'y_size', 'mines',
-                'first_success', 'per_cell']
-    defaults = {'x_size': 8, 'y_size': 8, 'mines': 10,
-                'first_success': True, 'per_cell': 1}
+    elements = {'x_size': 8,
+                'y_size': 8,
+                'mines': 10,
+                'first_success': True,
+                'per_cell': 1}
                 
 class GUIOptionsStruct(Struct):
-    elements = ['btn_size']
-    defaults = {'btn_size': 32}
+    elements = {'btn_size': 32,
+                'styles': {CellImageType.BUTTONS: 'standard',
+                           CellImageType.NUMBERS: 'standard',
+                           CellImageType.MARKERS: 'standard'},
+                'drag_select': False}
 
 class PersistSettingsStruct(Struct):
-    elements = GameOptionsStruct.elements + GUIOptionsStruct.elements
-    defaults = {**GameOptionsStruct.defaults, **GUIOptionsStruct.defaults}
+    elements = {**GameOptionsStruct.elements, **GUIOptionsStruct.elements}
 
 

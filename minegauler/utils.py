@@ -80,10 +80,10 @@ class GameCellMode(enum.Enum):
     
 
 class CellImageType(enum.Flag):
-    BUTTON = enum.auto()
-    NUMBER = enum.auto()
-    MARKER = enum.auto()
-    ALL = BUTTON | NUMBER | MARKER
+    BUTTONS = enum.auto()
+    NUMBERS = enum.auto()
+    MARKERS = enum.auto()
+    ALL = BUTTONS | NUMBERS | MARKERS
 
 
 class Grid(list):
@@ -189,13 +189,13 @@ class Grid(list):
 
 
 class Struct(dict):
-    elements = []
-    defaults = {}
+    # Mapping of elements to their defaults.
+    elements = {}
     def __init__(self, **kwargs):
         super().__init__()
         for k, v in kwargs.items():
             self[k] = v
-        for k, v in self.defaults.items():
+        for k, v in self.elements.items():
             if k not in self:
                 self[k] = v
     def __getitem__(self, name):
