@@ -6,7 +6,11 @@ March 2018, Lewis Gaul
 
 import sys
 from os.path import join
-import json
+#@@@import json
+try:
+    import cPickle as pickle
+except:
+    import pickle
 from functools import partial
 import logging
 logging.basicConfig(level=logging.DEBUG)
@@ -24,8 +28,8 @@ logging.info("Running...")
 settings = {}
 try:
     logging.info("Reading settings from file")
-    with open(join(root_dir, 'settings.cfg'), 'r') as f:
-        settings = json.load(f)
+    with open(join(root_dir, 'settings.cfg'), 'rb') as f:
+        settings = pickle.load(f)
 except FileNotFoundError:
     logging.info("Unable to read settings from file, will use defaults")
 except json.JSONDecodeError:

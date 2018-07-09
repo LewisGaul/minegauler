@@ -5,7 +5,10 @@ March 2018, Lewis Gaul
 """
 
 from os.path import join
-import json
+try:
+    import cPickle as pickle
+except: #@@@ exception
+    import pickle
 import logging
 
 from minegauler.utils import root_dir
@@ -38,6 +41,6 @@ def save_settings(settings):
       settings (dict)
         Dictionary of settings to save.
     """
-    logger.info("Saving settings to file")
-    with open(join(root_dir, 'settings.cfg'), 'w') as f:
-        json.dump(settings, f)
+    logger.info("Saving settings to file: %s", settings)
+    with open(join(root_dir, 'settings.cfg'), 'wb') as f:
+        pickle.dump(settings, f)
