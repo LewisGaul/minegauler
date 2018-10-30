@@ -4,15 +4,6 @@ utils.py - General utilities
 March 2018, Lewis Gaul
 """
 
-from os.path import dirname, abspath, join
-
-
-def absdir(fpath):
-    return dirname(abspath(fpath))
-
-root_dir = dirname(absdir(__file__))
-files_dir = join(root_dir, 'files')
-
 
 
 class Struct(dict):
