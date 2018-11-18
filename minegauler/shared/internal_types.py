@@ -13,6 +13,7 @@ GameState (Enum)
 """
 
 import enum
+from abc import ABC, abstractmethod
 
 
 
@@ -43,41 +44,7 @@ class CellContentsType(int):
                 "Can only subtract integers from cell contents types")
         else:
             return self.__class__(super().__add__(obj))
-            
-class CellNum(CellContentsType):
-    """
-    Number shown on a minesweeper board.
-    """
-    def __new__(cls, num):
-        if num < 0:
-            raise ValueError("Cell value cannot be negative")
-        else:
-            return super().__new__(cls, num)
-        
-class CellFlag(CellContentsType):
-    """
-    Number of flags shown on a minesweeper board.
-    """
-    def __new__(cls, num):
-        if num < 1:
-            raise ValueError("Flag type intended for 1 or more flags")
-        else:
-            return super().__new__(cls, num)
-    def __repr__(self):
-        return f"F{self}"
-            
-class CellMine(CellContentsType):
-    """
-    Number of mines shown on a minesweeper board.
-    """
-    def __new__(cls, num):
-        if num < 1:
-            raise ValueError("Mine type intended for 1 or more mines")
-        else:
-            return super().__new__(cls, num)
-    def __repr__(self):
-        return f"M{self}"
-        
+
 class CellUnclicked(CellContentsType):
     """
     Unclicked cell on a minesweeper board.
@@ -90,14 +57,77 @@ class CellUnclicked(CellContentsType):
         raise TypeError("Cannot add to unclicked cell")
     def __sub__(self, obj):
         raise TypeError("Cannot subtract from unclicked cell")
+            
+class CellNum(CellContentsType):
+    """
+    Number shown in a cell on a minesweeper board.
+    """
+    def __new__(cls, num):
+        if num < 0:
+            raise ValueError("Cell value cannot be negative")
+        else:
+            return super().__new__(cls, num)
+        
+class CellMineType(CellContentsType, ABC):
+    """
+    Abstract base class for the number of a mine type in a cell shown on a
+    minesweeper board.
+    """
+    def __new__(cls, num):
+        if num < 1:
+            raise ValueError("Mine-like type intended for 1 or more mines")
+        else:
+            return super().__new__(cls, num)
+    @abstractmethod
+    def __repr__(self):
+        pass
+            
+class CellMine(CellMineType):
+    """
+    Number of mines in a cell shown on a minesweeper board.
+    """
+    def __repr__(self):
+        return f"M{self}"
+            
+class CellHit(CellMineType):
+    """
+    Number of hit mines in a cell shown on a minesweeper board.
+    """
+    def __repr__(self):
+        return f"!{self}"
+
+class CellFlag(CellMineType):
+    """
+    Number of flags in a cell shown on a minesweeper board.
+    """
+    def __repr__(self):
+        return f"F{self}"
+        
+class CellWrongFlag(CellMineType):
+    """
+    Number of incorrect flags in a cell shown on a minesweeper board.
+    """
+    def __repr__(self):
+        return f"X{self}"
     
         
     
-class GameState(enum.Enum):
+class GameState(str, enum.Enum):
     """
     Enum representing the state of a game.
     """
-    READY  = enum.auto()
-    ACTIVE = enum.auto()
-    WON    = enum.auto()
-    LOST   = enum.auto()
+    INVALID = 'INVALID'
+    READY   = 'READY'
+    ACTIVE  = 'ACTIVE'
+    WON     = 'WON'
+    LOST    = 'LOST'
+    
+
+class GameFlagMode(enum.Enum):
+    """
+    Game modes for different behaviour when flagging.
+    """
+    NORMAL = 'Original style'
+    SPLIT  = 'Cells split instead of flagging'
+    SPLIT1 = SPLIT
+    SPLIT2 = 'Cells split twice'
