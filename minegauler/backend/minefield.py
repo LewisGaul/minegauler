@@ -30,6 +30,8 @@ class Minefield(Grid):
         Number of mines.
     per_cell (int > 0)
         Maximum number of mines per cell.
+    is_created (bool)
+        Whether the minefield has been created or not.
     mine_coords ([(int, int), ...])
          List of mine coordinates in (x, y) format.
     completed_board (Board)
@@ -76,6 +78,7 @@ class Minefield(Grid):
                 f"and only up to {per_cell} allowed per cell.")
         # Initialise grid and attributes.
         super().__init__(x_size, y_size)
+        self.is_created      = False
         self.mines           = mines
         self.per_cell        = per_cell
         self.mine_coords     = None
@@ -126,6 +129,8 @@ class Minefield(Grid):
         mf._get_completed_board()
         mf._find_openings()
         mf._calc_3bv()
+        mf.is_created = True
+        
         return mf
 
     def create(self, safe_coords=None):
@@ -138,7 +143,7 @@ class Minefield(Grid):
         safe_coords ([(int, int), ...] | None)
             List of coordinates which should not contain any mines.
         """
-        if self.mine_coords is not None:
+        if self.is_created:
             raise TypeError("Minefield already created")
         if safe_coords is not None:
             mine_spaces = len(self.all_coords) - len(set(safe_coords))
@@ -164,6 +169,7 @@ class Minefield(Grid):
         self._get_completed_board()
         self._find_openings()
         self._calc_3bv()
+        self.is_created = True
 
     def cell_contains_mine(self, coord):
         """

@@ -11,6 +11,7 @@ root directory.
 import pytest
 
 from minegauler.shared.internal_types import *
+from minegauler.backend.utils import Grid
 from minegauler.backend.minefield import Minefield
 
 
@@ -58,11 +59,11 @@ class TestMinefield:
         mf = Minefield.create_from_list(self.x, self.y, mine_coords)
         self.check_mf_created(mf)
         assert mf.per_cell == 2
-        exp_completed_board = [
-            ['F1', 3,   0,  0],
-            ['F2', 4,   1,  1],
-            [  2,  3, 'F1', 1]
-            ]
+        exp_completed_board = Grid.from_2d_array(
+            [['F1', 3,   0,  0],
+             ['F2', 4,   1,  1],
+             [  2,  3, 'F1', 1]]
+        )
         exp_openings = [[(1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)]]
         exp_3bv = 4
         self.check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board)
@@ -71,11 +72,11 @@ class TestMinefield:
         mf = Minefield.create_from_list(self.x, self.y, mine_coords)
         self.check_mf_created(mf)
         assert mf.per_cell == 1
-        exp_completed_board = [
-            ['F1', 1,   0,  0],
-            [  1,  2,   1,  1],
-            [  0,  1, 'F1', 1]
-            ]
+        exp_completed_board = Grid.from_2d_array(
+            [['F1', 1,   0,  0],
+             [  1,  2,   1,  1],
+             [  0,  1, 'F1', 1]]
+        )
         exp_openings = [
             [(1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)],
             [(0, 1), (0, 2), (1, 1), (1, 2)]
@@ -93,7 +94,7 @@ class TestMinefield:
         mf = Minefield(2, 1, mines=3, per_cell=3, safe_coords=[(0, 0)])
         self.check_mf_created(mf)
         assert mf.mine_coords == [(1, 0), (1, 0), (1, 0)]
-        self.check_mf_correct(mf, 1, [], [[3, 'F3']])
+        self.check_mf_correct(mf, 1, [], Grid.from_2d_array([[3, 'F3']]))
         # Check creation with only one space.
         mf = Minefield(self.x, self.y, self.x*self.y - 1, 1)
         self.check_mf_created(mf)
@@ -116,9 +117,9 @@ class TestMinefield:
     def test_create_errors(self):
         # Check error when too many mines.
         with pytest.raises(ValueError):
-            mf = Minefield(self.x, self.y, self.x*self.y, per_cell=1)
+            Minefield(self.x, self.y, self.x*self.y, per_cell=1)
         with pytest.raises(ValueError):
-            mf = Minefield(self.x, self.y, self.x*self.y - 1, per_cell=1,
+            Minefield(self.x, self.y, self.x*self.y - 1, per_cell=1,
                            safe_coords=[(0, 0), (1, 1)])
         mf = Minefield(self.x, self.y, self.x*self.y - 1, per_cell=1,
                        create=False, safe_coords=[(0, 0), (1, 1)])
@@ -129,18 +130,22 @@ class TestMinefield:
         with pytest.raises(TypeError):
             mf.create()
     
-    def test_print(self):
+    def test_stringify(self):
         mf = Minefield(self.x, self.y, self.mines, self.per_cell)
-        repr = mf.__repr__()
-        string = str(mf)
-        repr = mf.completed_board.__repr__()
-        string = str(mf.completed_board)
+        repr(mf)
+        str(mf)
+        repr(mf.completed_board)
+        str(mf.completed_board)
     
     # --------------------------------------------------------------------------
     # Helper methods
     # --------------------------------------------------------------------------
-    def check_mf_created(self, mf):
-        # Check minefield was created.
+    @staticmethod
+    def check_mf_created(mf):
+        """
+        Check minefield was created.
+        """
+        assert mf.is_created
         assert mf.mine_coords is not None
         assert len(mf.mine_coords) == mf.mines
         max_mines_in_cell = max(mf.mine_coords.count(c) for c in mf.mine_coords)
@@ -152,7 +157,7 @@ class TestMinefield:
         # Check opening coords and completed board are sane.
         opening_coords = [c for grp in mf.openings for c in grp]
         assert all([opening_coords.count(c) == 1 for c in mf.all_coords
-                                                        if mf[c] == CellNum(0)])
+                    if mf[c] == CellNum(0)])
         for c in mf.all_coords:
             if c in mf.mine_coords:
                 assert mf[c] > 0
@@ -163,8 +168,9 @@ class TestMinefield:
                 assert type(mf.completed_board[c]) is CellNum
                 if mf.completed_board[c] == 0:
                     assert c in opening_coords
-    
-    def check_mf_correct(self, mf, exp_3bv, exp_openings, exp_completed_board):
+
+    @staticmethod
+    def check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board):
         assert len(mf.openings) == len(exp_openings)
         for grp in exp_openings:
             assert grp in mf.openings
@@ -174,10 +180,9 @@ class TestMinefield:
             if mf.cell_contains_mine(c):
                 assert mf.completed_board[c] == CellFlag(mf.mine_coords.count(c))
             else:
-                assert mf.completed_board[c] == CellNum(
-                                                exp_completed_board[c[1]][c[0]])
-                
-        
+                assert mf.completed_board[c] == CellNum(exp_completed_board[c])
+
+
 
 
 

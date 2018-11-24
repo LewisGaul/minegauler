@@ -78,10 +78,10 @@ class Grid(list):
         for row in self:
             for obj in row:
                 if mapping is not None:
-                    repr = str(mapping(obj))
+                    rep = str(mapping(obj))
                 else:
-                    repr = obj.__repr__()
-                ret += cell.format(repr[:cell_size]) + ' '
+                    rep = repr(obj)
+                ret += cell.format(rep[:cell_size]) + ' '
             ret = ret[:-1] # Remove trailing space
             ret += '\n'
         ret = ret[:-1] # Remove trailing newline
@@ -98,7 +98,27 @@ class Grid(list):
             self[key[1]][key[0]] = value
         else:
             super().__setitem__(key, value)
-            
+
+    @classmethod
+    def from_2d_array(cls, array):
+        """
+        Create an instance using a 2-dimensional array.
+
+        Arguments:
+        array ([[object, ...], ...])
+            The array to use in creating the grid instance.
+
+        Return: Grid
+            The resulting grid.
+        """
+        x_size = len(array[0])
+        y_size = len(array)
+        grid = cls(x_size, y_size)
+        for coord in grid.all_coords:
+            x, y = coord
+            grid[coord] = array[y][x]
+        return grid
+
     def fill(self, item):
         """
         Fill the grid with a given object.
