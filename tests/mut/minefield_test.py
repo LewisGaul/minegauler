@@ -10,9 +10,9 @@ root directory.
 
 import pytest
 
-from minegauler.shared.internal_types import *
-from minegauler.backend.utils import Grid
 from minegauler.backend.minefield import Minefield
+from minegauler.backend.utils import Grid, Board
+from minegauler.shared.internal_types import *
 
 
 class TestMinefield:
@@ -21,7 +21,7 @@ class TestMinefield:
     per_cell = 2
     # --------------------------------------------------------------------------
     # Test cases
-    # --------------------------------------------------------------------------
+    #  -------------------------------------------------------------------------
     def test_create_basic(self):
         # Check basic creation.
         mf = Minefield(self.x, self.y, self.mines, self.per_cell)
@@ -53,13 +53,13 @@ class TestMinefield:
         else:
             assert False, "Expected opening due to safe coords"
         
-    def test_create_from_list(self):
+    def test_from_mines_list(self):
         # Check creation from a list of mine coords.
         mine_coords = [(0, 0), (0, 1), (0, 1), (2, 2)]
-        mf = Minefield.create_from_list(self.x, self.y, mine_coords)
+        mf = Minefield.from_mines_list(self.x, self.y, mine_coords)
         self.check_mf_created(mf)
         assert mf.per_cell == 2
-        exp_completed_board = Grid.from_2d_array(
+        exp_completed_board = Board.from_2d_array(
             [['F1', 3,   0,  0],
              ['F2', 4,   1,  1],
              [  2,  3, 'F1', 1]]
@@ -69,10 +69,10 @@ class TestMinefield:
         self.check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board)
         
         mine_coords = [(0, 0), (2, 2)]
-        mf = Minefield.create_from_list(self.x, self.y, mine_coords)
+        mf = Minefield.from_mines_list(self.x, self.y, mine_coords)
         self.check_mf_created(mf)
         assert mf.per_cell == 1
-        exp_completed_board = Grid.from_2d_array(
+        exp_completed_board = Board.from_2d_array(
             [['F1', 1,   0,  0],
              [  1,  2,   1,  1],
              [  0,  1, 'F1', 1]]
@@ -94,7 +94,7 @@ class TestMinefield:
         mf = Minefield(2, 1, mines=3, per_cell=3, safe_coords=[(0, 0)])
         self.check_mf_created(mf)
         assert mf.mine_coords == [(1, 0), (1, 0), (1, 0)]
-        self.check_mf_correct(mf, 1, [], Grid.from_2d_array([[3, 'F3']]))
+        self.check_mf_correct(mf, 1, [], Board.from_2d_array([[3, 'F3']]))
         # Check creation with only one space.
         mf = Minefield(self.x, self.y, self.x*self.y - 1, 1)
         self.check_mf_created(mf)
@@ -143,7 +143,7 @@ class TestMinefield:
     @staticmethod
     def check_mf_created(mf):
         """
-        Check minefield was created.
+        Check minefield was created properly.
         """
         assert mf.is_created
         assert mf.mine_coords is not None
@@ -171,16 +171,26 @@ class TestMinefield:
 
     @staticmethod
     def check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board):
+        """
+        Check created minefield is correct.
+
+        Arguments:
+        mf (Minefield)
+            The minefield to check.
+        exp_3bv (int)
+            The expected 3bv of the minefield.
+        exp_openings ([[(int, int), ...], ...])
+            The expected openings.
+        exp_completed_board (Board)
+            The expected contents of the completed board.
+        """
         assert len(mf.openings) == len(exp_openings)
         for grp in exp_openings:
             assert grp in mf.openings
         assert mf.bbbv == exp_3bv
         for c in mf.all_coords:
             assert mf[c] == mf.mine_coords.count(c)
-            if mf.cell_contains_mine(c):
-                assert mf.completed_board[c] == CellFlag(mf.mine_coords.count(c))
-            else:
-                assert mf.completed_board[c] == CellNum(exp_completed_board[c])
+            assert mf.completed_board[c] == exp_completed_board[c]
 
 
 

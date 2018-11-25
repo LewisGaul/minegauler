@@ -93,7 +93,7 @@ class Minefield(Grid):
         return f"<{self.x_size}x{self.y_size} minefield{mines_str}>"
 
     @classmethod
-    def create_from_list(cls, x_size, y_size, mine_coords, per_cell=1):
+    def from_mines_list(cls, x_size, y_size, mine_coords, per_cell=1):
         """
         Create a minefield with a list of coordinates of where mines are to
         lie.
@@ -121,8 +121,8 @@ class Minefield(Grid):
                 "Overriding passed in per_cell value of %d, using %d",
                 per_cell, max_mines_in_cell)
             per_cell = max_mines_in_cell
-            
-        mf = cls(x_size, y_size, len(mine_coords), per_cell, False)
+
+        mf = cls(x_size, y_size, len(mine_coords), per_cell, create=False)
         mf.mine_coords = sorted(mine_coords)
         for c in mine_coords:
             mf[c] += 1
@@ -130,8 +130,41 @@ class Minefield(Grid):
         mf._find_openings()
         mf._calc_3bv()
         mf.is_created = True
-        
+
         return mf
+
+    @classmethod
+    def from_grid(cls, grid, per_cell=1):
+        """
+        Create a minefield with a grid showing where mines are to lie.
+
+        Arguments:
+        grid (Grid)
+            The grid of mines.
+        per_cell=1 (int > 0)
+            The maximum number of mines per cell. If the number of occurrences
+            of any of the coordinates in the list exceeds this value, the
+            per_cell value will be increased to accommodate this, overriding the
+            passed in value.
+
+        Return: Minefield
+            The created minefield.
+        """
+        mine_coords = []
+        for c in grid.all_coords:
+            for _ in range(grid[c]):
+                mine_coords.append(c)
+
+        return cls.from_mines_list(grid.x_size, grid.y_size, mine_coords,
+                                   per_cell)
+    
+    @classmethod
+    def from_2d_array(cls, array, per_cell=1):
+        """
+        See minegauler.backend.utils.Grid and Minefield.from_grid().
+        """
+        grid = super().from_2d_array(array)
+        return cls.from_grid(grid, per_cell)
 
     def create(self, safe_coords=None):
         """
@@ -142,6 +175,12 @@ class Minefield(Grid):
         Arguments:
         safe_coords ([(int, int), ...] | None)
             List of coordinates which should not contain any mines.
+
+        Raises:
+        TypeError
+            - Minefield already created.
+        ValueError
+            - Not enough space for mines.
         """
         if self.is_created:
             raise TypeError("Minefield already created")

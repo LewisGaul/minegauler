@@ -12,7 +12,7 @@ Board (class)
 
 import logging
 
-from minegauler.shared.internal_types import CellContentsType, CellUnclicked
+from minegauler.shared.internal_types import *
 
 
 logger = logging.getLogger(__name__)
@@ -178,10 +178,34 @@ class Board(Grid):
         else:
             super().__setitem__(key, value)
 
+    @classmethod
+    def from_2d_array(cls, array):
+        """
+        Create a minesweeper board from a 2-dimensional array of string
+        representations for cell contents.
 
+        Arguments:
+        array ([[str|int, ...], ...])
+            The array to create the board from.
 
+        Return:
+            The created board.
 
-
-
-
+        Raises:
+        ValueError
+            - Invalid string representation of cell contents.
+        """
+        grid = Grid.from_2d_array(array)
+        board = cls(grid.x_size, grid.y_size)
+        for c in grid.all_coords:
+            if type(grid[c]) is int:
+                board[c] = CellNum(grid[c])
+            elif type(grid[c]) is str and len(grid[c]) == 2:
+                char, num = grid[c]
+                board[c] = CellMineType.get_class_from_char(char)(int(num))
+            elif grid[c] != CellUnclicked.char:
+                raise ValueError(
+                    f"Unknown cell contents representation in cell {c}: "
+                    f"{grid[c]}")
+        return board
 

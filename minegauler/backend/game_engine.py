@@ -204,6 +204,11 @@ class Controller(AbstractController):
         # The frontends registered for updates.
         self.frontends = []
         # Game-specific data.
+        self.game_state = GameState.INVALID
+        self.mines_remaining = 0
+        self.lives_remaining = 0
+        self.start_time = None
+        self.end_time = None
         self.mf = Minefield(self.opts.x_size, self.opts.y_size, self.opts.mines,
                             self.opts.per_cell, create=False)
         self._init_game()
@@ -249,9 +254,22 @@ class Controller(AbstractController):
                 # Create the minefield.
                 if self.opts.first_success:
                     safe_coords = self.mf.get_nbrs(coord, include_origin=True)
+                    logger.debug(
+                        "Trying to create minefield with the following safe "
+                        "coordinates: %s", safe_coords)
+                    try:
+                        self.mf.create(safe_coords)
+                    except ValueError:
+                        logger.info(
+                            "Unable to give opening on the first click, "
+                            "still ensuring a safe click")
+                        self.mf.create(safe_coords=[coord])
+                    else:
+                        logger.debug("Success")
                 else:
-                    safe_coords = []
-                self.mf.create(safe_coords)
+                    self.mf.create()
+                    logger.debug(
+                        "Creating minefield with first success turned off")
             self.game_state = GameState.ACTIVE
             self.start_time = tm.time()
             
@@ -429,7 +447,7 @@ class Controller(AbstractController):
                     type(self.board[c]) is not CellHit):
                     self._set_cell(c, CellFlag(self.mf[c]))
                     
-    def _split_cell(coord):
+    def _split_cell(self, coord):
         """
         Split a cell.
         """
