@@ -93,7 +93,7 @@ class Minefield(Grid):
         return f"<{self.x_size}x{self.y_size} minefield{mines_str}>"
 
     @classmethod
-    def from_mines_list(cls, x_size, y_size, mine_coords, per_cell=1):
+    def from_mines_list(cls, x_size, y_size, mine_coords, per_cell=None):
         """
         Create a minefield with a list of coordinates of where mines are to
         lie.
@@ -106,17 +106,20 @@ class Minefield(Grid):
         mine_coords ([(int, int), ...])
             List of mine coordinates, which must fit within the dimensions of
             the minefield.
-        per_cell=1 (int > 0)
-            The maximum number of mines per cell. If the number of occurrences
-            of any of the coordinates in the list exceeds this value, the
-            per_cell value will be increased to accommodate this, ignoring the
-            passed in value.
+        per_cell=None (int > 0 | None)
+            Optionally specify the maximum number of mines per cell,
+            otherwise the maximum number found will be used. If the number of
+            occurrences of any of the coordinates in the grid exceeds this
+            value, the per_cell value will be increased to accommodate this,
+            overriding the passed in value.
             
         Return: Minefield
-            The minefield that was created.
+            The created minefield.
         """
         max_mines_in_cell = max(mine_coords.count(c) for c in mine_coords)
-        if max_mines_in_cell > per_cell:
+        if not per_cell:
+            per_cell = max_mines_in_cell
+        elif max_mines_in_cell > per_cell:
             logger.warning(
                 "Overriding passed in per_cell value of %d, using %d",
                 per_cell, max_mines_in_cell)
@@ -134,18 +137,19 @@ class Minefield(Grid):
         return mf
 
     @classmethod
-    def from_grid(cls, grid, per_cell=1):
+    def from_grid(cls, grid, per_cell=None):
         """
         Create a minefield with a grid showing where mines are to lie.
 
         Arguments:
         grid (Grid)
             The grid of mines.
-        per_cell=1 (int > 0)
-            The maximum number of mines per cell. If the number of occurrences
-            of any of the coordinates in the list exceeds this value, the
-            per_cell value will be increased to accommodate this, overriding the
-            passed in value.
+        per_cell=None (int > 0 | None)
+            Optionally specify the maximum number of mines per cell,
+            otherwise the maximum number found will be used. If the number of
+            occurrences of any of the coordinates in the grid exceeds this
+            value, the per_cell value will be increased to accommodate this,
+            overriding the passed in value.
 
         Return: Minefield
             The created minefield.
@@ -159,11 +163,11 @@ class Minefield(Grid):
                                    per_cell)
     
     @classmethod
-    def from_2d_array(cls, array, per_cell=1):
+    def from_2d_array(cls, array, per_cell=None):
         """
         See minegauler.backend.utils.Grid and Minefield.from_grid().
         """
-        grid = super().from_2d_array(array)
+        grid = Grid.from_2d_array(array)
         return cls.from_grid(grid, per_cell)
 
     def create(self, safe_coords=None):

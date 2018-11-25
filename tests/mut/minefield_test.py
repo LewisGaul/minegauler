@@ -83,7 +83,31 @@ class TestMinefield:
             ]
         exp_3bv = 3
         self.check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board)
-    
+
+    def test_from_array(self):
+        array = [
+            [0, 0, 1, 2],
+            [0, 0, 0, 1],
+            [0, 1, 0, 0]
+        ]
+        grid = Grid.from_2d_array(array)
+        exp_mine_coords = [(1, 2), (2, 0), (3, 0), (3, 0), (3, 1)]
+        exp_3bv = 5
+        exp_openings = [[(0, 0), (0, 1), (1, 0), (1, 1)]]
+        exp_completed_board = Board.from_2d_array([
+            [0,   1, 'F1', 'F2'],
+            [1,   2,   5 , 'F1'],
+            [1, 'F1',  2,    1 ]
+        ])
+        # Check creation from a grid.
+        mf = Minefield.from_grid(grid)
+        assert set(mf.mine_coords) == set(exp_mine_coords)
+        self.check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board)
+        # Check creation from a 2D list.
+        mf = Minefield.from_2d_array(array)
+        assert set(mf.mine_coords) == set(exp_mine_coords)
+        self.check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board)
+
     def test_create_extremes(self):
         # Check creation with only 1 mine.
         mf = Minefield(10, 10, 1, self.per_cell)
