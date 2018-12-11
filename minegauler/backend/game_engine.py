@@ -502,7 +502,7 @@ class Controller(AbstractController):
         """
         if self.board[coord] == state:
             return
-        
+
         self.board[coord] = state
         self._cell_updates[coord] = state
                         

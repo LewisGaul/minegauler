@@ -378,13 +378,17 @@ class TestController:
         pass
 
     def test_new_game(self, frontend1):
+        """Only require a single controller when able to create new games."""
         ctrlr = Controller(self.opts)
         ctrlr.register_callback(frontend1)
 
-        # Start a new game before doing anything else.
+        # Start a new game before doing anything else with minefield.
+        ctrlr.mf = self.mf
+        assert ctrlr.mf.is_created
         ctrlr.new_game()
         assert ctrlr.game_state == GameState.READY
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
+        assert not ctrlr.mf.is_created
         assert_reset_call_count(frontend1, 0)
 
         # Start a new game that isn't started but has flags.
@@ -423,11 +427,56 @@ class TestController:
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         assert_reset_call_count(frontend1, 1)
 
+    def test_restart_game(self, frontend1):
+        """Only require a single controller."""
+        ctrlr = Controller(self.opts)
+        ctrlr.register_callback(frontend1)
 
+        # Replay before doing anything else without minefield.
+        ctrlr.restart_game()
+        assert ctrlr.game_state == GameState.READY
+        assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
+        assert not ctrlr.mf.is_created
+        assert_reset_call_count(frontend1, 0)
 
-    @pytest.mark.skip
-    def test_replay_game(self):
-        pass
+        # Replay before doing anything else with minefield.
+        ctrlr.mf = self.mf
+        ctrlr.restart_game()
+        assert ctrlr.game_state == GameState.READY
+        assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
+        assert ctrlr.mf == self.mf
+        assert_reset_call_count(frontend1, 0)
+
+        # Restart a game that isn't started but has flags.
+        ctrlr.flag_cell((0, 0))
+        ctrlr.flag_cell((1, 0))
+        ctrlr.flag_cell((1, 0))
+        frontend1.reset_mock()
+        ctrlr.restart_game()
+        assert ctrlr.game_state == GameState.READY
+        assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
+        assert ctrlr.mf == self.mf
+        assert_reset_call_count(frontend1, 1)
+
+        # Restart game mid-game.
+        ctrlr.select_cell((0, 0))
+        assert ctrlr.game_state == GameState.ACTIVE
+        frontend1.reset_mock()
+        ctrlr.restart_game()
+        assert ctrlr.game_state == GameState.READY
+        assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
+        assert ctrlr.mf == self.mf
+        assert_reset_call_count(frontend1, 1)
+
+        # Start a new game on finished game.
+        ctrlr.select_cell((3, 0))
+        assert ctrlr.game_state == GameState.LOST
+        frontend1.reset_mock()
+        ctrlr.restart_game()
+        assert ctrlr.game_state == GameState.READY
+        assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
+        assert ctrlr.mf == self.mf
+        assert_reset_call_count(frontend1, 1)
 
     @pytest.mark.skip
     def test_callback_updates(self):
