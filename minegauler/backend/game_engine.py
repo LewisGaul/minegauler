@@ -448,15 +448,26 @@ class Controller(AbstractController):
                 self.end_time = tm.time()
                 logger.info("Game lost")
                 self.game_state = GameState.LOST
+
                 for c in self.mf.all_coords:
                     if (self.mf.cell_contains_mine(c) and
                         self.board[c] == CellUnclicked()):
                         self._set_cell(c, CellMine(self.mf[c]))
+                        
                     elif (type(self.board[c]) is CellFlag and
                           self.board[c] != self.mf.completed_board[c]):
                         self._set_cell(c, CellWrongFlag(self.board[c]))
                         
         elif self.mf.completed_board[coord] == CellNum(0):
+            for full_opening in self.mf.openings:
+                if coord in full_opening:
+                    # Found the opening, quit the loop here.
+                    logger.debug("Opening hit: %s", full_opening)
+                    break
+            else:
+                logger.error("Coordinate %s not found in openings %s",
+                             coord, self.mf.openings)
+
             # Get the propagation of cells forming part of the opening.
             opening = set()  # Coords belonging to the opening
             check = {coord}  # Coords whose neighbours need checking
@@ -469,7 +480,7 @@ class Controller(AbstractController):
                           if self.mf.completed_board[z] == CellNum(0)}
                 opening |= unclicked_nbrs
 
-            logger.debug("Opening hit: %s", list(opening))
+            logger.debug("Propagated opening: %s", list(opening))
             bad_opening_cells = {}
             for c in opening:
                 if self.board[c] == CellUnclicked():
