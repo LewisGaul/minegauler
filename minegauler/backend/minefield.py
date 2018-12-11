@@ -44,8 +44,9 @@ class Minefield(Grid):
     bbbv (int > 0)
         The 3bv of the minefield.
     """
-    def __init__(self, x_size, y_size, mines,
-                 per_cell=1, create=True, safe_coords=None):
+
+    def __init__(self, x_size, y_size, mines, per_cell=1, *,
+                 create=True, safe_coords=None):
         """
         Create a minefield. ValueError is raised if the mines can't fit into
         the available cells, as determined by the list of safe coordinates
@@ -67,6 +68,7 @@ class Minefield(Grid):
             List of coordinates that should not contain a mine when filling the
             minefield. Ignored if not creating the minefield at initialisation.
         """
+
         if create and safe_coords is not None:
             mine_spaces = x_size * y_size - max(1, len(set(safe_coords)))
         else:

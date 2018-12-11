@@ -19,6 +19,7 @@ class TestMinefield:
     x, y = 4, 3
     mines = 5
     per_cell = 2
+
     # --------------------------------------------------------------------------
     # Test cases
     #  -------------------------------------------------------------------------
@@ -59,11 +60,11 @@ class TestMinefield:
         mf = Minefield.from_mines_list(self.x, self.y, mine_coords)
         self.check_mf_created(mf)
         assert mf.per_cell == 2
-        exp_completed_board = Board.from_2d_array(
-            [['F1', 3,   0,  0],
-             ['F2', 4,   1,  1],
-             [  2,  3, 'F1', 1]]
-        )
+        exp_completed_board = Board.from_2d_array([
+            ['F1',  3,   0 ,  0],
+            ['F2',  4,   1 ,  1],
+            [  2 ,  3, 'F1',  1],
+        ])
         exp_openings = [[(1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)]]
         exp_3bv = 4
         self.check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board)
@@ -72,14 +73,14 @@ class TestMinefield:
         mf = Minefield.from_mines_list(self.x, self.y, mine_coords)
         self.check_mf_created(mf)
         assert mf.per_cell == 1
-        exp_completed_board = Board.from_2d_array(
-            [['F1', 1,   0,  0],
-             [  1,  2,   1,  1],
-             [  0,  1, 'F1', 1]]
-        )
+        exp_completed_board = Board.from_2d_array([
+            ['F1',  1,   0 ,  0],
+            [  1 ,  2,   1 ,  1],
+            [  0 ,  1, 'F1',  1],
+        ])
         exp_openings = [
             [(1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)],
-            [(0, 1), (0, 2), (1, 1), (1, 2)]
+            [(0, 1), (0, 2), (1, 1), (1, 2)],
             ]
         exp_3bv = 3
         self.check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board)
@@ -88,21 +89,23 @@ class TestMinefield:
         array = [
             [0, 0, 1, 2],
             [0, 0, 0, 1],
-            [0, 1, 0, 0]
+            [0, 1, 0, 0],
         ]
         grid = Grid.from_2d_array(array)
         exp_mine_coords = [(1, 2), (2, 0), (3, 0), (3, 0), (3, 1)]
         exp_3bv = 5
         exp_openings = [[(0, 0), (0, 1), (1, 0), (1, 1)]]
         exp_completed_board = Board.from_2d_array([
-            [0,   1, 'F1', 'F2'],
-            [1,   2,   5 , 'F1'],
-            [1, 'F1',  2,    1 ]
+            [ 0,   1 , 'F1', 'F2'],
+            [ 1,   2 ,   5 , 'F1'],
+            [ 1, 'F1',   2 ,   1 ],
         ])
+
         # Check creation from a grid.
         mf = Minefield.from_grid(grid)
         assert set(mf.mine_coords) == set(exp_mine_coords)
         self.check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board)
+
         # Check creation from a 2D list.
         mf = Minefield.from_2d_array(array)
         assert set(mf.mine_coords) == set(exp_mine_coords)

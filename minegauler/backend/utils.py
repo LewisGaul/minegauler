@@ -131,7 +131,7 @@ class Grid(list):
             for i in range(len(row)):
                 row[i] = item
 
-    def get_nbrs(self, coord, include_origin=False):
+    def get_nbrs(self, coord, *, include_origin=False):
         """
         Get a list of the coordinates of neighbouring cells.
         
