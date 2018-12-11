@@ -457,19 +457,29 @@ class Controller(AbstractController):
                         self._set_cell(c, CellWrongFlag(self.board[c]))
                         
         elif self.mf.completed_board[coord] == CellNum(0):
-            for opening in self.mf.openings:
-                if coord in opening:
-                    # Found the opening, quit the loop here.
-                    break
-            else:
-                logger.error("Coordinate %s not found in openings %s",
-                             coord, self.mf.openings)
-                raise RuntimeError(
-                    f"Expected there to be an opening containing coord {coord}")
-            logger.debug("Opening hit: %s", opening)
+            # Get the propagation of cells forming part of the opening.
+            opening = set()  # Coords belonging to the opening
+            check = {coord}  # Coords whose neighbours need checking
+            while check:
+                c = check.pop()
+                unclicked_nbrs = {
+                    z for z in self.board.get_nbrs(c, include_origin=True)
+                    if self.board[z] == CellUnclicked()}
+                check |= {z for z in unclicked_nbrs - opening
+                          if self.mf.completed_board[z] == CellNum(0)}
+                opening |= unclicked_nbrs
+
+            logger.debug("Opening hit: %s", list(opening))
+            bad_opening_cells = {}
             for c in opening:
                 if self.board[c] == CellUnclicked():
                     self._set_cell(c, self.mf.completed_board[c])
+                else:
+                    bad_opening_cells[c] = self.board[c]
+            if bad_opening_cells:
+                logger.error(
+                    "Should only have clicked cells in opening, found: %s",
+                    bad_opening_cells)
                     
         else:
             logger.debug("Regular cell revealed")
