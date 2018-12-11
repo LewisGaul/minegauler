@@ -271,7 +271,6 @@ class Controller(AbstractController):
     # --------------------------------------------------------------------------
     # Methods triggered by user interaction
     # --------------------------------------------------------------------------
-    @_ignore_if(game_state='READY')
     def new_game(self):
         """See AbstractController."""
         
@@ -285,7 +284,7 @@ class Controller(AbstractController):
             
         self._send_callback_updates()
     
-    @_ignore_if(game_state=('INVALID', 'READY'))
+    @_ignore_if(game_state='INVALID')
     def restart_game(self):
         """See AbstractController."""
         
@@ -453,7 +452,7 @@ class Controller(AbstractController):
                     if (self.mf.cell_contains_mine(c) and
                         self.board[c] == CellUnclicked()):
                         self._set_cell(c, CellMine(self.mf[c]))
-                        
+
                     elif (type(self.board[c]) is CellFlag and
                           self.board[c] != self.mf.completed_board[c]):
                         self._set_cell(c, CellWrongFlag(self.board[c]))
@@ -501,6 +500,9 @@ class Controller(AbstractController):
         Set a cell to be in the given state, storing the change to be sent to
         the UI when _send_callback_updates() is called.
         """
+        if self.board[coord] == state:
+            return
+        
         self.board[coord] = state
         self._cell_updates[coord] = state
                         
@@ -534,6 +536,10 @@ class Controller(AbstractController):
     
     def _send_callback_updates(self):
         """See AbstractController."""
+
+        if not self._cell_updates:
+            return
+
         super()._send_callback_updates()
         
         SharedInfo.cell_updates = self._cell_updates

@@ -65,6 +65,7 @@ class TestController:
         for cb in [frontend1, frontend2]:
             ctrlr.register_callback(cb)
         assert len(ctrlr._registered_callbacks) == 2
+        ctrlr._cell_updates = 'dummy'
         ctrlr._send_callback_updates()
         for cb in [frontend1, frontend2]:
             assert cb.call_count == 1
@@ -376,9 +377,53 @@ class TestController:
     def test_winning(self):
         pass
 
-    @pytest.mark.skip
-    def test_new_game(self):
-        pass
+    def test_new_game(self, frontend1):
+        ctrlr = Controller(self.opts)
+        ctrlr.register_callback(frontend1)
+
+        # Start a new game before doing anything else.
+        ctrlr.new_game()
+        assert ctrlr.game_state == GameState.READY
+        assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
+        assert_reset_call_count(frontend1, 0)
+
+        # Start a new game that isn't started but has flags.
+        ctrlr.flag_cell((0, 0))
+        ctrlr.flag_cell((1, 0))
+        ctrlr.flag_cell((1, 0))
+        assert ctrlr.board != Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
+        frontend1.reset_mock()
+        ctrlr.new_game()
+        assert ctrlr.game_state == GameState.READY
+        assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
+        assert_reset_call_count(frontend1, 1)
+
+        # Start a new game mid-game.
+        ctrlr.select_cell((0, 0))
+        assert ctrlr.game_state == GameState.ACTIVE
+        assert ctrlr.mf.is_created
+        assert ctrlr.board != Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
+        frontend1.reset_mock()
+        ctrlr.new_game()
+        assert ctrlr.game_state == GameState.READY
+        assert not ctrlr.mf.is_created
+        assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
+        assert_reset_call_count(frontend1, 1)
+
+        # Start a new game on finished game.
+        ctrlr.mf = self.mf
+        ctrlr.select_cell((3, 0))
+        assert ctrlr.game_state == GameState.LOST
+        assert ctrlr.mf.is_created
+        assert ctrlr.board != Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
+        frontend1.reset_mock()
+        ctrlr.new_game()
+        assert ctrlr.game_state == GameState.READY
+        assert not ctrlr.mf.is_created
+        assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
+        assert_reset_call_count(frontend1, 1)
+
+
 
     @pytest.mark.skip
     def test_replay_game(self):
