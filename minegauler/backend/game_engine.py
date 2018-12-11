@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 
-def _ignore_if(game_state=None, cell_state=None):
+def _ignore_if(*, game_state=None, cell_state=None):
     """
     Return a decorator which prevents a method from running if any of the given
     parameters are satisfied.
@@ -61,7 +61,7 @@ def _ignore_if(game_state=None, cell_state=None):
     return decorator
 
 
-def _ignore_if_not(game_state=None, cell_state=None):
+def _ignore_if_not(*, game_state=None, cell_state=None):
     """
     Return a decorator which prevents a method from running if any of the given
     parameters are satisfied.
@@ -137,21 +137,33 @@ class SharedInfo:
 
 class AbstractController(ABC):
     """
-    Abstract controller base class. Frontends can be registered for receiving
-    updates, and the required callback functions are defined as abstract
-    methods.
+    Abstract controller base class. Callbacks can be registered for receiving
+    updates.
     """
+
     def __init__(self):
-        # The frontends registered for updates.
-        self.frontends = []
+        # The registered functions to be called with updates.
+        self._registered_callbacks = []
 
-    def register_frontend(self, frontend):
+    def register_callback(self, callback):
         """
+        Register a frontend to receive updates from a game controller.
+        
+        Arguments:
+        callback (callable, taking one argument)
+            The callback function/method, to be called with the update 
+            information (of type SharedInfo).
+        """
+        logger.info("%s: Registering callback: %s", type(self), callback)
+        self._registered_callbacks.append(callback)
 
+    @abstractmethod
+    def _send_callback_updates(self):
         """
-        if not isinstance(frontend, AbstractFrontend):
-            raise TypeError("Frontend must subclass AbstractFrontend")
-        self.frontends.append(frontend)
+        Send updates using the registered callbacks.
+        """
+        logger.info("%s: Sending updates using registered callbacks",
+                    type(self))
 
     # --------------------------------------------------------------------------
     # Methods triggered by user interaction
@@ -161,51 +173,58 @@ class AbstractController(ABC):
         """
         Create a new game, refresh the board state.
         """
-        logger.info("New game requested, refreshing the board")
+        logger.info("%s: New game requested, refreshing the board", type(self))
+
     @abstractmethod
     def restart_game(self):
         """
         Restart the current game, refresh the board state.
         """
-        logger.info("Restart game requested, refreshing the board")
+        logger.info("%s: Restart game requested, refreshing the board",
+                    type(self))
+
     @abstractmethod
     def select_cell(self, coord):
         """
         Select a cell for a regular click.
         """
-        logger.info("Cell %s selected", coord)
+        logger.info("%s: Cell %s selected", type(self), coord)
+
     @abstractmethod
     def flag_cell(self, coord):
         """
         Select a cell for flagging.
         """
-        logger.info("Cell %s selected for flagging", coord)
+        logger.info("%s: Cell %s selected for flagging", type(self), coord)
+
     @abstractmethod
     def chord_on_cell(self, coord):
         """
         Select a cell for chording.
         """
-        logger.info("Cell %s selected for chording", coord)
+        logger.info("%s: Cell %s selected for chording", type(self), coord)
+
     @abstractmethod
     def remove_cell_flags(self, coord):
         """
         Remove flags in a cell, if any.
         """
-        logger.info("Flags in cell %s being removed", coord)
+        logger.info("%s: Flags in cell %s being removed", type(self), coord)
+
     @abstractmethod
     def change_settings(self, **kwargs):
         """
         Update the settings to be used for future games.
         """
-        logger.info("Changing settings") #@@@
+        logger.info("%s: Changing settings", type(self)) #@@@
 
     @abstractmethod
     def resize_board(self, x_size, y_size, mines):
         """
         Resize the board and/or change the number of mines.
         """
-        logger.info("Resizing the board to %sx%s with %s mines",
-                    x_size, y_size, mines)
+        logger.info("%s: Resizing the board to %sx%s with %s mines",
+                    type(self), x_size, y_size, mines)
 
 
 
@@ -215,15 +234,18 @@ class Controller(AbstractController):
     AbstractController that are called from UI.
     
     Attributes:
-        opts
+    opts (GameOptsStruct)
+        Options for use in games.
     """
+
     def __init__(self, opts):
         """
         Arguments:
         opts (GameOptsStruct)
             Object containing the required game options as attributes.
         """
-        super().__init__(self)
+
+        super().__init__()
 
         for kw in GameOptsStruct._elements:
             if not hasattr(opts, kw):
@@ -261,7 +283,7 @@ class Controller(AbstractController):
         for c in self.board.all_coords:
             self._set_cell(c, CellUnclicked())
             
-        self._send_ui_updates()
+        self._send_callback_updates()
     
     @_ignore_if(game_state=('INVALID', 'READY'))
     def restart_game(self):
@@ -273,7 +295,7 @@ class Controller(AbstractController):
         for c in self.board.all_coords:
             self._set_cell(c, CellUnclicked())
             
-        self._send_ui_updates()
+        self._send_callback_updates()
     
     @_ignore_if_not(game_state=('READY', 'ACTIVE'), cell_state=CellUnclicked)
     def select_cell(self, coord):
@@ -311,7 +333,7 @@ class Controller(AbstractController):
         if self.game_state != GameState.LOST:
             self._check_for_completion()
         
-        self._send_ui_updates()
+        self._send_callback_updates()
 
     @_ignore_if_not(game_state=('READY', 'ACTIVE'),
                     cell_state=(CellFlag, CellUnclicked))
@@ -336,35 +358,33 @@ class Controller(AbstractController):
             if self.board[coord] == CellUnclicked():
                 self._split_cell(coord)
         
-        self._send_ui_updates()
+        self._send_callback_updates()
 
-    @_ignore_if_not(game_state=('READY', 'ACTIVE'), cell_state=CellNum)
+    @_ignore_if_not(game_state='ACTIVE', cell_state=CellNum)
     def chord_on_cell(self, coord):
         """See AbstractController."""
 
         super().chord_on_cell(coord)
 
-        nbrs = self.board.get_nbrs(*coord)
+        nbrs = self.board.get_nbrs(coord)
         num_flagged_nbrs = sum(
             [self.board[c] for c in nbrs
              if isinstance(self.board[c], CellMineType)])
-        logger.debug("%s flagged mine(s) around clicked cell showing number %s",
-                     num_flagged_nbrs, self.board[coord].num)
-
-        if self.board[coord] != CellNum(num_flagged_nbrs):
-            return
+        logger.debug("%s flagged mine(s) around clicked cell showing number %d",
+                     num_flagged_nbrs, self.board[coord])
 
         unclicked_nbrs = [c for c in nbrs if self.board[c] == CellUnclicked()]
+        if self.board[coord] != CellNum(num_flagged_nbrs) or not unclicked_nbrs:
+            return
+
         logger.info("Successful chording, selecting cells %s", unclicked_nbrs)
         for c in unclicked_nbrs:
             self._select_cell_action(c)
-            if self.game_state != GameState.ACTIVE:
-                break
 
         if self.game_state != GameState.LOST:
             self._check_for_completion()
 
-        self._send_ui_updates()
+        self._send_callback_updates()
 
     @_ignore_if_not(game_state=('READY', 'ACTIVE'), cell_state=CellFlag)
     def remove_cell_flags(self, coord):
@@ -375,10 +395,11 @@ class Controller(AbstractController):
         self.mines_remaining += self.board[coord]
         self._set_cell(coord, CellUnclicked())
         
-        self._send_ui_updates()
-
+        self._send_callback_updates()
+        
     def change_settings(self, **kwargs):
         """See AbstractController."""
+        # @@@LG
         super().change_settings(**kwargs)
 
     def resize_board(self, x_size, y_size, mines):
@@ -457,7 +478,7 @@ class Controller(AbstractController):
     def _set_cell(self, coord, state):
         """
         Set a cell to be in the given state, storing the change to be sent to
-        the UI when _send_ui_updates() is called.
+        the UI when _send_callback_updates() is called.
         """
         self.board[coord] = state
         self._cell_updates[coord] = state
@@ -490,11 +511,9 @@ class Controller(AbstractController):
         """
         raise NotImplementedError()
     
-    def _send_ui_updates(self):
-        """
-        Send updates to the registered frontends and reset the cell updates.
-        """
-        logger.debug("Sending updates to registered front-ends")
+    def _send_callback_updates(self):
+        """See AbstractController."""
+        super()._send_callback_updates()
         
         SharedInfo.cell_updates = self._cell_updates
         SharedInfo.game_state = self.game_state
@@ -503,14 +522,11 @@ class Controller(AbstractController):
             SharedInfo.elapsed_time = self.end_time - self.start_time
         else:
             SharedInfo.elapsed_time = None
-        for fe in self.frontends:
-            fe.update(SharedInfo)
+
+        for cb in self._registered_callbacks:
+            try:
+                cb(SharedInfo)
+            except Exception as e:
+                logger.warn("Encountered an error sending an update: %s", e)
             
         self._cell_updates = {}
-
-
-
-class AbstractFrontend(ABC):
-    @abstractmethod
-    def update(self, info):
-        pass
