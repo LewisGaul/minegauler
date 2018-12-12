@@ -523,6 +523,7 @@ class Controller(AbstractController):
             self.end_time = tm.time()
             logger.info("Game won")
             self.game_state = GameState.WON
+            self.mines_remaining = 0
             for c in self.mf.all_coords:
                 if (self.mf.cell_contains_mine(c) and
                     type(self.board[c]) is not CellHit):

@@ -325,6 +325,7 @@ class TestController:
         ctrlr.mf = self.mf
         ctrlr.select_cell((3, 0))
         assert ctrlr.game_state == GameState.LOST
+        assert ctrlr.end_time is not None
         assert ctrlr.board == Board.from_2d_array([
             ['#',  '#', 'M1', '!2'],
             ['#',  '#',  '#', 'M1'],
@@ -356,6 +357,7 @@ class TestController:
             ctrlr.flag_cell(c)
             ctrlr.chord_on_cell(c)
             ctrlr.remove_cell_flags(c)
+        assert ctrlr.game_state == GameState.LOST
         assert_reset_call_count(frontend1, 0)
 
         # Check losing via chording works.
@@ -373,9 +375,42 @@ class TestController:
             ['#', 'M1',  '#',  '#'],
         ])
 
-    @pytest.mark.skip
-    def test_winning(self):
-        pass
+    def test_winning(self, frontend1):
+        # Test winning in one click.
+        opts = GameOptsStruct(x_size=2, y_size=1, mines=1, first_success=True)
+        ctrlr = Controller(opts)
+        ctrlr.register_callback(frontend1)
+        ctrlr.select_cell((0, 0))
+        assert ctrlr.game_state == GameState.WON
+        assert ctrlr.end_time is not None
+        assert ctrlr.mines_remaining == 0
+        assert ctrlr.board == ctrlr.mf.completed_board
+        frontend1.reset_mock()
+
+        # Check cells can't be selected when the game is won.
+        for c in ctrlr.board.all_coords:
+            ctrlr.select_cell(c)
+            ctrlr.flag_cell(c)
+            ctrlr.chord_on_cell(c)
+            ctrlr.remove_cell_flags(c)
+        assert ctrlr.game_state == GameState.WON
+        assert_reset_call_count(frontend1, 0)
+
+        # Check winning via chording and hitting an opening works.
+        ctrlr = Controller(self.opts)
+        ctrlr.mf = self.mf
+        ctrlr.select_cell((0, 0))
+        ctrlr.select_cell((0, 4))
+        ctrlr.flag_cell((3, 1))
+        ctrlr.chord_on_cell((2, 2))
+        assert ctrlr.game_state == GameState.WON
+        assert ctrlr.board == ctrlr.mf.completed_board == Board.from_2d_array([
+            [ 0,   1 , 'F1', 'F2'],
+            [ 0,   1 ,   4 , 'F1'],
+            [ 0,   0 ,   1 ,   1 ],
+            [ 1,   1 ,   1 ,   0 ],
+            [ 1, 'F1',   1,    0 ],
+        ])
 
     def test_new_game(self, frontend1):
         """Only require a single controller when able to create new games."""
@@ -399,11 +434,13 @@ class TestController:
         frontend1.reset_mock()
         ctrlr.new_game()
         assert ctrlr.game_state == GameState.READY
+        assert ctrlr.mines_remaining == ctrlr.opts.mines
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         assert_reset_call_count(frontend1, 1)
 
         # Start a new game mid-game.
         ctrlr.select_cell((0, 0))
+        ctrlr.select_cell((0, 1))
         assert ctrlr.game_state == GameState.ACTIVE
         assert ctrlr.mf.is_created
         assert ctrlr.board != Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
@@ -411,6 +448,8 @@ class TestController:
         ctrlr.new_game()
         assert ctrlr.game_state == GameState.READY
         assert not ctrlr.mf.is_created
+        assert ctrlr.start_time is None
+        assert ctrlr.mines_remaining == ctrlr.opts.mines
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         assert_reset_call_count(frontend1, 1)
 
@@ -424,6 +463,8 @@ class TestController:
         ctrlr.new_game()
         assert ctrlr.game_state == GameState.READY
         assert not ctrlr.mf.is_created
+        assert ctrlr.start_time is ctrlr.end_time is None
+        assert ctrlr.mines_remaining == ctrlr.opts.mines
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         assert_reset_call_count(frontend1, 1)
 
@@ -454,6 +495,7 @@ class TestController:
         frontend1.reset_mock()
         ctrlr.restart_game()
         assert ctrlr.game_state == GameState.READY
+        assert ctrlr.mines_remaining == ctrlr.opts.mines
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         assert ctrlr.mf == self.mf
         assert_reset_call_count(frontend1, 1)
@@ -464,6 +506,7 @@ class TestController:
         frontend1.reset_mock()
         ctrlr.restart_game()
         assert ctrlr.game_state == GameState.READY
+        assert ctrlr.start_time is None
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         assert ctrlr.mf == self.mf
         assert_reset_call_count(frontend1, 1)
@@ -474,6 +517,8 @@ class TestController:
         frontend1.reset_mock()
         ctrlr.restart_game()
         assert ctrlr.game_state == GameState.READY
+        assert ctrlr.start_time is ctrlr.end_time is None
+        assert ctrlr.mines_remaining == ctrlr.opts.mines
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         assert ctrlr.mf == self.mf
         assert_reset_call_count(frontend1, 1)
