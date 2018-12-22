@@ -68,11 +68,12 @@ class TestMinefield:
         exp_openings = [[(1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)]]
         exp_3bv = 4
         self.check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board)
-        
+
+        # Check per cell is respected. Also multiple openings.
         mine_coords = [(0, 0), (2, 2)]
-        mf = Minefield.from_mines_list(self.x, self.y, mine_coords)
+        mf = Minefield.from_mines_list(self.x, self.y, mine_coords, per_cell=2)
         self.check_mf_created(mf)
-        assert mf.per_cell == 1
+        assert mf.per_cell == 2
         exp_completed_board = Board.from_2d_array([
             ['F1',  1,   0 ,  0],
             [  1 ,  2,   1 ,  1],
@@ -83,6 +84,20 @@ class TestMinefield:
             [(0, 1), (0, 2), (1, 1), (1, 2)],
             ]
         exp_3bv = 3
+        self.check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board)
+
+        # Check passed-in value of per cell is overriden.
+        mine_coords = [(0, 0), (0, 0), (0, 0)]
+        mf = Minefield.from_mines_list(self.x, self.y, mine_coords, per_cell=1)
+        self.check_mf_created(mf)
+        assert mf.per_cell == 3
+        exp_completed_board = Board.from_2d_array([
+            ['F3',  3,  0,  0],
+            [  3 ,  3,  0,  0],
+            [  0 ,  0,  0,  0],
+        ])
+        exp_openings = [[c for c in mf.all_coords if c != (0, 0)]]
+        exp_3bv = 1
         self.check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board)
 
     def test_from_array(self):
