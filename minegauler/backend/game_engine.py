@@ -11,15 +11,15 @@ Controller (class)
     frontend implementation.
 """
 
+import functools
 import logging
 import time as tm
-import functools
 from abc import ABC, abstractmethod
 
 from minegauler.backend.minefield import Minefield
 from minegauler.backend.utils import Board
 from minegauler.shared.internal_types import *
-from minegauler.shared.utils import AbstractStruct
+from minegauler.shared.utils import get_num_pos_args_accepted, AbstractStruct
 
 
 logger = logging.getLogger(__name__)
@@ -147,13 +147,34 @@ class AbstractController(ABC):
 
     def register_callback(self, callback):
         """
-        Register a frontend to receive updates from a game controller.
+        Register a callback function to receive updates from a game controller.
+        If the callback is invalid it will not be registered and an error will
+        be logged.
         
         Arguments:
         callback (callable, taking one argument)
             The callback function/method, to be called with the update 
             information (of type SharedInfo).
         """
+
+        # Perform some validation on the provided callback.
+        try:
+            min_args, max_args = get_num_pos_args_accepted(callback)
+        except ValueError as e:
+            logger.warn("Unable to check callback function")
+            logger.debug("%s", e)
+        except TypeError:
+            logger.error("Invalid callback function - does not appear to be "
+                         "callable: %s",
+                         callback)
+            return
+        else:
+            if min_args > 1 or max_args < 1:
+                logger.error("Invalid callback function - must be able to "
+                             "accept one argument: %s",
+                             callback)
+                return
+
         logger.info("%s: Registering callback: %s", type(self), callback)
         self._registered_callbacks.append(callback)
 

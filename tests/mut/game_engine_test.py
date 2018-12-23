@@ -53,14 +53,33 @@ class TestController:
         assert ctrlr.board == Board(self.opts.x_size, self.opts.y_size)
 
     def test_register_callbacks(self, frontend1, frontend2):
-        ctrlr = Controller(self.opts)
-        callbacks = [frontend1, frontend2]
-        for cb in callbacks:
-            ctrlr.register_callback(cb)
-        assert len(ctrlr._registered_callbacks) == len(callbacks)
+        # Register two valid callback functions.
+        ctrlr = self.create_controller()
+        ctrlr.register_callback(lambda x: None)
+        ctrlr.register_callback(lambda x, y=None: None)
+        assert len(ctrlr._registered_callbacks) == 2
+
+        # Register an invalid callback - not callable.
+        ctrlr = self.create_controller()
+        ctrlr.register_callback('NOT CALLABLE')
+        assert len(ctrlr._registered_callbacks) == 0
+
+        # Register an invalid callback - doesn't take a positional argument.
+        ctrlr = self.create_controller()
+        ctrlr.register_callback(lambda: None)
+        assert len(ctrlr._registered_callbacks) == 0
+
+        # Register an invalid callback - expects too many positional arguments.
+        ctrlr = self.create_controller()
+        ctrlr.register_callback(lambda x, y: None)
+        assert len(ctrlr._registered_callbacks) == 0
+
+        # Check callbacks are called.
+        ctrlr = self.create_controller()
         ctrlr._cell_updates = 'dummy'
+        ctrlr._registered_callbacks = [frontend1, frontend2]
         ctrlr._send_callback_updates()
-        for cb in callbacks:
+        for cb in ctrlr._registered_callbacks:
             cb.assert_called_once()
 
     def test_cell_interaction(self, frontend1):
@@ -662,7 +681,7 @@ class TestController:
         if set_mf:
             ctrlr.mf = cls.mf
         if cb:
-            ctrlr.register_callback(cb)
+            ctrlr._registered_callbacks = [cb]
 
         return ctrlr
 

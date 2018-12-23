@@ -10,6 +10,34 @@ AbstractStruct (class)
 """
 
 
+import inspect
+from inspect import Parameter
+
+
+def get_num_pos_args_accepted(func):
+    """
+    Determine how many positional args a function can take.
+
+    Arguments:
+    func (callable)
+        The function to check.
+
+    Returns:
+    tuple (int, int)
+        A tuple containing the minimum and maximum number of positional args the
+        function can take.
+
+    Raises:
+        See inspect.signature().
+    """
+    params = inspect.signature(func).parameters.values()
+    pos_params = [p for p in params if p.kind in
+                  {Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD}]
+    min_args = len([p for p in pos_params if p.default == Parameter.empty])
+    max_args = len(pos_params)
+
+    return (min_args, max_args)
+
 
 class AbstractStruct(dict):
     """
