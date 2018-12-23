@@ -94,6 +94,16 @@ class TestController:
         ctrlr._send_callback_updates()
         for cb in ctrlr._registered_callbacks:
             cb.assert_called_once()
+            cb.reset_mock()
+
+        # Check an error is logged when a callback raises an error.
+        frontend1.side_effect = Exception
+        ctrlr._cell_updates = 'dummy'
+        ctrlr._send_callback_updates()
+        #@@@LG Check error is logged.
+        for cb in ctrlr._registered_callbacks:
+            cb.assert_called_once()
+            cb.reset_mock()
 
     def test_cell_interaction(self, frontend1):
         coord = (2, 2)
