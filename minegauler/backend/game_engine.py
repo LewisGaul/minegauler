@@ -161,7 +161,7 @@ class AbstractController(ABC):
         try:
             min_args, max_args = get_num_pos_args_accepted(callback)
         except ValueError as e:
-            logger.warn("Unable to check callback function")
+            logger.warning("Unable to check callback function")
             logger.debug("%s", e)
         except TypeError:
             logger.error("Invalid callback function - does not appear to be "

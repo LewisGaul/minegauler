@@ -66,17 +66,26 @@ class TestController:
         # Register an invalid callback - not callable.
         ctrlr = self.create_controller()
         ctrlr.register_callback('NOT CALLABLE')
+        #@@@LG Check an error is logged.
         assert len(ctrlr._registered_callbacks) == 0
 
         # Register an invalid callback - doesn't take a positional argument.
         ctrlr = self.create_controller()
         ctrlr.register_callback(lambda: None)
+        #@@@LG Check an error is logged.
         assert len(ctrlr._registered_callbacks) == 0
 
         # Register an invalid callback - expects too many positional arguments.
         ctrlr = self.create_controller()
         ctrlr.register_callback(lambda x, y: None)
+        #@@@LG Check an error is logged.
         assert len(ctrlr._registered_callbacks) == 0
+
+        # Register a callback that can't be inspected.
+        ctrlr = self.create_controller()
+        ctrlr.register_callback(min)
+        #@@@LG Check a warning is logged.
+        assert len(ctrlr._registered_callbacks) == 1
 
         # Check callbacks are called.
         ctrlr = self.create_controller()
