@@ -68,10 +68,10 @@ def _ignore_if_not(*, game_state=None, cell_state=None):
     
     Arguments:
     game_state=None (GameState | (GameState, ...) | None)
-    A game state or iterable of game states to match against.
+        A game state or iterable of game states to match against.
     cell_state=None (subclass of CellContentsType | (..., ...) | None)
-    A cell contents type or iterable of the same to match against. The
-    decorated method must take the cell coordinate as the first argument.
+        A cell contents type or iterable of the same to match against. The
+        decorated method must take the cell coordinate as the first argument.
     """
     def decorator(method):
         if cell_state is None:
@@ -211,12 +211,12 @@ class AbstractController(ABC):
         """
         logger.info("%s: Flags in cell %s being removed", type(self), coord)
 
-    @abstractmethod
-    def change_settings(self, **kwargs):
-        """
-        Update the settings to be used for future games.
-        """
-        logger.info("%s: Changing settings", type(self)) #@@@
+    # @abstractmethod
+    # def change_settings(self, **kwargs):
+    #     """
+    #     Update the settings to be used for future games.
+    #     """
+    #     logger.info("%s: Changing settings", type(self)) #@@@
 
     @abstractmethod
     def resize_board(self, x_size, y_size, mines):
@@ -353,9 +353,9 @@ class Controller(AbstractController):
                     self._set_cell(coord, self.board[coord] + 1)
                     self.mines_remaining -= 1
         
-        elif self.opts.game_mode == GameFlagMode.SPLIT:
-            if self.board[coord] == CellUnclicked():
-                self._split_cell(coord)
+        # elif self.opts.game_mode == GameFlagMode.SPLIT:
+        #     if self.board[coord] == CellUnclicked():
+        #         self._split_cell(coord)
         
         self._send_callback_updates()
 
@@ -396,10 +396,10 @@ class Controller(AbstractController):
         
         self._send_callback_updates()
         
-    def change_settings(self, **kwargs):
-        """See AbstractController."""
-        # @@@LG
-        super().change_settings(**kwargs)
+    # def change_settings(self, **kwargs):
+    #     """See AbstractController."""
+    #     # @@@LG
+    #     super().change_settings(**kwargs)
 
     def resize_board(self, x_size, y_size, mines):
         """See AbstractController."""
@@ -529,11 +529,11 @@ class Controller(AbstractController):
                     type(self.board[c]) is not CellHit):
                     self._set_cell(c, CellFlag(self.mf[c]))
                     
-    def _split_cell(self, coord):
-        """
-        Split a cell.
-        """
-        raise NotImplementedError()
+    # def _split_cell(self, coord):
+    #     """
+    #     Split a cell.
+    #     """
+    #     raise NotImplementedError()
     
     def _send_callback_updates(self):
         """See AbstractController."""
