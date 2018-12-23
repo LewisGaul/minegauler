@@ -11,7 +11,8 @@ the root directory.
 import pytest
 from unittest.mock import Mock
 
-from minegauler.backend.game_engine import Controller, GameOptsStruct
+from minegauler.backend.game_engine import (Controller, GameOptsStruct,
+    _ignore_if, _ignore_if_not)
 from minegauler.backend.minefield import Minefield
 from minegauler.backend.utils import Board
 from minegauler.shared.internal_types import *
@@ -60,7 +61,7 @@ class TestController:
         ctrlr._cell_updates = 'dummy'
         ctrlr._send_callback_updates()
         for cb in callbacks:
-            assert cb.call_count == 1
+            cb.assert_called_once()
 
     def test_cell_interaction(self, frontend1):
         coord = (2, 2)
@@ -75,7 +76,7 @@ class TestController:
         # Setup.
         opts = GameOptsStruct(per_cell=2, first_success=False)
         ctrlr = self.create_controller(opts=opts, set_mf=False, cb=frontend1)
-        assert frontend1.call_count == 0
+        frontend1.assert_not_called()
 
         # Flag a cell.
         ctrlr.flag_cell(coord)
@@ -90,7 +91,7 @@ class TestController:
         assert ctrlr.board[coord] == CellFlag(1)
         assert ctrlr.game_state == GameState.READY
         assert ctrlr.mines_remaining == ctrlr.opts.mines - 1
-        assert frontend1.call_count == 0
+        frontend1.assert_not_called()
 
         # Flag a cell that is already flagged (multiple mines per cell).
         ctrlr.flag_cell(coord)
@@ -128,7 +129,7 @@ class TestController:
         revealed = ctrlr.board[coord]
         ctrlr.select_cell(coord)
         assert ctrlr.board[coord] == revealed
-        assert frontend1.call_count == 0
+        frontend1.assert_not_called()
 
     def test_select_opening(self, frontend1):
         exp_board = Board.from_2d_array([
@@ -212,7 +213,7 @@ class TestController:
         ctrlr = self.create_controller(cb=frontend1)
         ctrlr.chord_on_cell((0, 0))
         assert ctrlr.game_state == GameState.READY
-        assert frontend1.call_count == 0
+        frontend1.assert_not_called()
 
         # No-op chording - no flags.
         ctrlr.select_cell((0, 4))
@@ -225,7 +226,7 @@ class TestController:
             ['#', '#', '#', '#'],
             [ 1,  '#', '#', '#'],
         ])
-        assert frontend1.call_count == 0
+        frontend1.assert_not_called()
 
         # Basic successful chording.
         ctrlr.flag_cell((1, 4))
@@ -258,19 +259,19 @@ class TestController:
         prev_board = ctrlr.board
         ctrlr.chord_on_cell((1, 3))
         assert ctrlr.board == prev_board
-        assert frontend1.call_count == 0
+        frontend1.assert_not_called()
 
         # No-op - chording on flagged cell.
         ctrlr.chord_on_cell((1, 4))
         assert ctrlr.board == prev_board
-        assert frontend1.call_count == 0
+        frontend1.assert_not_called()
 
         # No-op - wrong number of flags.
         ctrlr.flag_cell((3, 0))
         ctrlr.flag_cell((3, 0))
         frontend1.reset_mock()
         ctrlr.chord_on_cell((2, 1))
-        assert frontend1.call_count == 0
+        frontend1.assert_not_called()
 
         # Incorrect flags cause hitting a mine.
         ctrlr.flag_cell((3, 2))
@@ -367,7 +368,7 @@ class TestController:
             ctrlr.chord_on_cell(c)
             ctrlr.remove_cell_flags(c)
         assert ctrlr.game_state == GameState.LOST
-        assert frontend1.call_count == 0
+        frontend1.assert_not_called()
 
         # Check losing via chording works.
         ctrlr = self.create_controller()
@@ -420,7 +421,7 @@ class TestController:
             ctrlr.chord_on_cell(c)
             ctrlr.remove_cell_flags(c)
         assert ctrlr.game_state == GameState.WON
-        assert frontend1.call_count == 0
+        frontend1.assert_not_called()
 
     def test_new_game(self, frontend1):
         """Only require a single controller when able to create new games."""
@@ -432,7 +433,7 @@ class TestController:
         assert ctrlr.game_state == GameState.READY
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         assert not ctrlr.mf.is_created
-        assert frontend1.call_count == 0
+        frontend1.assert_not_called()
 
         # Start a new game that isn't started but has flags.
         ctrlr.flag_cell((0, 0))
@@ -492,7 +493,7 @@ class TestController:
         assert ctrlr.game_state == GameState.READY
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         assert not ctrlr.mf.is_created
-        assert frontend1.call_count == 0
+        frontend1.assert_not_called()
 
         # Replay before doing anything else, with minefield.
         ctrlr.mf = self.mf
@@ -500,7 +501,7 @@ class TestController:
         assert ctrlr.game_state == GameState.READY
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         assert ctrlr.mf == self.mf
-        assert frontend1.call_count == 0
+        frontend1.assert_not_called()
 
         # Restart a game that isn't started but has flags.
         ctrlr.flag_cell((0, 0))
@@ -534,7 +535,7 @@ class TestController:
             mines_remaining=ctrlr.opts.mines,
             game_state=GameState.READY)
 
-        # Start a new game on finished game.
+        # Restart finished game (lost game).
         ctrlr.select_cell((3, 0))
         assert ctrlr.game_state == GameState.LOST
         frontend1.reset_mock()
@@ -545,6 +546,97 @@ class TestController:
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         assert ctrlr.mf == self.mf
         self.check_and_reset_callback(frontend1)
+
+    def test_invalid_game_state(self, frontend1):
+        # Use one controller throughout.
+        ctrlr = self.create_controller(cb=frontend1)
+
+        # New game - should work.
+        ctrlr.select_cell((0, 0))
+        frontend1.reset_mock()
+        ctrlr.game_state = GameState.INVALID
+        ctrlr.new_game()
+        assert ctrlr.game_state == GameState.READY
+        self.check_and_reset_callback(frontend1, game_state=GameState.READY)
+
+        # Restart game (no-op).
+        ctrlr.select_cell((1, 0))
+        ctrlr.flag_cell((2, 0))
+        frontend1.reset_mock()
+        ctrlr.game_state = GameState.INVALID
+        ctrlr.restart_game()
+        assert ctrlr.game_state == GameState.INVALID
+        frontend1.assert_not_called()
+
+        # Select cell (no-op).
+        ctrlr.select_cell((0, 0))
+        frontend1.assert_not_called()
+
+        # Flag cell (no-op).
+        ctrlr.flag_cell((0, 0))
+        frontend1.assert_not_called()
+
+        # Chord on cell (no-op).
+        ctrlr.chord_on_cell((1, 0))
+        frontend1.assert_not_called()
+
+    def test_ignore_if_decorators(self):
+        """
+        Test the 'ignore if' and 'ignore if not' decorators, since they aren't
+        fully used in the code.
+        """
+        ctrlr = self.create_controller()
+        mock = Mock()
+
+        ## First test 'ignore if'.
+        # Test with one ignored cell state (flagged).
+        decorated_mock = _ignore_if(cell_state=CellFlag)(mock)
+        decorated_mock(ctrlr, (0, 0))  # unclicked
+        mock.assert_called_once()
+        mock.reset_mock()
+
+        ctrlr.flag_cell((0, 0))
+        decorated_mock(ctrlr, (0, 0))  # flagged
+        mock.assert_not_called()
+
+        # Test with multiple ignored cell states.
+        decorated_mock = _ignore_if(cell_state=(CellFlag, CellUnclicked))(mock)
+        decorated_mock(ctrlr, (0, 0))  # flagged
+        mock.assert_not_called()
+
+        decorated_mock(ctrlr, (0, 1))  # unclicked
+        mock.assert_not_called()
+
+        ## Next test 'ignore if not'.
+        mock.reset_mock()
+        # Test with one game state (READY).
+        decorated_mock = _ignore_if_not(game_state=GameState.READY)(mock)
+        ctrlr.game_state = GameState.READY
+        decorated_mock(ctrlr)
+        mock.assert_called_once()
+        mock.reset_mock()
+
+        ctrlr.game_state = GameState.ACTIVE
+        decorated_mock(ctrlr)
+        mock.assert_not_called()
+
+        # Test with multiple ignored cell states.
+        decorated_mock = _ignore_if_not(game_state=(GameState.READY,
+                                                    GameState.ACTIVE))(mock)
+        ctrlr.game_state = GameState.READY
+        decorated_mock(ctrlr)
+        mock.assert_called_once()
+        mock.reset_mock()
+
+        ctrlr.game_state = GameState.ACTIVE
+        decorated_mock(ctrlr)
+        mock.assert_called_once()
+        mock.reset_mock()
+
+        ctrlr.game_state = GameState.LOST
+        decorated_mock(ctrlr)
+        mock.assert_not_called()
+
 
     # --------------------------------------------------------------------------
     # Helper methods
@@ -582,7 +674,7 @@ class TestController:
         Assert that a callback was called exactly once, and with information
         matching whatever is passed in to this method.
         """
-        assert cb.call_count == 1
+        cb.assert_called_once()
         passed_info = cb.call_args[0][0]
         if cells:
             assert passed_info.cell_updates == cells
