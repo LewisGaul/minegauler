@@ -43,7 +43,7 @@ class TestController:
     # Test cases
     # -------------------------------------------------------------------------
     def test_create(self):
-        # Create a controller.
+        # Normal create of a controller.
         ctrlr = Controller(self.opts)
         assert ctrlr.game_state == GameState.READY
         assert ctrlr.opts == self.opts
@@ -51,6 +51,10 @@ class TestController:
             assert getattr(ctrlr.mf, opt) == getattr(self.opts, opt)
         assert not ctrlr.mf.is_created
         assert ctrlr.board == Board(self.opts.x_size, self.opts.y_size)
+
+        # Try creating a controller with invalid options.
+        with pytest.raises(ValueError):
+            Controller('INVALID')
 
     def test_register_callbacks(self, frontend1, frontend2):
         # Register two valid callback functions.
