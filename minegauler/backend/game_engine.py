@@ -555,6 +555,6 @@ class Controller(AbstractController):
             try:
                 cb(SharedInfo)
             except Exception as e:
-                logger.warn("Encountered an error sending an update: %s", e)
+                logger.warning("Encountered an error sending an update: %s", e)
             
         self._cell_updates = {}
