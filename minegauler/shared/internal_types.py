@@ -45,6 +45,8 @@ class CellContentsType(int):
             return super().__eq__(obj)
     def __ne__(self, obj):
         return not (self == obj)
+    def __hash__(self):
+        return super().__hash__() ^ hash(type(self))
     def __add__(self, obj):
         if type(obj) is not int:
             raise ValueError("Can only add integers to cell contents types")

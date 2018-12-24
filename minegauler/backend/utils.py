@@ -31,7 +31,7 @@ class Grid(list):
     all_coords ([(int, int), ...])
         List of all coordinates in the grid.
     """
-    def __init__(self, x_size, y_size, fill=0):
+    def __init__(self, x_size, y_size, *, fill=0):
         """
         Arguments:
         x_size (int > 0)
@@ -66,25 +66,28 @@ class Grid(list):
             The size to display a grid cell as. Defaults to the maximum size of
             the representation of all the objects contained in the grid.
         """
-        # Convert dict mapping to function.
-        if type(mapping) is dict:
-            mapping = lambda obj: mapping[obj] if obj in mapping else obj
+        #@@@LG Some attention please :)
+
         # Use max length of object representation if no cell size given.
         if cell_size is None:
             cell_size = max(
                            [len(obj.__repr__()) for row in self for obj in row])
+
         cell = '{:>%d}' % cell_size
         ret = ''
         for row in self:
             for obj in row:
-                if mapping is not None:
+                if isinstance(mapping, dict):
+                    rep = str(mapping[obj]) if obj in mapping else repr(obj)
+                elif mapping is not None:
                     rep = str(mapping(obj))
                 else:
                     rep = repr(obj)
                 ret += cell.format(rep[:cell_size]) + ' '
-            ret = ret[:-1] # Remove trailing space
+            ret = ret[:-1]  # Remove trailing space
             ret += '\n'
-        ret = ret[:-1] # Remove trailing newline
+        ret = ret[:-1]  # Remove trailing newline
+
         return ret
 
     def __getitem__(self, key):
@@ -167,10 +170,13 @@ class Board(Grid):
         y_size (int > 0)
             The number of rows.
         """
-        super().__init__(x_size, y_size, CellUnclicked())
+        super().__init__(x_size, y_size, fill=CellUnclicked())
         
     def __repr__(self):
         return f"<{self.x_size}x{self.y_size} board>"
+
+    def __str__(self):
+        return super().__str__(mapping={CellNum(0): '.'})
 
     def __setitem__(self, key, value):
         if not isinstance(value, CellContentsType):

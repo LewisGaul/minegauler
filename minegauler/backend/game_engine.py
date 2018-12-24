@@ -374,10 +374,6 @@ class Controller(AbstractController):
                     self._set_cell(coord, self.board[coord] + 1)
                     self.mines_remaining -= 1
         
-        # elif self.opts.game_mode == GameFlagMode.SPLIT:
-        #     if self.board[coord] == CellUnclicked():
-        #         self._split_cell(coord)
-        
         self._send_callback_updates()
 
     @_ignore_if_not(game_state='ACTIVE', cell_state=CellNum)
