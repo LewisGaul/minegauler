@@ -272,7 +272,7 @@ class Controller(AbstractController):
             if not hasattr(opts, kw):
                 raise ValueError(f"Missing option {kw}")
                 
-        self.opts = opts
+        self.opts = GameOptsStruct._from_struct(opts)
         # Only normal game mode currently supported.
         self.opts.game_mode = GameFlagMode.NORMAL
         # Initialise game board.
@@ -422,25 +422,22 @@ class Controller(AbstractController):
     #     # @@@LG
     #     super().change_settings(**kwargs)
 
-    def resize_board(self, x_size, y_size, mines):
+    def resize_board(self, *, x_size, y_size, mines):
         """See AbstractController."""
-        if (x_size == self.opts.x_size and
-            y_size == self.opts.y_size and
-            mines == self.opts.mines):
-            return
-            
         super().resize_board(x_size, y_size, mines)
         
-        logger.info("Resizing board from %sx%s with %s mines to "
-                "%sx%s with %s mines",
-                self.opts.x_size, self.opts.y_size, self.opts.mines,
-                x_size, y_size, mines)
+        logger.info(
+            "Resizing board from %sx%s with %s mines to %sx%s with %s mines",
+            self.opts.x_size, self.opts.y_size, self.opts.mines,
+            x_size, y_size, mines)
         self.game_state = GameState.INVALID
         self.opts.x_size, self.opts.y_size = x_size, y_size
         self.opts.mines = mines
         self.board = Board(x_size, y_size)
         
         self.new_game()
+
+        #@@@LG Send update to frontends...
             
     # --------------------------------------------------------------------------
     # Helper methods

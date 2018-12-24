@@ -589,6 +589,40 @@ class TestController:
         assert ctrlr.mf == self.mf
         self.check_and_reset_callback(frontend1)
 
+    def test_resize_board(self, frontend1):
+        # Setup, including start a game.
+        opts = self.opts.copy()
+        ctrlr = self.create_controller(opts=opts, cb=frontend1)
+        ctrlr.select_cell((0, 0))
+        ctrlr.flag_cell((2, 0))
+        assert ctrlr.game_state == GameState.ACTIVE
+        assert ctrlr.mines_remaining == opts.mines - 1
+        frontend1.reset_mock()
+
+        # Normal resize.
+        opts.x_size, opts.y_size, opts.mines = 10, 2, 3
+        ctrlr.resize_board(x_size=opts.x_size, y_size=opts.y_size,
+                           mines=opts.mines)
+        assert ctrlr.opts == opts
+        for opt in ['x_size', 'y_size', 'mines']:
+            assert getattr(ctrlr.mf, opt) == getattr(opts, opt)
+        assert ctrlr.game_state == GameState.READY
+        assert ctrlr.mines_remaining == ctrlr.opts.mines
+        assert not ctrlr.mf.is_created
+        assert ctrlr.board == Board(opts.x_size, opts.y_size)
+        frontend1.assert_not_called()
+
+        # Resize without changing values starts new game.
+        ctrlr.select_cell((0, 0))
+        assert ctrlr.game_state == GameState.ACTIVE
+        frontend1.reset_mock()
+        ctrlr.resize_board(x_size=opts.x_size, y_size=opts.y_size,
+                           mines=opts.mines)
+        assert ctrlr.game_state == GameState.READY
+        assert not ctrlr.mf.is_created
+        assert ctrlr.board == Board(opts.x_size, opts.y_size)
+        frontend1.assert_not_called()
+
     def test_invalid_game_state(self, frontend1):
         # Use one controller throughout.
         ctrlr = self.create_controller(cb=frontend1)
@@ -678,7 +712,6 @@ class TestController:
         ctrlr.game_state = GameState.LOST
         decorated_mock(ctrlr)
         mock.assert_not_called()
-
 
     # --------------------------------------------------------------------------
     # Helper methods

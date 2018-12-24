@@ -95,12 +95,16 @@ class AbstractStruct(dict):
             self[name] = value
         else:
             raise AttributeError("Unexpected element")
-        
+
+    def copy(self):
+        return self.__class__(**self)
+
     @classmethod
     def _from_struct(cls, struct):
         """
         Create an instance of the structure by extracting element values from
-        an object with any of the elements as attributes.
+        an object with any of the elements as attributes. Ignores extra
+        attributes.
         """
         ret = cls()
         for elem in cls._elements:
