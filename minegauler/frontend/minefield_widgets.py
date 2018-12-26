@@ -279,6 +279,8 @@ class MinefieldWidget(QGraphicsView):
         functions as appropriate.
         """
         self.raise_all_sunken_cells()
+        if coord is not None:
+            self.ctrlr.select_cell(coord)
         # if coord is not None:
         #     cb_core.leftclick.emit(coord)
     
@@ -337,8 +339,8 @@ class MinefieldWidget(QGraphicsView):
     
     def raise_all_sunken_cells(self):
         """Reset all sunken cells to appear raised."""
-        # while self.sunken_cells:
-        #     self.set_cell_image(self.sunken_cells.pop(), CellUnclicked())
+        while self.sunken_cells:
+            self.set_cell_image(self.sunken_cells.pop(), CellUnclicked())
         # cb_core.no_risk.emit()
         pass
                 
