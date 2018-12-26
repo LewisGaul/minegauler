@@ -11,7 +11,26 @@ AbstractStruct (class)
 
 
 import inspect
+import os
 from inspect import Parameter
+from os.path import abspath, dirname
+
+
+root_dir = os.getcwd()
+
+
+def get_dir_path(f):
+    """
+    Get the full path to the directory containing a file.
+
+    Arguments:
+    f (str)
+        Filename or file path.
+
+    Returns: str
+        Full path to the directory containing the file.
+    """
+    return dirname(abspath(f))
 
 
 def get_num_pos_args_accepted(func):
