@@ -329,12 +329,11 @@ class MinefieldWidget(QGraphicsView):
         """
         Set an unclicked cell to appear sunken.
         """
-        # if self.board[coord] == CellUnclicked():
-        #     self.set_cell_image(coord, 'btn_down')
-        #     self.sunken_cells.add(coord)
+        if self.ctrlr.board[coord] == CellUnclicked():
+            self.set_cell_image(coord, 'btn_down')
+            self.sunken_cells.add(coord)
         # if self.sunken_cells:
         #     cb_core.at_risk.emit()
-        pass
     
     def raise_all_sunken_cells(self):
         """Reset all sunken cells to appear raised."""
