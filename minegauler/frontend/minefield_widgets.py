@@ -297,11 +297,10 @@ class MinefieldWidget(QGraphicsView):
         Both left and right mouse buttons were pressed. Change display and call
         callback functions as appropriate.
         """
-        # if isinstance(self.board[coord], (CellUnclicked, CellNum)):
-        #     for c in self.board.get_nbrs(*coord, include_origin=True):
-        #         self.sink_unclicked_cell(c)
-        pass
-    
+        if isinstance(self.ctrlr.board[coord], (CellUnclicked, CellNum)):
+            for c in self.ctrlr.board.get_nbrs(coord, include_origin=True):
+                self.sink_unclicked_cell(c)
+
     def both_buttons_move(self, coord):
         """
         Both left and right mouse buttons were moved. Change display as
@@ -317,6 +316,7 @@ class MinefieldWidget(QGraphicsView):
         display and call callback functions as appropriate.
         """
         self.raise_all_sunken_cells()
+        self.ctrlr.chord_on_cell(coord)
         # if coord is not None:
         #     cb_core.bothclick.emit(coord)
         
@@ -357,21 +357,6 @@ class MinefieldWidget(QGraphicsView):
         x, y = coord
         b = self.scene.addPixmap(self.cell_images[state])
         b.setPos(x*self.btn_size, y*self.btn_size)
-        
-    def split_cell(self, coord):
-        """
-        Split a cell into 4 smaller cells.
-        Arguments:
-          coord ((x, y) tuple in grid range)
-            The coordinate of the cell.
-        """
-        x, y = coord
-        img = self.cell_images['btn_up'].scaled(self.btn_size/2,
-                                                self.btn_size/2)
-        for i in range(2):
-            for j in range(2):
-                b = self.scene.addPixmap(img)
-                b.setPos((x + i/2)*self.btn_size, (y + j/2)*self.btn_size)
     
     def resize(self, board):
         logger.info("Resizing minefield from %sx%s to %sx%s",

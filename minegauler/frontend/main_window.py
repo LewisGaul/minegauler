@@ -188,7 +188,7 @@ class MinegaulerGUI(BaseMainWindow):
         else:
             self.opts = GUIOptionsStruct()
         super().__init__('MineGauler')
-        self.set_panel_widget(PanelWidget(self))
+        self.set_panel_widget(PanelWidget(self, ctrlr))
         self.set_body_widget(MinefieldWidget(self, ctrlr,
                                              self.opts.btn_size,
                                              self.opts.styles))

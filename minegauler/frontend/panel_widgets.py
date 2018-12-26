@@ -28,8 +28,16 @@ class PanelWidget(QWidget):
     """
     The panel widget.
     """
-    def __init__(self, parent):
+    def __init__(self, parent, ctrlr):
+        """
+        Arguments:
+        parent
+            Qt container widget.
+        ctrlr (minegauler.backend.Controller)
+            To access game engine methods.
+        """
         super().__init__(parent)
+        self.ctrlr = ctrlr
         self.setFixedHeight(40)
         self.setMinimumWidth(140)
         self.setup_UI()
@@ -91,8 +99,8 @@ class PanelWidget(QWidget):
         self.set_face(FaceState.READY)
         self.timer.stop()
         self.timer.set_time(0)
-        # cb_core.new_game.emit()
-        
+        self.ctrlr.new_game()
+
     def end_game(self, game_state):
         if game_state == GameState.LOST:
             self.set_face(FaceState.LOST)
@@ -145,7 +153,8 @@ class Timer(QTimer):
         
        
 if __name__ == '__main__':
+    from minegauler.backend import Controller, GameOptsStruct
     app = QApplication(sys.argv)
-    panel_widget = PanelWidget(None)
+    panel_widget = PanelWidget(None, Controller(GameOptsStruct()))
     panel_widget.show()
     sys.exit(app.exec_())

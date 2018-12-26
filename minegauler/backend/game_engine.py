@@ -113,7 +113,7 @@ class GameOptsStruct(AbstractStruct):
 
 class SharedInfo:
     """
-    Information to pass to front-ends.
+    Information to pass to frontends.
     
     Attributes:
     cell_updates ({(int, int): CellContentsType, ...})
