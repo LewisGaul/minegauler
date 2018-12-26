@@ -152,15 +152,6 @@ class MinefieldWidget(QGraphicsView):
         for c in [(i, j) for i in range(self.x_size)
                   for j in range(self.y_size)]:
             self.set_cell_image(c, CellUnclicked())
-
-        # Register for callbacks.
-        # cb_core.set_cell.connect(self.set_cell_image)
-        # cb_core.new_game.connect(self.refresh)
-        # cb_core.new_game.connect(lambda: setattr(self, 'clicks_enabled', True))
-        # cb_core.end_game.connect(
-        #     lambda _: setattr(self, 'clicks_enabled', False))
-        # cb_core.resize_minefield.connect(self.resize)
-        # cb_core.change_mf_style.connect(self.update_style)
         
     def is_coord_in_grid(self, coord):
         x, y = coord
@@ -335,7 +326,7 @@ class MinefieldWidget(QGraphicsView):
             self.set_cell_image(coord, 'btn_down')
             self.sunken_cells.add(coord)
         # if self.sunken_cells:
-        #     cb_core.at_risk.emit()
+        #     self.at_risk.emit()
     
     def raise_all_sunken_cells(self):
         """Reset all sunken cells to appear raised."""

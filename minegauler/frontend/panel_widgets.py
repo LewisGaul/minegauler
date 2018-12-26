@@ -41,6 +41,7 @@ class PanelWidget(QWidget):
         self.setFixedHeight(40)
         self.setMinimumWidth(140)
         self.setup_UI()
+        self.game_state = GameState.INVALID
         # Callback to controller for starting a new game.
         # cb_core.end_game.connect(self.end_game)
         # cb_core.new_game.connect(lambda: self.set_face(FaceState.READY))
@@ -111,7 +112,7 @@ class PanelWidget(QWidget):
     
     def set_face(self, state):
         life = 1
-        fname = f'face{life}{state.value}.png'
+        fname = f'face{life}{state.value.lower()}.png'
         pixmap = QPixmap(join(img_dir, 'faces', fname))
         self.face_button.setPixmap(
             pixmap.scaled(26, 26, transformMode=Qt.SmoothTransformation))
@@ -123,8 +124,25 @@ class PanelWidget(QWidget):
         be found.
         """
         self.mines_counter.setText(f"{min(999, num):03d}")
-            
-        
+
+    def update_game_state(self, state):
+        """
+        Receive an update from a backend.
+
+        Arguments:
+        state (GameState)
+            The current game state.
+        """
+        if self.game_state != state:
+            if state == GameState.ACTIVE:
+                self.timer.start()
+            elif state in {GameState.WON, GameState.LOST}:
+                self.timer.stop()
+                self.set_face(state)
+        self.game_state = state
+
+
+
 class Timer(QTimer):
     def __init__(self, parent):
         super().__init__()
