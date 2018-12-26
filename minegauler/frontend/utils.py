@@ -19,3 +19,11 @@ class FaceState(enum.Enum):
     ACTIVE = 'active'
     WON    = 'won'
     LOST   = 'lost'
+
+
+class CellImageType(enum.Flag):
+    BUTTONS = enum.auto()
+    NUMBERS = enum.auto()
+    MARKERS = enum.auto()
+    ALL = BUTTONS | NUMBERS | MARKERS
+

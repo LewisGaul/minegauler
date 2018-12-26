@@ -21,13 +21,23 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
 
 from minegauler.frontend.minefield_widgets import MinefieldWidget
 from minegauler.frontend.panel_widgets import PanelWidget
-from minegauler.frontend.utils import img_dir
+from minegauler.frontend.utils import CellImageType, img_dir
+from minegauler.shared.utils import AbstractStruct
 
 # from minegauler.types import GUIOptionsStruct
 # from .utils import img_dir, CellImageType
 
 
 logger = logging.getLogger(__name__)
+
+
+class GUIOptionsStruct(AbstractStruct):
+    _elements = {'btn_size': 32,
+                 'styles': {CellImageType.BUTTONS: 'standard',
+                            CellImageType.NUMBERS: 'standard',
+                            CellImageType.MARKERS: 'standard'},
+                 'drag_select': False}
+
 
 
 class BaseMainWindow(QMainWindow):
@@ -173,15 +183,15 @@ class MinegaulerGUI(BaseMainWindow):
         ctrlr (Controller)
             The back-end controller.
         """
-        # if opts:
-        #     self.opts = opts
-        # else:
-        #     self.opts = GUIOptionsStruct()
+        if opts:
+            self.opts = opts.copy()
+        else:
+            self.opts = GUIOptionsStruct()
         super().__init__('MineGauler')
         self.set_panel_widget(PanelWidget(self))
-        self.set_body_widget(MinefieldWidget(self, ctrlr))
-                                             # self.opts.btn_size,
-                                             # self.opts.styles))
+        self.set_body_widget(MinefieldWidget(self, ctrlr,
+                                             self.opts.btn_size,
+                                             self.opts.styles))
         # cb_core.update_window_size.connect(self.update_size)
         # cb_core.change_mf_style.connect(self.update_style)
         

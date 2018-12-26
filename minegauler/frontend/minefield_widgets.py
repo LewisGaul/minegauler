@@ -11,17 +11,111 @@ MinefieldWidget
 
 import logging
 import sys
+from os.path import exists, join
 
-from PyQt5.QtCore import Qt, QRectF, QRect
+from PyQt5.QtCore import Qt  # QRectF, QRect
 from PyQt5.QtGui import QPixmap, QPainter, QImage
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QAction
 
-# from minegauler.utils import CellState
-# from minegauler.types import Board
-# from .utils import init_or_update_cell_images, CellImageType
+from minegauler.frontend.utils import CellImageType, img_dir
+from minegauler.shared.internal_types import (CellFlag, CellHitMine, CellMine,
+    CellNum, CellUnclicked, CellWrongFlag)
 
 
 logger = logging.getLogger(__name__)
+
+
+#@@@LG :'(         ... please don't look at the contents of these two functions.
+def init_or_update_cell_images(cell_images, size, styles,
+                               required=CellImageType.ALL):
+    """
+    Initialise or update the pixmap images for the minefield cells.
+
+    Arguments:
+    cell_images (dict)
+        The dictionary to fill with the images.
+    size (int)
+        The size in pixels to make the image (square).
+    required (CellImageType)
+        Which images types require updating.
+    """
+    #@@@LG Currently only allows setting button styles.
+    btn_style = styles[CellImageType.BUTTONS]
+    if required & CellImageType.BUTTONS:
+        cell_images['btn_up'] = make_pixmap('buttons',
+                                            btn_style,
+                                            'btn_up.png',
+                                            size)
+        cell_images['btn_down'] = make_pixmap('buttons',
+                                              btn_style,
+                                              'btn_down.png',
+                                              size)
+        cell_images[CellUnclicked()] = cell_images['btn_up']
+        cell_images[CellNum(0)] = cell_images['btn_down']
+
+    if required & (CellImageType.BUTTONS | CellImageType.NUMBERS):
+        for i in range(1, 19):
+            cell_images[CellNum(i)] = make_pixmap('numbers',
+                                                  btn_style,
+                                                  'btn_down.png',
+                                                  size,
+                                                  'num%d.png' % i,
+                                                  7/8)
+
+    if required & (CellImageType.BUTTONS | CellImageType.MARKERS):
+        for i in range(1, 4):
+            cell_images[CellFlag(i)] = make_pixmap('markers',
+                                                   btn_style,
+                                                   'btn_up.png',
+                                                   size,
+                                                   'flag%d.png' % i,
+                                                   5/8)
+            cell_images[CellWrongFlag] = make_pixmap('markers',
+                                                            btn_style,
+                                                            'btn_up.png',
+                                                            size,
+                                                            'cross%d.png' % i,
+                                                            5/8)
+            cell_images[CellMine(i)] = make_pixmap('markers',
+                                                   btn_style,
+                                                   'btn_down.png',
+                                                   size,
+                                                   'mine%d.png' % i,
+                                                   7/8)
+            cell_images[CellHitMine(i)] = make_pixmap('markers',
+                                                      btn_style,
+                                                      'btn_down_hit.png',
+                                                      size,
+                                                      'mine%d.png' % i,
+                                                      7/8)
+
+def make_pixmap(img_subdir, style, bg_fname, size, fg_fname=None, propn=1):
+    def get_path(subdir, fname, style):
+        base_path = join(img_dir, subdir)
+        full_path = join(base_path, style, fname)
+        if not exists(full_path):
+            logger.warn(
+                f'Missing image file at {full_path}, using standard style')
+            full_path = join(base_path, 'standard', fname)
+        return full_path
+    bg_path = get_path('buttons', bg_fname, style)
+    if fg_fname:
+        image = QImage(bg_path).scaled(size, size,
+                                       transformMode=Qt.SmoothTransformation)
+        fg_size = propn * size
+        fg_path = get_path(img_subdir, fg_fname, 'standard')
+        overlay = QPixmap(fg_path).scaled(fg_size, fg_size,
+                                          transformMode=Qt.SmoothTransformation)
+        painter = QPainter(image)
+        margin = size * (1 - propn) / 2
+        painter.drawPixmap(margin, margin, overlay)
+        painter.end()
+        image = QPixmap.fromImage(image)
+    else:
+        image = QPixmap(bg_path).scaled(size, size,
+                                        transformMode=Qt.SmoothTransformation)
+    return image
+
 
 
 class MinefieldWidget(QGraphicsView):
@@ -35,14 +129,14 @@ class MinefieldWidget(QGraphicsView):
         self.ctrlr = ctrlr
         self.x_size, self.y_size = ctrlr.opts.x_size, ctrlr.opts.y_size
         self.btn_size = btn_size
-        # if styles:
-        #     for kw in [CellImageType.BUTTONS]:
-        #         ASSERT(kw in styles, "Missing image style")
-        #     self.img_styles = styles
-        # else:
-        #     self.img_styles = {CellImageType.BUTTONS: 'standard'}
-        # self.cell_images = {}
-        # init_or_update_cell_images(self.cell_images, btn_size, self.img_styles)
+        if styles:
+            # for kw in [CellImageType.BUTTONS]:
+            #     assert kw in styles, "Missing image style"
+            self.img_styles = styles
+        else:
+            self.img_styles = {CellImageType.BUTTONS: 'standard'}
+        self.cell_images = {}
+        init_or_update_cell_images(self.cell_images, btn_size, self.img_styles)
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
         self.setFixedSize(self.x_size*self.btn_size, self.y_size*self.btn_size)
@@ -54,6 +148,11 @@ class MinefieldWidget(QGraphicsView):
         self.sunken_cells = set()
         # Flag indicating whether mouse clicks are received.
         self.clicks_enabled = True
+
+        for c in [(i, j) for i in range(self.x_size)
+                  for j in range(self.y_size)]:
+            self.set_cell_image(c, CellUnclicked())
+
         # Register for callbacks.
         # cb_core.set_cell.connect(self.set_cell_image)
         # cb_core.new_game.connect(self.refresh)
@@ -237,19 +336,17 @@ class MinefieldWidget(QGraphicsView):
         # cb_core.no_risk.emit()
         pass
                 
-    def set_cell_image(self, coord, state=None):
+    def set_cell_image(self, coord, state):
         """
         Set the image of a cell.
+
         Arguments:
-          coord ((x, y) tuple in grid range)
+        coord ((x, y) tuple in grid range)
             The coordinate of the cell.
-          state
-            The cell_images key for the image to be set, or None to get the
-            state from the board.
+        state
+            The cell_images key for the image to be set.
         """
         x, y = coord
-        if not state:
-            state = self.board[coord]
         b = self.scene.addPixmap(self.cell_images[state])
         b.setPos(x*self.btn_size, y*self.btn_size)
         
