@@ -103,7 +103,7 @@ def make_pixmap(img_subdir, style, bg_fname, size, fg_fname=None, propn=1):
         image = QImage(bg_path).scaled(size, size,
                                        transformMode=Qt.SmoothTransformation)
         fg_size = propn * size
-        fg_path = get_path(img_subdir, fg_fname, 'standard')
+        fg_path = get_path(img_subdir, fg_fname, 'Standard')
         overlay = QPixmap(fg_path).scaled(fg_size, fg_size,
                                           transformMode=Qt.SmoothTransformation)
         painter = QPainter(image)
@@ -168,7 +168,7 @@ class MinefieldWidget(QGraphicsView):
                 
     def mousePressEvent(self, event):
         """Handle mouse press events."""
-        
+
         # Ignore any clicks which aren't the left or right mouse buttons.
         if (event.button() not in [Qt.LeftButton, Qt.RightButton] or
             not self.clicks_enabled):
@@ -194,7 +194,14 @@ class MinefieldWidget(QGraphicsView):
         elif event.button() == Qt.RightButton:
             logger.info("Right mouse button down on cell %s", coord)
             self.right_button_down(coord)
-    
+
+    def mouseDoubleClickEvent(self, event):
+        """
+        Redirect double right-clicks to be treated as two single clicks.
+        """
+        if event.button() == Qt.RightButton:
+            return self.mousePressEvent(event)
+
     def mouseMoveEvent(self, event):
         """Handle mouse move events."""
         
@@ -281,7 +288,7 @@ class MinefieldWidget(QGraphicsView):
         functions as appropriate.
         """
         # cb_core.rightclick.emit(coord)
-        pass
+        self.ctrlr.flag_cell(coord)
 
     def both_buttons_down(self, coord):
         """

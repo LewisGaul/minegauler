@@ -33,9 +33,9 @@ logger = logging.getLogger(__name__)
 
 class GUIOptionsStruct(AbstractStruct):
     _elements = {'btn_size': 32,
-                 'styles': {CellImageType.BUTTONS: 'standard',
-                            CellImageType.NUMBERS: 'standard',
-                            CellImageType.MARKERS: 'standard'},
+                 'styles': {CellImageType.BUTTONS: 'Standard',
+                            CellImageType.NUMBERS: 'Standard',
+                            CellImageType.MARKERS: 'Standard'},
                  'drag_select': False}
 
 
@@ -108,7 +108,7 @@ class BaseMainWindow(QMainWindow):
         lyt = QVBoxLayout(self.panel_frame)
         lyt.setContentsMargins(0, 0, 0, 0)
         lyt.addWidget(widget)
-        self.panel = widget
+        self.panel_widget = widget
         
     def set_body_widget(self, widget):
         """
@@ -121,7 +121,7 @@ class BaseMainWindow(QMainWindow):
         lyt = QVBoxLayout(self.body_frame)
         lyt.setContentsMargins(0, 0, 0, 0)
         lyt.addWidget(widget)
-        self.body = widget
+        self.body_widget = widget
         
     def set_footer_widget(self, widget):
         """
@@ -134,7 +134,7 @@ class BaseMainWindow(QMainWindow):
         lyt = QVBoxLayout(self.footer_frame)
         lyt.setContentsMargins(0, 0, 0, 0)
         lyt.addWidget(widget)
-        self.footer = widget
+        self.footer_widget = widget
         
     def init_menubars(self):
         """
