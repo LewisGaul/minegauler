@@ -12,4 +12,3 @@ coverage/
 *,cover
 .pytest*
 *.log
-.idea
