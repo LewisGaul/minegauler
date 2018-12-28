@@ -13,7 +13,7 @@ import logging
 import sys
 from os.path import exists, join
 
-from PyQt5.QtCore import Qt  # QRectF, QRect
+from PyQt5.QtCore import Qt, pyqtSignal  # QRectF, QRect
 from PyQt5.QtGui import QPixmap, QPainter, QImage
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QAction
 
@@ -122,6 +122,10 @@ class MinefieldWidget(QGraphicsView):
     """
     The minefield widget.
     """
+
+    at_risk_signal = pyqtSignal()
+    no_risk_signal = pyqtSignal()
+
     def __init__(self, parent, ctrlr, btn_size=16, styles=None):
         logger.info("Initialising minefield widget")
         super().__init__(parent)
@@ -325,8 +329,8 @@ class MinefieldWidget(QGraphicsView):
         if self.ctrlr.board[coord] == CellUnclicked():
             self.set_cell_image(coord, 'btn_down')
             self.sunken_cells.add(coord)
-        # if self.sunken_cells:
-        #     self.at_risk.emit()
+        if self.sunken_cells:
+            self.at_risk_signal.emit()
     
     def raise_all_sunken_cells(self):
         """Reset all sunken cells to appear raised."""

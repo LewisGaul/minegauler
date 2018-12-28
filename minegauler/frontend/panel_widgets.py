@@ -111,8 +111,16 @@ class PanelWidget(QWidget):
         self.timer.stop()
     
     def set_face(self, state):
+        """
+        Arguments:
+        state (str | GameState | FaceState)
+        """
+        try:
+            state = state.value.lower()
+        except AttributeError:
+            pass
         life = 1
-        fname = f'face{life}{state.value.lower()}.png'
+        fname = f'face{life}{state}.png'
         pixmap = QPixmap(join(img_dir, 'faces', fname))
         self.face_button.setPixmap(
             pixmap.scaled(26, 26, transformMode=Qt.SmoothTransformation))

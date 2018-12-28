@@ -188,10 +188,18 @@ class MinegaulerGUI(BaseMainWindow):
         else:
             self.opts = GUIOptionsStruct()
         super().__init__('MineGauler')
+
         self.set_panel_widget(PanelWidget(self, ctrlr))
-        self.set_body_widget(MinefieldWidget(self, ctrlr,
-                                             self.opts.btn_size,
-                                             self.opts.styles))
+        self.minefield_widget = MinefieldWidget(self, ctrlr,
+                                                self.opts.btn_size,
+                                                self.opts.styles)
+        self.set_body_widget(self.minefield_widget)
+
+        self.minefield_widget.at_risk_signal.connect(
+            lambda: self.panel_widget.set_face('active'))
+        self.minefield_widget.no_risk_signal.connect(
+            lambda: self.panel_widget.set_face('ready'))
+
         # cb_core.update_window_size.connect(self.update_size)
         # cb_core.change_mf_style.connect(self.update_style)
         
