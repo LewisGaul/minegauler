@@ -63,7 +63,10 @@ class BaseMainWindow(QMainWindow):
         self.init_menubars()
         # Keep track of all subwindows that are open.
         self.open_subwindows = {}
-        
+
+    # --------------------------------------------------------------------------
+    # UI setup
+    # --------------------------------------------------------------------------
     def setup_UI(self):
         """
         Set up the layout of the main window GUI.
@@ -151,14 +154,10 @@ class BaseMainWindow(QMainWindow):
         ## GAME MENU
         exit_act = self.game_menu.addAction('Exit', self.close)
         exit_act.setShortcut('Alt+F4')
-    
-    # def update_size(self):   #@@@LG not sure if this will be needed...
-    #     """Update the window size."""
-    #     self.panel_frame.adjustSize()
-    #     self.body_frame.adjustSize()
-    #     self.centralWidget().adjustSize()
-    #     self.adjustSize()
-        
+
+    # --------------------------------------------------------------------------
+    # Qt method overrides
+    # --------------------------------------------------------------------------
     # def show(self):   #@@@LG not sure if this will be needed either (resizing?)
     #     """Show the window."""
     #     super().show()
@@ -174,6 +173,16 @@ class BaseMainWindow(QMainWindow):
             The event object, to be accepted if the window is to be closed.
         """
         event.accept()
+
+    # --------------------------------------------------------------------------
+    # Other methods
+    # --------------------------------------------------------------------------
+    def update_size(self):   #@@@LG not sure if this will be needed...
+        """Update the window size."""
+        self.panel_frame.adjustSize()
+        self.body_frame.adjustSize()
+        self.centralWidget().adjustSize()
+        self.adjustSize()
     
     
 class MinegaulerGUI(BaseMainWindow):

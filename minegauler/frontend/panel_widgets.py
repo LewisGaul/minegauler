@@ -80,7 +80,10 @@ class PanelWidget(QWidget):
         # Timer widget.
         self.timer = Timer(self)
         layout.addWidget(self.timer.widget)
-    
+
+    # --------------------------------------------------------------------------
+    # Qt method overrides
+    # --------------------------------------------------------------------------
     def mousePressEvent(self, event):
         """Handle mouse press event."""
         if event.button() == Qt.LeftButton:
@@ -93,6 +96,9 @@ class PanelWidget(QWidget):
             if self.rect().contains(event.pos()):
                 self.new_game()
 
+    # --------------------------------------------------------------------------
+    # Other methods
+    # --------------------------------------------------------------------------
     def new_game(self):
         """
         A new game has been requested, call backend.

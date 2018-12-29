@@ -156,11 +156,10 @@ class MinefieldWidget(QGraphicsView):
         for c in [(i, j) for i in range(self.x_size)
                   for j in range(self.y_size)]:
             self.set_cell_image(c, CellUnclicked())
-        
-    def is_coord_in_grid(self, coord):
-        x, y = coord
-        return (0 <= x < self.x_size and 0 <= y < self.y_size)
-                
+
+    # --------------------------------------------------------------------------
+    # Qt method overrides
+    # --------------------------------------------------------------------------
     def mousePressEvent(self, event):
         """Handle mouse press events."""
 
@@ -254,7 +253,10 @@ class MinefieldWidget(QGraphicsView):
             logger.debug("No mouse buttons down, reset variables")
             self.mouse_coord = None
             self.both_mouse_buttons_pressed = False
-        
+
+    # --------------------------------------------------------------------------
+    # Mouse click handlers
+    # --------------------------------------------------------------------------
     def left_button_down(self, coord):
         """
         Left mouse button was pressed. Change display and call callback
@@ -314,7 +316,14 @@ class MinefieldWidget(QGraphicsView):
         self.ctrlr.chord_on_cell(coord)
         # if coord is not None:
         #     cb_core.bothclick.emit(coord)
-        
+
+    # --------------------------------------------------------------------------
+    # Other methods
+    # --------------------------------------------------------------------------
+    def is_coord_in_grid(self, coord):
+        x, y = coord
+        return (0 <= x < self.x_size and 0 <= y < self.y_size)
+
     def refresh(self):
         """Reset all cell images and other state for a new game."""
         logger.info("Resetting minefield widget")
