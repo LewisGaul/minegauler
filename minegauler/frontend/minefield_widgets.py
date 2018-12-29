@@ -345,9 +345,7 @@ class MinefieldWidget(QGraphicsView):
         """Reset all sunken cells to appear raised."""
         while self.sunken_cells:
             self.set_cell_image(self.sunken_cells.pop(), CellUnclicked())
-            self.no_risk_signal.emit()
-        # cb_core.no_risk.emit()
-        pass
+        self.no_risk_signal.emit()
                 
     def set_cell_image(self, coord, state):
         """
