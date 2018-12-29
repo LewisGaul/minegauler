@@ -190,7 +190,7 @@ class MinegaulerGUI(BaseMainWindow):
         """
         Arguments:
         ctrlr (Controller)
-            The back-end controller.
+            The backend controller.
         """
         if opts:
             self.opts = opts.copy()
