@@ -406,16 +406,17 @@ class MinefieldWidget(QGraphicsView):
     def accept_clicks(self):
         self._ignore_clicks = False
     
-    def resize(self, board):
+    def resize(self, x_size, y_size):
         logger.info("Resizing minefield from %sx%s to %sx%s",
-                    self.x_size, self.y_size, board.x_size, board.y_size)
-        self.board = board
-        self.x_size, self.y_size = board.x_size, board.y_size
+                    self.x_size, self.y_size, x_size, y_size)
+        self.x_size, self.y_size = x_size, y_size
         self.setFixedSize(self.x_size*self.btn_size, self.y_size*self.btn_size)
         self.setSceneRect(0, 0,
                           self.x_size*self.btn_size,
                           self.y_size*self.btn_size)
-        # cb_core.update_window_size.emit()
+        for c in [(i, j) for i in range(self.x_size)
+                  for j in range(self.y_size)]:
+            self.set_cell_image(c, CellUnclicked())
 
     def update_style(self, img_type, style):
         logger.info("Updating %s style to '%s'", img_type.name, style)

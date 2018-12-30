@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
 from minegauler.frontend.minefield_widgets import MinefieldWidget
 from minegauler.frontend.panel_widgets import PanelWidget
 from minegauler.frontend.utils import img_dir
-from minegauler.shared.utils import GUIOptsStruct
+from minegauler.shared.utils import GUIOptsStruct, get_difficulty
 
 
 logger = logging.getLogger(__name__)
@@ -181,6 +181,7 @@ class MinegaulerGUI(BaseMainWindow):
         ctrlr (Controller)
             The back-end controller.
         """
+        self.ctrlr = ctrlr
         if opts:
             self.opts = opts.copy()
         else:
@@ -202,7 +203,43 @@ class MinegaulerGUI(BaseMainWindow):
 
         # cb_core.update_window_size.connect(self.update_size)
         # cb_core.change_mf_style.connect(self.update_style)
+
+    def populate_menubars(self):
+        ## GAME MENU
+        # Difficulty radiobuttons
+        diff_group = QActionGroup(self, exclusive=True)
+        for diff in ['Beginner', 'Intermediate', 'Expert', 'Master']:#, 'Custom']:
+            diff_act = QAction(diff, diff_group, checkable=True)
+            self.game_menu.addAction(diff_act)
+            diff_act.id = diff[0]
+            if diff_act.id == get_difficulty(self.ctrlr.opts.x_size,
+                                             self.ctrlr.opts.y_size,
+                                             self.ctrlr.opts.mines):
+                diff_act.setChecked(True)
+            diff_act.triggered.connect(
+                lambda _: self._change_difficulty(
+                    diff_group.checkedAction().id))
+            diff_act.setShortcut(diff[0])
+
+        self.game_menu.addSeparator()
+
+        exit_act = self.game_menu.addAction('Exit', self.close)
+        exit_act.setShortcut('Alt+F4')
         
     def closeEvent(self, event):
         # cb_core.save_settings.emit()
         super().closeEvent(event)
+
+    def _change_difficulty(self, id):
+        if id == 'B':
+            x, y, m = 8, 8, 10
+        elif id == 'I':
+            x, y, m = 16, 16, 40
+        elif id == 'E':
+            x, y, m = 30, 16, 99
+        elif id == 'M':
+            x, y, m = 30, 30, 200
+
+        self.minefield_widget.resize(x, y)
+        self.update_size()
+        self.ctrlr.resize_board(x_size=x, y_size=y, mines=m)
