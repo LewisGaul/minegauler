@@ -19,7 +19,8 @@ from abc import ABC, abstractmethod
 from minegauler.backend.minefield import Minefield
 from minegauler.backend.utils import Board
 from minegauler.shared.internal_types import *
-from minegauler.shared.utils import get_num_pos_args_accepted, AbstractStruct
+from minegauler.shared.utils import (get_num_pos_args_accepted, AbstractStruct,
+    GameOptsStruct)
 
 
 logger = logging.getLogger(__name__)
@@ -94,28 +95,13 @@ def _ignore_if_not(*, game_state=None, cell_state=None):
         
         return wrapped
     return decorator
-    
-
-class GameOptsStruct(AbstractStruct):
-    """
-    Structure of game options.
-    """
-    _elements = {
-        'x_size':        8,
-        'y_size':        8,
-        'mines':         10,
-        'first_success': True,
-        'per_cell':      1,
-        'lives':         1,
-        'game_mode':     GameFlagMode.NORMAL,
-    }
 
 
-class SharedInfo:
+class SharedInfo(AbstractStruct):
     """
     Information to pass to frontends.
     
-    Attributes:
+    Elements:
     cell_updates ({(int, int): CellContentsType, ...})
         Dictionary of updates to cells, mapping the coordinate to the new
         contents of the cell.
@@ -124,14 +110,19 @@ class SharedInfo:
     mines_remaining (int)
         The number of mines remaining to be found, given by
         [total mines] - [number of flags]. Can be negative if there are too many
-        flags.
+        flags. If the number is unchanged, None may be passed.
+    lives_remaining (int | None)
+        The number of lives remaining, or None if no change.
     elapsed_time (float | None)
         The time elapsed if the game has ended, otherwise None.
     """
-    cell_updates    = {}
-    game_state      = GameState.INVALID
-    mines_remaining = 0
-    elapsed_time    = None
+    _elements = {
+        'cell_updates'   : None,
+        'game_state'     : None,
+        'mines_remaining': None,
+        'lives_remaining': None,
+        'elapsed_time'   : None,
+    }
 
 
 
@@ -266,19 +257,15 @@ class Controller(AbstractController):
             Object containing the required game options as attributes.
         """
 
-        super().__init__()
-
         for kw in GameOptsStruct._elements:
             if not hasattr(opts, kw):
                 raise ValueError(f"Missing option {kw}")
-                
+
+        super().__init__()
+
         self.opts = GameOptsStruct._from_struct(opts)
-        # Only normal game mode currently supported.
-        self.opts.game_mode = GameFlagMode.NORMAL
         # Initialise game board.
         self.board = Board(opts.x_size, opts.y_size)
-        # Keep track of changes made to cell states to be passed to UI.
-        self._cell_updates = {}
         # Game-specific data.
         self.game_state = GameState.INVALID
         self.mines_remaining = 0
@@ -288,6 +275,23 @@ class Controller(AbstractController):
         self.mf = Minefield(self.opts.x_size, self.opts.y_size, self.opts.mines,
                             self.opts.per_cell, create=False)
         self._init_game()
+        # Keep track of changes to be passed to UI.
+        self._next_update = SharedInfo(cell_updates={})
+        self._init_completed = True
+
+    def __setattr__(self, key, value):
+        """
+        Intercept updating of certain attributes that should be stored to be
+        passed to frontends.
+        """
+        if hasattr(self, '_init_completed'):
+            if (key in ['game_state', 'mines_remaining', 'lives_remaining'] and
+                getattr(self, key) != value):
+                self._next_update[key] = value
+            elif key == 'end_time' and value != None:
+                self._next_update.elapsed_time = value - self.start_time
+
+        return super().__setattr__(key, value)
     
     # --------------------------------------------------------------------------
     # Methods triggered by user interaction
@@ -361,18 +365,17 @@ class Controller(AbstractController):
         """See AbstractController."""
         
         super().flag_cell(coord)
-        
-        if self.opts.game_mode == GameFlagMode.NORMAL:
-            if self.board[coord] == CellUnclicked():
-                self._set_cell(coord, CellFlag(1))
+
+        if self.board[coord] == CellUnclicked():
+            self._set_cell(coord, CellFlag(1))
+            self.mines_remaining -= 1
+        elif type(self.board[coord]) is CellFlag:
+            if self.board[coord] == CellFlag(self.opts.per_cell):
+                self._set_cell(coord, CellUnclicked())
+                self.mines_remaining += self.opts.per_cell
+            else:
+                self._set_cell(coord, self.board[coord] + 1)
                 self.mines_remaining -= 1
-            elif type(self.board[coord]) is CellFlag:
-                if self.board[coord] == CellFlag(self.opts.per_cell):
-                    self._set_cell(coord, CellUnclicked())
-                    self.mines_remaining += self.opts.per_cell
-                else:
-                    self._set_cell(coord, self.board[coord] + 1)
-                    self.mines_remaining -= 1
         
         self._send_callback_updates()
 
@@ -432,8 +435,6 @@ class Controller(AbstractController):
         self.board = Board(x_size, y_size)
         
         self.new_game()
-
-        #@@@LG Send update to frontends...
             
     # --------------------------------------------------------------------------
     # Helper methods
@@ -447,7 +448,7 @@ class Controller(AbstractController):
         self.lives_remaining = self.opts.lives
         self.start_time      = None
         self.end_time        = None
-        
+
     def _select_cell_action(self, coord):
         """
         Perform the action of selecting a cell.
@@ -458,8 +459,8 @@ class Controller(AbstractController):
             self.lives_remaining -= 1
             
             if self.lives_remaining == 0:
-                self.end_time = tm.time()
                 logger.info("Game lost")
+                self.end_time = tm.time()
                 self.game_state = GameState.LOST
 
                 for c in self.mf.all_coords:
@@ -470,6 +471,8 @@ class Controller(AbstractController):
                     elif (type(self.board[c]) is CellFlag and
                           self.board[c] != self.mf.completed_board[c]):
                         self._set_cell(c, CellWrongFlag(self.board[c]))
+            else:
+                self.mines_remaining -= self.mf[coord]
                         
         elif self.mf.completed_board[coord] == CellNum(0):
             for full_opening in self.mf.openings:
@@ -517,9 +520,8 @@ class Controller(AbstractController):
         if self.board[coord] == state:
             return
 
-        self.board[coord] = state
-        self._cell_updates[coord] = state
-                        
+        self._next_update.cell_updates[coord] = self.board[coord] = state
+
     def _check_for_completion(self):
         """
         Check if game is complete by comparing the board to the minefield's
@@ -534,10 +536,12 @@ class Controller(AbstractController):
                 break
                 
         if is_complete:
-            self.end_time = tm.time()
             logger.info("Game won")
+
+            self.end_time = tm.time()
             self.game_state = GameState.WON
             self.mines_remaining = 0
+
             for c in self.mf.all_coords:
                 if (self.mf.cell_contains_mine(c) and
                     type(self.board[c]) is not CellHitMine):
@@ -552,23 +556,15 @@ class Controller(AbstractController):
     def _send_callback_updates(self):
         """See AbstractController."""
 
-        if not self._cell_updates:
+        if self._next_update == SharedInfo(cell_updates={}):
             return
 
         super()._send_callback_updates()
-        
-        SharedInfo.cell_updates = self._cell_updates
-        SharedInfo.game_state = self.game_state
-        SharedInfo.mines_remaining = self.mines_remaining
-        if self.game_state in ['WON', 'LOST']:
-            SharedInfo.elapsed_time = self.end_time - self.start_time
-        else:
-            SharedInfo.elapsed_time = None
 
         for cb in self._registered_callbacks:
             try:
-                cb(SharedInfo)
+                cb(self._next_update)
             except Exception as e:
                 logger.warning("Encountered an error sending an update: %s", e)
             
-        self._cell_updates = {}
+        self._next_update = SharedInfo(cell_updates={})
