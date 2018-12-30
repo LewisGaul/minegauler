@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QAction
 
 from minegauler.frontend.utils import CellImageType, img_dir
 from minegauler.shared.internal_types import (CellFlag, CellHitMine, CellMine,
-    CellNum, CellUnclicked, CellWrongFlag)
+    CellNum, CellUnclicked, CellWrongFlag, GameState)
 
 
 logger = logging.getLogger(__name__)
@@ -335,17 +335,19 @@ class MinefieldWidget(QGraphicsView):
         """
         Set an unclicked cell to appear sunken.
         """
-        if self.ctrlr.board[coord] == CellUnclicked():
-            self.set_cell_image(coord, 'btn_down')
-            self.sunken_cells.add(coord)
-        if self.sunken_cells:
-            self.at_risk_signal.emit()
+        if self.ctrlr.game_state not in {GameState.WON, GameState.LOST}:
+            if self.ctrlr.board[coord] == CellUnclicked():
+                self.set_cell_image(coord, 'btn_down')
+                self.sunken_cells.add(coord)
+            if self.sunken_cells:
+                self.at_risk_signal.emit()
     
     def raise_all_sunken_cells(self):
         """Reset all sunken cells to appear raised."""
-        while self.sunken_cells:
-            self.set_cell_image(self.sunken_cells.pop(), CellUnclicked())
-        self.no_risk_signal.emit()
+        if self.ctrlr.game_state not in {GameState.WON, GameState.LOST}:
+            while self.sunken_cells:
+                self.set_cell_image(self.sunken_cells.pop(), CellUnclicked())
+            self.no_risk_signal.emit()
                 
     def set_cell_image(self, coord, state):
         """
