@@ -126,7 +126,18 @@ class PanelWidget(QWidget):
         the widget itself can have no way of knowing how many mines are left to
         be found.
         """
-        self.mines_counter.setText(f"{min(999, num):03d}")
+        if num < 0:
+            foreground = 'black'
+            background = 'red'
+        else:
+            foreground = 'red'
+            background = 'black'
+        self.mines_counter.setStyleSheet(f"""color: {foreground};
+                                            background: {background};
+                                            border-radius: 2px;
+                                            font: bold 15px Tahoma;
+                                            padding-left: 1px;""")
+        self.mines_counter.setText(f"{min(999, abs(num)):03d}")
 
     def update_game_state(self, state):
         """
