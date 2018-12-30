@@ -20,9 +20,6 @@ from PyQt5.QtWidgets import QApplication, QWidget, QFrame, QHBoxLayout, QLabel
 from minegauler.frontend.utils import img_dir
 from minegauler.shared.internal_types import FaceState, GameState
 
-# from minegauler.utils import GameState
-# from .utils import img_dir, FaceState
-
 
 class PanelWidget(QWidget):
     """
