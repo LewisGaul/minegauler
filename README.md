@@ -1,7 +1,10 @@
 # MineGauler version 4
 
-Remake of the classic Minesweeper game, written in Python. Requirements: Python version 3.6+, PyQt5.
-Run as a python package with `python -m minegauler`.
+Remake of the classic Minesweeper game, written in Python (requires Python 3.6+).
+
+Install requirements with `pip install -r requirements.txt`.
+
+Run with `python -m minegauler`.
 
 To play without any python requirements, built versions will be linked here in the future.
 

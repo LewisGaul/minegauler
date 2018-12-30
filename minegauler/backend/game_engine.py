@@ -349,7 +349,7 @@ class Controller(AbstractController):
                     self.mf.create()
                     logger.debug(
                         "Creating minefield with first success turned off")
-            self._next_update.game_state = self.game_state = GameState.ACTIVE
+            self.game_state = GameState.ACTIVE
             self.start_time = tm.time()
             
         self._select_cell_action(coord)
@@ -457,13 +457,11 @@ class Controller(AbstractController):
             logger.debug("Mine hit at %s", coord)
             self._set_cell(coord, CellHitMine(self.mf[coord]))
             self.lives_remaining -= 1
-            self._next_update.lives_remaining = self.lives_remaining
             
             if self.lives_remaining == 0:
                 logger.info("Game lost")
                 self.end_time = tm.time()
-                self._next_update.elapsed_time = self.end_time - self.start_time
-                self._next_update.game_state = self.game_state = GameState.LOST
+                self.game_state = GameState.LOST
 
                 for c in self.mf.all_coords:
                     if (self.mf.cell_contains_mine(c) and
@@ -473,6 +471,8 @@ class Controller(AbstractController):
                     elif (type(self.board[c]) is CellFlag and
                           self.board[c] != self.mf.completed_board[c]):
                         self._set_cell(c, CellWrongFlag(self.board[c]))
+            else:
+                self.mines_remaining -= self.mf[coord]
                         
         elif self.mf.completed_board[coord] == CellNum(0):
             for full_opening in self.mf.openings:
@@ -539,9 +539,8 @@ class Controller(AbstractController):
             logger.info("Game won")
 
             self.end_time = tm.time()
-            self._next_update.elapsed_time = self.end_time - self.start_time
-            self._next_update.game_state = self.game_state = GameState.WON
-            self._next_update.mines_remaining = self.mines_remaining = 0
+            self.game_state = GameState.WON
+            self.mines_remaining = 0
 
             for c in self.mf.all_coords:
                 if (self.mf.cell_contains_mine(c) and

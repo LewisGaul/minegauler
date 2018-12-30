@@ -389,6 +389,7 @@ class TestController:
             cell_updates={(2, 0): CellMine(1), (3, 0): CellHitMine(2),
                    (3, 1): CellMine(1), (1, 4): CellMine(1)},
             game_state=GameState.LOST,
+            lives_remaining=0,
             elapsed_time=ctrlr.end_time-ctrlr.start_time)
 
         # Lose after game has been started with incorrect flag.
@@ -444,6 +445,7 @@ class TestController:
             cell_updates={(0, 0): CellNum(1), (1, 0): CellFlag(1)},
             game_state=GameState.WON,
             mines_remaining=0,
+            lives_remaining=None,
             elapsed_time=ctrlr.end_time-ctrlr.start_time)
 
         # Check winning via chording and hitting an opening works.
@@ -621,6 +623,71 @@ class TestController:
         assert ctrlr.game_state == GameState.READY
         assert not ctrlr.mf.is_created
         assert ctrlr.board == Board(opts.x_size, opts.y_size)
+
+    def test_lives(self, frontend1):
+        opts = self.opts.copy()
+        opts.lives = 3
+        ctrlr = self.create_controller(opts=opts, cb=frontend1)
+
+        # Lose first life on single mine.
+        ctrlr.select_cell((2, 0))
+        assert ctrlr.game_state == GameState.ACTIVE
+        assert ctrlr.lives_remaining == 2
+        assert ctrlr.mines_remaining == ctrlr.opts.mines - 1
+        assert ctrlr.end_time is None
+        assert ctrlr.board == Board.from_2d_array([
+            ['#', '#', '!1', '#'],
+            ['#', '#',  '#', '#'],
+            ['#', '#',  '#', '#'],
+            ['#', '#',  '#', '#'],
+            ['#', '#',  '#', '#'],
+        ])
+        self.check_and_reset_callback(
+            frontend1,
+            cell_updates={(2, 0): CellHitMine(1)},
+            game_state=GameState.ACTIVE,
+            lives_remaining=ctrlr.lives_remaining,
+            mines_remaining=ctrlr.mines_remaining)
+
+        # Lose second life on double mine.
+        ctrlr.select_cell((3, 0))
+        assert ctrlr.game_state == GameState.ACTIVE
+        assert ctrlr.lives_remaining == 1
+        assert ctrlr.mines_remaining == ctrlr.opts.mines - 3
+        assert ctrlr.end_time is None
+        assert ctrlr.board == Board.from_2d_array([
+            ['#', '#', '!1', '!2'],
+            ['#', '#',  '#',  '#'],
+            ['#', '#',  '#',  '#'],
+            ['#', '#',  '#',  '#'],
+            ['#', '#',  '#',  '#'],
+        ])
+        self.check_and_reset_callback(
+            frontend1,
+            cell_updates={(3, 0): CellHitMine(2)},
+            game_state=None,
+            lives_remaining=ctrlr.lives_remaining,
+            mines_remaining=ctrlr.mines_remaining)
+
+        # Lose final life.
+        ctrlr.select_cell((3, 1))
+        assert ctrlr.game_state == GameState.LOST
+        assert ctrlr.lives_remaining == 0
+        assert ctrlr.mines_remaining == ctrlr.opts.mines - 3  #unchanged
+        assert ctrlr.end_time is not None
+        assert ctrlr.board == Board.from_2d_array([
+            ['#',  '#', '!1', '!2'],
+            ['#',  '#',  '#', '!1'],
+            ['#',  '#',  '#',  '#'],
+            ['#',  '#',  '#',  '#'],
+            ['#', 'M1',  '#',  '#'],
+        ])
+        self.check_and_reset_callback(
+            frontend1,
+            cell_updates={(3, 1): CellHitMine(1), (1, 4): CellMine(1)},
+            game_state=GameState.LOST,
+            lives_remaining=0,
+            mines_remaining=None)
 
     def test_invalid_game_state(self, frontend1):
         # Use one controller throughout.
