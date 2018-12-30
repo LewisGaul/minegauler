@@ -66,7 +66,7 @@ class PanelWidget(QWidget):
                                             font: bold 15px Tahoma;
                                             padding-left: 1px;""")
         layout.addWidget(self.mines_counter)
-        self.set_mines_counter(0)
+        self.set_mines_counter(self.ctrlr.mines_remaining)
         layout.addStretch()
         # Face button.
         self.face_button = QLabel(self)
