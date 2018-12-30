@@ -89,7 +89,7 @@ class TestController:
 
         # Check callbacks are called.
         ctrlr = self.create_controller()
-        ctrlr._cell_updates = 'dummy'
+        ctrlr._next_update = 'dummy'
         ctrlr._registered_callbacks = [frontend1, frontend2]
         ctrlr._send_callback_updates()
         for cb in ctrlr._registered_callbacks:
@@ -98,7 +98,7 @@ class TestController:
 
         # Check an error is logged when a callback raises an error.
         frontend1.side_effect = Exception
-        ctrlr._cell_updates = 'dummy'
+        ctrlr._next_update = 'dummy'
         ctrlr._send_callback_updates()
         #@@@LG Check error is logged.
         for cb in ctrlr._registered_callbacks:
@@ -107,13 +107,6 @@ class TestController:
 
     def test_cell_interaction(self, frontend1):
         coord = (2, 2)
-        def check_and_reset_callback(cb, ctrlr):
-            """Check callback updates match controller's properties."""
-            self.check_and_reset_callback(
-                cb,
-                cells={coord: ctrlr.board[coord]},
-                game_state=ctrlr.game_state,
-                mines_remaining=ctrlr.mines_remaining)
 
         # Setup.
         opts = GameOptsStruct(per_cell=2, first_success=False)
@@ -126,7 +119,10 @@ class TestController:
         assert not ctrlr.mf.is_created
         assert ctrlr.game_state == GameState.READY
         assert ctrlr.mines_remaining == ctrlr.opts.mines - 1
-        check_and_reset_callback(frontend1, ctrlr)
+        self.check_and_reset_callback(
+            frontend1,
+            cell_updates=self.get_cell_states([coord], ctrlr),
+            mines_remaining=ctrlr.mines_remaining)
 
         # Select a flagged cell.
         ctrlr.select_cell(coord)
@@ -140,7 +136,10 @@ class TestController:
         assert ctrlr.board[coord] == CellFlag(2)
         assert ctrlr.game_state == GameState.READY
         assert ctrlr.mines_remaining == ctrlr.opts.mines - 2
-        check_and_reset_callback(frontend1, ctrlr)
+        self.check_and_reset_callback(
+            frontend1,
+            cell_updates=self.get_cell_states([coord], ctrlr),
+            mines_remaining=ctrlr.mines_remaining)
 
         # Flag a cell that is at max flags to reset it.
         ctrlr.flag_cell(coord)
@@ -148,7 +147,10 @@ class TestController:
         assert not ctrlr.mf.is_created
         assert ctrlr.game_state == GameState.READY
         assert ctrlr.mines_remaining == ctrlr.opts.mines
-        check_and_reset_callback(frontend1, ctrlr)
+        self.check_and_reset_callback(
+            frontend1,
+            cell_updates=self.get_cell_states([coord], ctrlr),
+            mines_remaining=ctrlr.mines_remaining)
 
         # Remove cell flags.
         ctrlr.flag_cell(coord)
@@ -157,7 +159,10 @@ class TestController:
         assert ctrlr.board[coord] == CellUnclicked()
         assert ctrlr.game_state == GameState.READY
         assert ctrlr.mines_remaining == ctrlr.opts.mines
-        check_and_reset_callback(frontend1, ctrlr)
+        self.check_and_reset_callback(
+            frontend1,
+            cell_updates=self.get_cell_states([coord], ctrlr),
+            mines_remaining=ctrlr.mines_remaining)
 
         # Select a cell to start the game.
         ctrlr.select_cell(coord)
@@ -283,8 +288,7 @@ class TestController:
         ])
         self.check_and_reset_callback(
             frontend1,
-            cells={c: CellNum(1) for c in [(0, 3), (1, 3)]},
-            game_state=GameState.ACTIVE)
+            cell_updates={c: CellNum(1) for c in [(0, 3), (1, 3)]})
 
         # Successful chording triggering opening.
         ctrlr.chord_on_cell((1, 3))
@@ -382,10 +386,10 @@ class TestController:
         ])
         self.check_and_reset_callback(
             frontend1,
-            cells={(2, 0): CellMine(1), (3, 0): CellHitMine(2),
+            cell_updates={(2, 0): CellMine(1), (3, 0): CellHitMine(2),
                    (3, 1): CellMine(1), (1, 4): CellMine(1)},
             game_state=GameState.LOST,
-            mines_remaining=ctrlr.opts.mines)
+            elapsed_time=ctrlr.end_time-ctrlr.start_time)
 
         # Lose after game has been started with incorrect flag.
         ctrlr = self.create_controller(cb=frontend1)
@@ -437,9 +441,10 @@ class TestController:
         assert ctrlr.board == ctrlr.mf.completed_board
         self.check_and_reset_callback(
             frontend1,
-            cells={(0, 0): CellNum(1), (1, 0): CellFlag(1)},
+            cell_updates={(0, 0): CellNum(1), (1, 0): CellFlag(1)},
             game_state=GameState.WON,
-            mines_remaining=0)
+            mines_remaining=0,
+            elapsed_time=ctrlr.end_time-ctrlr.start_time)
 
         # Check winning via chording and hitting an opening works.
         ctrlr = self.create_controller()
@@ -489,7 +494,7 @@ class TestController:
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         self.check_and_reset_callback(
             frontend1,
-            cells={(0, 0): CellUnclicked(), (1, 0): CellUnclicked()},
+            cell_updates={c: CellUnclicked() for c in {(0, 0), (1, 0)}},
             mines_remaining=ctrlr.opts.mines)
 
         # Start a new game mid-game.
@@ -522,9 +527,8 @@ class TestController:
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         self.check_and_reset_callback(
             frontend1,
-            cells={c: CellUnclicked() for c in ctrlr.mf.all_coords
-                   if ctrlr.mf.cell_contains_mine(c)},
-            mines_remaining=ctrlr.opts.mines)
+            cell_updates={c: CellUnclicked() for c in ctrlr.mf.all_coords
+                          if self.mf.cell_contains_mine(c)})
 
     def test_restart_game(self, frontend1):
         """Only require a single controller."""
@@ -557,15 +561,15 @@ class TestController:
         assert ctrlr.mf == self.mf
         self.check_and_reset_callback(
             frontend1,
-            cells={(0, 0): CellUnclicked(), (1, 0): CellUnclicked()},
+            cell_updates={c: CellUnclicked() for c in {(0, 0), (1, 0)}},
             mines_remaining=ctrlr.opts.mines)
 
         # Restart game mid-game.
         ctrlr.select_cell((0, 0))
         assert ctrlr.game_state == GameState.ACTIVE
         frontend1.reset_mock()
-        opened_cells = (c for c in ctrlr.mf.all_coords
-                        if ctrlr.board[c] != CellUnclicked())
+        opened_cells = {c for c in ctrlr.mf.all_coords
+                        if ctrlr.board[c] != CellUnclicked()}
         ctrlr.restart_game()
         assert ctrlr.game_state == GameState.READY
         assert ctrlr.start_time is None
@@ -573,8 +577,7 @@ class TestController:
         assert ctrlr.mf == self.mf
         self.check_and_reset_callback(
             frontend1,
-            cells={c: CellUnclicked() for c in opened_cells},
-            mines_remaining=ctrlr.opts.mines,
+            cell_updates={c: CellUnclicked() for c in opened_cells},
             game_state=GameState.READY)
 
         # Restart finished game (lost game).
@@ -589,15 +592,14 @@ class TestController:
         assert ctrlr.mf == self.mf
         self.check_and_reset_callback(frontend1)
 
-    def test_resize_board(self, frontend1):
+    def test_resize_board(self):
         # Setup, including start a game.
         opts = self.opts.copy()
-        ctrlr = self.create_controller(opts=opts, cb=frontend1)
+        ctrlr = self.create_controller(opts=opts)
         ctrlr.select_cell((0, 0))
         ctrlr.flag_cell((2, 0))
         assert ctrlr.game_state == GameState.ACTIVE
         assert ctrlr.mines_remaining == opts.mines - 1
-        frontend1.reset_mock()
 
         # Normal resize.
         opts.x_size, opts.y_size, opts.mines = 10, 2, 3
@@ -610,18 +612,15 @@ class TestController:
         assert ctrlr.mines_remaining == ctrlr.opts.mines
         assert not ctrlr.mf.is_created
         assert ctrlr.board == Board(opts.x_size, opts.y_size)
-        frontend1.assert_not_called()
 
         # Resize without changing values starts new game.
         ctrlr.select_cell((0, 0))
         assert ctrlr.game_state == GameState.ACTIVE
-        frontend1.reset_mock()
         ctrlr.resize_board(x_size=opts.x_size, y_size=opts.y_size,
                            mines=opts.mines)
         assert ctrlr.game_state == GameState.READY
         assert not ctrlr.mf.is_created
         assert ctrlr.board == Board(opts.x_size, opts.y_size)
-        frontend1.assert_not_called()
 
     def test_invalid_game_state(self, frontend1):
         # Use one controller throughout.
@@ -742,19 +741,18 @@ class TestController:
         return ctrlr
 
     @staticmethod
-    def check_and_reset_callback(cb, *,
-                                 cells=None, game_state=None,
-                                 mines_remaining=None):
+    def get_cell_states(coords, ctrlr):
+        return {c: ctrlr.board[c] for c in coords}
+
+    @staticmethod
+    def check_and_reset_callback(cb, **kwargs):
         """
         Assert that a callback was called exactly once, and with information
         matching whatever is passed in to this method.
         """
         cb.assert_called_once()
         passed_info = cb.call_args[0][0]
-        if cells:
-            assert passed_info.cell_updates == cells
-        if game_state:
-            assert passed_info.game_state == game_state
-        if mines_remaining is not None:
-            assert passed_info.mines_remaining == mines_remaining
+        for key, value in kwargs.items():
+            assert getattr(passed_info, key) == value
+
         cb.reset_mock()
