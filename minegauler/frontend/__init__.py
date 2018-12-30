@@ -11,15 +11,24 @@ from PyQt5.QtWidgets import QApplication
 
 from minegauler.frontend.api import get_callback
 from minegauler.frontend.main_window import MinegaulerGUI
+from minegauler.shared.utils import GUIOptsStruct
 
 
-def run(ctrlr):
+app = None
+gui = None
+
+
+def create_gui(ctrlr, opts):
+    global app, gui
     app = QApplication(sys.argv)
+    gui = MinegaulerGUI(ctrlr, opts)
+    return gui
 
-    gui = MinegaulerGUI(ctrlr)
-    ctrlr.register_callback(get_callback(gui,
-                                         gui.panel_widget,
-                                         gui.body_widget))
+
+def run():
+    if not app:
+        raise RuntimeError("Must create the app before calling run")
+
     gui.show()
 
     return app.exec_()
