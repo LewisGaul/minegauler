@@ -94,7 +94,7 @@ def make_pixmap(img_subdir, style, bg_fname, size, fg_fname=None, propn=1):
         base_path = join(img_dir, subdir)
         full_path = join(base_path, style, fname)
         if not exists(full_path):
-            logger.warn(
+            logger.warning(
                 f'Missing image file at {full_path}, using standard style')
             full_path = join(base_path, 'standard', fname)
         return full_path

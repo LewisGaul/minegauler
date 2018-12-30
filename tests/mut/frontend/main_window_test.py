@@ -7,21 +7,19 @@ Uses pytest - simply run 'python -m pytest tests/ [-k main_window_test]' from
 the root directory.
 """
 
-from unittest.mock import Mock
-
-import pytest
 
 from minegauler.frontend.main_window import MinegaulerGUI
+from minegauler.frontend.minefield_widgets import MinefieldWidget
+from minegauler.frontend.panel_widgets import PanelWidget
+from minegauler.shared.utils import GameOptsStruct
 
-
-@pytest.fixture
-def ctrlr():
-    return Mock()
 
 
 class TestMinegaulerGUI:
-    def test_create(self, ctrlr, qtbot):
+    def test_create(self, qtbot, ctrlr):
+        ctrlr.opts = GameOptsStruct()
         gui = MinegaulerGUI(ctrlr)
+        assert type(gui.panel_widget) == PanelWidget
+        assert type(gui.minefield_widget) == MinefieldWidget
         qtbot.addWidget(gui)
         gui.show()
-        qtbot.waitForWindowShown(gui)
