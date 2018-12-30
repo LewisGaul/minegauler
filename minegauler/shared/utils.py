@@ -129,5 +129,21 @@ class AbstractStruct(dict):
         for elem in cls._elements:
             if hasattr(struct, elem):
                 ret[elem] = getattr(struct, elem)
-                
+
+        return ret
+
+    @classmethod
+    def _from_dict(cls, dict_):
+        """
+        Create an instance of the structure by extracting element values from
+        an object with any of the elements retrievable with __getitem__.
+        Ignores extra attributes.
+        """
+        ret = cls()
+        for elem in cls._elements:
+            try:
+                ret[elem] = dict_[elem]
+            except KeyError:
+                pass
+
         return ret
