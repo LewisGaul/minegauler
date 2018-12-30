@@ -17,9 +17,9 @@ from PyQt5.QtCore import Qt, pyqtSignal  # QRectF, QRect
 from PyQt5.QtGui import QPixmap, QPainter, QImage
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QAction
 
-from minegauler.frontend.utils import CellImageType, img_dir
+from minegauler.frontend.utils import img_dir
 from minegauler.shared.internal_types import (CellFlag, CellHitMine, CellMine,
-    CellNum, CellUnclicked, CellWrongFlag)
+    CellNum, CellUnclicked, CellWrongFlag, CellImageType)
 
 
 logger = logging.getLogger(__name__)
@@ -435,6 +435,7 @@ if __name__ == '__main__':
     from minegauler.backend import Controller, GameOptsStruct
     
     app = QApplication(sys.argv)
-    mf_widget = MinefieldWidget(None, Controller(GameOptsStruct()), 100)
+    mf_widget = MinefieldWidget(None, Controller(GameOptsStruct()),
+                                btn_size=100)
     mf_widget.show()
     sys.exit(app.exec_())   

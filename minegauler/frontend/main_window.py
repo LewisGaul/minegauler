@@ -21,22 +21,11 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
 
 from minegauler.frontend.minefield_widgets import MinefieldWidget
 from minegauler.frontend.panel_widgets import PanelWidget
-from minegauler.frontend.utils import CellImageType, img_dir
-from minegauler.shared.utils import AbstractStruct
-
-# from minegauler.types import GUIOptionsStruct
-# from .utils import img_dir, CellImageType
+from minegauler.frontend.utils import img_dir
+from minegauler.shared.utils import GUIOptsStruct
 
 
 logger = logging.getLogger(__name__)
-
-
-class GUIOptionsStruct(AbstractStruct):
-    _elements = {'btn_size'   : 32,
-                 'styles'     : {CellImageType.BUTTONS: 'Standard',
-                                 CellImageType.NUMBERS: 'Standard',
-                                 CellImageType.MARKERS: 'Standard'},
-                 'drag_select': False}
 
 
 
@@ -195,7 +184,7 @@ class MinegaulerGUI(BaseMainWindow):
         if opts:
             self.opts = opts.copy()
         else:
-            self.opts = GUIOptionsStruct(drag_select=False)
+            self.opts = GUIOptsStruct(drag_select=False)
         super().__init__('MineGauler')
 
         self.set_panel_widget(PanelWidget(self, ctrlr))

@@ -6,13 +6,13 @@ December 2018, Lewis Gaul
 
 
 import logging
-import pickle
 import sys
-from pathlib import Path
 
+from minegauler import frontend
 from minegauler.backend import Controller, GameOptsStruct
-from minegauler.frontend import run
-from minegauler.shared.utils import root_dir
+from minegauler.frontend import GUIOptsStruct
+from minegauler.shared.utils import (read_settings_from_file,
+    write_settings_to_file)
 
 
 logging.basicConfig(filename='runtime.log', level=logging.DEBUG,
@@ -21,55 +21,38 @@ logging.basicConfig(filename='runtime.log', level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 
-settings_file = Path(root_dir) / 'settings.cfg'
+read_settings = read_settings_from_file()
 
-
-def retrieve_settings():
-    logger.debug("Retrieving stored settings")
-    read_settings = {}
-    try:
-        with open(settings_file, 'rb') as f:
-            read_settings = pickle.load(f)
-        logging.info("Settings read from file: %s", read_settings)
-    except FileNotFoundError:
-        logging.info("Settings file not found, default settings will be used")
-    except pickle.UnpicklingError:
-        logging.info("Unable to decode settings from file, default settings will "
-                     "be used")
-    except Exception as e:
-        logging.info("Unexpected error reading settings from file, default "
-                     "settings will be used")
-        logging.debug("%s", e)
-
+if read_settings:
     game_opts = GameOptsStruct._from_dict(read_settings)
-    # gui_opts  = GUIOptsStruct._from_dict(read_settings)
+    gui_opts = GUIOptsStruct._from_dict(read_settings)
+    logger.info("Settings read from file")
+else:
+    logger.info("Using default settings")
+    game_opts = GameOptsStruct()
+    gui_opts = GUIOptsStruct()
+logger.debug("Game options: %s", game_opts)
+logger.debug("GUI options: %s", gui_opts)
 
-    return game_opts
-
-
-def save_settings(ctrlr):
-    write_settings = GameOptsStruct() #PersistOptsStruct()
-    for k, v in ctrlr.opts.items():
-        if k in write_settings:
-            write_settings[k] = v
-    # for k, v in main_window.opts.items():
-    #     if k in write_settings.elements:
-    #         save_settings[k] = v
-
-    logger.info("Saving settings to file: %s", settings_file)
-    with open(settings_file, 'wb') as f:
-        pickle.dump(write_settings, f)
-
-
-game_opts = retrieve_settings()
 
 logger.info("Starting up")
 
 ctrlr = Controller(game_opts)
 
-rc = run(ctrlr)
+gui = frontend.create_gui(ctrlr, gui_opts)
 
-save_settings(ctrlr)
+ctrlr.register_callback(frontend.get_callback(gui,
+                                              gui.panel_widget,
+                                              gui.body_widget))
+
+rc = frontend.run()
+
+
+write_settings = {}
+write_settings.update(ctrlr.opts)
+write_settings.update(gui.opts)
+write_settings_to_file(write_settings)
+
 
 logger.info("Exiting")
 
