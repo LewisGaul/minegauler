@@ -32,10 +32,10 @@ logger = logging.getLogger(__name__)
 
 
 class GUIOptionsStruct(AbstractStruct):
-    _elements = {'btn_size': 32,
-                 'styles': {CellImageType.BUTTONS: 'Standard',
-                            CellImageType.NUMBERS: 'Standard',
-                            CellImageType.MARKERS: 'Standard'},
+    _elements = {'btn_size'   : 32,
+                 'styles'     : {CellImageType.BUTTONS: 'Standard',
+                                 CellImageType.NUMBERS: 'Standard',
+                                 CellImageType.MARKERS: 'Standard'},
                  'drag_select': False}
 
 
@@ -199,9 +199,11 @@ class MinegaulerGUI(BaseMainWindow):
         super().__init__('MineGauler')
 
         self.set_panel_widget(PanelWidget(self, ctrlr))
-        self.minefield_widget = MinefieldWidget(self, ctrlr,
-                                                self.opts.btn_size,
-                                                self.opts.styles)
+        self.minefield_widget = MinefieldWidget(
+            self, ctrlr,
+            btn_size=self.opts.btn_size,
+            styles=self.opts.styles,
+            drag_select=self.opts.drag_select)
         self.set_body_widget(self.minefield_widget)
 
         self.minefield_widget.at_risk_signal.connect(
