@@ -327,6 +327,8 @@ class MinefieldWidget(QGraphicsView):
         appropriate.
         """
         self.raise_all_sunken_cells()
+        if not self.drag_select:
+            self.no_risk_signal.emit()
         if coord is not None:
             self.both_buttons_down(coord)
 
