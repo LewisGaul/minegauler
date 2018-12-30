@@ -12,10 +12,13 @@ def get_callback(gui, panel_widget, mf_widget):
         update (minegauler.backend.SharedInfo)
             The update from the backend.
         """
-        for c, state in update.cell_updates.items():
-            mf_widget.set_cell_image(c, state)
+        if update.cell_updates is not None:
+            for c, state in update.cell_updates.items():
+                mf_widget.set_cell_image(c, state)
 
-        panel_widget.update_game_state(update.game_state)
-        panel_widget.set_mines_counter(update.mines_remaining)
+        if update.game_state is not None:
+            panel_widget.update_game_state(update.game_state)
+        if update.mines_remaining is not None:
+            panel_widget.set_mines_counter(update.mines_remaining)
 
     return callback
