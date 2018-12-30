@@ -70,12 +70,12 @@ def init_or_update_cell_images(cell_images, size, styles,
                                                    size,
                                                    'flag%d.png' % i,
                                                    5/8)
-            cell_images[CellWrongFlag] = make_pixmap('markers',
-                                                            btn_style,
-                                                            'btn_up.png',
-                                                            size,
-                                                            'cross%d.png' % i,
-                                                            5/8)
+            cell_images[CellWrongFlag(i)] = make_pixmap('markers',
+                                                        btn_style,
+                                                        'btn_up.png',
+                                                        size,
+                                                        'cross%d.png' % i,
+                                                        5/8)
             cell_images[CellMine(i)] = make_pixmap('markers',
                                                    btn_style,
                                                    'btn_down.png',
