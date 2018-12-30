@@ -5,6 +5,9 @@ December 2018, Lewis Gaul
 """
 
 
+from minegauler.shared.internal_types import GameState
+
+
 def get_callback(gui, panel_widget, mf_widget):
     def callback(update):
         """
@@ -18,6 +21,11 @@ def get_callback(gui, panel_widget, mf_widget):
 
         if update.game_state is not None:
             panel_widget.update_game_state(update.game_state)
+            if update.game_state in {GameState.WON, GameState.LOST}:
+                mf_widget.end_game()
+                mf_widget.ignore_clicks()
+            else:
+                mf_widget.accept_clicks()
         if update.mines_remaining is not None:
             panel_widget.set_mines_counter(update.mines_remaining)
 

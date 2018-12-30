@@ -195,7 +195,7 @@ class MinegaulerGUI(BaseMainWindow):
         if opts:
             self.opts = opts.copy()
         else:
-            self.opts = GUIOptionsStruct()
+            self.opts = GUIOptionsStruct(drag_select=False)
         super().__init__('MineGauler')
 
         self.set_panel_widget(PanelWidget(self, ctrlr))
