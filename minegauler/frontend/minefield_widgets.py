@@ -278,15 +278,12 @@ class MinefieldWidget(QGraphicsView):
         self.raise_all_sunken_cells()
         if coord is not None:
             self.ctrlr.select_cell(coord)
-        # if coord is not None:
-        #     cb_core.leftclick.emit(coord)
     
     def right_button_down(self, coord):
         """
         Right mouse button was pressed. Change display and call callback
         functions as appropriate.
         """
-        # cb_core.rightclick.emit(coord)
         self.ctrlr.flag_cell(coord)
 
     def both_buttons_down(self, coord):
