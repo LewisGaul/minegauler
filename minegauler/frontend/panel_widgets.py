@@ -94,12 +94,12 @@ class PanelWidget(QWidget):
         if event.button() == Qt.LeftButton:
             self.face_button.setFrameShadow(QFrame.Raised)
             if self.rect().contains(event.pos()):
-                self.new_game()
+                self.request_new_game()
 
     # --------------------------------------------------------------------------
     # Other methods
     # --------------------------------------------------------------------------
-    def new_game(self):
+    def request_new_game(self):
         """
         A new game has been requested, call backend.
         """
@@ -107,14 +107,6 @@ class PanelWidget(QWidget):
         self.timer.stop()
         self.timer.set_time(0)
         self.ctrlr.new_game()
-
-    def end_game(self, game_state):
-        if game_state == GameState.LOST:
-            self.set_face(FaceState.LOST)
-        elif game_state == GameState.WON:
-            self.set_face(FaceState.WON)
-            self.set_mines_counter(0)
-        self.timer.stop()
     
     def set_face(self, state):
         """

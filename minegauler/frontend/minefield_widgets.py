@@ -272,8 +272,8 @@ class MinefieldWidget(QGraphicsView):
         functions as appropriate.
         """
         if self.drag_select:
-            self.ctrlr.select_cell(coord)
             self.at_risk_signal.emit()
+            self.ctrlr.select_cell(coord)
         else:
             self.sink_unclicked_cell(coord)
 
@@ -399,12 +399,6 @@ class MinefieldWidget(QGraphicsView):
         x, y = coord
         b = self.scene.addPixmap(self.cell_images[state])
         b.setPos(x*self.btn_size, y*self.btn_size)
-
-    def end_game(self):
-        """
-        Receive callback for end of game - raise all sunken cells.
-        """
-        self.raise_all_sunken_cells()
 
     def ignore_clicks(self):
         self._ignore_clicks = True
