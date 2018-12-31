@@ -203,7 +203,7 @@ class MinefieldWidget(QGraphicsView):
             return self.mousePressEvent(event)
         elif event.button() == Qt.LeftButton:
             coord = event.x() // self.btn_size, event.y() // self.btn_size
-            return self.left_button_double_click(coord)
+            self.left_button_double_click(coord)
 
     def mouseMoveEvent(self, event):
         """Handle mouse move events."""
@@ -302,7 +302,7 @@ class MinefieldWidget(QGraphicsView):
 
     def left_button_double_click(self, coord):
         """
-        Left button was double clicked. Remove any flags that were on the cell 
+        Left button was double clicked. Remove any flags that were on the cell
         """
         self.ctrlr.remove_cell_flags(coord)
 
