@@ -8,6 +8,8 @@ the root directory.
 """
 
 
+import pytest
+
 from minegauler.frontend.main_window import MinegaulerGUI
 from minegauler.frontend.minefield_widgets import MinefieldWidget
 from minegauler.frontend.panel_widgets import PanelWidget
@@ -16,6 +18,7 @@ from minegauler.shared.utils import GameOptsStruct
 
 
 class TestMinegaulerGUI:
+    @pytest.mark.skip
     def test_create(self, qtbot, ctrlr):
         ctrlr.opts = GameOptsStruct()
         gui = MinegaulerGUI(ctrlr)
