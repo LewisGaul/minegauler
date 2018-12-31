@@ -23,7 +23,7 @@ before_script:
   - virtualenv venv/
   - source venv/bin/activate
   - pip install -r requirements.txt
-  - pip uninstall pytest-qt
+  - pip uninstall -y pytest-qt
 #  - apt-get install xvfb
 
 test:
