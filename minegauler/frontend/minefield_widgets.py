@@ -197,6 +197,7 @@ class MinefieldWidget(QGraphicsView):
     def mouseDoubleClickEvent(self, event):
         """
         Redirect double right-clicks to be treated as two single clicks.
+        Double left-clicks call a method to remove flags
         """
         if event.button() == Qt.RightButton:
             return self.mousePressEvent(event)
@@ -300,6 +301,9 @@ class MinefieldWidget(QGraphicsView):
             self.ctrlr.select_cell(coord)
 
     def left_button_double_click(self, coord):
+        """
+        Left button was double clicked. Remove any flags that were on the cell 
+        """
         self.ctrlr.remove_cell_flags(coord)
 
     def right_button_down(self, coord):
