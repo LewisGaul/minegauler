@@ -23,11 +23,12 @@ before_script:
   - virtualenv venv/
   - source venv/bin/activate
   - pip install -r requirements.txt
+  - sudo apt-get install xvfb
 
 test:
   stage: test
   script:
-    - python -m pytest tests/ -v
+    - xvfb-run python -m pytest tests/ -v
   
 coverage:
   stage: test
@@ -38,7 +39,7 @@ coverage:
     - coverage
     expire_in: 1 day
   only:
-    - master
+    - v4/dev
 
 pages:
   stage: deploy
@@ -52,4 +53,4 @@ pages:
     paths:
       - public
   only:
-    - master
+    - v4/dev
