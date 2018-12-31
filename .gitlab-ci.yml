@@ -23,12 +23,13 @@ before_script:
   - virtualenv venv/
   - source venv/bin/activate
   - pip install -r requirements.txt
+  - pip uninstall pytest-qt
 #  - apt-get install xvfb
 
 test:
   stage: test
   script:
-    - xvfb-run python -m pytest tests/mut/backend -v
+    - python -m pytest tests/mut/backend -v
   
 coverage:
   stage: test
