@@ -200,6 +200,9 @@ class MinefieldWidget(QGraphicsView):
         """
         if event.button() == Qt.RightButton:
             return self.mousePressEvent(event)
+        elif event.button() == Qt.LeftButton:
+            coord = event.x() // self.btn_size, event.y() // self.btn_size
+            return self.left_button_double_click(coord)
 
     def mouseMoveEvent(self, event):
         """Handle mouse move events."""
@@ -295,7 +298,10 @@ class MinefieldWidget(QGraphicsView):
         self.no_risk_signal.emit()
         if not self.drag_select and coord is not None:
             self.ctrlr.select_cell(coord)
-    
+
+    def left_button_double_click(self, coord):
+        self.ctrlr.remove_cell_flags(coord)
+
     def right_button_down(self, coord):
         """
         Right mouse button was pressed. Change display and call callback
