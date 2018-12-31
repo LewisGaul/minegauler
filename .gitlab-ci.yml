@@ -28,7 +28,7 @@ before_script:
 test:
   stage: test
   script:
-    - python -m pytest tests/mut/backend -v
+    - xvfb-run python -m pytest tests/mut/backend -v
   
 coverage:
   stage: test
