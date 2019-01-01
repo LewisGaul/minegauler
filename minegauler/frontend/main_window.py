@@ -168,7 +168,7 @@ class BaseMainWindow(QMainWindow):
     # --------------------------------------------------------------------------
     def update_size(self):   #@@@LG not sure if this will be needed...
         """Update the window size."""
-        self.panel_frame.adjustSize()
+        # self.panel_frame.adjustSize()
         self.body_frame.adjustSize()
         self.centralWidget().adjustSize()
         self.adjustSize()
