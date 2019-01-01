@@ -151,6 +151,7 @@ class MinefieldWidget(QGraphicsView):
         self.mouse_coord = None
         self.both_mouse_buttons_pressed = False
         self.await_release_all_buttons = False
+        self.was_double_mouse_click = False
         # Set of coords for cells which are sunken.
         self.sunken_cells = set()
 
@@ -188,6 +189,7 @@ class MinefieldWidget(QGraphicsView):
         ## Leftclick
         elif event.button() == Qt.LeftButton:
             logger.debug("Left mouse button down on cell %s", coord)
+            self.was_double_mouse_click = False
             self.left_button_down(coord)
         ## Rightclick
         elif event.button() == Qt.RightButton:
@@ -198,12 +200,13 @@ class MinefieldWidget(QGraphicsView):
         """Handle double clicks."""
 
         coord = event.x() // self.btn_size, event.y() // self.btn_size
-        
+
         # Redirect double right-clicks to be two normal clicks.
         if event.button() == Qt.RightButton:
             return self.mousePressEvent(event)
 
         elif event.button() == Qt.LeftButton:
+            self.was_double_mouse_click = True
             self.left_button_double_click(coord)
 
     def mouseMoveEvent(self, event):
@@ -259,7 +262,8 @@ class MinefieldWidget(QGraphicsView):
             self.first_of_both_buttons_release(coord)
         elif not self.both_mouse_buttons_pressed:
             ## Leftclick
-            if event.button() == Qt.LeftButton:
+            if (event.button() == Qt.LeftButton and
+                    not self.was_double_mouse_click):
                 logger.debug("Left mouse button release on cell %s", coord)
                 self.left_button_release(coord)
 
