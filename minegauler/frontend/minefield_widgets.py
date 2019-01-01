@@ -317,7 +317,7 @@ class MinefieldWidget(QGraphicsView):
         """
         Right mouse button was moved. Change display as appropriate.
         """
-        if coord is not None:
+        if coord is not None and self.drag_select:
             self.right_button_down(coord)
 
     def both_buttons_down(self, coord):
