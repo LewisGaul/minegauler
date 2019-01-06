@@ -224,7 +224,16 @@ class MinegaulerGUI(BaseMainWindow):
 
         exit_act = self.game_menu.addAction('Exit', self.close)
         exit_act.setShortcut('Alt+F4')
-        
+
+        ## OPTIONS MENU
+        # Drag select
+        def toggle_drag_select():
+            self.opts.drag_select = not(self.opts.drag_select)
+            self.minefield_widget.drag_select = self.opts.drag_select
+        drag_act = self.opts_menu.addAction('Drag select', toggle_drag_select)
+        drag_act.setCheckable(True)
+        drag_act.setChecked(self.opts.drag_select)
+
     def closeEvent(self, event):
         # cb_core.save_settings.emit()
         super().closeEvent(event)
