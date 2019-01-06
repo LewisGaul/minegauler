@@ -361,7 +361,7 @@ class Controller(AbstractController):
 
     @_ignore_if_not(game_state=('READY', 'ACTIVE'),
                     cell_state=(CellFlag, CellUnclicked))
-    def flag_cell(self, coord):
+    def flag_cell(self, coord, *, flag_only=False):
         """See AbstractController."""
         
         super().flag_cell(coord)
@@ -371,8 +371,9 @@ class Controller(AbstractController):
             self.mines_remaining -= 1
         elif type(self.board[coord]) is CellFlag:
             if self.board[coord] == CellFlag(self.opts.per_cell):
-                self._set_cell(coord, CellUnclicked())
-                self.mines_remaining += self.opts.per_cell
+                if not flag_only:
+                    self._set_cell(coord, CellUnclicked())
+                    self.mines_remaining += self.opts.per_cell
             else:
                 self._set_cell(coord, self.board[coord] + 1)
                 self.mines_remaining -= 1
