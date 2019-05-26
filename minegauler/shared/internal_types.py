@@ -91,7 +91,7 @@ class CellMineType(CellContentsType):
     Abstract base class for the number of a mine type in a cell.
     """
     char = None
-    def __new__(cls, num):
+    def __new__(cls, num=1):
         if cls == CellMineType:
             raise TypeError(
                 f"{type(cls)} should be used as a base class and not "
