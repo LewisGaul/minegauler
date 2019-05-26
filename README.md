@@ -9,3 +9,8 @@ Run with `python -m minegauler`.
 To play without any python requirements, built versions will be linked here in the future.
 
 Contact: minegauler@gmail.com, any questions/suggestions/requests welcome.
+
+
+### Developer information
+
+Coverage for the base development branch can be found at https://lewisgaul.gitlab.io/minegauler/coverage/.

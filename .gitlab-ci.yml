@@ -38,7 +38,7 @@ coverage:
     - coverage
     expire_in: 1 day
   only:
-    - master
+    - v4/dev
 
 pages:
   stage: deploy
@@ -52,4 +52,4 @@ pages:
     paths:
       - public
   only:
-    - master
+    - v4/dev
