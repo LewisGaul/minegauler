@@ -14,7 +14,6 @@ import pytest
 from minegauler.shared.utils import GameOptsStruct
 
 
-
 @pytest.fixture
 def ctrlr():
     mock = MagicMock()

@@ -16,7 +16,6 @@ from minegauler.frontend.panel_widgets import PanelWidget
 from minegauler.shared.utils import GameOptsStruct
 
 
-
 class TestMinegaulerGUI:
     @pytest.mark.skip
     def test_create(self, qtbot, ctrlr):

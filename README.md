@@ -13,4 +13,6 @@ Contact: minegauler@gmail.com, any questions/suggestions/requests welcome.
 
 ### Developer information
 
+Run the tests with the command: `python -m pytest tests`.
+
 Coverage for the base development branch can be found at https://lewisgaul.gitlab.io/minegauler/coverage/.

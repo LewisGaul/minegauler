@@ -10,7 +10,6 @@ from the root directory.
 from minegauler.frontend.minefield_widgets import MinefieldWidget
 
 
-
 class TestMinefieldWidget:
     def test_create(self, qtbot, ctrlr):
         widget = MinefieldWidget(None, ctrlr)
