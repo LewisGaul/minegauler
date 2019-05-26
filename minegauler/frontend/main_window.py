@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
 from minegauler.frontend.minefield_widgets import MinefieldWidget
 from minegauler.frontend.panel_widgets import PanelWidget
 from minegauler.frontend.utils import img_dir
-from minegauler.shared.utils import GUIOptsStruct, get_difficulty
+from minegauler.shared.utils import GuiOptsStruct, get_difficulty
 
 
 logger = logging.getLogger(__name__)
@@ -184,7 +184,7 @@ class MinegaulerGUI(BaseMainWindow):
         if opts:
             self.opts = opts.copy()
         else:
-            self.opts = GUIOptsStruct(drag_select=False)
+            self.opts = GuiOptsStruct(drag_select=False)
         super().__init__('MineGauler')
 
         self.set_panel_widget(PanelWidget(self, ctrlr))

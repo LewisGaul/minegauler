@@ -445,7 +445,7 @@ class TestController:
             cell_updates={(0, 0): CellNum(1), (1, 0): CellFlag(1)},
             game_state=GameState.WON,
             mines_remaining=0,
-            lives_remaining=None,
+            lives_remaining=ctrlr.lives_remaining,
             elapsed_time=ctrlr.end_time-ctrlr.start_time)
 
         # Check winning via chording and hitting an opening works.
@@ -482,7 +482,6 @@ class TestController:
         assert ctrlr.game_state == GameState.READY
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         assert not ctrlr.mf.is_created
-        frontend1.assert_not_called()
 
         # Start a new game that isn't started but has flags.
         ctrlr.flag_cell((0, 0))
@@ -541,7 +540,6 @@ class TestController:
         assert ctrlr.game_state == GameState.READY
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         assert not ctrlr.mf.is_created
-        frontend1.assert_not_called()
 
         # Replay before doing anything else, with minefield.
         ctrlr.mf = self.mf
@@ -549,7 +547,6 @@ class TestController:
         assert ctrlr.game_state == GameState.READY
         assert ctrlr.board == Board(ctrlr.opts.x_size, ctrlr.opts.y_size)
         assert ctrlr.mf == self.mf
-        frontend1.assert_not_called()
 
         # Restart a game that isn't started but has flags.
         ctrlr.flag_cell((0, 0))
@@ -665,7 +662,7 @@ class TestController:
         self.check_and_reset_callback(
             frontend1,
             cell_updates={(3, 0): CellHitMine(2)},
-            game_state=None,
+            game_state=ctrlr.game_state,
             lives_remaining=ctrlr.lives_remaining,
             mines_remaining=ctrlr.mines_remaining)
 
@@ -687,7 +684,7 @@ class TestController:
             cell_updates={(3, 1): CellHitMine(1), (1, 4): CellMine(1)},
             game_state=GameState.LOST,
             lives_remaining=0,
-            mines_remaining=None)
+            mines_remaining=ctrlr.mines_remaining)
 
     def test_invalid_game_state(self, frontend1):
         # Use one controller throughout.

@@ -15,12 +15,14 @@ import functools
 import logging
 import time as tm
 from abc import ABC, abstractmethod
+from typing import Tuple, Dict, Optional
+
+import attr
 
 from minegauler.backend.minefield import Minefield
 from minegauler.backend.utils import Board
 from minegauler.shared.internal_types import *
-from minegauler.shared.utils import (get_num_pos_args_accepted, AbstractStruct,
-    GameOptsStruct)
+from minegauler.shared.utils import GameOptsStruct, get_num_pos_args_accepted
 
 
 logger = logging.getLogger(__name__)
@@ -79,8 +81,8 @@ def _ignore_if_not(*, game_state=None, cell_state=None):
             @functools.wraps(method)
             def wrapped(self, *args, **kwargs):
                 if (game_state is not None and
-                    self.game_state != game_state and
-                    self.game_state not in game_state):
+                        self.game_state != game_state and
+                        self.game_state not in game_state):
                     return
                 return method(self, *args, **kwargs)
         else:
@@ -89,15 +91,16 @@ def _ignore_if_not(*, game_state=None, cell_state=None):
                 if ((game_state is not None and
                      self.game_state != game_state and
                      self.game_state not in game_state) or
-                    not isinstance(self.board[coord], cell_state)):
+                        not isinstance(self.board[coord], cell_state)):
                     return
                 return method(self, coord, *args, **kwargs)
-        
+
         return wrapped
     return decorator
 
 
-class SharedInfo(AbstractStruct):
+@attr.attrs(auto_attribs=True)
+class SharedInfo:
     """
     Information to pass to frontends.
     
@@ -111,18 +114,16 @@ class SharedInfo(AbstractStruct):
         The number of mines remaining to be found, given by
         [total mines] - [number of flags]. Can be negative if there are too many
         flags. If the number is unchanged, None may be passed.
-    lives_remaining (int | None)
-        The number of lives remaining, or None if no change.
+    lives_remaining (int)
+        The number of lives remaining.
     elapsed_time (float | None)
         The time elapsed if the game has ended, otherwise None.
     """
-    _elements = {
-        'cell_updates'   : None,
-        'game_state'     : None,
-        'mines_remaining': None,
-        'lives_remaining': None,
-        'elapsed_time'   : None,
-    }
+    cell_updates: Dict[Tuple[int, int], CellContentsType] = attr.Factory(dict)
+    game_state: GameState = GameState.INVALID
+    mines_remaining: int = 0
+    lives_remaining: int = 0
+    elapsed_time: Optional[float] = None
 
 
 
@@ -256,11 +257,6 @@ class Controller(AbstractController):
         opts (GameOptsStruct)
             Object containing the required game options as attributes.
         """
-
-        for kw in GameOptsStruct._elements:
-            if not hasattr(opts, kw):
-                raise ValueError(f"Missing option {kw}")
-
         super().__init__()
 
         self.opts = GameOptsStruct._from_struct(opts)
@@ -276,7 +272,9 @@ class Controller(AbstractController):
                             self.opts.per_cell, create=False)
         self._init_game()
         # Keep track of changes to be passed to UI.
-        self._next_update = SharedInfo(cell_updates={})
+        self._next_update = SharedInfo(mines_remaining=self.mines_remaining,
+                                       lives_remaining=self.lives_remaining,
+                                       game_state=self.game_state)
         self._init_completed = True
 
     def __setattr__(self, key, value):
@@ -285,9 +283,8 @@ class Controller(AbstractController):
         passed to frontends.
         """
         if hasattr(self, '_init_completed'):
-            if (key in ['game_state', 'mines_remaining', 'lives_remaining'] and
-                getattr(self, key) != value):
-                self._next_update[key] = value
+            if key in ['game_state', 'mines_remaining', 'lives_remaining']:
+                setattr(self._next_update, key, value)
             elif key == 'end_time' and value != None:
                 self._next_update.elapsed_time = value - self.start_time
 
@@ -324,7 +321,7 @@ class Controller(AbstractController):
     @_ignore_if_not(game_state=('READY', 'ACTIVE'), cell_state=CellUnclicked)
     def select_cell(self, coord):
         """See AbstractController."""
-        
+
         super().select_cell(coord)
             
         # Check if first click.
@@ -335,7 +332,8 @@ class Controller(AbstractController):
                     safe_coords = self.mf.get_nbrs(coord, include_origin=True)
                     logger.debug(
                         "Trying to create minefield with the following safe "
-                        "coordinates: %s", safe_coords)
+                        "coordinates: %s",
+                        safe_coords)
                     try:
                         self.mf.create(safe_coords)
                     except ValueError:
@@ -557,9 +555,6 @@ class Controller(AbstractController):
     def _send_callback_updates(self):
         """See AbstractController."""
 
-        if self._next_update == SharedInfo(cell_updates={}):
-            return
-
         super()._send_callback_updates()
 
         for cb in self._registered_callbacks:
@@ -568,4 +563,6 @@ class Controller(AbstractController):
             except Exception as e:
                 logger.warning("Encountered an error sending an update: %s", e)
             
-        self._next_update = SharedInfo(cell_updates={})
+        self._next_update = SharedInfo(mines_remaining=self.mines_remaining,
+                                       lives_remaining=self.lives_remaining,
+                                       game_state=self.game_state)

@@ -4,9 +4,7 @@ utils.py - General utilities
 March 2018, Lewis Gaul
 
 Exports:
-AbstractStruct (class)
-    Abstract structure class for storing data together. Intended to behave
-    similarly to C structs by disallowing monkey-patching.
+TODO
 """
 
 
@@ -16,6 +14,9 @@ import logging
 import os
 from inspect import Parameter
 from os.path import abspath, dirname, join
+from typing import Dict
+
+import attr
 
 from minegauler.shared.internal_types import CellImageType
 
@@ -66,66 +67,16 @@ def get_num_pos_args_accepted(func):
     return min_args, max_args
 
 
-class AbstractStruct(dict):
+class StructConstructorMixin:
     """
-    Abstract structure class, used to store related data. Elements can be
-    accessed via attributes or dictionary-style keys. Only elements given in
-    'elements' can be used, otherwise KeyError/AttributeError will be raised.
-    
-    Attributes:
-    _elements (dict)
-        Mapping of element names to their default values.
+    A mixin class for creating a struct class from a dictionary or struct.
 
     Methods:
     _from_struct (classmethod)
         Create an instance from another structure-like object.
+    _from_dict (classmethod)
+        Create an instance from a dictionary.
     """
-
-    _elements = {}
-
-    def __init__(self, **kwargs):
-        super().__init__()
-        for k, v in kwargs.items():
-            self[k] = v
-        for k, v in self._elements.items():
-            if k not in self:
-                self[k] = v
-                
-    def __new__(cls, **kwargs):
-        if cls == AbstractStruct:
-            raise TypeError("Cannot instantiate base structure class directly")
-        return super().__new__(cls)
-                
-    def __getitem__(self, name):
-        if name in self._elements:
-            if name in self:
-                return super().__getitem__(name)
-            else:
-                return None
-        else:
-            raise KeyError("Unexpected element")
-            
-    def __setitem__(self, name, value):
-        if name in self._elements:
-            super().__setitem__(name, value)
-        else:
-            raise KeyError("Unexpected element")
-            
-    def __getattr__(self, name):
-        if name in self._elements:
-            return self[name]
-        else:
-            raise AttributeError("Unexpected element")
-            
-    def __setattr__(self, name, value):
-        if name in self._elements:
-            self[name] = value
-        else:
-            raise AttributeError("Unexpected element")
-
-    def copy(self):
-        return self.__class__(**self)
-
     @classmethod
     def _from_struct(cls, struct):
         """
@@ -133,69 +84,78 @@ class AbstractStruct(dict):
         an object with any of the elements as attributes. Ignores extra
         attributes.
         """
-        ret = cls()
-        for elem in cls._elements:
-            if hasattr(struct, elem):
-                ret[elem] = getattr(struct, elem)
-
-        return ret
+        return cls._from_dict(attr.asdict(struct))
 
     @classmethod
     def _from_dict(cls, dict_):
         """
         Create an instance of the structure by extracting element values from
-        an object with any of the elements retrievable with __getitem__.
-        Ignores extra attributes.
+        a dictionary. Ignores extra attributes.
         """
-        ret = cls()
-        for elem in cls._elements:
-            try:
-                ret[elem] = dict_[elem]
-            except KeyError:
-                pass
+        args = {a: v for a, v in dict_.items() if a in attr.fields_dict(cls)}
+        return cls(**args)
 
-        return ret
+    def copy(self):
+        """
+        Create and return a copy of the struct instance.
+        """
+        return self._from_struct(self)
 
 
-class GameOptsStruct(AbstractStruct):
+@attr.attrs(auto_attribs=True)
+class GameOptsStruct(StructConstructorMixin):
     """
     Structure of game options.
     """
-    _elements = {
-        'x_size':        8,
-        'y_size':        8,
-        'mines':         10,
-        'first_success': True,
-        'per_cell':      1,
-        'lives':         1,
-        # 'game_mode':     None,
+    x_size: int = 8
+    y_size: int = 8
+    mines: int = 10
+    first_success: bool = True
+    per_cell: int = 1
+    lives: int = 1
+    # game_mode: None = None,
+
+
+@attr.attrs(auto_attribs=True)
+class GuiOptsStruct(StructConstructorMixin):
+    """
+    Structure of GUI options.
+    """
+    btn_size: int = 16
+    drag_select: bool = False
+    styles: Dict[CellImageType, str] = {
+        CellImageType.BUTTONS: 'Standard',
+        CellImageType.NUMBERS: 'Standard',
+        CellImageType.MARKERS: 'Standard',
     }
 
 
-class GUIOptsStruct(AbstractStruct):
-    _elements = {'btn_size'   : 32,
-                 'styles'     : {CellImageType.BUTTONS: 'Standard',
-                                 CellImageType.NUMBERS: 'Standard',
-                                 CellImageType.MARKERS: 'Standard'},
-                 'drag_select': False}
-
-
-class PersistSettingsStruct(AbstractStruct):
-
-    _elements = {**GameOptsStruct._elements, **GUIOptsStruct._elements}
+@attr.attrs(auto_attribs=True)
+class PersistSettingsStruct(GameOptsStruct, GuiOptsStruct):
+    """
+    Strucure of settings to be persisted when closing the app.
+    """
+    @classmethod
+    def _from_multiple_structs(cls, *args):
+        """
+        Construct an instance of the class using multiple struct instances.
+        Later arguments take precedence over earlier.
+        """
+        dict_ = {}
+        for struct in args:
+            dict_.update(attr.asdict(struct))
+        return cls._from_dict(dict_)
 
     def encode_to_json(self):
-        ret = dict(self)
-        ret['styles'] = {k.name: v for k, v in self['styles'].items()}
-
+        ret = attr.asdict(self)
+        ret['styles'] = {k.name: v for k, v in self.styles.items()}
         return ret
 
     @classmethod
     def decode_from_json(cls, dict_):
         dict_['styles'] = {getattr(CellImageType, k): v for k, v in
                            dict_['styles'].items()}
-
-        return cls._from_dict(dict_)
+        return cls(**dict_)
 
 
 def read_settings_from_file():
@@ -214,14 +174,14 @@ def read_settings_from_file():
     return read_settings
 
 
-def write_settings_to_file(settings):
+def write_settings_to_file(settings: PersistSettingsStruct):
     logger.info("Saving settings to file: %s", SETTINGS_FILE)
     logger.debug("%s", settings)
     try:
         with open(SETTINGS_FILE, 'w') as f:
-            json.dump(PersistSettingsStruct.encode_to_json(settings), f)
+            json.dump(settings.encode_to_json(), f)
     except Exception as e:
-        logger.warning("Unexpected error writing settings to file: %s", e)
+        logger.error("Unexpected error writing settings to file: %s", e)
 
 
 def get_difficulty(x_size, y_size, mines):

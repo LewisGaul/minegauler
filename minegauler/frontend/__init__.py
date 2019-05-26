@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QApplication
 
 from minegauler.frontend.api import get_callback
 from minegauler.frontend.main_window import MinegaulerGUI
-from minegauler.shared.utils import GUIOptsStruct
+from minegauler.shared.utils import GuiOptsStruct
 
 
 app = None
