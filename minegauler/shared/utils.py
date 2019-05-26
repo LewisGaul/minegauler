@@ -11,7 +11,34 @@ AbstractStruct (class)
 
 
 import inspect
+import json
+import logging
+import os
 from inspect import Parameter
+from os.path import abspath, dirname, join
+
+from minegauler.shared.internal_types import CellImageType
+
+
+logger = logging.getLogger(__name__)
+
+root_dir = os.getcwd()
+
+SETTINGS_FILE = join(root_dir, 'settings.cfg')
+
+
+def get_dir_path(f):
+    """
+    Get the full path to the directory containing a file.
+
+    Arguments:
+    f (str)
+        Filename or file path.
+
+    Returns: str
+        Full path to the directory containing the file.
+    """
+    return dirname(abspath(f))
 
 
 def get_num_pos_args_accepted(func):
@@ -36,7 +63,7 @@ def get_num_pos_args_accepted(func):
     min_args = len([p for p in pos_params if p.default == Parameter.empty])
     max_args = len(pos_params)
 
-    return (min_args, max_args)
+    return min_args, max_args
 
 
 class AbstractStruct(dict):
@@ -110,5 +137,100 @@ class AbstractStruct(dict):
         for elem in cls._elements:
             if hasattr(struct, elem):
                 ret[elem] = getattr(struct, elem)
-                
+
         return ret
+
+    @classmethod
+    def _from_dict(cls, dict_):
+        """
+        Create an instance of the structure by extracting element values from
+        an object with any of the elements retrievable with __getitem__.
+        Ignores extra attributes.
+        """
+        ret = cls()
+        for elem in cls._elements:
+            try:
+                ret[elem] = dict_[elem]
+            except KeyError:
+                pass
+
+        return ret
+
+
+class GameOptsStruct(AbstractStruct):
+    """
+    Structure of game options.
+    """
+    _elements = {
+        'x_size':        8,
+        'y_size':        8,
+        'mines':         10,
+        'first_success': True,
+        'per_cell':      1,
+        'lives':         1,
+        # 'game_mode':     None,
+    }
+
+
+class GUIOptsStruct(AbstractStruct):
+    _elements = {'btn_size'   : 32,
+                 'styles'     : {CellImageType.BUTTONS: 'Standard',
+                                 CellImageType.NUMBERS: 'Standard',
+                                 CellImageType.MARKERS: 'Standard'},
+                 'drag_select': False}
+
+
+class PersistSettingsStruct(AbstractStruct):
+
+    _elements = {**GameOptsStruct._elements, **GUIOptsStruct._elements}
+
+    def encode_to_json(self):
+        ret = dict(self)
+        ret['styles'] = {k.name: v for k, v in self['styles'].items()}
+
+        return ret
+
+    @classmethod
+    def decode_from_json(cls, dict_):
+        dict_['styles'] = {getattr(CellImageType, k): v for k, v in
+                           dict_['styles'].items()}
+
+        return cls._from_dict(dict_)
+
+
+def read_settings_from_file():
+    read_settings = None
+    try:
+        with open(SETTINGS_FILE, 'r') as f:
+            read_settings = PersistSettingsStruct.decode_from_json(json.load(f))
+    except FileNotFoundError:
+        logger.info("Settings file not found")
+    except json.JSONDecodeError:
+        logger.warning("Unable to decode settings from file")
+    except Exception as e:
+        logger.warning("Unexpected error reading settings from file")
+        logger.debug("%s", e)
+
+    return read_settings
+
+
+def write_settings_to_file(settings):
+    logger.info("Saving settings to file: %s", SETTINGS_FILE)
+    logger.debug("%s", settings)
+    try:
+        with open(SETTINGS_FILE, 'w') as f:
+            json.dump(PersistSettingsStruct.encode_to_json(settings), f)
+    except Exception as e:
+        logger.warning("Unexpected error writing settings to file: %s", e)
+
+
+def get_difficulty(x_size, y_size, mines):
+    if x_size == 8 and y_size == 8 and mines == 10:
+        return 'B'
+    if x_size == 16 and y_size == 16 and mines == 40:
+        return 'I'
+    if x_size == 30 and y_size == 16 and mines == 99:
+        return 'E'
+    if x_size == 30 and y_size == 30 and mines == 200:
+        return 'M'
+    return 'C'
