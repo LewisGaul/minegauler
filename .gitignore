@@ -13,3 +13,5 @@ coverage/
 .pytest*
 .idea
 *.log
+*.ipynb
+.ipynb_checkpoints/
