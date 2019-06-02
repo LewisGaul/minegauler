@@ -4,23 +4,27 @@ probabilities.py - Probability calculator
 November 2018, Lewis Gaul
 
 Exports:
-AbstractController (class)
-    Outline of functions available to be called by a frontend.
-Controller (class)
-    Implementation of game logic and provision of functions to be called by a
-    frontend implementation.
+TODO
 """
 
 
 from math import log, exp, factorial as fac
 import time as tm
 
-from utils import prettify_grid, get_nbrs
-from gen_probs import prob as get_unsafe_prob, combs as get_combs
+# from utils import prettify_grid, get_nbrs
+# from gen_probs import prob as get_unsafe_prob, combs as get_combs
+from minegauler.backend.utils import Board
+from minegauler.shared.grid import Grid
 
 
-class ProbsGrid(list):
+class ProbsGrid(Grid):
+    """
+    TODO
+    """
     def __init__(self, board, ignore_flags=False, **settings):
+        """
+        TODO
+        """
         super().__init__()
         self.x_size, self.y_size = len(board[0]), len(board)
         for j in range(self.y_size):
@@ -43,12 +47,6 @@ class ProbsGrid(list):
         self.get_groups()
         self.get_configs()
         self.get_probs()
-
-    def __str__(self):
-        print_grid = []
-        for row in self:
-            print_grid.append(list(map(lambda p: round(100*p, 1), row)))
-        return prettify_grid(print_grid, {0:' 0  ', 100:'100 '}, cell_size=4)
 
     def get_displayed_numbers(self):
         """Put the displayed numbers in a dictionary with coordinate as key,
@@ -244,7 +242,7 @@ class ProbsGrid(list):
 
 
 if __name__ == '__main__':
-    test_board = [
+    test_board = Board.from_2d_array([
         ['U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U'],
         ['U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U'],
         ['U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U'],
@@ -260,7 +258,8 @@ if __name__ == '__main__':
         ['U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U'],
         ['U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U'],
         ['U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U'],
-        ['U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U']]
-    print(prettify_grid(test_board, {0:'-', 'U':'#'}))
+        ['U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U', 'U'],
+    ])
+    print(test_board)
     probs = ProbsGrid(test_board, nr_mines=70, max_per_cell=1)
     print(probs)

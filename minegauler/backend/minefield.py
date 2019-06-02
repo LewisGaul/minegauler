@@ -11,7 +11,8 @@ Minefield (class)
 import logging
 import random as rnd
 
-from minegauler.backend.utils import Grid, Board
+from minegauler.backend.utils import Board
+from minegauler.shared.grid import Grid
 from minegauler.shared.internal_types import CellNum, CellFlag
 
 

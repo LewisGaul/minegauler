@@ -4,10 +4,12 @@ internal_types.py - Type definitions
 June 2018, Lewis Gaul
 
 Exports:
-CellContentsType (class)
+CellContentsType (type)
     Base class for cell contents types.
-CellMineType (class)
+
+CellMineType (type)
     Base class for cell contents of a mine type.
+
 CellUnclicked, CellNum, CellMine, CellHitMine, CellFlag, CellwrongFlag (class)
     CellContentsType implementations.
 
