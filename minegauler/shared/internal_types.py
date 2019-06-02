@@ -18,8 +18,8 @@ GameFlagMode (Enum)
     The possible flagging modes for a game.
 """
 
-import enum
 
+import enum
 
 
 # ------------------------------------------------------------------------------
@@ -91,7 +91,7 @@ class CellMineType(CellContentsType):
     Abstract base class for the number of a mine type in a cell.
     """
     char = None
-    def __new__(cls, num):
+    def __new__(cls, num=1):
         if cls == CellMineType:
             raise TypeError(
                 f"{type(cls)} should be used as a base class and not "
@@ -144,6 +144,7 @@ class CellWrongFlag(CellMineType):
     char = 'X'
 
 
+
 # ------------------------------------------------------------------------------
 # Game enums
 # ------------------------------------------------------------------------------
@@ -157,13 +158,22 @@ class GameState(str, enum.Enum):
     ACTIVE  = 'ACTIVE'
     WON     = 'WON'
     LOST    = 'LOST'
-    
 
-class GameFlagMode(enum.Enum):
-    """
-    Game modes for different behaviour when flagging.
-    """
-    NORMAL = 'Original style'
-    SPLIT  = 'Cells split instead of flagging'
-    SPLIT1 = SPLIT
-    SPLIT2 = 'Cells split twice'
+
+
+# ------------------------------------------------------------------------------
+# GUI enums
+# ------------------------------------------------------------------------------
+
+class FaceState(enum.Enum):
+    READY  = 'ready'
+    ACTIVE = 'active'
+    WON    = 'won'
+    LOST   = 'lost'
+
+
+class CellImageType(enum.Flag):
+    BUTTONS = enum.auto()
+    NUMBERS = enum.auto()
+    MARKERS = enum.auto()
+    ALL = BUTTONS | NUMBERS | MARKERS

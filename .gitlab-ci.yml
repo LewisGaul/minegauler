@@ -23,22 +23,24 @@ before_script:
   - virtualenv venv/
   - source venv/bin/activate
   - pip install -r requirements.txt
+  - pip uninstall -y pytest-qt
+#  - apt-get install xvfb
 
 test:
   stage: test
   script:
-    - python -m pytest tests/ -v
+    - python -m pytest tests/mut/backend -v
   
 coverage:
   stage: test
   script:
-    - python -m pytest tests/ --cov minegauler/ --cov-report term --cov-report html:coverage/
+    - python -m pytest tests/mut/backend/ --cov minegauler/backend --cov-report term --cov-report html:coverage/backend
   artifacts:
     paths:
     - coverage
     expire_in: 1 day
   only:
-    - master
+    - v4/dev
 
 pages:
   stage: deploy
@@ -52,4 +54,4 @@ pages:
     paths:
       - public
   only:
-    - master
+    - v4/dev
