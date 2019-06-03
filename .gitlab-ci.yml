@@ -38,7 +38,7 @@ coverage:
   artifacts:
     paths:
     - coverage
-    expire_in: 1 day
+    expire_in: 1 year
   only:
     - v4/dev
 
