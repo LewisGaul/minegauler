@@ -7,14 +7,77 @@ Exports:
 TODO
 """
 
-
-from math import log, exp, factorial as fac
+import os
 import time as tm
+from ctypes import POINTER, Structure, byref, c_int, cdll
+from math import log, exp, factorial as fac
 
 # from utils import prettify_grid, get_nbrs
 # from gen_probs import prob as get_unsafe_prob, combs as get_combs
 from minegauler.backend.utils import Board
 from minegauler.shared.grid import Grid
+from minegauler.solver.group_probs import get_unsafe_prob, calculate_arrangements
+
+
+def find_configs(numbers, groups):
+    """
+    Use the function written in C to find all possible mine configurations in the groups.
+    """
+    # Amazingly, this function might 'just work'...
+    # Although who knows what you're supposed to pass in...
+
+    if not groups:
+        return []
+    NineIntArray = c_int * 9
+    class C_Number(Structure):
+        _fields_ = [
+            ("index", c_int),
+            ("val", c_int),
+            ("grps", NineIntArray)
+        ]
+    NumberArray = C_Number * 8
+    class C_Group(Structure):
+        _fields_ = [
+            ('max', c_int),
+            ('nrs', NumberArray),
+            ('nNrs', c_int)
+        ]
+    lib = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), 'c_utils.so'))
+    lib.find_configs.restype = POINTER(POINTER(c_int))
+    num_of_cfgs = c_int() #initialise to pass with byref
+    # print("groups:", [g['index'] for g in grps])
+    GroupsArray = C_Group * len(groups)
+    grp_index_map = {g['index']: i for i, g in enumerate(groups)}
+    all_nrs = {numbers[i]['index'] for g in groups for i in g['nrs']}
+    c_nrs = dict()
+    for i, nr_index in enumerate(sorted(all_nrs)):
+        nr = numbers[nr_index]
+        # Map the group indices to correspond to post reduction
+        nr_grps = [grp_index_map[j] for j in nr['grps']]
+        # print(nr, nr_grps)
+        c_nrs[nr_index] = C_Number(i,                     #index
+                                   nr['val'],             #val
+                                   NineIntArray(*nr_grps) #group indices
+                                   )
+    c_grps = []
+    for g in groups:
+        c_nrs_array = [c_nrs[numbers[i]['index']] for i in g['nrs']]
+        c_nrs_array = NumberArray(*c_nrs_array) #convert to C array
+        c_grps.append(C_Group(g['max'],     #max
+                              c_nrs_array,  #nr structs array
+                              len(g['nrs']) #len of c_nrs
+                              ))
+    c_grps = GroupsArray(*c_grps)
+    ptr = lib.find_configs(byref(c_grps), len(groups), byref(num_of_cfgs))
+    # lib.print_configs(ptr, len(groups))
+    configs = []
+    for i in range(num_of_cfgs.value):
+        cfg_ptr = ptr[i]
+        cfg = tuple(cfg_ptr[j] for j in range(len(groups)))
+        configs.append(cfg) #the indices match up with the groups
+    lib.free_configs(ptr) #free malloc'ed memory
+    configs.sort() #unnecessary but cleaner
+    return configs
 
 
 class ProbsGrid(Grid):
@@ -59,7 +122,7 @@ class ProbsGrid(Grid):
             if type(contents) is str or contents == 0:
                 continue
             nr = contents
-            nbrs = get_nbrs(x, y, self.x_size, self.y_size)
+            nbrs = self.board.get_nbrs((x, y))
             clickable_nbrs = []
             for (i, j) in nbrs:
                 c = self.board[j][i]
@@ -188,9 +251,9 @@ class ProbsGrid(Grid):
             # This is the product term in xi(cfg)
             for i, m_i in enumerate(cfg):
                 g_size = len(self.groups[i]['coords'])
-                combs *= get_combs(g_size, m_i, self.max_per_cell)
+                combs *= calculate_arrangements(g_size, m_i, self.max_per_cell)
                 combs /= fac(m_i)
-            cfg_probs.append(combs * get_combs(n - S, k - M, self.max_per_cell))
+            cfg_probs.append(combs * calculate_arrangements(n - S, k - M, self.max_per_cell))
             # print(n, k, S, M, combs)
         # print(cfg_probs)
         weight = log(sum(cfg_probs))
