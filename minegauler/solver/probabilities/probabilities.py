@@ -16,7 +16,8 @@ from math import log, exp, factorial as fac
 # from gen_probs import prob as get_unsafe_prob, combs as get_combs
 from minegauler.backend.utils import Board
 from minegauler.shared.grid import Grid
-from minegauler.solver.group_probs import get_unsafe_prob, calculate_arrangements
+
+from .group_probs import get_unsafe_prob, calculate_arrangements
 
 
 def find_configs(numbers, groups):
