@@ -386,7 +386,7 @@ class Controller(AbstractController):
 
         nbrs = self.board.get_nbrs(coord)
         num_flagged_nbrs = sum(
-            [self.board[c] for c in nbrs
+            [self.board[c].num for c in nbrs
              if isinstance(self.board[c], CellMineType)])
         logger.debug("%s flagged mine(s) around clicked cell showing number %d",
                      num_flagged_nbrs, self.board[coord])
@@ -410,7 +410,7 @@ class Controller(AbstractController):
         
         super().remove_cell_flags(coord)
         
-        self.mines_remaining += self.board[coord]
+        self.mines_remaining += self.board[coord].num
         self._set_cell(coord, CellUnclicked())
         
         self._send_callback_updates()
@@ -469,7 +469,7 @@ class Controller(AbstractController):
 
                     elif (type(self.board[c]) is CellFlag and
                           self.board[c] != self.mf.completed_board[c]):
-                        self._set_cell(c, CellWrongFlag(self.board[c]))
+                        self._set_cell(c, CellWrongFlag(self.board[c].num))
             else:
                 self.mines_remaining -= self.mf[coord]
                         
