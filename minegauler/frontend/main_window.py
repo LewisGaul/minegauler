@@ -178,7 +178,7 @@ class MinegaulerGUI(BaseMainWindow):
         """
         Arguments:
         ctrlr (Controller)
-            The backend controller.
+            The core controller.
         """
         self.ctrlr = ctrlr
         if opts:

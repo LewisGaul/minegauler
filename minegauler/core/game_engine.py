@@ -19,8 +19,8 @@ from typing import Tuple, Dict, Optional
 
 import attr
 
-from minegauler.backend.minefield import Minefield
-from minegauler.backend.utils import Board
+from minegauler.core.minefield import Minefield
+from minegauler.core.utils import Board
 from minegauler.shared.internal_types import *
 from minegauler.shared.utils import GameOptsStruct, get_num_pos_args_accepted
 

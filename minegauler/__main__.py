@@ -11,7 +11,7 @@ import sys
 import attr
 
 from minegauler import frontend
-from minegauler.backend import Controller, GameOptsStruct
+from minegauler.core import Controller, GameOptsStruct
 from minegauler.frontend import GuiOptsStruct
 from minegauler.shared.utils import (read_settings_from_file,
     write_settings_to_file, PersistSettingsStruct

@@ -11,7 +11,7 @@ Minefield (class)
 import logging
 import random as rnd
 
-from minegauler.backend.utils import Grid, Board
+from minegauler.core.utils import Grid, Board
 from minegauler.shared.internal_types import CellNum, CellFlag
 
 
@@ -23,7 +23,7 @@ class Minefield(Grid):
     Grid representation of a minesweeper minefield, each cell contains an
     integer representing the number of mines at that cell.
     
-    Inherits minegauler.backend.utils.Grid
+    Inherits minegauler.core.utils.Grid
     
     Attributes:
     mines (int >= 0)
@@ -167,7 +167,7 @@ class Minefield(Grid):
     @classmethod
     def from_2d_array(cls, array, per_cell=None):
         """
-        See minegauler.backend.utils.Grid and Minefield.from_grid().
+        See minegauler.core.utils.Grid and Minefield.from_grid().
         """
         grid = Grid.from_2d_array(array)
         return cls.from_grid(grid, per_cell)

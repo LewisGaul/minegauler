@@ -12,8 +12,8 @@ def get_callback(gui, panel_widget, mf_widget):
     def callback(update):
         """
         Arguments:
-        update (minegauler.backend.SharedInfo)
-            The update from the backend.
+        update (minegauler.core.SharedInfo)
+            The update from the core.
         """
         if update.cell_updates is not None:
             for c, state in update.cell_updates.items():

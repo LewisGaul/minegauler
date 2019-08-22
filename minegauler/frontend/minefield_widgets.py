@@ -478,7 +478,7 @@ class MinefieldWidget(QGraphicsView):
     
        
 if __name__ == '__main__':
-    from minegauler.backend import Controller, GameOptsStruct
+    from minegauler.core import Controller, GameOptsStruct
     
     app = QApplication(sys.argv)
     mf_widget = MinefieldWidget(None, Controller(GameOptsStruct()),

@@ -30,7 +30,7 @@ class PanelWidget(QWidget):
         Arguments:
         parent
             Qt container widget.
-        ctrlr (minegauler.backend.Controller)
+        ctrlr (minegauler.core.Controller)
             To access game engine methods.
         """
         super().__init__(parent)
@@ -185,7 +185,7 @@ class Timer(QTimer):
         
        
 if __name__ == '__main__':
-    from minegauler.backend import Controller, GameOptsStruct
+    from minegauler.core import Controller, GameOptsStruct
     app = QApplication(sys.argv)
     panel_widget = PanelWidget(None, Controller(GameOptsStruct()))
     panel_widget.show()
