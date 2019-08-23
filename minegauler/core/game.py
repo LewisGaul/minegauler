@@ -1,13 +1,13 @@
 """
-utils.py - Utilities
+game.py - Game logic
 
 March 2018, Lewis Gaul
 
 Exports:
-Grid (class)
-    Representation of a 2D grid using nested lists.
 Board (class)
-    Representation of a minesweeper board, inheriting from Grid.
+    Representation of a minesweeper board.
+Game (class)
+    Representation of a minesweeper game.
 """
 
 import logging
@@ -76,3 +76,48 @@ class Board(Grid):
                     f"Unknown cell contents representation in cell {c}: "
                     f"{grid[c]}")
         return board
+
+
+class Game:
+    def __init__(self, *, x_size, y_size, mines, per_cell=1):
+        self.x_size, self.y_size = x_size, y_size
+        self.mines = mines
+        self.per_cell = per_cell
+        self.mf = None
+        self.board = Board(x_size, y_size)
+        self.start_time = None
+        self.end_time = None
+        self.state = GameState.READY
+
+    def get_rem_3bv(self):
+        """Calculate the minimum remaining number of clicks needed to solve."""
+        if self.state == Game.WON:
+            return 0
+        elif self.state == Game.READY:
+            return self.mf.bbbv
+        else:
+            lost_mf = Minefield(auto_create=False, **self.settings)
+            lost_mf.mine_coords = self.mf.mine_coords
+            # Replace any openings already found with normal clicks (ones).
+            lost_mf.completed_grid = np.where(self.grid<0,
+                                              self.mf.completed_grid, 1)
+            # Find the openings which remain.
+            lost_mf.get_openings()
+            rem_opening_coords = [c for opening in lost_mf.openings
+                                  for c in opening]
+            # Count the number of essential clicks that have already been
+            # done by counting clicked cells minus the ones at the edge of
+            # an undiscovered opening.
+            completed_3bv = len({c for c in where_coords(self.grid >= 0)
+                                 if c not in rem_opening_coords})
+            return lost_mf.get_3bv() - completed_3bv
+
+    def get_prop_complete(self):
+        """Calculate the progress of solving the board using 3bv."""
+        return float(self.mf.bbbv - self.get_rem_3bv())/self.mf.bbbv
+
+    def get_3bvps(self):
+        """Return the 3bv/s."""
+        if self.start_time:
+            return (self.mf.bbbv *
+                    self.get_prop_complete() / self.get_time_passed())

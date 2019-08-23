@@ -1,5 +1,5 @@
 """
-utils.py - Utilities for the frontend.
+game.py - Utilities for the frontend.
 
 December 2018, Lewis Gaul
 """

@@ -8,6 +8,11 @@ Grid (class)
     Representation of a 2D grid using nested lists.
 """
 
+from typing import Iterable, Tuple
+
+Coord = Tuple[int, int]
+
+
 class Grid(list):
     """
     Grid representation using a list of lists (2D array).
@@ -123,7 +128,7 @@ class Grid(list):
             for i in range(len(row)):
                 row[i] = item
 
-    def get_nbrs(self, coord, *, include_origin=False):
+    def get_nbrs(self, coord: Coord, *, include_origin=False) -> Iterable[Coord]:
         """
         Get a list of the coordinates of neighbouring cells.
 

@@ -11,7 +11,6 @@ Controller (class)
     frontend implementation.
 """
 
-import functools
 import logging
 import time as tm
 from abc import ABC, abstractmethod
@@ -20,7 +19,7 @@ from typing import Tuple, Dict, Optional
 import attr
 
 from minegauler.core.minefield import Minefield
-from minegauler.core.utils import Board
+from minegauler.core.game import Board
 from minegauler.shared.internal_types import *
 from minegauler.shared.utils import GameOptsStruct, get_num_pos_args_accepted
 
@@ -268,8 +267,7 @@ class Controller(AbstractController):
         self.lives_remaining = 0
         self.start_time = None
         self.end_time = None
-        self.mf = Minefield(self.opts.x_size, self.opts.y_size, self.opts.mines,
-                            self.opts.per_cell, create=False)
+        self.mf = None
         self._init_game()
         # Keep track of changes to be passed to UI.
         self._next_update = SharedInfo(mines_remaining=self.mines_remaining,
@@ -298,8 +296,7 @@ class Controller(AbstractController):
         
         super().new_game()
         
-        self.mf = Minefield(self.opts.x_size, self.opts.y_size, self.opts.mines,
-                            self.opts.per_cell, create=False)
+        self.mf = None
         self._init_game()
         for c in self.board.all_coords:
             self._set_cell(c, CellUnclicked())
@@ -326,27 +323,35 @@ class Controller(AbstractController):
             
         # Check if first click.
         if self.game_state == GameState.READY:
-            if not self.mf.is_created:
+            if not self.mf:
                 # Create the minefield.
                 if self.opts.first_success:
-                    safe_coords = self.mf.get_nbrs(coord, include_origin=True)
+                    safe_coords = self.board.get_nbrs(coord, include_origin=True)
                     logger.debug(
                         "Trying to create minefield with the following safe "
                         "coordinates: %s",
                         safe_coords)
                     try:
-                        self.mf.create(safe_coords)
+                        self.mf = Minefield(self.opts.x_size, self.opts.y_size,
+                                            mines=self.opts.mines,
+                                            per_cell=self.opts.per_cell,
+                                            safe_coords=safe_coords)
                     except ValueError:
                         logger.info(
                             "Unable to give opening on the first click, "
                             "still ensuring a safe click")
-                        self.mf.create(safe_coords=[coord])
+                        self.mf = Minefield(self.opts.x_size, self.opts.y_size,
+                                            mines=self.opts.mines,
+                                            per_cell=self.opts.per_cell,
+                                            safe_coords=[coord])
                     else:
-                        logger.debug("Success")
+                        logger.debug("Successfully created minefield")
                 else:
-                    self.mf.create()
                     logger.debug(
                         "Creating minefield with first success turned off")
+                    self.mf = Minefield(self.opts.x_size, self.opts.y_size,
+                                        mines=self.opts.mines,
+                                        per_cell=self.opts.per_cell)
             self.game_state = GameState.ACTIVE
             self.start_time = tm.time()
             

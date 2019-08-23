@@ -1,5 +1,5 @@
 """
-utils.py - General utilities
+game.py - General utilities
 
 March 2018, Lewis Gaul
 
