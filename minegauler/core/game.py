@@ -21,7 +21,7 @@ from .minefield import Minefield
 logger = logging.getLogger(__name__)
 
 
-def _check_coord(method):
+def check_coord(method):
     """
     wrap a method that takes a coord to check it is inside the valid range.
 
@@ -41,7 +41,7 @@ def _check_coord(method):
     return wrapped
 
 
-def _ignore_if(
+def ignore_if(
     *,
     game_state: Optional[
         Union[str, GameState, Iterable[str], Iterable[GameState]]
@@ -89,7 +89,7 @@ def _ignore_if(
     return decorator
 
 
-def _ignore_if_not(
+def ignore_if_not(
     *,
     game_state: Optional[
         Union[str, GameState, Iterable[str], Iterable[GameState]]
@@ -148,13 +148,58 @@ class Game:
     """
 
     def __init__(
-        self, *, x_size: int, y_size: int, mines: int, per_cell: int = 1, lives: int = 1
+        self,
+        *,
+        x_size: Optional[int] = None,
+        y_size: Optional[int] = None,
+        mines: Optional[int] = None,
+        per_cell: Optional[int] = 1,
+        lives: int = 1,
+        first_success: bool = False,
+        minefield: Optional[Minefield] = None,
     ):
+        """
+        :param x_size:
+            Number of columns in the grid. Ignored if a minefield is passed in,
+            since the minefield already has a size.
+        :param y_size:
+            Number of rows in the grid. Ignored if a minefield is passed in, since
+            the minefield already has a size.
+        :param mines:
+            The number of mines. Ignored if a minefield is passed in, since the
+            minefield should already contain a number of mines.
+        :param per_cell:
+            Maximum number of mines per cell. Ignored if a minefield is passed in,
+            since the minefield should already refer to a max per cell.
+        :param lives:
+            A number of lives available during the game.
+        :param first_success:
+            Whether the first cell selected should be guaranteed to be safe, and
+            give an opening if possible. Ignored if a minefield is passed in, as
+            the minefield is not created in response to the first select, so it
+            is not possible to guarantee success on the first select.
+        :param minefield:
+            A minefield to use for the game. Takes precedence over various other
+            arguments, see above.
+        :raise ValueError:
+            If the number of mines is too high to fit in the grid.
+        """
+        if minefield:
+            x_size, y_size = minefield.x_size, minefield.y_size
+            mines = minefield.nr_mines
+            per_cell = minefield.per_cell
+            first_success = False
+            self.mf = minefield
+        else:
+            Minefield.check_enough_space(
+                x_size=x_size, y_size=y_size, mines=mines, per_cell=per_cell
+            )
+            self.mf = None
         self.x_size, self.y_size = x_size, y_size
         self.mines = mines
         self.per_cell = per_cell
         self.lives = lives
-        self.mf = None
+        self.first_success = first_success
         self.board = Board(x_size, y_size)
         self.start_time = None
         self.end_time = None
@@ -204,22 +249,12 @@ class Game:
                 self.mf.bbbv * self.get_prop_complete() / (tm.time() - self.start_time)
             )
 
-    @_check_coord
-    def start(self, coord: CoordType, *, first_success: bool = False) -> None:
-        """
-        Start the game by clicking a cell.
-
-        :raise RuntimeError:
-            If the game has already been started.
-        """
-        if self.state != GameState.READY:
-            raise RuntimeError("Game cannot be started more than once")
-
-        # Create the minefield.
-        if first_success:
+    def _create_minefield(self, coord: CoordType) -> None:
+        """Create the minefield in response to a cell being selected."""
+        if self.first_success:
             safe_coords = self.board.get_nbrs(coord, include_origin=True)
             logger.debug(
-                "Trying to create minefield with the following safe " "coordinates: %s",
+                "Trying to create minefield with the following safe coordinates: %s",
                 safe_coords,
             )
             try:
@@ -250,17 +285,19 @@ class Game:
             self.mf = Minefield(
                 self.x_size, self.y_size, mines=self.mines, per_cell=self.per_cell
             )
-        self.state = GameState.ACTIVE
-        self.start_time = tm.time()
-        self.select_cell(coord)
 
-    @_check_coord
-    @_ignore_if_not(game_state="ACTIVE", cell_state=CellUnclicked)
+    @check_coord
+    @ignore_if_not(game_state=("READY", "ACTIVE"), cell_state=CellUnclicked)
     def select_cell(self, coord: CoordType) -> None:
         """
         Perform the action of selecting/clicking a cell. Game must be started
         before calling this method.
         """
+        if self.state == GameState.READY:
+            if not self.mf:
+                self._create_minefield(coord)
+            self.state = GameState.ACTIVE
+            self.start_time = tm.time()
         self._select_cell_action(coord)
         if self.state != GameState.LOST:
             self._check_for_completion()
@@ -337,11 +374,9 @@ class Game:
             logger.debug("Regular cell revealed")
             self.board[coord] = self.mf.completed_board[coord]
 
-    @_check_coord
-    @_ignore_if_not(
-        game_state=("READY", "ACTIVE"), cell_state=(CellFlag, CellUnclicked)
-    )
-    def flag_cell(self, coord: CoordType, nr_flags: int) -> None:
+    @check_coord
+    @ignore_if_not(game_state=("READY", "ACTIVE"), cell_state=(CellFlag, CellUnclicked))
+    def set_cell_flags(self, coord: CoordType, nr_flags: int) -> None:
         """Set the number of flags in a cell."""
         if nr_flags < 0 or nr_flags > self.per_cell:
             raise ValueError(
@@ -358,8 +393,8 @@ class Game:
             self.board[coord] = CellFlag(nr_flags)
         self.mines_remaining += old_nr_flags - nr_flags
 
-    @_check_coord
-    @_ignore_if_not(game_state="ACTIVE", cell_state=CellNum)
+    @check_coord
+    @ignore_if_not(game_state="ACTIVE", cell_state=CellNum)
     def chord_on_cell(self, coord: CoordType):
         """Chord on a cell that contains a revealed number."""
         nbrs = self.board.get_nbrs(coord)

@@ -70,3 +70,8 @@ class Board(Grid):
                     f"Unknown cell contents representation in cell {c}: " f"{grid[c]}"
                 )
         return board
+
+    def reset(self):
+        """Reset the board to the initial state."""
+        for c in self.all_coords:
+            self[c] = CellUnclicked()

@@ -36,7 +36,6 @@ class Minefield(Grid):
         safe_coords: Optional[Iterable[CoordType]] = None,
     ):
         """
-
         :param x_size:
             Number of columns in the grid.
         :param y_size:
@@ -122,16 +121,13 @@ class Minefield(Grid):
         :raise ValueError:
             If the number of mines is too high to fit in the grid.
         """
-        if safe_coords:
-            mine_spaces = self.x_size * self.y_size - max(1, len(set(safe_coords)))
-        else:
-            mine_spaces = self.x_size * self.y_size - 1
-        if self.nr_mines > mine_spaces * self.per_cell:
-            raise ValueError(
-                f"Number of mines too high ({self.nr_mines}) "
-                f"for grid with {mine_spaces} spaces "
-                f"and only up to {self.per_cell} allowed per cell"
-            )
+        self.check_enough_space(
+            x_size=self.x_size,
+            y_size=self.y_size,
+            mines=self.nr_mines,
+            per_cell=self.per_cell,
+            nr_safe_cells=max(1, len(set(safe_coords))) if safe_coords else 1,
+        )
 
         # Get a list of coordinates which can have mines placed in them.
         if safe_coords is None:
@@ -144,6 +140,25 @@ class Minefield(Grid):
         avble_coords *= self.per_cell
         rnd.shuffle(avble_coords)
         return avble_coords[: self.nr_mines]
+
+    @staticmethod
+    def check_enough_space(
+        *, x_size: int, y_size: int, mines: int, per_cell: int, nr_safe_cells: int = 1
+    ):
+        """
+        Check there is enough space in the grid for the mines.
+
+        :param nr_safe_cells:
+            The number of cells to leave safe.
+        :raise ValueError:
+            If the number of mines is too high to fit in the grid.
+        """
+        mine_spaces = x_size * y_size - nr_safe_cells
+        if mines > mine_spaces * per_cell:
+            raise ValueError(
+                f"Number of mines too high ({mines}) for grid with {mine_spaces} spaces "
+                f"and only up to {per_cell} allowed per cell"
+            )
 
     def cell_contains_mine(self, coord: CoordType) -> bool:
         """

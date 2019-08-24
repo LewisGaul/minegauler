@@ -12,102 +12,18 @@ Controller (class)
 """
 
 import logging
-import time as tm
 from abc import ABC, abstractmethod
-from typing import Tuple, Dict, Optional
+from typing import Dict, Optional
 
 import attr
 
-from .minefield import Minefield
-from .game import Board
+from .game import Game
+from .grid import CoordType
 from .internal_types import *
 from .utils import GameOptsStruct, get_num_pos_args_accepted
 
 
 logger = logging.getLogger(__name__)
-
-
-def _ignore_if(*, game_state=None, cell_state=None):
-    """
-    Return a decorator which prevents a method from running if any of the given
-    parameters are satisfied.
-    
-    Arguments:
-    game_state=None (GameState | (GameState, ...) | None)
-        A game state or iterable of game states to match against.
-    cell_state=None (subclass of CellContentsType | (..., ...) | None)
-        A cell contents type or iterable of the same to match against. The
-        decorated method must take the cell coordinate as the first argument.
-    """
-
-    def decorator(method):
-        if cell_state is None:
-
-            @functools.wraps(method)
-            def wrapped(self, *args, **kwargs):
-                if game_state is not None and (
-                    self.game_state == game_state or self.game_state in game_state
-                ):
-                    return
-                return method(self, *args, **kwargs)
-
-        else:
-
-            @functools.wraps(method)
-            def wrapped(self, coord, *args, **kwargs):
-                if (
-                    game_state is not None
-                    and (self.game_state == game_state or self.game_state in game_state)
-                ) or isinstance(self.board[coord], cell_state):
-                    return
-                return method(self, coord, *args, **kwargs)
-
-        return wrapped
-
-    return decorator
-
-
-def _ignore_if_not(*, game_state=None, cell_state=None):
-    """
-    Return a decorator which prevents a method from running if any of the given
-    parameters are satisfied.
-    
-    Arguments:
-    game_state=None (GameState | (GameState, ...) | None)
-        A game state or iterable of game states to match against.
-    cell_state=None (subclass of CellContentsType | (..., ...) | None)
-        A cell contents type or iterable of the same to match against. The
-        decorated method must take the cell coordinate as the first argument.
-    """
-
-    def decorator(method):
-        if cell_state is None:
-
-            @functools.wraps(method)
-            def wrapped(self, *args, **kwargs):
-                if (
-                    game_state is not None
-                    and self.game_state != game_state
-                    and self.game_state not in game_state
-                ):
-                    return
-                return method(self, *args, **kwargs)
-
-        else:
-
-            @functools.wraps(method)
-            def wrapped(self, coord, *args, **kwargs):
-                if (
-                    game_state is not None
-                    and self.game_state != game_state
-                    and self.game_state not in game_state
-                ) or not isinstance(self.board[coord], cell_state):
-                    return
-                return method(self, coord, *args, **kwargs)
-
-        return wrapped
-
-    return decorator
 
 
 @attr.attrs(auto_attribs=True)
@@ -131,8 +47,8 @@ class SharedInfo:
         The time elapsed if the game has ended, otherwise None.
     """
 
-    cell_updates: Dict[Tuple[int, int], CellContentsType] = attr.Factory(dict)
-    game_state: GameState = GameState.INVALID
+    cell_updates: Dict[CoordType, CellContentsType] = attr.Factory(dict)
+    game_state: GameState = GameState.READY
     mines_remaining: int = 0
     lives_remaining: int = 0
     elapsed_time: Optional[float] = None
@@ -236,13 +152,6 @@ class AbstractController(ABC):
         """
         logger.info("%s: Flags in cell %s being removed", type(self), coord)
 
-    # @abstractmethod
-    # def change_settings(self, **kwargs):
-    #     """
-    #     Update the settings to be used for future games.
-    #     """
-    #     logger.info("%s: Changing settings", type(self)) #@@@
-
     @abstractmethod
     def resize_board(self, x_size, y_size, mines):
         """
@@ -276,187 +185,67 @@ class Controller(AbstractController):
         super().__init__()
 
         self.opts = GameOptsStruct._from_struct(opts)
-        # Initialise game board.
-        self.board = Board(opts.x_size, opts.y_size)
-        # Game-specific data.
-        self.game_state = GameState.INVALID
-        self.mines_remaining = 0
-        self.lives_remaining = 0
-        self.start_time = None
-        self.end_time = None
-        self.mf = None
-        self._init_game()
-        # Keep track of changes to be passed to UI.
-        self._next_update = SharedInfo(
-            mines_remaining=self.mines_remaining,
-            lives_remaining=self.lives_remaining,
-            game_state=self.game_state,
-        )
-        self._init_completed = True
-
-    def __setattr__(self, key, value):
-        """
-        Intercept updating of certain attributes that should be stored to be
-        passed to frontends.
-        """
-        if hasattr(self, "_init_completed"):
-            if key in ["game_state", "mines_remaining", "lives_remaining"]:
-                setattr(self._next_update, key, value)
-            elif key == "end_time" and value != None:
-                self._next_update.elapsed_time = value - self.start_time
-
-        return super().__setattr__(key, value)
+        self.game = None
+        self.new_game()
 
     # --------------------------------------------------------------------------
     # Methods triggered by user interaction
     # --------------------------------------------------------------------------
     def new_game(self):
         """See AbstractController."""
-
         super().new_game()
-
-        self.mf = None
-        self._init_game()
-        for c in self.board.all_coords:
-            self._set_cell(c, CellUnclicked())
-
+        self.game = Game(
+            x_size=self.opts.x_size,
+            y_size=self.opts.y_size,
+            mines=self.opts.mines,
+            per_cell=self.opts.per_cell,
+            lives=self.opts.lives,
+            first_success=self.opts.first_success,
+        )
         self._send_callback_updates()
 
-    @_ignore_if(game_state="INVALID")
     def restart_game(self):
         """See AbstractController."""
-
+        if not self.game.mf:
+            return
         super().restart_game()
-
-        self._init_game()
-        for c in self.board.all_coords:
-            self._set_cell(c, CellUnclicked())
-
+        self.game = Game(minefield=self.game.mf, lives=self.opts.lives)
         self._send_callback_updates()
 
-    @_ignore_if_not(game_state=("READY", "ACTIVE"), cell_state=CellUnclicked)
     def select_cell(self, coord):
         """See AbstractController."""
-
         super().select_cell(coord)
-
-        # Check if first click.
-        if self.game_state == GameState.READY:
-            if not self.mf:
-                # Create the minefield.
-                if self.opts.first_success:
-                    safe_coords = self.board.get_nbrs(coord, include_origin=True)
-                    logger.debug(
-                        "Trying to create minefield with the following safe "
-                        "coordinates: %s",
-                        safe_coords,
-                    )
-                    try:
-                        self.mf = Minefield(
-                            self.opts.x_size,
-                            self.opts.y_size,
-                            mines=self.opts.mines,
-                            per_cell=self.opts.per_cell,
-                            safe_coords=safe_coords,
-                        )
-                    except ValueError:
-                        logger.info(
-                            "Unable to give opening on the first click, "
-                            "still ensuring a safe click"
-                        )
-                        self.mf = Minefield(
-                            self.opts.x_size,
-                            self.opts.y_size,
-                            mines=self.opts.mines,
-                            per_cell=self.opts.per_cell,
-                            safe_coords=[coord],
-                        )
-                    else:
-                        logger.debug("Successfully created minefield")
-                else:
-                    logger.debug("Creating minefield with first success turned off")
-                    self.mf = Minefield(
-                        self.opts.x_size,
-                        self.opts.y_size,
-                        mines=self.opts.mines,
-                        per_cell=self.opts.per_cell,
-                    )
-            self.game_state = GameState.ACTIVE
-            self.start_time = tm.time()
-
-        self._select_cell_action(coord)
-
-        if self.game_state != GameState.LOST:
-            self._check_for_completion()
-
+        self.game.select_cell(coord)
         self._send_callback_updates()
 
-    @_ignore_if_not(
-        game_state=("READY", "ACTIVE"), cell_state=(CellFlag, CellUnclicked)
-    )
     def flag_cell(self, coord, *, flag_only=False):
         """See AbstractController."""
-
         super().flag_cell(coord)
 
-        if self.board[coord] == CellUnclicked():
-            self._set_cell(coord, CellFlag(1))
-            self.mines_remaining -= 1
-        elif type(self.board[coord]) is CellFlag:
-            if self.board[coord] == CellFlag(self.opts.per_cell):
-                if not flag_only:
-                    self._set_cell(coord, CellUnclicked())
-                    self.mines_remaining += self.opts.per_cell
+        cell_state = self.game.board[coord]
+        if cell_state == CellUnclicked():
+            self.game.set_cell_flags(coord, 1)
+        elif isinstance(cell_state, CellFlag):
+            if cell_state.num == self.opts.per_cell:
+                if flag_only:
+                    return
+                self.game.set_cell_flags(coord, 0)
             else:
-                self._set_cell(coord, self.board[coord] + 1)
-                self.mines_remaining -= 1
+                self.game.set_cell_flags(coord, cell_state.num + 1)
 
         self._send_callback_updates()
 
-    @_ignore_if_not(game_state="ACTIVE", cell_state=CellNum)
-    def chord_on_cell(self, coord):
-        """See AbstractController."""
-
-        super().chord_on_cell(coord)
-
-        nbrs = self.board.get_nbrs(coord)
-        num_flagged_nbrs = sum(
-            [self.board[c].num for c in nbrs if isinstance(self.board[c], CellMineType)]
-        )
-        logger.debug(
-            "%s flagged mine(s) around clicked cell showing number %d",
-            num_flagged_nbrs,
-            self.board[coord],
-        )
-
-        unclicked_nbrs = [c for c in nbrs if self.board[c] == CellUnclicked()]
-        if self.board[coord] != CellNum(num_flagged_nbrs) or not unclicked_nbrs:
-            return
-
-        logger.info("Successful chording, selecting cells %s", unclicked_nbrs)
-        for c in unclicked_nbrs:
-            self._select_cell_action(c)
-
-        if self.game_state != GameState.LOST:
-            self._check_for_completion()
-
-        self._send_callback_updates()
-
-    @_ignore_if_not(game_state=("READY", "ACTIVE"), cell_state=CellFlag)
     def remove_cell_flags(self, coord):
         """See AbstractController."""
-
         super().remove_cell_flags(coord)
-
-        self.mines_remaining += self.board[coord].num
-        self._set_cell(coord, CellUnclicked())
-
+        self.game.set_cell_flags(coord, 0)
         self._send_callback_updates()
 
-    # def change_settings(self, **kwargs):
-    #     """See AbstractController."""
-    #     # @@@LG
-    #     super().change_settings(**kwargs)
+    def chord_on_cell(self, coord):
+        """See AbstractController."""
+        super().chord_on_cell(coord)
+        self.game.chord_on_cell(coord)
+        self._send_callback_updates()
 
     def resize_board(self, *, x_size, y_size, mines):
         """See AbstractController."""
@@ -471,156 +260,29 @@ class Controller(AbstractController):
             y_size,
             mines,
         )
-        self.game_state = GameState.INVALID
         self.opts.x_size, self.opts.y_size = x_size, y_size
         self.opts.mines = mines
-        self.board = Board(x_size, y_size)
-
         self.new_game()
 
     # --------------------------------------------------------------------------
     # Helper methods
     # --------------------------------------------------------------------------
-    def _init_game(self):
-        """
-        Initialise the game state.
-        """
-        self.game_state = GameState.READY
-        self.mines_remaining = self.opts.mines
-        self.lives_remaining = self.opts.lives
-        self.start_time = None
-        self.end_time = None
-
-    def _select_cell_action(self, coord):
-        """
-        Perform the action of selecting a cell.
-        """
-        if self.mf.cell_contains_mine(coord):
-            logger.debug("Mine hit at %s", coord)
-            self._set_cell(coord, CellHitMine(self.mf[coord]))
-            self.lives_remaining -= 1
-
-            if self.lives_remaining == 0:
-                logger.info("Game lost")
-                self.end_time = tm.time()
-                self.game_state = GameState.LOST
-
-                for c in self.mf.all_coords:
-                    if (
-                        self.mf.cell_contains_mine(c)
-                        and self.board[c] == CellUnclicked()
-                    ):
-                        self._set_cell(c, CellMine(self.mf[c]))
-
-                    elif (
-                        type(self.board[c]) is CellFlag
-                        and self.board[c] != self.mf.completed_board[c]
-                    ):
-                        self._set_cell(c, CellWrongFlag(self.board[c].num))
-            else:
-                self.mines_remaining -= self.mf[coord]
-
-        elif self.mf.completed_board[coord] == CellNum(0):
-            for full_opening in self.mf.openings:
-                if coord in full_opening:
-                    # Found the opening, quit the loop here.
-                    logger.debug("Opening hit: %s", full_opening)
-                    break
-            else:
-                logger.error(
-                    "Coordinate %s not found in openings %s", coord, self.mf.openings
-                )
-
-            # Get the propagation of cells forming part of the opening.
-            opening = set()  # Coords belonging to the opening
-            check = {coord}  # Coords whose neighbours need checking
-            while check:
-                c = check.pop()
-                unclicked_nbrs = {
-                    z
-                    for z in self.board.get_nbrs(c, include_origin=True)
-                    if self.board[z] == CellUnclicked()
-                }
-                check |= {
-                    z
-                    for z in unclicked_nbrs - opening
-                    if self.mf.completed_board[z] == CellNum(0)
-                }
-                opening |= unclicked_nbrs
-
-            logger.debug("Propagated opening: %s", list(opening))
-            bad_opening_cells = {}
-            for c in opening:
-                if self.board[c] == CellUnclicked():
-                    self._set_cell(c, self.mf.completed_board[c])
-                else:
-                    bad_opening_cells[c] = self.board[c]
-            if bad_opening_cells:
-                logger.error(
-                    "Should only have clicked cells in opening, found: %s",
-                    bad_opening_cells,
-                )
-
-        else:
-            logger.debug("Regular cell revealed")
-            self._set_cell(coord, self.mf.completed_board[coord])
-
-    def _set_cell(self, coord, state):
-        """
-        Set a cell to be in the given state, storing the change to be sent to
-        the UI when _send_callback_updates() is called.
-        """
-        if self.board[coord] == state:
-            return
-
-        self._next_update.cell_updates[coord] = self.board[coord] = state
-
-    def _check_for_completion(self):
-        """
-        Check if game is complete by comparing the board to the minefield's
-        completed board.
-        """
-        # Assume (for contradiction) that game is complete.
-        is_complete = True
-        for c in self.mf.all_coords:
-            exp_val = self.mf.completed_board[c]
-            if type(exp_val) is CellNum and exp_val != self.board[c]:
-                is_complete = False
-                break
-
-        if is_complete:
-            logger.info("Game won")
-
-            self.end_time = tm.time()
-            self.game_state = GameState.WON
-            self.mines_remaining = 0
-
-            for c in self.mf.all_coords:
-                if (
-                    self.mf.cell_contains_mine(c)
-                    and type(self.board[c]) is not CellHitMine
-                ):
-                    self._set_cell(c, CellFlag(self.mf[c]))
-
-    # def _split_cell(self, coord):
-    #     """
-    #     Split a cell.
-    #     """
-    #     raise NotImplementedError()
-
     def _send_callback_updates(self):
         """See AbstractController."""
 
         super()._send_callback_updates()
 
+        update = SharedInfo(
+            cell_updates={c: self.game.board[c] for c in self.game.board.all_coords},
+            mines_remaining=self.game.mines_remaining,
+            lives_remaining=self.game.lives_remaining,
+            game_state=self.game.state,
+        )
+        if self.game.end_time:
+            update.elapsed_time = self.game.end_time - self.game.start_time
+
         for cb in self._registered_callbacks:
             try:
-                cb(self._next_update)
+                cb(update)
             except Exception as e:
-                logger.warning("Encountered an error sending an update: %s", e)
-
-        self._next_update = SharedInfo(
-            mines_remaining=self.mines_remaining,
-            lives_remaining=self.lives_remaining,
-            game_state=self.game_state,
-        )
+                logger.error("Encountered an error sending an update: %s", e)

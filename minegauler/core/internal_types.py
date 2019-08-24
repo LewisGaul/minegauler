@@ -156,7 +156,6 @@ class GameState(str, enum.Enum):
     Enum representing the state of a game.
     """
 
-    INVALID = "INVALID"
     READY = "READY"
     ACTIVE = "ACTIVE"
     WON = "WON"
