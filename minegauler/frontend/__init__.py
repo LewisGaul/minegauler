@@ -4,14 +4,15 @@ __init__.py - Available imports from the package
 December 2018, Lewis Gaul
 """
 
-
 import sys
 
 from PyQt5.QtWidgets import QApplication
 
-from minegauler.frontend.api import get_callback
-from minegauler.frontend.main_window import MinegaulerGUI
-from minegauler.shared.utils import GuiOptsStruct
+from .api import get_callback
+from .main_window import MinegaulerGUI
+from .utils import GuiOptsStruct
+
+__all__ = (GuiOptsStruct, MinegaulerGUI, get_callback)
 
 
 app = None

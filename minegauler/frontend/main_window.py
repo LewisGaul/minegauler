@@ -17,12 +17,12 @@ from os.path import join
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
-    QHBoxLayout, QFrame, QAction, QActionGroup, QMenu, QSizePolicy)
+    QHBoxLayout, QFrame, QAction, QActionGroup, QSizePolicy)
 
 from minegauler.frontend.minefield_widgets import MinefieldWidget
 from minegauler.frontend.panel_widgets import PanelWidget
 from minegauler.frontend.utils import img_dir
-from minegauler.shared.utils import GuiOptsStruct, get_difficulty
+from minegauler.core.utils import GuiOptsStruct, get_difficulty
 
 
 logger = logging.getLogger(__name__)

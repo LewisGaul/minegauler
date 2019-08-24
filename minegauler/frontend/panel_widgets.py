@@ -9,7 +9,6 @@ PanelWidget
     clicks and calls any registered functions.
 """
 
-import logging
 import sys
 from os.path import join
 
@@ -18,7 +17,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QFrame, QHBoxLayout, QLabel
 
 from minegauler.frontend.utils import img_dir
-from minegauler.shared.internal_types import FaceState, GameState
+from minegauler.core.internal_types import FaceState, GameState
 
 
 class PanelWidget(QWidget):

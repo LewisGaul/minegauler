@@ -5,7 +5,7 @@ December 2018, Lewis Gaul
 """
 
 
-from minegauler.shared.internal_types import GameState
+from minegauler.core.internal_types import GameState
 
 
 def get_callback(gui, panel_widget, mf_widget):

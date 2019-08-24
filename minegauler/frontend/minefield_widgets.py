@@ -15,10 +15,10 @@ from os.path import exists, join
 
 from PyQt5.QtCore import Qt, pyqtSignal  # QRectF, QRect
 from PyQt5.QtGui import QPixmap, QPainter, QImage
-from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QAction
+from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene
 
 from minegauler.frontend.utils import img_dir
-from minegauler.shared.internal_types import (CellFlag, CellHitMine, CellMine,
+from minegauler.core.internal_types import (CellFlag, CellHitMine, CellMine,
     CellMineType, CellNum, CellUnclicked, CellWrongFlag, CellImageType)
 
 

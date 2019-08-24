@@ -7,12 +7,14 @@ Uses pytest - simply run 'python -m pytest tests/ [-k minefield_test]' from the
 root directory.
 """
 
+from typing import List
 
 import pytest
 
+from minegauler.core.board import Board
+from minegauler.core.grid import CoordType, Grid
+from minegauler.core.internal_types import *
 from minegauler.core.minefield import Minefield
-from minegauler.core.game import Grid, Board
-from minegauler.shared.internal_types import *
 
 
 class TestMinefield:
@@ -67,7 +69,13 @@ class TestMinefield:
         self.check_mf_created(mf)
         assert mf.per_cell == 2
         exp_completed_board = Board.from_2d_array(
-            [["F1", 1, 0, 0], [1, 2, 1, 1], [0, 1, "F1", 1]]
+            [
+                # fmt: off
+                ["F1", 1,  0,   0],
+                [ 1,   2,  1,   1],
+                [ 0,   1, "F1", 1],
+                # fmt: on
+            ]
         )
         exp_openings = [
             [(1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)],
@@ -83,7 +91,13 @@ class TestMinefield:
         exp_3bv = 5
         exp_openings = [[(0, 0), (0, 1), (1, 0), (1, 1)]]
         exp_completed_board = Board.from_2d_array(
-            [[0, 1, "F1", "F2"], [1, 2, 5, "F1"], [1, "F1", 2, 1]]
+            [
+                # fmt: off
+                [0,  1,  "F1", "F2"],
+                [1,  2,   5,   "F1"],
+                [1, "F1", 2,    1  ],
+                # fmt: on
+            ]
         )
 
         # Check creation from a grid.
@@ -160,7 +174,7 @@ class TestMinefield:
     # Helper methods
     # --------------------------------------------------------------------------
     @staticmethod
-    def check_mf_created(mf):
+    def check_mf_created(mf: Minefield):
         """
         Check minefield was created properly.
         """
@@ -189,7 +203,12 @@ class TestMinefield:
                     assert c in opening_coords
 
     @staticmethod
-    def check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board):
+    def check_mf_correct(
+        mf: Minefield,
+        exp_3bv: int,
+        exp_openings: List[List[CoordType]],
+        exp_completed_board: Board,
+    ):
         """
         Check created minefield is correct.
 

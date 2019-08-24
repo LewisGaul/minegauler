@@ -10,7 +10,8 @@ Grid (class)
 
 from typing import Iterable, Tuple
 
-Coord = Tuple[int, int]
+
+CoordType = Tuple[int, int]
 
 
 class Grid(list):
@@ -25,6 +26,7 @@ class Grid(list):
     all_coords ([(int, int), ...])
         List of all coordinates in the grid.
     """
+
     def __init__(self, x_size, y_size, *, fill=0):
         """
         Arguments:
@@ -60,15 +62,14 @@ class Grid(list):
             The size to display a grid cell as. Defaults to the maximum size of
             the representation of all the objects contained in the grid.
         """
-        #@@@LG Some attention please :)
+        # @@@LG Some attention please :)
 
         # Use max length of object representation if no cell size given.
         if cell_size is None:
-            cell_size = max(
-                           [len(repr(obj)) for row in self for obj in row])
+            cell_size = max([len(repr(obj)) for row in self for obj in row])
 
-        cell = '{:>%d}' % cell_size
-        ret = ''
+        cell = "{:>%d}" % cell_size
+        ret = ""
         for row in self:
             for obj in row:
                 if isinstance(mapping, dict):
@@ -77,9 +78,9 @@ class Grid(list):
                     rep = str(mapping(obj))
                 else:
                     rep = repr(obj)
-                ret += cell.format(rep[:cell_size]) + ' '
+                ret += cell.format(rep[:cell_size]) + " "
             ret = ret[:-1]  # Remove trailing space
-            ret += '\n'
+            ret += "\n"
         ret = ret[:-1]  # Remove trailing newline
 
         return ret
@@ -128,7 +129,9 @@ class Grid(list):
             for i in range(len(row)):
                 row[i] = item
 
-    def get_nbrs(self, coord: Coord, *, include_origin=False) -> Iterable[Coord]:
+    def get_nbrs(
+        self, coord: CoordType, *, include_origin=False
+    ) -> Iterable[CoordType]:
         """
         Get a list of the coordinates of neighbouring cells.
 

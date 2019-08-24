@@ -7,19 +7,19 @@ Uses pytest - simply run 'python -m pytest tests/ [-k game_engine_test]' from
 the root directory.
 """
 
-
-import pytest
 from unittest.mock import Mock
 
+import pytest
+
+from minegauler.core.board import Board
 from minegauler.core.game_engine import (
     Controller,
     GameOptsStruct,
     _ignore_if,
     _ignore_if_not,
 )
+from minegauler.core.internal_types import *
 from minegauler.core.minefield import Minefield
-from minegauler.core.game import Board
-from minegauler.shared.internal_types import *
 
 
 @pytest.fixture()
@@ -35,7 +35,15 @@ def frontend2():
 class TestController:
 
     mf = Minefield.from_2d_array(
-        [[0, 0, 1, 2], [0, 0, 0, 1], [0, 0, 0, 0], [0, 0, 0, 0], [0, 1, 0, 0]],
+        [
+            # fmt: off
+            [0, 0, 1, 2],
+            [0, 0, 0, 1],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 1, 0, 0],
+            # fmt: on
+        ],
         per_cell=2,
     )
     opts = GameOptsStruct(

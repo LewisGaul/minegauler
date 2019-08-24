@@ -26,6 +26,7 @@ import functools
 # Cell contents types
 # ------------------------------------------------------------------------------
 
+
 class _NumericCellContentsMixin:
     """
     A mixin for numeric cell contents types, allowing adding and subtracting integers.
@@ -73,13 +74,13 @@ class CellContentsType:
 class CellUnclicked(CellContentsType):
     """Unclicked cell on a minesweeper board."""
 
-    char = '#'
+    char = "#"
 
 
 class CellNum(_NumericCellContentsMixin, CellContentsType):
     """Number shown in a cell on a minesweeper board."""
 
-    char = ''
+    char = ""
 
     def __init__(self, num):
         super().__init__(num)
@@ -94,7 +95,8 @@ class CellMineType(_NumericCellContentsMixin, CellContentsType):
         if cls == CellMineType:
             raise TypeError(
                 f"{type(cls)} should be used as a base class and not "
-                "instantiated directly")
+                "instantiated directly"
+            )
         return super().__new__(cls, num)
 
     def __init__(self, num=1):
@@ -119,52 +121,58 @@ class CellMineType(_NumericCellContentsMixin, CellContentsType):
             if cls.char == char:
                 return cls
 
+
 class CellMine(CellMineType):
     """Number of mines in a cell shown on a minesweeper board."""
 
-    char = 'M'
+    char = "M"
+
 
 class CellHitMine(CellMineType):
     """Number of hit mines in a cell shown on a minesweeper board."""
 
-    char = '!'
+    char = "!"
+
 
 class CellFlag(CellMineType):
     """Number of flags in a cell shown on a minesweeper board."""
 
-    char = 'F'
+    char = "F"
+
 
 class CellWrongFlag(CellMineType):
     """Number of incorrect flags in a cell shown on a minesweeper board."""
 
-    char = 'X'
+    char = "X"
 
 
 # ------------------------------------------------------------------------------
 # Game enums
 # ------------------------------------------------------------------------------
 
+
 class GameState(str, enum.Enum):
     """
     Enum representing the state of a game.
     """
-    INVALID = 'INVALID'
-    READY   = 'READY'
-    ACTIVE  = 'ACTIVE'
-    WON     = 'WON'
-    LOST    = 'LOST'
 
+    INVALID = "INVALID"
+    READY = "READY"
+    ACTIVE = "ACTIVE"
+    WON = "WON"
+    LOST = "LOST"
 
 
 # ------------------------------------------------------------------------------
 # GUI enums
 # ------------------------------------------------------------------------------
 
+
 class FaceState(enum.Enum):
-    READY  = 'ready'
-    ACTIVE = 'active'
-    WON    = 'won'
-    LOST   = 'lost'
+    READY = "ready"
+    ACTIVE = "active"
+    WON = "won"
+    LOST = "lost"
 
 
 class CellImageType(enum.Flag):

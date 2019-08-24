@@ -12,10 +12,9 @@ import logging
 import random as rnd
 from typing import Iterable, List, Optional, Union
 
-from minegauler.shared.grid import Coord, Grid
-from minegauler.shared.internal_types import CellNum, CellFlag
-
-from .game import Board
+from .board import Board
+from .grid import CoordType, Grid
+from .internal_types import *
 
 
 logger = logging.getLogger(__name__)
@@ -32,9 +31,9 @@ class Minefield(Grid):
         x_size: int,
         y_size: int,
         *,
-        mines: Union[int, Iterable[Coord]],
+        mines: Union[int, Iterable[CoordType]],
         per_cell: int = 1,
-        safe_coords: Optional[Iterable[Coord]] = None,
+        safe_coords: Optional[Iterable[CoordType]] = None,
     ):
         """
 
@@ -69,7 +68,8 @@ class Minefield(Grid):
         for c in mine_coords:
             if self[c] == self.per_cell:
                 raise ValueError(
-                    f"Too many mines at coord {c} with max per cell of {self.per_cell}")
+                    f"Too many mines at coord {c} with max per cell of {self.per_cell}"
+                )
             self[c] += 1
         self.mine_coords = mine_coords
         self.completed_board = self._calc_completed_board()
@@ -108,8 +108,8 @@ class Minefield(Grid):
         return cls.from_grid(Grid.from_2d_array(array), per_cell=per_cell)
 
     def _choose_mine_coords(
-        self, safe_coords: Optional[Iterable[Coord]] = None
-    ) -> List[Coord]:
+        self, safe_coords: Optional[Iterable[CoordType]] = None
+    ) -> List[CoordType]:
         """
         Randomly choose coordinates for mines to be in.
         
@@ -145,7 +145,7 @@ class Minefield(Grid):
         rnd.shuffle(avble_coords)
         return avble_coords[: self.nr_mines]
 
-    def cell_contains_mine(self, coord: Coord) -> bool:
+    def cell_contains_mine(self, coord: CoordType) -> bool:
         """
         Return whether a cell contains at least one mine.
         
@@ -174,7 +174,7 @@ class Minefield(Grid):
                         completed_board[nbr] += mines
         return completed_board
 
-    def _find_openings(self) -> List[List[Coord]]:
+    def _find_openings(self) -> List[List[CoordType]]:
         """
         Find the openings of the board. A list of openings is stored, each
         represented as a list of coordinates belonging to that opening.
