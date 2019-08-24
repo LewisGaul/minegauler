@@ -14,14 +14,17 @@ from minegauler.frontend import GuiOptsStruct
 from minegauler.utils import (
     read_settings_from_file,
     write_settings_to_file,
-    PersistSettingsStruct
+    PersistSettingsStruct,
 )
 
 
 logger = logging.getLogger(__name__)
 
-logging.basicConfig(filename='runtime.log', level=logging.DEBUG,
-                    format='%(asctime)s[%(levelname)s](%(name)s) %(message)s')
+logging.basicConfig(
+    filename="runtime.log",
+    level=logging.DEBUG,
+    format="%(asctime)s[%(levelname)s](%(name)s) %(message)s",
+)
 
 
 read_settings = read_settings_from_file()
@@ -44,9 +47,7 @@ ctrlr = Controller(game_opts)
 
 gui = frontend.create_gui(ctrlr, gui_opts)
 
-ctrlr.register_callback(frontend.get_callback(gui,
-                                              gui.panel_widget,
-                                              gui.body_widget))
+ctrlr.register_callback(frontend.get_callback(gui, gui.panel_widget, gui.body_widget))
 
 rc = frontend.run()
 

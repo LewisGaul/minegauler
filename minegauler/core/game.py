@@ -402,7 +402,7 @@ class Game:
             [self.board[c].num for c in nbrs if isinstance(self.board[c], CellMineType)]
         )
         logger.debug(
-            "%s flagged mine(s) around clicked cell showing number %d",
+            "%s flagged mine(s) around clicked cell showing number %s",
             num_flagged_nbrs,
             self.board[coord],
         )
