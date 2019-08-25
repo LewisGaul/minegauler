@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from minegauler.shared.utils import GameOptsStruct
+from minegauler.core import GameOptsStruct
 
 
 @pytest.fixture

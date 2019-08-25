@@ -29,12 +29,12 @@ before_script:
 test:
   stage: test
   script:
-    - python -m pytest tests/mut/backend -v
+    - python -m pytest tests/mut/core -v
   
 coverage:
   stage: test
   script:
-    - python -m pytest tests/mut/backend/ --cov minegauler/backend --cov-report term --cov-report html:coverage/backend
+    - python -m pytest tests/mut/core/ --cov minegauler/core --cov-report term --cov-report html:coverage/core
   artifacts:
     paths:
     - coverage
