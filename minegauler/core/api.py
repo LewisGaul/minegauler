@@ -330,3 +330,10 @@ class AbstractController(metaclass=abc.ABCMeta):
         self._logger.info(
             "Resizing the board to %sx%s with %s mines", x_size, y_size, mines
         )
+
+    @abc.abstractmethod
+    def set_first_success(self, value: bool) -> None:
+        """
+        Set whether the first click should be a guaranteed success.
+        """
+        self._logger.info("Setting first success to %s", value)

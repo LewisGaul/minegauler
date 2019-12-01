@@ -166,6 +166,13 @@ class Controller(AbstractController):
         self._send_resize_update()
         self.new_game()
 
+    def set_first_success(self, value: bool) -> None:
+        """
+        Set whether the first click should be a guaranteed success.
+        """
+        super().set_first_success(value)
+        self.opts.first_success = value
+
     # --------------------------------------------------------------------------
     # Helper methods
     # --------------------------------------------------------------------------

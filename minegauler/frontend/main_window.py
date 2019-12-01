@@ -194,7 +194,7 @@ class MinegaulerGUI(BaseMainWindow):
         """
         self.ctrlr: api.AbstractController = ctrlr
         self.gui_opts: utils.GuiOptsStruct
-        self.game_opts: core.utils.GameOptsStruct
+        self.game_opts: core.utils.GameOptsStruct  # TODO: This is wrong.
         self._minefield_widget: MinefieldWidget
 
         if gui_opts:
@@ -234,21 +234,41 @@ class MinegaulerGUI(BaseMainWindow):
         """Fill in the menubars."""
         # GAME MENU
 
-        # New game
+        # New game (F2)
         new_game_act = self._game_menu.addAction("New game", self.ctrlr.new_game)
         new_game_act.setShortcut("F2")
 
-        # Replay game
+        # Replay game (F3)
         replay_act = self._game_menu.addAction("Replay", self.ctrlr.restart_game)
         replay_act.setShortcut("F3")
 
-        # # Show highscores action
-        # hs_act = self._game_menu.addAction('Highscores', lambda: None)
-        # hs_act.setShortcut('F6')
+        # Create board
+
+        # Save board
+
+        # Load board
+
+        # self._game_menu.addSeparator()
+
+        # Current info (F4)
+
+        # Solver
+        # - Probabilities (F5)
+        # - Auto flag (Ctrl+F)
+        # - Auto click (Ctrl+Enter)
+
+        # Highscores (F6)
+
+        # Stats (F7)
 
         self._game_menu.addSeparator()
 
         # Difficulty radiobuttons
+        # - Beginner (b)
+        # - Intermediate (i)
+        # - Expert (e)
+        # - Master (m)
+        # - Custom (c)
         diff_group = QActionGroup(self, exclusive=True)
         for diff in ["Beginner", "Intermediate", "Expert", "Master"]:  # , 'Custom']:
             diff_act = QAction(diff, diff_group, checkable=True)
@@ -265,11 +285,31 @@ class MinegaulerGUI(BaseMainWindow):
 
         self._game_menu.addSeparator()
 
-        # Exit
-        exit_act = self._game_menu.addAction("Exit", self.close)
-        exit_act.setShortcut("Alt+F4")
+        # Zoom
+
+        # Styles
+        # - Buttons
+        # - Images
+        # - Numbers
+
+        # self._game_menu.addSeparator()
+
+        # Exit (F4)
+        self._game_menu.addAction("Exit", self.close, shortcut="Alt+F4")
 
         # OPTIONS MENU
+
+        # First-click success
+        def toggle_first_success():
+            self.game_opts.first_success = not self.game_opts.first_success
+            self.ctrlr.set_first_success(self.game_opts.first_success)
+
+        first_act = QAction(
+            "Safe start", self, checkable=True, checked=self.game_opts.first_success
+        )
+        self._opts_menu.addAction(first_act)
+        first_act.triggered.connect(toggle_first_success)
+
         # Drag select
         def toggle_drag_select():
             self.gui_opts.drag_select = not self.gui_opts.drag_select
@@ -280,6 +320,7 @@ class MinegaulerGUI(BaseMainWindow):
         drag_act.setChecked(self.gui_opts.drag_select)
 
         # HELP MENU
+
         # TODO: None yet...
 
     def _change_difficulty(self, id_: str) -> None:
