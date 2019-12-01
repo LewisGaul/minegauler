@@ -9,6 +9,8 @@ PanelWidget
     clicks and calls any registered functions.
 """
 
+__all__ = ("PanelWidget",)
+
 import os
 import sys
 
@@ -18,6 +20,7 @@ from PyQt5.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QWidget
 
 from minegauler.types import FaceState, GameState
 
+from .api import AbstractController
 from .utils import IMG_DIR
 
 
@@ -26,7 +29,7 @@ class PanelWidget(QWidget):
     The panel widget.
     """
 
-    def __init__(self, parent, ctrlr, mines: int):
+    def __init__(self, parent, ctrlr: AbstractController, mines: int):
         """
         Arguments:
         parent
@@ -35,9 +38,9 @@ class PanelWidget(QWidget):
             To access game engine methods (call-only).
         """
         super().__init__(parent)
-        self.ctrlr = ctrlr
+        self.ctrlr: AbstractController = ctrlr
         self._mines: int = mines
-        self._game_state = GameState.READY
+        self._game_state: GameState = GameState.READY
 
         self.setFixedHeight(40)
         self.setMinimumWidth(140)
@@ -136,6 +139,9 @@ class PanelWidget(QWidget):
         self.face_button.setPixmap(
             pixmap.scaled(26, 26, transformMode=Qt.SmoothTransformation)
         )
+
+    def set_mines(self, mines: int) -> None:
+        self._mines = mines
 
     def set_mines_counter(self, num):
         """

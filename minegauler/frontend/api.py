@@ -14,6 +14,7 @@ from minegauler.core.api import AbstractController, AbstractListener
 from minegauler.types import CellContentsType, GameState
 from minegauler.typing import Coord_T
 
+from .main_window import MinegaulerGUI
 from .minefield import MinefieldWidget
 from .panel import PanelWidget
 
@@ -27,10 +28,12 @@ class Listener(AbstractListener):
     backend.
     """
 
-    def __init__(self, gui, panel_widget: PanelWidget, mf_widget: MinefieldWidget):
-        self._gui = gui
-        self._panel_widget = panel_widget
-        self._mf_widget = mf_widget
+    def __init__(
+        self, gui: MinegaulerGUI, panel_widget: PanelWidget, mf_widget: MinefieldWidget
+    ):
+        self._gui: MinegaulerGUI = gui
+        self._panel_widget: PanelWidget = panel_widget
+        self._mf_widget: MinefieldWidget = mf_widget
 
     def reset(self) -> None:
         """
@@ -38,6 +41,20 @@ class Listener(AbstractListener):
         """
         self._mf_widget.reset()
         self._panel_widget.reset()
+
+    def resize(self, x_size: int, y_size: int, mines: int) -> None:
+        """
+        Called to indicate the board is being changed.
+
+        :param x_size:
+            The number of rows.
+        :param y_size:
+            The number of columns.
+        :param mines:
+            The number of mines.
+        """
+        self._panel_widget.set_mines(mines)
+        self._mf_widget.resize(x_size, y_size)
 
     def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
         for c, state in cell_updates.items():

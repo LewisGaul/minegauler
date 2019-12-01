@@ -12,13 +12,16 @@ MinefieldWidget
 import logging
 import os
 import sys
+from typing import Optional
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QPainter, QPixmap
-from PyQt5.QtWidgets import QApplication, QGraphicsScene, QGraphicsView
+from PyQt5.QtWidgets import QApplication, QGraphicsScene, QGraphicsView, QWidget
 
 from minegauler.types import *
+from minegauler.typing import Coord_T
 
+from .api import AbstractController
 from .utils import IMG_DIR
 
 
@@ -109,7 +112,15 @@ class MinefieldWidget(QGraphicsView):
     at_risk_signal = pyqtSignal()
     no_risk_signal = pyqtSignal()
 
-    def __init__(self, parent, ctrlr, *, btn_size=16, styles=None, drag_select=False):
+    def __init__(
+        self,
+        parent: Optional[QWidget],
+        ctrlr: AbstractController,
+        *,
+        btn_size: int = 16,
+        styles=None,
+        drag_select: bool = False,
+    ):
         logger.info("Initialising minefield widget")
         super().__init__(parent)
         self.setStyleSheet("border: 0px")
@@ -263,7 +274,7 @@ class MinefieldWidget(QGraphicsView):
     # --------------------------------------------------------------------------
     # Mouse click handlers
     # --------------------------------------------------------------------------
-    def left_button_down(self, coord):
+    def left_button_down(self, coord: Coord_T) -> None:
         """
         Left mouse button was pressed (single click). Change display and call
         callback functions as appropriate.
@@ -274,14 +285,14 @@ class MinefieldWidget(QGraphicsView):
         else:
             self.sink_unclicked_cell(coord)
 
-    def left_button_double_down(self, coord):
+    def left_button_double_down(self, coord: Coord_T) -> None:
         """
         Left button was double clicked. Call callback to remove any flags that
         were on the cell.
         """
         self.ctrlr.remove_cell_flags(coord)
 
-    def left_button_move(self, coord):
+    def left_button_move(self, coord: Coord_T) -> None:
         """
         Left mouse button was moved after a single click. Change display as
         appropriate.
@@ -291,14 +302,14 @@ class MinefieldWidget(QGraphicsView):
         if coord is not None:
             self.left_button_down(coord)
 
-    def left_button_double_move(self, coord):
+    def left_button_double_move(self, coord: Coord_T) -> None:
         """
         Left mouse button moved after a double click.
         """
         if self.drag_select:
             self.left_button_double_down(coord)
 
-    def left_button_release(self, coord):
+    def left_button_release(self, coord: Coord_T) -> None:
         """
         Left mouse button was released. Change display and call callback
         functions as appropriate.
@@ -308,7 +319,7 @@ class MinefieldWidget(QGraphicsView):
         if not self.drag_select and coord is not None:
             self.ctrlr.select_cell(coord)
 
-    def right_button_down(self, coord):
+    def right_button_down(self, coord: Coord_T) -> None:
         """
         Right mouse button was pressed. Change display and call callback
         functions as appropriate.
@@ -319,7 +330,7 @@ class MinefieldWidget(QGraphicsView):
         else:
             self.unflag_on_right_drag = False
 
-    def right_button_move(self, coord):
+    def right_button_move(self, coord: Coord_T) -> None:
         """
         Right mouse button was moved. Change display as appropriate.
         """
@@ -329,7 +340,7 @@ class MinefieldWidget(QGraphicsView):
             else:
                 self.ctrlr.flag_cell(coord, flag_only=True)
 
-    def both_buttons_down(self, coord):
+    def both_buttons_down(self, coord: Coord_T) -> None:
         """
         Both left and right mouse buttons were pressed. Change display and call
         callback functions as appropriate.
@@ -341,7 +352,7 @@ class MinefieldWidget(QGraphicsView):
             self.at_risk_signal.emit()
             self.ctrlr.chord_on_cell(coord)
 
-    def both_buttons_move(self, coord):
+    def both_buttons_move(self, coord: Coord_T) -> None:
         """
         Both left and right mouse buttons were moved. Change display as
         appropriate.
@@ -352,7 +363,7 @@ class MinefieldWidget(QGraphicsView):
         if coord is not None:
             self.both_buttons_down(coord)
 
-    def first_of_both_buttons_release(self, coord):
+    def first_of_both_buttons_release(self, coord: Coord_T) -> None:
         """
         One of the mouse buttons was released after both were pressed. Change
         display and call callback functions as appropriate.
@@ -363,7 +374,7 @@ class MinefieldWidget(QGraphicsView):
             if coord is not None:
                 self.ctrlr.chord_on_cell(coord)
 
-    def all_buttons_release(self):
+    def all_buttons_release(self) -> None:
         """
         The second of the mouse buttons was released after both were pressed.
         Change display and call callback functions as appropriate.
@@ -378,18 +389,18 @@ class MinefieldWidget(QGraphicsView):
     # --------------------------------------------------------------------------
     # Other methods
     # --------------------------------------------------------------------------
-    def is_coord_in_grid(self, coord):
+    def is_coord_in_grid(self, coord: Coord_T) -> bool:
         x, y = coord
         return 0 <= x < self.x_size and 0 <= y < self.y_size
 
-    def coord_from_event(self, event):
+    def coord_from_event(self, event) -> Coord_T:
         coord = event.x() // self.btn_size, event.y() // self.btn_size
         if not self.is_coord_in_grid(coord):
             coord = None
 
         return coord
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset all cell images and other state for a new game."""
         logger.info("Resetting minefield widget")
         self.mouse_coord = None
@@ -398,7 +409,7 @@ class MinefieldWidget(QGraphicsView):
         for c in self._board.all_coords:
             self.set_cell_image(c, CellUnclicked())
 
-    def sink_unclicked_cell(self, coord):
+    def sink_unclicked_cell(self, coord: Coord_T) -> None:
         """
         Set an unclicked cell to appear sunken.
         """
@@ -408,7 +419,7 @@ class MinefieldWidget(QGraphicsView):
         if self.sunken_cells:
             self.at_risk_signal.emit()
 
-    def raise_all_sunken_cells(self):
+    def raise_all_sunken_cells(self) -> None:
         """
         Reset all sunken cells to appear raised.
         """
@@ -417,7 +428,7 @@ class MinefieldWidget(QGraphicsView):
             if self._board[coord] == CellUnclicked():
                 self.set_cell_image(coord, "btn_up")
 
-    def set_cell_image(self, coord, state):
+    def set_cell_image(self, coord: Coord_T, state) -> None:
         """
         Set the image of a cell.
 
@@ -431,13 +442,13 @@ class MinefieldWidget(QGraphicsView):
         b = self.scene.addPixmap(self.cell_images[state])
         b.setPos(x * self.btn_size, y * self.btn_size)
 
-    def ignore_clicks(self):
+    def ignore_clicks(self) -> None:
         self._ignore_clicks = True
 
-    def accept_clicks(self):
+    def accept_clicks(self) -> None:
         self._ignore_clicks = False
 
-    def resize(self, x_size, y_size):
+    def resize(self, x_size: int, y_size: int) -> None:
         logger.info(
             "Resizing minefield from %sx%s to %sx%s",
             self.x_size,

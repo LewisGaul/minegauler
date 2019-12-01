@@ -11,6 +11,8 @@ MinegaulerGUI
     Minegauler main window class.
 """
 
+__all__ = ("MinegaulerGUI",)
+
 import logging
 import os
 
@@ -196,6 +198,11 @@ class MinegaulerGUI(BaseMainWindow):
             The core controller.
         """
         self.ctrlr: api.AbstractController = ctrlr
+        self.gui_opts: utils.GuiOptsStruct
+        self.game_opts: core.utils.GameOptsStruct
+        self.panel_widget: PanelWidget
+        self.minefield_widget: MinefieldWidget
+
         if gui_opts:
             self.gui_opts = gui_opts.copy()
         else:
@@ -264,7 +271,7 @@ class MinegaulerGUI(BaseMainWindow):
         # cb_core.save_settings.emit()
         super().closeEvent(event)
 
-    def _change_difficulty(self, id_):
+    def _change_difficulty(self, id_: str) -> None:
         if id_ == "B":
             x, y, m = 8, 8, 10
         elif id_ == "I":
@@ -276,6 +283,5 @@ class MinegaulerGUI(BaseMainWindow):
         else:
             raise ValueError(f"Unrecognised difficulty '{id_}'")
 
-        self.minefield_widget.resize(x, y)
-        self.update_size()
         self.ctrlr.resize_board(x_size=x, y_size=y, mines=m)
+        self.update_size()

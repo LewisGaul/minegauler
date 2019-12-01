@@ -64,7 +64,7 @@ class Controller(AbstractController):
         Options for use in games.
     """
 
-    def __init__(self, opts):
+    def __init__(self, opts: utils.GameOptsStruct):
         """
         Arguments:
         opts (GameOptsStruct)
@@ -81,7 +81,7 @@ class Controller(AbstractController):
     # --------------------------------------------------------------------------
     # Methods triggered by user interaction
     # --------------------------------------------------------------------------
-    def new_game(self):
+    def new_game(self) -> None:
         """See AbstractController."""
         super().new_game()
         self._game = game.Game(
@@ -92,23 +92,23 @@ class Controller(AbstractController):
             lives=self.opts.lives,
             first_success=self.opts.first_success,
         )
-        self._reset_update_tracking()
+        self._send_reset_update()
 
-    def restart_game(self):
+    def restart_game(self) -> None:
         """See AbstractController."""
         if not self._game.mf:
             return
         super().restart_game()
         self._game = game.Game(minefield=self._game.mf, lives=self.opts.lives)
-        self._reset_update_tracking()
+        self._send_reset_update()
 
-    def select_cell(self, coord):
+    def select_cell(self, coord: Coord_T) -> None:
         """See AbstractController."""
         super().select_cell(coord)
         cells = self._game.select_cell(coord)
         self._send_updates(cells)
 
-    def flag_cell(self, coord, *, flag_only=False):
+    def flag_cell(self, coord: Coord_T, *, flag_only: bool = False) -> None:
         """See AbstractController."""
         super().flag_cell(coord)
 
@@ -125,21 +125,31 @@ class Controller(AbstractController):
 
         self._send_updates({coord: self._game.board[coord]})
 
-    def remove_cell_flags(self, coord):
+    def remove_cell_flags(self, coord: Coord_T) -> None:
         """See AbstractController."""
         super().remove_cell_flags(coord)
         self._game.set_cell_flags(coord, 0)
         self._send_updates({coord: self._game.board[coord]})
 
-    def chord_on_cell(self, coord):
+    def chord_on_cell(self, coord: Coord_T) -> None:
         """See AbstractController."""
         super().chord_on_cell(coord)
         cells = self._game.chord_on_cell(coord)
         self._send_updates(cells)
 
-    def resize_board(self, *, x_size, y_size, mines):
+    def resize_board(self, *, x_size: int, y_size: int, mines: int) -> None:
         """See AbstractController."""
         super().resize_board(x_size, y_size, mines)
+        if (
+            x_size == self.opts.x_size
+            and y_size == self.opts.y_size
+            and mines == self.opts.mines
+        ):
+            logger.info(
+                "No resize required as the parameters are unchanged, starting a new game"
+            )
+            self.new_game()
+            return
 
         logger.info(
             "Resizing board from %sx%s with %s mines to %sx%s with %s mines",
@@ -150,19 +160,24 @@ class Controller(AbstractController):
             y_size,
             mines,
         )
-        self.opts.x_size, self.opts.y_size = x_size, y_size
+        self.opts.x_size = x_size
+        self.opts.y_size = y_size
         self.opts.mines = mines
+        self._send_resize_update()
         self.new_game()
 
     # --------------------------------------------------------------------------
     # Helper methods
     # --------------------------------------------------------------------------
-    def _reset_update_tracking(self):
+    def _send_reset_update(self) -> None:
         self._notif.reset()
         self._last_update = SharedInfo()
         self._cells_updated = dict()
 
-    def _send_updates(self, cells_updated: Dict[Coord_T, CellContentsType]):
+    def _send_resize_update(self) -> None:
+        self._notif.resize(self.opts.x_size, self.opts.y_size, self.opts.mines)
+
+    def _send_updates(self, cells_updated: Dict[Coord_T, CellContentsType]) -> None:
         """Send updates to registered listeners."""
         update = SharedInfo(
             cell_updates=cells_updated,

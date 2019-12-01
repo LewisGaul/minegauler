@@ -31,6 +31,20 @@ class AbstractListener(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
+    def resize(self, x_size: int, y_size: int, mines: int) -> None:
+        """
+        Called to indicate the board is being changed.
+
+        :param x_size:
+            The number of rows.
+        :param y_size:
+            The number of columns.
+        :param mines:
+            The number of mines.
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
     def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
         """
         Called when one or more cells were updated.
@@ -161,6 +175,19 @@ class Caller(AbstractListener):
         Called to indicate the state should be reset.
         """
         self._logger.debug("Calling reset()")
+
+    def resize(self, x_size: int, y_size: int, mines: int) -> None:
+        """
+        Called to indicate the board is being changed.
+
+        :param x_size:
+            The number of rows.
+        :param y_size:
+            The number of columns.
+        :param mines:
+            The number of mines.
+        """
+        self._logger.debug(f"Calling resize() with {x_size}, {y_size}, {mines}")
 
     def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
         """
