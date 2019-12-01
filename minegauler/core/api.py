@@ -337,3 +337,10 @@ class AbstractController(metaclass=abc.ABCMeta):
         Set whether the first click should be a guaranteed success.
         """
         self._logger.info("Setting first success to %s", value)
+
+    @abc.abstractmethod
+    def set_per_cell(self, value: int) -> None:
+        """
+        Set the maximum number of mines per cell.
+        """
+        self._logger.info("Setting per cell to %s", value)

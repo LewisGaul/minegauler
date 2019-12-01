@@ -173,6 +173,16 @@ class Controller(AbstractController):
         super().set_first_success(value)
         self.opts.first_success = value
 
+    def set_per_cell(self, value: int) -> None:
+        """
+        Set the maximum number of mines per cell.
+        """
+        super().set_per_cell(value)
+        if self.opts.per_cell != value:
+            self.opts.per_cell = value
+            if self._game.state.unstarted():
+                self.new_game()
+
     # --------------------------------------------------------------------------
     # Helper methods
     # --------------------------------------------------------------------------

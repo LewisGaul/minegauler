@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QMainWindow,
+    QMenu,
     QMenuBar,
     QSizePolicy,
     QVBoxLayout,
@@ -232,8 +233,9 @@ class MinegaulerGUI(BaseMainWindow):
 
     def _populate_menubars(self) -> None:
         """Fill in the menubars."""
-        # GAME MENU
-
+        # ----------
+        # Game menu
+        # ----------
         # New game (F2)
         new_game_act = self._game_menu.addAction("New game", self.ctrlr.new_game)
         new_game_act.setShortcut("F2")
@@ -297,8 +299,9 @@ class MinegaulerGUI(BaseMainWindow):
         # Exit (F4)
         self._game_menu.addAction("Exit", self.close, shortcut="Alt+F4")
 
-        # OPTIONS MENU
-
+        # ----------
+        # Options menu
+        # ----------
         # First-click success
         def toggle_first_success():
             self.game_opts.first_success = not self.game_opts.first_success
@@ -319,8 +322,28 @@ class MinegaulerGUI(BaseMainWindow):
         drag_act.setCheckable(True)
         drag_act.setChecked(self.gui_opts.drag_select)
 
-        # HELP MENU
+        # Max mines per cell option
+        def get_change_per_cell_func(n):
+            def change_per_cell():
+                self.game_opts.per_cell = n
+                self.ctrlr.set_per_cell(n)
 
+            return change_per_cell
+
+        per_cell_menu = self._opts_menu.addMenu("Max per cell")
+        per_cell_group = QActionGroup(self, exclusive=True)
+        for i in range(1, 4):
+
+            action = QAction(str(i), self, checkable=True)
+            per_cell_menu.addAction(action)
+            per_cell_group.addAction(action)
+            if self.game_opts.per_cell == i:
+                action.setChecked(True)
+            action.triggered.connect(get_change_per_cell_func(i))
+
+        # ----------
+        # Help menu
+        # ----------
         # TODO: None yet...
 
     def _change_difficulty(self, id_: str) -> None:
