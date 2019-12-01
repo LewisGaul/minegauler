@@ -1,0 +1,17 @@
+[run]
+source =
+    minegauler/
+    tests/
+omit = *venv*/**
+
+[report]
+#omit = tests/
+exclude_lines =
+    pass
+    if __name__ == .__main__.:
+    raise NotImplementedError
+    return NotImplemented
+precision = 1
+
+[html]
+directory = htmlcov

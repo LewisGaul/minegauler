@@ -10,6 +10,7 @@ LaTex/
 coverage/
 .coverage
 *,cover
+htmlcov/
 .pytest*
 .idea
 *.log
