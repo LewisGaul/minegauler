@@ -1,4 +1,4 @@
-# MineGauler
+# Minegauler
 
 Remake of the classic Minesweeper game, written in Python (requires Python 3.6+).
 
