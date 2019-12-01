@@ -17,12 +17,7 @@ if IN_EXE:
 else:
     direcs['main'] = main_direc = dirname(os.getcwd())
     direcs['data'] = join(main_direc, 'data')
-    # Image directory path depends on if we are in version currently under
-    # development.
-    if basename(main_direc) == 'minegauler':
-        direcs['images'] = join(main_direc, 'images')
-    else:
-        direcs['images'] = join(dirname(main_direc), 'images')
+    direcs['images'] = join(main_direc, 'images')
 direcs['files'] = join(main_direc, 'files')
 direcs['boards'] = join(main_direc, 'boards')
 if not isdir(direcs['boards']):
