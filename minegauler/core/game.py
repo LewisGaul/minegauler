@@ -12,9 +12,10 @@ import logging
 import time as tm
 from typing import Any, Iterable, Optional, Tuple, Union
 
+from minegauler.typing import Coord_T
+
 from ..types import *
 from .board import Board
-from .grid import CoordType
 from .minefield import Minefield
 
 
@@ -30,7 +31,7 @@ def check_coord(method):
     """
 
     @functools.wraps(method)
-    def wrapped(self, coord: CoordType, *args, **kwargs):
+    def wrapped(self, coord: Coord_T, *args, **kwargs):
         if not 0 <= coord[0] < self.x_size or not 0 <= coord[1] < self.y_size:
             raise ValueError(
                 f"Coordinate is out of bounds, should be between (0,0) and "
@@ -268,7 +269,7 @@ class Game:
     def is_finished(self) -> bool:
         return self.state.finished()
 
-    def _create_minefield(self, coord: CoordType) -> None:
+    def _create_minefield(self, coord: Coord_T) -> None:
         """Create the minefield in response to a cell being selected."""
         if self.first_success:
             safe_coords = self.board.get_nbrs(coord, include_origin=True)
@@ -307,7 +308,7 @@ class Game:
 
     @check_coord
     @ignore_if_not(game_state=("READY", "ACTIVE"), cell_state=CellUnclicked)
-    def select_cell(self, coord: CoordType) -> None:
+    def select_cell(self, coord: Coord_T) -> None:
         """
         Perform the action of selecting/clicking a cell. Game must be started
         before calling this method.
@@ -321,7 +322,7 @@ class Game:
         if self.state != GameState.LOST:
             self._check_for_completion()
 
-    def _select_cell_action(self, coord: CoordType) -> None:
+    def _select_cell_action(self, coord: Coord_T) -> None:
         """
         Implementation of the action of selecting/clicking a cell.
         """
@@ -395,7 +396,7 @@ class Game:
 
     @check_coord
     @ignore_if_not(game_state=("READY", "ACTIVE"), cell_state=(CellFlag, CellUnclicked))
-    def set_cell_flags(self, coord: CoordType, nr_flags: int) -> None:
+    def set_cell_flags(self, coord: Coord_T, nr_flags: int) -> None:
         """Set the number of flags in a cell."""
         if nr_flags < 0 or nr_flags > self.per_cell:
             raise ValueError(
@@ -414,7 +415,7 @@ class Game:
 
     @check_coord
     @ignore_if_not(game_state="ACTIVE", cell_state=CellNum)
-    def chord_on_cell(self, coord: CoordType):
+    def chord_on_cell(self, coord: Coord_T):
         """Chord on a cell that contains a revealed number."""
         nbrs = self.board.get_nbrs(coord)
         num_flagged_nbrs = sum(

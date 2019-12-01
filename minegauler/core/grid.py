@@ -8,10 +8,9 @@ Grid (class)
     Representation of a 2D grid using nested lists.
 """
 
-from typing import Iterable, Tuple
+from typing import Iterable
 
-
-CoordType = Tuple[int, int]
+from minegauler.typing import Coord_T
 
 
 class Grid(list):
@@ -129,9 +128,7 @@ class Grid(list):
             for i in range(len(row)):
                 row[i] = item
 
-    def get_nbrs(
-        self, coord: CoordType, *, include_origin=False
-    ) -> Iterable[CoordType]:
+    def get_nbrs(self, coord: Coord_T, *, include_origin=False) -> Iterable[Coord_T]:
         """
         Get a list of the coordinates of neighbouring cells.
 

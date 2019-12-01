@@ -1,5 +1,5 @@
 """
-internal_types.py - Type definitions
+types.py - Type definitions
 
 June 2018, Lewis Gaul
 

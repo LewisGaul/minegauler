@@ -11,8 +11,8 @@ import traceback
 from typing import Dict
 
 from minegauler.core.api import AbstractController, AbstractListener
-from minegauler.core.grid import CoordType
 from minegauler.types import CellContentsType, GameState
+from minegauler.typing import Coord_T
 
 from .minefield import MinefieldWidget
 from .panel import PanelWidget
@@ -39,7 +39,7 @@ class Listener(AbstractListener):
         self._mf_widget.reset()
         self._panel_widget.reset()
 
-    def update_cells(self, cell_updates: Dict[CoordType, CellContentsType]) -> None:
+    def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
         for c, state in cell_updates.items():
             self._mf_widget.set_cell_image(c, state)
 

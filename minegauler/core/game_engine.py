@@ -16,10 +16,11 @@ from typing import Dict, Optional
 
 import attr
 
+from minegauler.typing import Coord_T
+
 from ..types import *
 from . import game, utils
 from .api import AbstractController
-from .grid import CoordType
 
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ class SharedInfo:
         The time elapsed if the game has ended, otherwise None.
     """
 
-    cell_updates: Dict[CoordType, CellContentsType] = attr.Factory(dict)
+    cell_updates: Dict[Coord_T, CellContentsType] = attr.Factory(dict)
     game_state: GameState = GameState.READY
     mines_remaining: int = 0
     lives_remaining: int = 0

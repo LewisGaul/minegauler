@@ -12,9 +12,10 @@ from typing import List
 import pytest
 
 from minegauler.core.board import Board
-from minegauler.core.grid import CoordType, Grid
+from minegauler.core.grid import Grid
 from minegauler.core.minefield import Minefield
 from minegauler.types import *
+from minegauler.typing import Coord_T
 
 
 class TestMinefield:
@@ -206,7 +207,7 @@ class TestMinefield:
     def check_mf_correct(
         mf: Minefield,
         exp_3bv: int,
-        exp_openings: List[List[CoordType]],
+        exp_openings: List[List[Coord_T]],
         exp_completed_board: Board,
     ):
         """

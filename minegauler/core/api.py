@@ -11,8 +11,9 @@ import abc
 import logging
 from typing import Callable, Dict, Iterable, List
 
+from minegauler.typing import Coord_T
+
 from ..types import CellContentsType, GameState
-from .grid import CoordType
 
 
 class AbstractListener(metaclass=abc.ABCMeta):
@@ -30,7 +31,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def update_cells(self, cell_updates: Dict[CoordType, CellContentsType]) -> None:
+    def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
         """
         Called when one or more cells were updated.
 
@@ -161,7 +162,7 @@ class Caller(AbstractListener):
         """
         self._logger.debug("Calling reset()")
 
-    def update_cells(self, cell_updates: Dict[CoordType, CellContentsType]) -> None:
+    def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
         """
         Called when one or more cells were updated.
 
@@ -267,28 +268,28 @@ class AbstractController(metaclass=abc.ABCMeta):
         self._logger.info("Restart game requested, refreshing the board")
 
     @abc.abstractmethod
-    def select_cell(self, coord: CoordType):
+    def select_cell(self, coord: Coord_T):
         """
         Select a cell for a regular click.
         """
         self._logger.info("Cell %s selected", coord)
 
     @abc.abstractmethod
-    def flag_cell(self, coord: CoordType):
+    def flag_cell(self, coord: Coord_T):
         """
         Select a cell for flagging.
         """
         self._logger.info("Cell %s selected for flagging", coord)
 
     @abc.abstractmethod
-    def chord_on_cell(self, coord: CoordType):
+    def chord_on_cell(self, coord: Coord_T):
         """
         Select a cell for chording.
         """
         self._logger.info("Cell %s selected for chording", coord)
 
     @abc.abstractmethod
-    def remove_cell_flags(self, coord: CoordType):
+    def remove_cell_flags(self, coord: Coord_T):
         """
         Remove flags in a cell, if any.
         """

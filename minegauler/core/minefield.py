@@ -8,14 +8,17 @@ Minefield (class)
     A grid initialised with a random number of mines in each cell.
 """
 
+__all__ = ("Minefield",)
+
 import logging
 import random as rnd
 from typing import Iterable, List, Optional, Union
 
-from minegauler.types import *
+from minegauler.types import CellFlag, CellNum
+from minegauler.typing import Coord_T, IterableContainer
 
 from .board import Board
-from .grid import CoordType, Grid
+from .grid import Grid
 
 
 logger = logging.getLogger(__name__)
@@ -32,9 +35,9 @@ class Minefield(Grid):
         x_size: int,
         y_size: int,
         *,
-        mines: Union[int, Iterable[CoordType]],
+        mines: Union[int, Iterable[Coord_T]],
         per_cell: int = 1,
-        safe_coords: Optional[Iterable[CoordType]] = None,
+        safe_coords: Optional[Iterable[Coord_T]] = None,
     ):
         """
         :param x_size:
@@ -56,7 +59,18 @@ class Minefield(Grid):
             exceeds the max per cell value.
         """
         super().__init__(x_size, y_size)
-        self.per_cell = per_cell
+        # Maximum number of mines per cell.
+        self.per_cell: int = per_cell
+        # Number of mines.
+        self.nr_mines: int
+        # List of cell coordinates containing mines.
+        self.mine_coords: List[Coord_T]
+        # The successfully completed board for the minefield.
+        self.completed_board: Board
+        # Groups of cells that form the board openings.
+        self.openings: Iterable[Iterable[Coord_T]]
+        # The 3bv of the minefield.
+        self.bbbv: int
 
         if isinstance(mines, int):
             self.nr_mines = mines
@@ -108,8 +122,8 @@ class Minefield(Grid):
         return cls.from_grid(Grid.from_2d_array(array), per_cell=per_cell)
 
     def _choose_mine_coords(
-        self, safe_coords: Optional[Iterable[CoordType]] = None
-    ) -> List[CoordType]:
+        self, safe_coords: Optional[IterableContainer[Coord_T]] = None
+    ) -> List[Coord_T]:
         """
         Randomly choose coordinates for mines to be in.
         
@@ -127,7 +141,7 @@ class Minefield(Grid):
             y_size=self.y_size,
             mines=self.nr_mines,
             per_cell=self.per_cell,
-            nr_safe_cells=max(1, len(set(safe_coords))) if safe_coords else 1,
+            nr_safe_cells=len(set(safe_coords)) if safe_coords else 1,
         )
 
         # Get a list of coordinates which can have mines placed in them.
@@ -144,11 +158,19 @@ class Minefield(Grid):
 
     @staticmethod
     def check_enough_space(
-        *, x_size: int, y_size: int, mines: int, per_cell: int, nr_safe_cells: int = 1
-    ):
+        *, x_size: int, y_size: int, mines: int, per_cell: int, nr_safe_cells: int
+    ) -> None:
         """
         Check there is enough space in the grid for the mines.
 
+        :param x_size:
+            Number of columns in the grid.
+        :param y_size:
+            Number of rows in the grid.
+        :param mines:
+            The number of mines.
+        :param per_cell:
+            Maximum number of mines per cell.
         :param nr_safe_cells:
             The number of cells to leave safe.
         :raise ValueError:
@@ -161,7 +183,7 @@ class Minefield(Grid):
                 f"and only up to {per_cell} allowed per cell"
             )
 
-    def cell_contains_mine(self, coord: CoordType) -> bool:
+    def cell_contains_mine(self, coord: Coord_T) -> bool:
         """
         Return whether a cell contains at least one mine.
         
@@ -190,7 +212,7 @@ class Minefield(Grid):
                         completed_board[nbr] += mines
         return completed_board
 
-    def _find_openings(self) -> List[List[CoordType]]:
+    def _find_openings(self) -> List[List[Coord_T]]:
         """
         Find the openings of the board. A list of openings is stored, each
         represented as a list of coordinates belonging to that opening.
