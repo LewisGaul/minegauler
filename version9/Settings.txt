@@ -1,0 +1,1 @@
+{'per_cell': 1, 'first_success': 1, 'button_size': 20, 'distance_to': 0, 'mines': 20, 'detection': 2.2, 'difficulty': 'i', 'shape': (16, 16), 'lives': 1, 'drag_click': 'off'}
