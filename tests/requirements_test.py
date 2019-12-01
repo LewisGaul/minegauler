@@ -8,9 +8,10 @@ the root directory.
 """
 
 import pathlib
-from pip._internal.req import parse_requirements
-from pip._internal.download import PipSession
+
 import pkg_resources
+from pip._internal.download import PipSession
+from pip._internal.req import parse_requirements
 
 
 class TestRequirements:

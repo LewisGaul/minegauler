@@ -17,8 +17,6 @@ from .utils import GuiOptsStruct
 __all__ = ("GuiOptsStruct", "Listener", "MinegaulerGUI", "create_gui", "run")
 
 
-
-
 app = None
 gui = None
 

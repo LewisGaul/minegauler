@@ -10,7 +10,6 @@ Grid (class)
 
 from typing import Iterable, Tuple
 
-
 CoordType = Tuple[int, int]
 
 
