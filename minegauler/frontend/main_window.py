@@ -166,28 +166,9 @@ class BaseMainWindow(QMainWindow):
         self._footer_widget = widget
 
     def _populate_menubars(self):
-        ## GAME MENU
+        # GAME MENU
         exit_act = self._game_menu.addAction("Exit", self.close)
         exit_act.setShortcut("Alt+F4")
-
-    # --------------------------------------------------------------------------
-    # Qt method overrides
-    # --------------------------------------------------------------------------
-    # def show(self):   #@@@LG not sure if this will be needed either (resizing?)
-    #     """Show the window."""
-    #     super().show()
-
-    def closeEvent(self, event):
-        """
-        Action to be performed when the window is closed. To allow the window
-        to be closed, event.accept() should be called. This is provided by the
-        PyQt class.
-
-        Arguments:
-        event (@@@)
-            The event object, to be accepted if the window is to be closed.
-        """
-        event.accept()
 
     # --------------------------------------------------------------------------
     # Other methods
@@ -249,8 +230,24 @@ class MinegaulerGUI(BaseMainWindow):
         # cb_core.update_window_size.connect(self.update_size)
         # cb_core.change_mf_style.connect(self.update_style)
 
-    def _populate_menubars(self):
-        ## GAME MENU
+    def _populate_menubars(self) -> None:
+        """Fill in the menubars."""
+        # GAME MENU
+
+        # New game
+        new_game_act = self._game_menu.addAction("New game", self.ctrlr.new_game)
+        new_game_act.setShortcut("F2")
+
+        # Replay game
+        replay_act = self._game_menu.addAction("Replay", self.ctrlr.restart_game)
+        replay_act.setShortcut("F3")
+
+        # # Show highscores action
+        # hs_act = self._game_menu.addAction('Highscores', lambda: None)
+        # hs_act.setShortcut('F6')
+
+        self._game_menu.addSeparator()
+
         # Difficulty radiobuttons
         diff_group = QActionGroup(self, exclusive=True)
         for diff in ["Beginner", "Intermediate", "Expert", "Master"]:  # , 'Custom']:
@@ -268,10 +265,11 @@ class MinegaulerGUI(BaseMainWindow):
 
         self._game_menu.addSeparator()
 
+        # Exit
         exit_act = self._game_menu.addAction("Exit", self.close)
         exit_act.setShortcut("Alt+F4")
 
-        ## OPTIONS MENU
+        # OPTIONS MENU
         # Drag select
         def toggle_drag_select():
             self.gui_opts.drag_select = not self.gui_opts.drag_select
@@ -281,9 +279,8 @@ class MinegaulerGUI(BaseMainWindow):
         drag_act.setCheckable(True)
         drag_act.setChecked(self.gui_opts.drag_select)
 
-    def closeEvent(self, event):
-        # cb_core.save_settings.emit()
-        super().closeEvent(event)
+        # HELP MENU
+        # TODO: None yet...
 
     def _change_difficulty(self, id_: str) -> None:
         if id_ == "B":
