@@ -15,7 +15,7 @@ import random as rnd
 from typing import Iterable, List, Optional, Union
 
 from minegauler.types import CellFlag, CellNum
-from minegauler.typing import Coord_T, IterableContainer
+from minegauler.typing import Coord_T
 
 from .board import Board
 from .grid import Grid
@@ -122,7 +122,7 @@ class Minefield(Grid):
         return cls.from_grid(Grid.from_2d_array(array), per_cell=per_cell)
 
     def _choose_mine_coords(
-        self, safe_coords: Optional[IterableContainer[Coord_T]] = None
+        self, safe_coords: Optional[List[Coord_T]] = None
     ) -> List[Coord_T]:
         """
         Randomly choose coordinates for mines to be in.
@@ -158,7 +158,7 @@ class Minefield(Grid):
 
     @staticmethod
     def check_enough_space(
-        *, x_size: int, y_size: int, mines: int, per_cell: int, nr_safe_cells: int
+        *, x_size: int, y_size: int, mines: int, per_cell: int, nr_safe_cells: int = 1
     ) -> None:
         """
         Check there is enough space in the grid for the mines.
