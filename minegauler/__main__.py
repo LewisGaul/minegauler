@@ -4,19 +4,10 @@ __main__.py - Entry point for the application.
 December 2018, Lewis Gaul
 """
 
-
 import logging
 import sys
 
-from minegauler import frontend
-from minegauler.core import Controller, GameOptsStruct
-from minegauler.frontend import GuiOptsStruct
-from minegauler.utils import (
-    read_settings_from_file,
-    write_settings_to_file,
-    PersistSettingsStruct,
-)
-
+from minegauler import core, frontend, utils
 
 logger = logging.getLogger(__name__)
 
@@ -27,33 +18,37 @@ logging.basicConfig(
 )
 
 
-read_settings = read_settings_from_file()
+read_settings = utils.read_settings_from_file()
 
 if read_settings:
-    game_opts = GameOptsStruct._from_struct(read_settings)
-    gui_opts = GuiOptsStruct._from_struct(read_settings)
+    game_opts = core.GameOptsStruct._from_struct(read_settings)
+    gui_opts = frontend.GuiOptsStruct._from_struct(read_settings)
     logger.info("Settings read from file")
 else:
     logger.info("Using default settings")
-    game_opts = GameOptsStruct()
-    gui_opts = GuiOptsStruct()
+    game_opts = core.GameOptsStruct()
+    gui_opts = frontend.GuiOptsStruct()
 logger.debug("Game options: %s", game_opts)
 logger.debug("GUI options: %s", gui_opts)
 
 
 logger.info("Starting up")
 
-ctrlr = Controller(game_opts)
+ctrlr = core.Controller(game_opts)
 
-gui = frontend.create_gui(ctrlr, gui_opts)
+gui = frontend.create_gui(ctrlr, gui_opts, game_opts)
 
-ctrlr.register_callback(frontend.get_callback(gui, gui.panel_widget, gui.body_widget))
+# TODO: Legacy - remove
+# ctrlr.register_callback(frontend.get_callback(gui, gui.panel_widget, gui.body_widget))
+ctrlr.register_listener(frontend.Listener(gui, gui.panel_widget, gui.body_widget))
 
 rc = frontend.run()
 
 
-persist_settings = PersistSettingsStruct._from_multiple_structs(ctrlr.opts, gui.opts)
-write_settings_to_file(persist_settings)
+# persist_settings = utils.PersistSettingsStruct._from_multiple_structs(
+#     ctrlr.opts, gui.opts
+# )
+# utils.write_settings_to_file(persist_settings)
 
 
 logger.info("Exiting with exit code %d", rc)

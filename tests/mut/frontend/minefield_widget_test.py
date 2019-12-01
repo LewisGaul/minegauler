@@ -7,7 +7,7 @@ Uses pytest - simply run 'python -m pytest tests/ [-k minefield_widget_test]'
 from the root directory.
 """
 
-from minegauler.frontend.minefield_widgets import MinefieldWidget
+from minegauler.frontend.minefield import MinefieldWidget
 
 
 class TestMinefieldWidget:

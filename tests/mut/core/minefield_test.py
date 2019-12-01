@@ -13,8 +13,8 @@ import pytest
 
 from minegauler.core.board import Board
 from minegauler.core.grid import CoordType, Grid
-from minegauler.core.internal_types import *
 from minegauler.core.minefield import Minefield
+from minegauler.types import *
 
 
 class TestMinefield:

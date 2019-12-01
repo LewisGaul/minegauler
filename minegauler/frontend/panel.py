@@ -1,5 +1,5 @@
 """
-panel_widgets.py - Widgets in the top panel
+panel.py - Widgets in the top panel
 
 April 2018, Lewis Gaul
 
@@ -9,14 +9,14 @@ PanelWidget
     clicks and calls any registered functions.
 """
 
-import sys
 import os
+import sys
 
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication, QWidget, QFrame, QHBoxLayout, QLabel
+from PyQt5.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QWidget
 
-from minegauler.core.internal_types import FaceState, GameState
+from minegauler.types import FaceState, GameState
 
 from .utils import IMG_DIR
 
@@ -26,20 +26,22 @@ class PanelWidget(QWidget):
     The panel widget.
     """
 
-    def __init__(self, parent, ctrlr):
+    def __init__(self, parent, ctrlr, mines: int):
         """
         Arguments:
         parent
             Qt container widget.
         ctrlr (minegauler.core.Controller)
-            To access game engine methods.
+            To access game engine methods (call-only).
         """
         super().__init__(parent)
         self.ctrlr = ctrlr
+        self._mines: int = mines
+        self._game_state = GameState.READY
+
         self.setFixedHeight(40)
         self.setMinimumWidth(140)
         self.setup_UI()
-        self.game_state = GameState.READY
         # Callback to controller for starting a new game.
         # cb_core.end_game.connect(self.end_game)
         # cb_core.new_game.connect(lambda: self.set_face(FaceState.READY))
@@ -66,7 +68,7 @@ class PanelWidget(QWidget):
                                             padding-left: 1px;"""
         )
         layout.addWidget(self.mines_counter)
-        self.set_mines_counter(self.ctrlr.game.mines_remaining)  # TODO
+        self.set_mines_counter(self._mines)
         layout.addStretch()
         # Face button.
         self.face_button = QLabel(self)
@@ -107,6 +109,17 @@ class PanelWidget(QWidget):
         self.timer.stop()
         self.timer.set_time(0)
         self.ctrlr.new_game()
+
+    def reset(self, mines: int = None) -> None:
+        """
+        Reset the panel state.
+        """
+        if mines:
+            self._mines = mines
+        self.update_game_state(GameState.READY)
+        self.set_face(FaceState.READY)
+        self.set_mines_counter(self._mines)
+        self.timer.reset()
 
     def set_face(self, state):
         """
@@ -153,16 +166,18 @@ class PanelWidget(QWidget):
         state (GameState)
             The current game state.
         """
-        if self.game_state != state:
+        if self._game_state != state:
             if state == GameState.ACTIVE:
                 self.timer.start()
             elif state in {GameState.WON, GameState.LOST}:
                 self.timer.stop()
                 self.set_face(state)
-        self.game_state = state
+        self._game_state = state
 
 
 class Timer(QTimer):
+    """A timer for the panel."""
+
     def __init__(self, parent):
         super().__init__()
         self.widget = QLabel("000", parent)
@@ -176,6 +191,9 @@ class Timer(QTimer):
         )
         self.timeout.connect(self.update)
 
+    # -------
+    # Methods from parent class
+    # -------
     def start(self):
         self.seconds = 1
         self.set_time(self.seconds)
@@ -184,6 +202,16 @@ class Timer(QTimer):
     def update(self):
         self.seconds += 1
         self.set_time(self.seconds)
+
+    # -------
+    # Public methods
+    # -------
+    def reset(self) -> None:
+        """
+        Reset the timer, stopping it if necessary.
+        """
+        self.stop()
+        self.set_time(0)
 
     def set_time(self, seconds):
         self.widget.setText("{:03d}".format(min(seconds, 999)))

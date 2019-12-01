@@ -12,10 +12,10 @@ import logging
 import random as rnd
 from typing import Iterable, List, Optional, Union
 
+from minegauler.types import *
+
 from .board import Board
 from .grid import CoordType, Grid
-from .internal_types import *
-
 
 logger = logging.getLogger(__name__)
 

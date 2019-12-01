@@ -17,22 +17,22 @@ import os
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QFrame,
     QAction,
     QActionGroup,
+    QFrame,
+    QHBoxLayout,
+    QMainWindow,
     QSizePolicy,
+    QVBoxLayout,
+    QWidget,
 )
 
+from minegauler import core
 from minegauler.core.utils import get_difficulty
 
-from .minefield_widgets import MinefieldWidget
-from .panel_widgets import PanelWidget
-from .utils import IMG_DIR, GuiOptsStruct
-
+from . import api, utils
+from .minefield import MinefieldWidget
+from .panel import PanelWidget
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class BaseMainWindow(QMainWindow):
         """
         super().__init__()
         self.setWindowTitle(title)
-        self.icon = QIcon(os.path.join(IMG_DIR, "icon.ico"))
+        self.icon = QIcon(os.path.join(utils.IMG_DIR, "icon.ico"))
         self.setWindowIcon(self.icon)
         # Disable maximise button
         self.setWindowFlags(self.windowFlags() | Qt.CustomizeWindowHint)
@@ -183,26 +183,37 @@ class BaseMainWindow(QMainWindow):
 
 
 class MinegaulerGUI(BaseMainWindow):
-    def __init__(self, ctrlr, opts=None):
+    def __init__(
+        self,
+        ctrlr: api.AbstractController,
+        gui_opts: utils.GuiOptsStruct = None,
+        game_opts: core.utils.GameOptsStruct = None,
+    ):
         """
         Arguments:
         ctrlr (Controller)
             The core controller.
         """
-        self.ctrlr = ctrlr
-        if opts:
-            self.opts = opts.copy()
+        self.ctrlr: api.AbstractController = ctrlr
+        if gui_opts:
+            self.gui_opts = gui_opts.copy()
         else:
-            self.opts = GuiOptsStruct(drag_select=False)
+            self.gui_opts = utils.GuiOptsStruct(drag_select=False)
+        if game_opts:
+            self.game_opts = game_opts.copy()
+        else:
+            self.game_opts = core.utils.GameOptsStruct()
+
+        # TODO: Something's not right, this should come first...
         super().__init__("MineGauler")
 
-        self.set_panel_widget(PanelWidget(self, ctrlr))
+        self.set_panel_widget(PanelWidget(self, ctrlr, self.game_opts.mines))
         self.minefield_widget = MinefieldWidget(
             self,
             ctrlr,
-            btn_size=self.opts.btn_size,
-            styles=self.opts.styles,
-            drag_select=self.opts.drag_select,
+            btn_size=self.gui_opts.btn_size,
+            styles=self.gui_opts.styles,
+            drag_select=self.gui_opts.drag_select,
         )
         self.set_body_widget(self.minefield_widget)
 
@@ -225,7 +236,7 @@ class MinegaulerGUI(BaseMainWindow):
             self.game_menu.addAction(diff_act)
             diff_act.id = diff[0]
             if diff_act.id == get_difficulty(
-                self.ctrlr.opts.x_size, self.ctrlr.opts.y_size, self.ctrlr.opts.mines
+                self.game_opts.x_size, self.game_opts.y_size, self.game_opts.mines
             ):
                 diff_act.setChecked(True)
             diff_act.triggered.connect(
@@ -241,12 +252,12 @@ class MinegaulerGUI(BaseMainWindow):
         ## OPTIONS MENU
         # Drag select
         def toggle_drag_select():
-            self.opts.drag_select = not self.opts.drag_select
-            self.minefield_widget.drag_select = self.opts.drag_select
+            self.gui_opts.drag_select = not self.gui_opts.drag_select
+            self.minefield_widget.drag_select = self.gui_opts.drag_select
 
         drag_act = self.opts_menu.addAction("Drag select", toggle_drag_select)
         drag_act.setCheckable(True)
-        drag_act.setChecked(self.opts.drag_select)
+        drag_act.setChecked(self.gui_opts.drag_select)
 
     def closeEvent(self, event):
         # cb_core.save_settings.emit()

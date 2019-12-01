@@ -12,11 +12,10 @@ import logging
 import time as tm
 from typing import Any, Iterable, Optional, Tuple, Union
 
+from ..types import *
 from .board import Board
 from .grid import CoordType
-from .internal_types import *
 from .minefield import Minefield
-
 
 logger = logging.getLogger(__name__)
 
@@ -248,6 +247,25 @@ class Game:
             return (
                 self.mf.bbbv * self.get_prop_complete() / (tm.time() - self.start_time)
             )
+
+    def get_elapsed(self) -> float:
+        """
+        Get the elapsed game time.
+
+        Returns zero if the game has not been started.
+
+        :return:
+            The elapsed time, in seconds.
+        """
+        if self.end_time:
+            return self.end_time - self.start_time
+        elif self.start_time:
+            return tm.time() - self.start_time
+        else:
+            return 0
+
+    def is_finished(self) -> bool:
+        return self.state.finished()
 
     def _create_minefield(self, coord: CoordType) -> None:
         """Create the minefield in response to a cell being selected."""

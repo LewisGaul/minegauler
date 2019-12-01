@@ -21,7 +21,6 @@ GameFlagMode (Enum)
 import enum
 import functools
 
-
 # ------------------------------------------------------------------------------
 # Cell contents types
 # ------------------------------------------------------------------------------
@@ -160,6 +159,9 @@ class GameState(str, enum.Enum):
     ACTIVE = "ACTIVE"
     WON = "WON"
     LOST = "LOST"
+
+    def finished(self) -> bool:
+        return self in [self.WON, self.LOST]
 
 
 # ------------------------------------------------------------------------------

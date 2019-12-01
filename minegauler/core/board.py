@@ -8,8 +8,9 @@ Board (class)
     Representation of a minesweeper board.
 """
 
+from minegauler.types import *
+
 from .grid import Grid
-from .internal_types import *
 
 
 class Board(Grid):

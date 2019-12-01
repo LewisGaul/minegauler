@@ -12,8 +12,8 @@ import pytest
 
 from minegauler.core import GameOptsStruct
 from minegauler.frontend.main_window import MinegaulerGUI
-from minegauler.frontend.minefield_widgets import MinefieldWidget
-from minegauler.frontend.panel_widgets import PanelWidget
+from minegauler.frontend.minefield import MinefieldWidget
+from minegauler.frontend.panel import PanelWidget
 
 
 class TestMinegaulerGUI:

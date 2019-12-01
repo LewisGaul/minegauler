@@ -4,8 +4,10 @@ __init__.py - Available imports from the package
 April 2018, Lewis Gaul
 """
 
-from .board import Board
-from .game_engine import Controller, GameOptsStruct, SharedInfo
-from .minefield import Minefield
+__all__ = ("Board", "Controller", "GameOptsStruct", "Minefield", "SharedInfo", "api")
 
-__all__ = (Board, Controller, GameOptsStruct, Minefield, SharedInfo)
+from . import api
+from .board import Board
+from .game_engine import Controller, SharedInfo
+from .minefield import Minefield
+from .utils import GameOptsStruct

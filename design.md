@@ -20,50 +20,40 @@
    that could be considered UI implementation.
 
 
-### API to frontends
+### High-level APIs
 
-#### Discussion
+There are two parts to the API. Firsly there is the matter of receiving user
+input and changing the state of the game in response, which can be considered
+a notification from the frontend to the backend. Secondly there is the need to
+update the display to reflect the changes in the game state - a notification
+from the backend to the frontend. In terms of the MVC (model view controller)
+design pattern, the model would store the game state, the controller would
+update the game state (in response to a user action), and the view would be
+updated when the game state changes.
 
-There are a few options to consider here, with the decision depending on the
-type of frontends we wish to support. To optimise performance there is a need
-for the backend to be able to notify frontends when there are changes,
-otherwise frontends will need to check the entire board state every time any
-cell is selected (even if the click has no effect).
+As an alternative, one option would be for the frontend to fetch the game
+state after every user input. The issue with this is that it shouldn't be the
+responsibility of the frontend to know when a user input might change the
+display, and it doesn't make sense to be checking on every call as opposed to
+being notified when a change has occurred.
 
- - A frontend written in Python can directly use the backend library via
-   imports. This is the simplest option, however any changes to the backend API
-   then lead to changes being needed across the frontend's use of the API. For
-   simplicity, the backend could offer an indicator of changes caused by the
-   last interaction, allowing the frontend to check which updates are needed
-   without having to check the whole board. 
- - A specialised backend API, acting as a wrapper around the implementation.
-   This makes it the responsibility of the backend to define how and what to
-   make public. With this option there is a decision to be made about whether
-   the backend should be responsible for sending notifications, or whether a
-   similar approach to the above option is taken in this regard. This is a
-   slightly less straightforward alternative to the above, however it does
-   provide the added layer of separation. 
- - Some form of JSON API. This allows a wider range of frontends to use the
-   backend, e.g. a web UI. It would also allow a Python frontend to run in a
-   separate process to the backend, although it is unclear the effect this
-   would have on performance. In this case it would be entirely down to the
-   backend to decide what information should be passed on.
- 
-One of key differences between the above options is whether the backend or
-the frontend has control over the API. On one extreme the backend does
-not have an active role - the frontend simply accesses information stored in
-the backend objects. In the other extreme the backend has complete control
-over what information is available to frontends, and has the responsiblity of
-sending out notifications. There are also options that fall somewhere in
-between those extremes.
- 
- 
-#### Resulting decision
+Python APIs will be used for simplicity, however it should be noted that this
+could in the future be wrapped to provide a different kind of interface
+(e.g. JSON API) to allow communicating with an alternative frontend
+implementation, e.g. a web UI.
 
-Logically, it seems sensible for the backend to define the API - seeing as the
-backend has the general responsibility of handling all the game logic, it
-makes sense for it to declare the information of interest to clients.
-Furthermore, there is merit to introducing a layer of separation between the
-internal logic and the user-facing elements of the game. The API will remain a
-simple Python module, with the acknowledgement that this API could easily be
-wrapped again to provide a different kind of interface (e.g. JSON API).
+
+#### Notification from frontend to backend
+
+The backend will define a controller class, an instance of which should be
+used by a frontend to control the game state (everything including selecting a
+cell, starting a new game, changing game settings, ...). Any user input should
+be translated into a call on the controller, which will then notify all
+registered frontends with any game state changes.
+
+
+#### Notification from backend to frontend
+
+The backend will provide an API to register/unregister listeners, where a
+'listener' is defined via an abstract class (acting as an interface) and
+should define methods to receive all game updates.

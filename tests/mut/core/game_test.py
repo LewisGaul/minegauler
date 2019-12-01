@@ -9,9 +9,8 @@ the root directory.
 
 from unittest.mock import Mock
 
-from minegauler.core.game import ignore_if, ignore_if_not, Game
-
-from minegauler.core.internal_types import *
+from minegauler.core.game import Game, ignore_if, ignore_if_not
+from minegauler.types import *
 
 
 def test_ignore_if_decorators():

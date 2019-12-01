@@ -3,26 +3,34 @@ __init__.py - Available imports from the package
 
 December 2018, Lewis Gaul
 """
-
 import sys
 
 from PyQt5.QtWidgets import QApplication
 
-from .api import get_callback
+from minegauler import core
+
+from . import api
+from .api import Listener
 from .main_window import MinegaulerGUI
 from .utils import GuiOptsStruct
 
-__all__ = (GuiOptsStruct, MinegaulerGUI, get_callback)
+__all__ = ("GuiOptsStruct", "Listener", "MinegaulerGUI", "create_gui", "run")
+
+
 
 
 app = None
 gui = None
 
 
-def create_gui(ctrlr, opts):
+def create_gui(
+    ctrlr: api.AbstractController,
+    gui_opts: GuiOptsStruct,
+    game_opts: core.utils.GameOptsStruct,
+):
     global app, gui
     app = QApplication(sys.argv)
-    gui = MinegaulerGUI(ctrlr, opts)
+    gui = MinegaulerGUI(ctrlr, gui_opts, game_opts)
     return gui
 
 

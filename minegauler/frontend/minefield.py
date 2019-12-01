@@ -1,5 +1,5 @@
 """
-minefield_widgets.py - Minefield widgets
+minefield.py - Minefield widgets
 
 April 2018, Lewis Gaul
 
@@ -14,13 +14,12 @@ import os
 import sys
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QPixmap, QPainter, QImage
-from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene
+from PyQt5.QtGui import QImage, QPainter, QPixmap
+from PyQt5.QtWidgets import QApplication, QGraphicsScene, QGraphicsView
 
-from minegauler.core.internal_types import *
+from minegauler.types import *
 
 from .utils import IMG_DIR
-
 
 logger = logging.getLogger(__name__)
 
@@ -139,9 +138,12 @@ class MinefieldWidget(QGraphicsView):
         self.sunken_cells = set()
 
         self._ignore_clicks = False
+        self.reset()
 
-        for c in [(i, j) for i in range(self.x_size) for j in range(self.y_size)]:
-            self.set_cell_image(c, CellUnclicked())
+    @property
+    def _board(self):
+        # TODO: Use of private attribute
+        return self.ctrlr._game.board
 
     # --------------------------------------------------------------------------
     # Qt method overrides
@@ -311,7 +313,7 @@ class MinefieldWidget(QGraphicsView):
         functions as appropriate.
         """
         self.ctrlr.flag_cell(coord)
-        if self.ctrlr.game.board[coord] == CellUnclicked():
+        if self._board[coord] == CellUnclicked():
             self.unflag_on_right_drag = True
         else:
             self.unflag_on_right_drag = False
@@ -331,8 +333,8 @@ class MinefieldWidget(QGraphicsView):
         Both left and right mouse buttons were pressed. Change display and call
         callback functions as appropriate.
         """
-        if not isinstance(self.ctrlr.game.board[coord], CellMineType):
-            for c in self.ctrlr.game.board.get_nbrs(coord, include_origin=True):
+        if not isinstance(self._board[coord], CellMineType):
+            for c in self._board.get_nbrs(coord, include_origin=True):
                 self.sink_unclicked_cell(c)
         if self.drag_select:
             self.at_risk_signal.emit()
@@ -386,18 +388,20 @@ class MinefieldWidget(QGraphicsView):
 
         return coord
 
-    def refresh(self):
+    def reset(self):
         """Reset all cell images and other state for a new game."""
         logger.info("Resetting minefield widget")
         self.mouse_coord = None
         self.both_mouse_buttons_pressed = False
         self.await_release_all_buttons = True
+        for c in self._board.all_coords:
+            self.set_cell_image(c, CellUnclicked())
 
     def sink_unclicked_cell(self, coord):
         """
         Set an unclicked cell to appear sunken.
         """
-        if self.ctrlr.game.board[coord] == CellUnclicked():
+        if self._board[coord] == CellUnclicked():
             self.set_cell_image(coord, "btn_down")
             self.sunken_cells.add(coord)
         if self.sunken_cells:
@@ -409,7 +413,7 @@ class MinefieldWidget(QGraphicsView):
         """
         while self.sunken_cells:
             coord = self.sunken_cells.pop()
-            if self.ctrlr.game.board[coord] == CellUnclicked():
+            if self._board[coord] == CellUnclicked():
                 self.set_cell_image(coord, "btn_up")
 
     def set_cell_image(self, coord, state):
@@ -458,7 +462,7 @@ class MinefieldWidget(QGraphicsView):
 
 
 if __name__ == "__main__":
-    from minegauler.core import Controller, GameOptsStruct
+    from minegauler.core import Controller, GameOptsStruct, Board
 
     app = QApplication(sys.argv)
     mf_widget = MinefieldWidget(None, Controller(GameOptsStruct()), btn_size=100)
