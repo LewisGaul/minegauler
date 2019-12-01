@@ -74,7 +74,7 @@ class Controller(AbstractController):
 
         self.opts = utils.GameOptsStruct._from_struct(opts)
         self._game: Optional[game.Game] = None
-        self._last_update: SharedInfo = SharedInfo()
+        self._last_update: SharedInfo
 
         self.new_game()
 
@@ -92,8 +92,7 @@ class Controller(AbstractController):
             lives=self.opts.lives,
             first_success=self.opts.first_success,
         )
-        self._notif.reset()
-        self._last_update = SharedInfo()
+        self._reset_update_tracking()
 
     def restart_game(self):
         """See AbstractController."""
@@ -101,21 +100,20 @@ class Controller(AbstractController):
             return
         super().restart_game()
         self._game = game.Game(minefield=self._game.mf, lives=self.opts.lives)
-        self._notif.reset()
-        self._last_update = SharedInfo()
+        self._reset_update_tracking()
 
     def select_cell(self, coord):
         """See AbstractController."""
         super().select_cell(coord)
-        self._game.select_cell(coord)
-        self._send_updates()
+        cells = self._game.select_cell(coord)
+        self._send_updates(cells)
 
     def flag_cell(self, coord, *, flag_only=False):
         """See AbstractController."""
         super().flag_cell(coord)
 
         cell_state = self._game.board[coord]
-        if cell_state == CellUnclicked():
+        if cell_state is CellUnclicked():
             self._game.set_cell_flags(coord, 1)
         elif isinstance(cell_state, CellFlag):
             if cell_state.num == self.opts.per_cell:
@@ -125,19 +123,19 @@ class Controller(AbstractController):
             else:
                 self._game.set_cell_flags(coord, cell_state.num + 1)
 
-        self._send_updates()
+        self._send_updates({coord: self._game.board[coord]})
 
     def remove_cell_flags(self, coord):
         """See AbstractController."""
         super().remove_cell_flags(coord)
         self._game.set_cell_flags(coord, 0)
-        self._send_updates()
+        self._send_updates({coord: self._game.board[coord]})
 
     def chord_on_cell(self, coord):
         """See AbstractController."""
         super().chord_on_cell(coord)
-        self._game.chord_on_cell(coord)
-        self._send_updates()
+        cells = self._game.chord_on_cell(coord)
+        self._send_updates(cells)
 
     def resize_board(self, *, x_size, y_size, mines):
         """See AbstractController."""
@@ -159,18 +157,23 @@ class Controller(AbstractController):
     # --------------------------------------------------------------------------
     # Helper methods
     # --------------------------------------------------------------------------
-    def _send_updates(self):
-        """See AbstractController."""
+    def _reset_update_tracking(self):
+        self._notif.reset()
+        self._last_update = SharedInfo()
+        self._cells_updated = dict()
+
+    def _send_updates(self, cells_updated: Dict[Coord_T, CellContentsType]):
+        """Send updates to registered listeners."""
         update = SharedInfo(
-            cell_updates={c: self._game.board[c] for c in self._game.board.all_coords},
+            cell_updates=cells_updated,
             mines_remaining=self._game.mines_remaining,
             lives_remaining=self._game.lives_remaining,
             game_state=self._game.state,
             finish_time=self._game.get_elapsed() if self._game.is_finished() else None,
         )
 
-        # TODO: Only if there are some cell updates.
-        self._notif.update_cells(update.cell_updates)
+        if update.cell_updates:
+            self._notif.update_cells(update.cell_updates)
         if update.mines_remaining != self._last_update.mines_remaining:
             self._notif.update_mines_remaining(update.mines_remaining)
         # if update.lives_remaining != self._last_update.lives_remaining:

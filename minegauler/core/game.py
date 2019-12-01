@@ -10,7 +10,7 @@ Game (class)
 
 import logging
 import time as tm
-from typing import Any, Iterable, Optional, Tuple, Union
+from typing import Callable, Dict, Iterable, Optional, Tuple, Union
 
 from minegauler.typing import Coord_T
 
@@ -48,7 +48,7 @@ def ignore_if(
         Union[str, GameState, Iterable[str], Iterable[GameState]]
     ] = None,
     cell_state: Optional[Union[type, Tuple[type, ...]]] = None,
-) -> Any:
+) -> Callable:
     """
     Return a decorator which prevents a method from running if any of the given
     parameters are satisfied.
@@ -96,7 +96,7 @@ def ignore_if_not(
         Union[str, GameState, Iterable[str], Iterable[GameState]]
     ] = None,
     cell_state: Optional[Union[type, Tuple[type, ...]]] = None,
-) -> Any:
+) -> Callable:
     """
     Return a decorator which prevents a method from running if any of the given
     parameters are satisfied.
@@ -185,6 +185,7 @@ class Game:
         :raise ValueError:
             If the number of mines is too high to fit in the grid.
         """
+        self.mf: Optional[Minefield]
         if minefield:
             x_size, y_size = minefield.x_size, minefield.y_size
             mines = minefield.nr_mines
@@ -196,17 +197,19 @@ class Game:
                 x_size=x_size, y_size=y_size, mines=mines, per_cell=per_cell
             )
             self.mf = None
-        self.x_size, self.y_size = x_size, y_size
-        self.mines = mines
-        self.per_cell = per_cell
-        self.lives = lives
-        self.first_success = first_success
-        self.board = Board(x_size, y_size)
-        self.start_time = None
-        self.end_time = None
-        self.state = GameState.READY
-        self.mines_remaining = self.mines
-        self.lives_remaining = self.lives
+        self.x_size: int = x_size
+        self.y_size: int = y_size
+        self.mines: int = mines
+        self.per_cell: int = per_cell
+        self.lives: int = lives
+        self.first_success: bool = first_success
+        self.board: Board = Board(x_size, y_size)
+        self.start_time: Optional[float] = None
+        self.end_time: Optional[float] = None
+        self.state: GameState = GameState.READY
+        self.mines_remaining: int = self.mines
+        self.lives_remaining: int = self.lives
+        self._cell_updates: Dict[Coord_T, CellContentsType] = dict()
 
     def get_rem_3bv(self) -> int:
         """
@@ -306,21 +309,17 @@ class Game:
                 self.x_size, self.y_size, mines=self.mines, per_cell=self.per_cell
             )
 
-    @check_coord
-    @ignore_if_not(game_state=("READY", "ACTIVE"), cell_state=CellUnclicked)
-    def select_cell(self, coord: Coord_T) -> None:
+    def _set_cell(self, coord: Coord_T, state: CellContentsType):
         """
-        Perform the action of selecting/clicking a cell. Game must be started
-        before calling this method.
+        Set the contents of a cell and store the update.
+
+        :param coord:
+            The coordinate of the cell to set.
+        :param state:
+            The state to set the cell to.
         """
-        if self.state == GameState.READY:
-            if not self.mf:
-                self._create_minefield(coord)
-            self.state = GameState.ACTIVE
-            self.start_time = tm.time()
-        self._select_cell_action(coord)
-        if self.state != GameState.LOST:
-            self._check_for_completion()
+        self.board[coord] = state
+        self._cell_updates[coord] = state
 
     def _select_cell_action(self, coord: Coord_T) -> None:
         """
@@ -328,7 +327,7 @@ class Game:
         """
         if self.mf.cell_contains_mine(coord):
             logger.debug("Mine hit at %s", coord)
-            self.board[coord] = CellHitMine(self.mf[coord])
+            self._set_cell(coord, CellHitMine(self.mf[coord]))
             self.lives_remaining -= 1
 
             if self.lives_remaining == 0:
@@ -339,18 +338,18 @@ class Game:
                 for c in self.mf.all_coords:
                     if (
                         self.mf.cell_contains_mine(c)
-                        and self.board[c] == CellUnclicked()
+                        and self.board[c] is CellUnclicked()
                     ):
-                        self.board[c] = CellMine(self.mf[c])
+                        self._set_cell(c, CellMine(self.mf[c]))
 
                     elif (
                         type(self.board[c]) is CellFlag
                         and self.board[c] != self.mf.completed_board[c]
                     ):
-                        self.board[c] = CellWrongFlag(self.board[c].num)
+                        self._set_cell(c, CellWrongFlag(self.board[c].num))
             else:
                 self.mines_remaining -= self.mf[coord]
-        elif self.mf.completed_board[coord] == CellNum(0):
+        elif self.mf.completed_board[coord] is CellNum(0):
             for full_opening in self.mf.openings:
                 if coord in full_opening:
                     # Found the opening, quit the loop here.
@@ -369,20 +368,20 @@ class Game:
                 unclicked_nbrs = {
                     z
                     for z in self.board.get_nbrs(c, include_origin=True)
-                    if self.board[z] == CellUnclicked()
+                    if self.board[z] is CellUnclicked()
                 }
                 check |= {
                     z
                     for z in unclicked_nbrs - opening
-                    if self.mf.completed_board[z] == CellNum(0)
+                    if self.mf.completed_board[z] is CellNum(0)
                 }
                 opening |= unclicked_nbrs
 
             logger.debug("Propagated opening: %s", list(opening))
             bad_opening_cells = {}
             for c in opening:
-                if self.board[c] == CellUnclicked():
-                    self.board[c] = self.mf.completed_board[c]
+                if self.board[c] is CellUnclicked():
+                    self._set_cell(c, self.mf.completed_board[c])
                 else:
                     bad_opening_cells[c] = self.board[c]
             if bad_opening_cells:
@@ -392,53 +391,9 @@ class Game:
                 )
         else:
             logger.debug("Regular cell revealed")
-            self.board[coord] = self.mf.completed_board[coord]
+            self._set_cell(coord, self.mf.completed_board[coord])
 
-    @check_coord
-    @ignore_if_not(game_state=("READY", "ACTIVE"), cell_state=(CellFlag, CellUnclicked))
-    def set_cell_flags(self, coord: Coord_T, nr_flags: int) -> None:
-        """Set the number of flags in a cell."""
-        if nr_flags < 0 or nr_flags > self.per_cell:
-            raise ValueError(
-                f"Invalid number of flags ({nr_flags}) - should be between 0 and "
-                f"{self.per_cell}"
-            )
-
-        old_nr_flags = (
-            0 if self.board[coord] == CellUnclicked() else self.board[coord].num
-        )
-        if nr_flags == 0:
-            self.board[coord] = CellUnclicked()
-        else:
-            self.board[coord] = CellFlag(nr_flags)
-        self.mines_remaining += old_nr_flags - nr_flags
-
-    @check_coord
-    @ignore_if_not(game_state="ACTIVE", cell_state=CellNum)
-    def chord_on_cell(self, coord: Coord_T):
-        """Chord on a cell that contains a revealed number."""
-        nbrs = self.board.get_nbrs(coord)
-        num_flagged_nbrs = sum(
-            [self.board[c].num for c in nbrs if isinstance(self.board[c], CellMineType)]
-        )
-        logger.debug(
-            "%s flagged mine(s) around clicked cell showing number %s",
-            num_flagged_nbrs,
-            self.board[coord],
-        )
-
-        unclicked_nbrs = [c for c in nbrs if self.board[c] == CellUnclicked()]
-        if self.board[coord] != CellNum(num_flagged_nbrs) or not unclicked_nbrs:
-            return
-
-        logger.info("Successful chording, selecting cells %s", unclicked_nbrs)
-        for c in unclicked_nbrs:
-            self._select_cell_action(c)
-
-        if self.state != GameState.LOST:
-            self._check_for_completion()
-
-    def _check_for_completion(self):
+    def _check_for_completion(self) -> None:
         """
         Check if game is complete by comparing the board to the minefield's
         completed board. If it is, display flags in remaining unclicked cells.
@@ -463,4 +418,80 @@ class Game:
                     self.mf.cell_contains_mine(c)
                     and type(self.board[c]) is not CellHitMine
                 ):
-                    self.board[c] = CellFlag(self.mf[c])
+                    self._set_cell(c, CellFlag(self.mf[c]))
+
+    @check_coord
+    @ignore_if_not(game_state=("READY", "ACTIVE"), cell_state=CellUnclicked)
+    def select_cell(self, coord: Coord_T) -> Dict[Coord_T, CellContentsType]:
+        """
+        Perform the action of selecting/clicking a cell. Game must be started
+        before calling this method.
+        """
+        if self.state == GameState.READY:
+            if not self.mf:
+                self._create_minefield(coord)
+            self.state = GameState.ACTIVE
+            self.start_time = tm.time()
+        self._select_cell_action(coord)
+        if self.state != GameState.LOST:
+            self._check_for_completion()
+        try:
+            return self._cell_updates
+        finally:
+            self._cell_updates = dict()
+
+    @check_coord
+    @ignore_if_not(game_state=("READY", "ACTIVE"), cell_state=(CellFlag, CellUnclicked))
+    def set_cell_flags(
+        self, coord: Coord_T, nr_flags: int
+    ) -> Dict[Coord_T, CellContentsType]:
+        """Set the number of flags in a cell."""
+        if nr_flags < 0 or nr_flags > self.per_cell:
+            raise ValueError(
+                f"Invalid number of flags ({nr_flags}) - should be between 0 and "
+                f"{self.per_cell}"
+            )
+
+        old_nr_flags = (
+            0 if self.board[coord] is CellUnclicked() else self.board[coord].num
+        )
+        if nr_flags == 0:
+            self._set_cell(coord, CellUnclicked())
+        else:
+            self._set_cell(coord, CellFlag(nr_flags))
+        self.mines_remaining += old_nr_flags - nr_flags
+
+        try:
+            return self._cell_updates
+        finally:
+            self._cell_updates = dict()
+
+    @check_coord
+    @ignore_if_not(game_state="ACTIVE", cell_state=CellNum)
+    def chord_on_cell(self, coord: Coord_T) -> Dict[Coord_T, CellContentsType]:
+        """Chord on a cell that contains a revealed number."""
+        nbrs = self.board.get_nbrs(coord)
+        num_flagged_nbrs = sum(
+            [self.board[c].num for c in nbrs if isinstance(self.board[c], CellMineType)]
+        )
+        logger.debug(
+            "%s flagged mine(s) around clicked cell showing number %s",
+            num_flagged_nbrs,
+            self.board[coord],
+        )
+
+        unclicked_nbrs = [c for c in nbrs if self.board[c] is CellUnclicked()]
+        if self.board[coord] != CellNum(num_flagged_nbrs) or not unclicked_nbrs:
+            return
+
+        logger.info("Successful chording, selecting cells %s", unclicked_nbrs)
+        for c in unclicked_nbrs:
+            self._select_cell_action(c)
+
+        if self.state != GameState.LOST:
+            self._check_for_completion()
+
+        try:
+            return self._cell_updates
+        finally:
+            self._cell_updates = dict()
