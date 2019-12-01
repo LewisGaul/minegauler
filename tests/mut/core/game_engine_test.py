@@ -14,7 +14,7 @@ import pytest
 
 from minegauler.core import GameOptsStruct
 from minegauler.core.board import Board
-from minegauler.core.game_engine import Controller
+from minegauler.core.engine import Controller
 from minegauler.core.minefield import Minefield
 from minegauler.types import *
 

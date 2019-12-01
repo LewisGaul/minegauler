@@ -8,6 +8,6 @@ __all__ = ("Board", "Controller", "GameOptsStruct", "Minefield", "SharedInfo", "
 
 from . import api
 from .board import Board
-from .game_engine import Controller, SharedInfo
+from .engine import Controller, SharedInfo
 from .minefield import Minefield
 from .utils import GameOptsStruct

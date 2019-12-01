@@ -1,11 +1,9 @@
 """
-game_engine.py - The core game logic
+engine.py - The core game logic
 
 November 2018, Lewis Gaul
 
 Exports:
-AbstractController (class)
-    Outline of functions available to be called by a frontend.
 Controller (class)
     Implementation of game logic and provision of functions to be called by a
     frontend implementation.
