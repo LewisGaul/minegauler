@@ -109,15 +109,3 @@ class GameOptsStruct(StructConstructorMixin):
     per_cell: int = 1
     lives: int = 1
     # game_mode: None = None,
-
-
-def get_difficulty(x_size, y_size, mines):
-    if x_size == 8 and y_size == 8 and mines == 10:
-        return "B"
-    if x_size == 16 and y_size == 16 and mines == 40:
-        return "I"
-    if x_size == 30 and y_size == 16 and mines == 99:
-        return "E"
-    if x_size == 30 and y_size == 30 and mines == 200:
-        return "M"
-    return "C"

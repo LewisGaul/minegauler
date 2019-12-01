@@ -28,12 +28,10 @@ class Listener(AbstractListener):
     backend.
     """
 
-    def __init__(
-        self, gui: MinegaulerGUI, panel_widget: PanelWidget, mf_widget: MinefieldWidget
-    ):
+    def __init__(self, gui: MinegaulerGUI):
         self._gui: MinegaulerGUI = gui
-        self._panel_widget: PanelWidget = panel_widget
-        self._mf_widget: MinefieldWidget = mf_widget
+        self._panel_widget: PanelWidget = self._gui.get_panel_widget()
+        self._mf_widget: MinefieldWidget = self._gui.get_mf_widget()
 
     def reset(self) -> None:
         """

@@ -41,15 +41,15 @@ gui = frontend.create_gui(ctrlr, gui_opts, game_opts)
 
 # TODO: Legacy - remove
 # ctrlr.register_callback(frontend.get_callback(gui, gui.panel_widget, gui.body_widget))
-ctrlr.register_listener(frontend.Listener(gui, gui.panel_widget, gui.body_widget))
+ctrlr.register_listener(frontend.Listener(gui))
 
 rc = frontend.run()
 
 
-# persist_settings = utils.PersistSettingsStruct._from_multiple_structs(
-#     ctrlr.opts, gui.opts
-# )
-# utils.write_settings_to_file(persist_settings)
+persist_settings = utils.PersistSettingsStruct._from_multiple_structs(
+    ctrlr.opts, gui.gui_opts
+)
+utils.write_settings_to_file(persist_settings)
 
 
 logger.info("Exiting with exit code %d", rc)

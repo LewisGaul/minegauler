@@ -21,7 +21,7 @@ class TestMinegaulerGUI:
     def test_create(self, qtbot, ctrlr):
         ctrlr.opts = GameOptsStruct()
         gui = MinegaulerGUI(ctrlr)
-        assert type(gui.panel_widget) == PanelWidget
-        assert type(gui.minefield_widget) == MinefieldWidget
+        assert type(gui._panel_widget) == PanelWidget
+        assert type(gui._minefield_widget) == MinefieldWidget
         qtbot.addWidget(gui)
         gui.show()

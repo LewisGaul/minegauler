@@ -10,8 +10,8 @@ import logging
 import attr
 
 from minegauler import SETTINGS_FILE
-from minegauler.core import GameOptsStruct
-from minegauler.frontend import GuiOptsStruct
+from minegauler.core.utils import GameOptsStruct
+from minegauler.frontend.utils import GuiOptsStruct
 from minegauler.types import *
 
 
@@ -64,11 +64,23 @@ def read_settings_from_file():
     return read_settings
 
 
-def write_settings_to_file(settings: PersistSettingsStruct):
+def write_settings_to_file(settings: PersistSettingsStruct) -> None:
     logger.info("Saving settings to file: %s", SETTINGS_FILE)
     logger.debug("%s", settings)
     try:
         with open(SETTINGS_FILE, "w") as f:
-            json.dump(settings.encode_to_json(), f)
+            json.dump(settings.encode_to_json(), f, indent=2)
     except Exception as e:
-        logger.error("Unexpected error writing settings to file: %s", e)
+        logger.exception("Unexpected error writing settings to file")
+
+
+def get_difficulty(x_size: int, y_size: int, mines: int) -> str:
+    if x_size == 8 and y_size == 8 and mines == 10:
+        return "B"
+    if x_size == 16 and y_size == 16 and mines == 40:
+        return "I"
+    if x_size == 30 and y_size == 16 and mines == 99:
+        return "E"
+    if x_size == 30 and y_size == 30 and mines == 200:
+        return "M"
+    return "C"
