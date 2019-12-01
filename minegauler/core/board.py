@@ -1,5 +1,5 @@
 """
-board.py - Minesweeper board implementation.
+board.py - Minesweeper board implementation
 
 March 2018, Lewis Gaul
 

@@ -14,6 +14,7 @@ from minegauler.core import GameOptsStruct
 from minegauler.frontend import GuiOptsStruct
 from minegauler.types import *
 
+
 logger = logging.getLogger(__name__)
 
 

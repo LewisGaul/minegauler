@@ -13,6 +13,7 @@ from minegauler import ROOT_DIR
 from minegauler.core.utils import StructConstructorMixin
 from minegauler.types import *
 
+
 IMG_DIR = os.path.join(ROOT_DIR, "images")
 
 

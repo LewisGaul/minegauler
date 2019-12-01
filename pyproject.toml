@@ -1,0 +1,19 @@
+[tool.black]
+line-length = 88
+target-version = ['py36']
+exclude = '''
+(
+    .*venv.*
+)
+'''
+
+[tool.isort]
+# Make compatible with Black
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+# Other options
+order_by_type = true
+lines_after_imports = 2

@@ -14,6 +14,7 @@ from .api import Listener
 from .main_window import MinegaulerGUI
 from .utils import GuiOptsStruct
 
+
 __all__ = ("GuiOptsStruct", "Listener", "MinegaulerGUI", "create_gui", "run")
 
 

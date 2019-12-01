@@ -17,6 +17,7 @@ from .board import Board
 from .grid import CoordType
 from .minefield import Minefield
 
+
 logger = logging.getLogger(__name__)
 
 

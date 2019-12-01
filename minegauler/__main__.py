@@ -9,6 +9,7 @@ import sys
 
 from minegauler import core, frontend, utils
 
+
 logger = logging.getLogger(__name__)
 
 logging.basicConfig(

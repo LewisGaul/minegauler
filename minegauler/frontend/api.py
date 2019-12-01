@@ -17,6 +17,7 @@ from minegauler.types import CellContentsType, GameState
 from .minefield import MinefieldWidget
 from .panel import PanelWidget
 
+
 logger = logging.getLogger(__name__)
 
 

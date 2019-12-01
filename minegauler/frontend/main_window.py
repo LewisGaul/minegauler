@@ -34,6 +34,7 @@ from . import api, utils
 from .minefield import MinefieldWidget
 from .panel import PanelWidget
 
+
 logger = logging.getLogger(__name__)
 
 

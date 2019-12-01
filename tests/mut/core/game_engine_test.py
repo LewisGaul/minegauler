@@ -18,6 +18,7 @@ from minegauler.core.game_engine import Controller
 from minegauler.core.minefield import Minefield
 from minegauler.types import *
 
+
 logger = logging.getLogger(__name__)
 
 

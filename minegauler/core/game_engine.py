@@ -21,6 +21,7 @@ from . import game, utils
 from .api import AbstractController
 from .grid import CoordType
 
+
 logger = logging.getLogger(__name__)
 
 

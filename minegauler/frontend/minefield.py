@@ -21,6 +21,7 @@ from minegauler.types import *
 
 from .utils import IMG_DIR
 
+
 logger = logging.getLogger(__name__)
 
 

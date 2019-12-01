@@ -17,6 +17,7 @@ from minegauler.types import *
 from .board import Board
 from .grid import CoordType, Grid
 
+
 logger = logging.getLogger(__name__)
 
 
