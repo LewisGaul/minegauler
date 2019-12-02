@@ -3,19 +3,17 @@ __init__.py - Available imports from the package
 
 December 2018, Lewis Gaul
 """
+
+__all__ = ("Listener", "MinegaulerGUI", "create_gui", "run", "utils")
+
 import sys
 
 from PyQt5.QtWidgets import QApplication
 
-from minegauler import core
-
-from . import api
+from .. import core
+from . import api, utils
 from .api import Listener
 from .main_window import MinegaulerGUI
-from .utils import GuiOptsStruct
-
-
-__all__ = ("GuiOptsStruct", "Listener", "MinegaulerGUI", "create_gui", "run")
 
 
 app = None
@@ -24,7 +22,7 @@ gui = None
 
 def create_gui(
     ctrlr: api.AbstractController,
-    gui_opts: GuiOptsStruct,
+    gui_opts: utils.GuiOptsStruct,
     game_opts: core.utils.GameOptsStruct,
 ):
     global app, gui

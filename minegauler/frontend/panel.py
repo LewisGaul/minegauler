@@ -8,11 +8,9 @@ PanelWidget
     A panel widget class, to be packed in a parent container. Receives
     clicks and calls any registered functions.
 """
-
-__all__ = ("PanelWidget",)
-
 import os
 import sys
+from typing import Union
 
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap
@@ -22,6 +20,9 @@ from minegauler.types import FaceState, GameState
 
 from .api import AbstractController
 from .utils import IMG_DIR
+
+
+__all__ = ("PanelWidget",)
 
 
 class PanelWidget(QWidget):
@@ -120,11 +121,10 @@ class PanelWidget(QWidget):
         if mines:
             self._mines = mines
         self.update_game_state(GameState.READY)
-        self.set_face(FaceState.READY)
         self.set_mines_counter(self._mines)
         self.timer.reset()
 
-    def set_face(self, state):
+    def set_face(self, state: Union[FaceState, GameState, str]) -> None:
         """
         Arguments:
         state (str | GameState | FaceState)
@@ -140,10 +140,18 @@ class PanelWidget(QWidget):
             pixmap.scaled(26, 26, transformMode=Qt.SmoothTransformation)
         )
 
+    def at_risk(self) -> None:
+        if not self._game_state.finished():
+            self.set_face(FaceState.ACTIVE)
+
+    def no_risk(self) -> None:
+        if not self._game_state.finished():
+            self.set_face(FaceState.READY)
+
     def set_mines(self, mines: int) -> None:
         self._mines = mines
 
-    def set_mines_counter(self, num):
+    def set_mines_counter(self, num: int) -> None:
         """
         This method is to be registered as a callback with a controller, as
         the widget itself can have no way of knowing how many mines are left to
@@ -164,7 +172,7 @@ class PanelWidget(QWidget):
         )
         self.mines_counter.setText(f"{min(999, abs(num)):03d}")
 
-    def update_game_state(self, state):
+    def update_game_state(self, state: GameState) -> None:
         """
         Receive an update from a backend.
 
@@ -173,12 +181,14 @@ class PanelWidget(QWidget):
             The current game state.
         """
         if self._game_state != state:
-            if state == GameState.ACTIVE:
+            self._game_state = state
+            if state is GameState.ACTIVE:
                 self.timer.start()
             elif state in {GameState.WON, GameState.LOST}:
                 self.timer.stop()
                 self.set_face(state)
-        self._game_state = state
+            else:
+                self.set_face(state)
 
 
 class Timer(QTimer):

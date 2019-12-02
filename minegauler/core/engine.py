@@ -14,11 +14,9 @@ from typing import Dict, Optional
 
 import attr
 
-from minegauler.typing import Coord_T
-
 from ..types import *
-from . import game, utils
-from .api import AbstractController
+from ..typing import Coord_T
+from . import api, board, game, utils
 
 
 logger = logging.getLogger(__name__)
@@ -52,7 +50,7 @@ class SharedInfo:
     finish_time: Optional[float] = None
 
 
-class Controller(AbstractController):
+class Controller(api.AbstractController):
     """
     Class for processing all game logic. Implements functions defined in
     AbstractController that are called from UI.
@@ -68,13 +66,16 @@ class Controller(AbstractController):
         opts (GameOptsStruct)
             Object containing the required game options as attributes.
         """
-        super().__init__()
+        super().__init__(opts)
 
-        self.opts = utils.GameOptsStruct._from_struct(opts)
         self._game: Optional[game.Game] = None
         self._last_update: SharedInfo
 
         self.new_game()
+
+    @property
+    def board(self) -> board.Board:
+        return self._game.board
 
     # --------------------------------------------------------------------------
     # Methods triggered by user interaction
@@ -208,7 +209,7 @@ class Controller(AbstractController):
             self._notif.update_mines_remaining(update.mines_remaining)
         # if update.lives_remaining != self._last_update.lives_remaining:
         #     self._notif.update_lives_remaining(update.lives_remaining)
-        if update.game_state != self._last_update.game_state:
+        if update.game_state is not self._last_update.game_state:
             self._notif.update_game_state(update.game_state)
         if (
             update.finish_time is not None

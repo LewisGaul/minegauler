@@ -12,10 +12,10 @@ from unittest.mock import Mock
 
 import pytest
 
-from minegauler.core import GameOptsStruct
 from minegauler.core.board import Board
 from minegauler.core.engine import Controller
 from minegauler.core.minefield import Minefield
+from minegauler.core.utils import GameOptsStruct
 from minegauler.types import *
 
 

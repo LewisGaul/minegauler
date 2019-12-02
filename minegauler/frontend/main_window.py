@@ -25,16 +25,14 @@ from PyQt5.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QMainWindow,
-    QMenu,
     QMenuBar,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
 
-from minegauler import core
-from minegauler.utils import get_difficulty
-
+from .. import core
+from ..utils import GameState, get_difficulty
 from . import api, utils
 from .minefield import MinefieldWidget
 from .panel import PanelWidget
@@ -221,15 +219,8 @@ class MinegaulerGUI(BaseMainWindow):
         self.set_panel_widget(self._panel_widget)
         self.set_body_widget(self._minefield_widget)
 
-        # self._minefield_widget.at_risk_signal.connect(
-        #     lambda: self._panel_widget.set_face("active")
-        # )
-        # self._minefield_widget.no_risk_signal.connect(
-        #     lambda: self._panel_widget.set_face("ready")
-        # )
-
-        # cb_core.update_window_size.connect(self.update_size)
-        # cb_core.change_mf_style.connect(self.update_style)
+        self._minefield_widget.at_risk_signal.connect(self._panel_widget.at_risk)
+        self._minefield_widget.no_risk_signal.connect(self._panel_widget.no_risk)
 
     def _populate_menubars(self) -> None:
         """Fill in the menubars."""

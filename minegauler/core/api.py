@@ -11,9 +11,10 @@ import abc
 import logging
 from typing import Callable, Dict, Iterable, List
 
-from minegauler.typing import Coord_T
-
+from ..core import board
 from ..types import CellContentsType, GameState
+from ..typing import Coord_T
+from . import utils
 
 
 class AbstractListener(metaclass=abc.ABCMeta):
@@ -240,7 +241,8 @@ class AbstractController(metaclass=abc.ABCMeta):
     updates.
     """
 
-    def __init__(self):
+    def __init__(self, opts: utils.GameOptsStruct):
+        self.opts = utils.GameOptsStruct._from_struct(opts)
         # The registered functions to be called with updates.
         self._notif: Caller = Caller()
         self._logger = logging.getLogger(
@@ -277,53 +279,58 @@ class AbstractController(metaclass=abc.ABCMeta):
         )
         self._notif.unregister_listener(listener)
 
+    @property
+    @abc.abstractmethod
+    def board(self) -> board.Board:
+        return NotImplemented
+
     # --------------------------------------------------------------------------
     # Methods triggered by user interaction
     # --------------------------------------------------------------------------
     @abc.abstractmethod
-    def new_game(self):
+    def new_game(self) -> None:
         """
         Create a new game, refresh the board state.
         """
         self._logger.info("New game requested, refreshing the board")
 
     @abc.abstractmethod
-    def restart_game(self):
+    def restart_game(self) -> None:
         """
         Restart the current game, refresh the board state.
         """
         self._logger.info("Restart game requested, refreshing the board")
 
     @abc.abstractmethod
-    def select_cell(self, coord: Coord_T):
+    def select_cell(self, coord: Coord_T) -> None:
         """
         Select a cell for a regular click.
         """
         self._logger.info("Cell %s selected", coord)
 
     @abc.abstractmethod
-    def flag_cell(self, coord: Coord_T):
+    def flag_cell(self, coord: Coord_T, *, flag_only: bool = False) -> None:
         """
         Select a cell for flagging.
         """
         self._logger.info("Cell %s selected for flagging", coord)
 
     @abc.abstractmethod
-    def chord_on_cell(self, coord: Coord_T):
+    def chord_on_cell(self, coord: Coord_T) -> None:
         """
         Select a cell for chording.
         """
         self._logger.info("Cell %s selected for chording", coord)
 
     @abc.abstractmethod
-    def remove_cell_flags(self, coord: Coord_T):
+    def remove_cell_flags(self, coord: Coord_T) -> None:
         """
         Remove flags in a cell, if any.
         """
         self._logger.info("Flags in cell %s being removed", coord)
 
     @abc.abstractmethod
-    def resize_board(self, x_size: int, y_size: int, mines: int):
+    def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
         """
         Resize the board and/or change the number of mines.
         """

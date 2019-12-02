@@ -60,6 +60,7 @@ class Listener(AbstractListener):
 
     def update_game_state(self, game_state: GameState) -> None:
         self._panel_widget.update_game_state(game_state)
+        self._mf_widget.update_game_state(game_state)
 
     def update_mines_remaining(self, mines_remaining: int) -> None:
         self._panel_widget.set_mines_counter(mines_remaining)
