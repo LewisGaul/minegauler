@@ -12,7 +12,6 @@ MinefieldWidget
 __all__ = ("MinefieldWidget",)
 
 import logging
-import os
 import sys
 from typing import Dict, Optional
 
@@ -20,7 +19,17 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QPainter, QPixmap
 from PyQt5.QtWidgets import QApplication, QGraphicsScene, QGraphicsView, QWidget
 
-from minegauler.types import *
+from minegauler.types import (
+    CellFlag,
+    CellHitMine,
+    CellImageType,
+    CellMine,
+    CellMineType,
+    CellNum,
+    CellUnclicked,
+    CellWrongFlag,
+    GameState,
+)
 from minegauler.typing import Coord_T
 
 from .api import AbstractController
@@ -76,13 +85,13 @@ def init_or_update_cell_images(cell_images, size, styles, required=CellImageType
 
 
 def make_pixmap(img_subdir, style, bg_fname, size, fg_fname=None, propn=1):
-    def get_path(subdir, fname, style):
-        base_path = os.path.join(IMG_DIR, subdir)
-        full_path = os.path.join(base_path, style, fname)
-        if not os.path.exists(full_path):
+    def get_path(subdir, fname, style) -> str:
+        base_path = IMG_DIR / subdir
+        full_path = base_path / style / fname
+        if not full_path.exists():
             logger.warning(f"Missing image file at {full_path}, using standard style")
-            full_path = os.path.join(base_path, "standard", fname)
-        return full_path
+            full_path = base_path / "standard" / fname
+        return str(full_path)
 
     bg_path = get_path("buttons", bg_fname, style)
     if fg_fname:

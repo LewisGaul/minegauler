@@ -27,8 +27,8 @@ if read_settings:
     logger.info("Settings read from file")
 else:
     logger.info("Using default settings")
-    game_opts = core.GameOptsStruct()
-    gui_opts = frontend.GuiOptsStruct()
+    game_opts = core.utils.GameOptsStruct()
+    gui_opts = frontend.utils.GuiOptsStruct()
 logger.debug("Game options: %s", game_opts)
 logger.debug("GUI options: %s", gui_opts)
 

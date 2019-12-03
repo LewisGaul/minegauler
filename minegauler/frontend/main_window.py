@@ -73,7 +73,7 @@ class BaseMainWindow(QMainWindow):
         self._panel_widget: Optional[QWidget] = panel_widget
         self._body_widget: Optional[QWidget] = body_widget
         self._footer_widget: Optional[QWidget] = footer_widget
-        self._icon: QIcon = QIcon(os.path.join(utils.IMG_DIR, "icon.ico"))
+        self._icon: QIcon = QIcon(str(utils.IMG_DIR / "icon.ico"))
         self.setWindowTitle(title)
         self.setWindowIcon(self._icon)
         # Disable maximise button

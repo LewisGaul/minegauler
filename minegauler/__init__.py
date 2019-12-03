@@ -4,9 +4,9 @@ __init__.py - Available imports from the package
 December 2018, Lewis Gaul
 """
 
-import os
+import pathlib
 
 
-ROOT_DIR = os.getcwd()
+ROOT_DIR: pathlib.Path = pathlib.Path(__file__).parent
 
-SETTINGS_FILE = os.path.join(ROOT_DIR, "settings.cfg")
+SETTINGS_FILE: pathlib.Path = ROOT_DIR / "settings.cfg"

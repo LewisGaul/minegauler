@@ -4,7 +4,7 @@ utils.py - Utilities for the frontend.
 December 2018, Lewis Gaul
 """
 
-import os
+import pathlib
 from typing import Dict
 
 import attr
@@ -14,7 +14,7 @@ from minegauler.core.utils import StructConstructorMixin
 from minegauler.types import *
 
 
-IMG_DIR = os.path.join(ROOT_DIR, "images")
+IMG_DIR: pathlib.Path = ROOT_DIR / "images"
 
 
 @attr.attrs(auto_attribs=True)

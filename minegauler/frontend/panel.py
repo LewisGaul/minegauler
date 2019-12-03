@@ -135,7 +135,7 @@ class PanelWidget(QWidget):
             pass
         life = 1
         fname = f"face{life}{state}.png"
-        pixmap = QPixmap(os.path.join(IMG_DIR, "faces", fname))
+        pixmap = QPixmap(str(IMG_DIR / "faces" / fname))
         self.face_button.setPixmap(
             pixmap.scaled(26, 26, transformMode=Qt.SmoothTransformation)
         )
