@@ -7,6 +7,7 @@ December 2019, Lewis Gaul
 __all__ = ("CreateController",)
 
 import logging
+from typing import Optional
 
 from ..types import CellMine, CellNum, CellUnclicked
 from ..typing import Coord_T
@@ -19,11 +20,14 @@ logger = logging.getLogger(__name__)
 class CreateController(api.AbstractController):
     """A controller for creating boards."""
 
-    def __init__(self, opts: utils.GameOptsStruct):
-        super().__init__(opts)
-        self._board = board.Board(self.opts.x_size, self.opts.y_size)
-        self._flags = 0
-        self._notif.resize(self.opts.x_size, self.opts.y_size, mines=0)
+    def __init__(
+        self, opts: utils.GameOptsStruct, *, notif: Optional[api.Caller] = None
+    ):
+        super().__init__(opts, notif=notif)
+        self._board: board.Board
+        self._flags: int = 0
+        self._notif.set_mines(self._flags)
+        self.new_game()
 
     @property
     def board(self) -> board.Board:
@@ -87,13 +91,9 @@ class CreateController(api.AbstractController):
         self._notif.update_cells({coord: self._board[coord]})
         self._notif.update_mines_remaining(self._flags)
 
-    def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
-        super().resize_board(x_size, y_size, mines)
-        if (
-            x_size == self.opts.x_size
-            and y_size == self.opts.y_size
-            and mines == self.opts.mines
-        ):
+    def resize_board(self, *, x_size: int, y_size: int, mines: int) -> None:
+        super().resize_board(x_size=x_size, y_size=y_size, mines=mines)
+        if x_size == self.opts.x_size and y_size == self.opts.y_size:
             logger.info(
                 "No resize required as the parameters are unchanged, starting a new game"
             )
@@ -101,18 +101,15 @@ class CreateController(api.AbstractController):
             return
 
         logger.info(
-            "Resizing board from %sx%s with %s mines to %sx%s with %s mines",
+            "Resizing board from %sx%s to %sx%s",
             self.opts.x_size,
             self.opts.y_size,
-            self.opts.mines,
             x_size,
             y_size,
-            mines,
         )
         self.opts.x_size = x_size
         self.opts.y_size = y_size
-        self.opts.mines = mines
-        self._notif.resize(x_size, y_size, mines=0)
+        self._notif.resize(x_size, y_size)
         self.new_game()
 
     def set_first_success(self, value: bool) -> None:

@@ -13,7 +13,7 @@ from unittest.mock import Mock
 import pytest
 
 from minegauler.core.board import Board
-from minegauler.core.engine import Controller
+from minegauler.core.engine import _GameController
 from minegauler.core.minefield import Minefield
 from minegauler.core.utils import GameOptsStruct
 from minegauler.types import *
@@ -59,7 +59,7 @@ class TestController:
     # -------------------------------------------------------------------------
     def test_create(self):
         # Normal create of a controller.
-        ctrlr = Controller(self.opts)
+        ctrlr = _GameController(self.opts)
         assert ctrlr.opts == self.opts
         assert ctrlr._game.state == GameState.READY
         assert ctrlr._game.mf is None
@@ -67,7 +67,7 @@ class TestController:
 
         # Try creating a controller with invalid options.
         with pytest.raises(ValueError):
-            Controller("INVALID")
+            _GameController("INVALID")
 
     @pytest.mark.skip("API has changed - needs updating")
     def test_register_callbacks(self, frontend1, frontend2):
@@ -394,7 +394,7 @@ class TestController:
     def test_first_success(self):
         # First click should hit an opening with first_success set.
         opts = GameOptsStruct(first_success=True)
-        ctrlr = Controller(opts)
+        ctrlr = _GameController(opts)
         coord = (1, 5)
         ctrlr.select_cell(coord)
         assert ctrlr._game.state == GameState.ACTIVE
@@ -413,7 +413,7 @@ class TestController:
         opts = GameOptsStruct(
             x_size=4, y_size=4, mines=15, per_cell=1, first_success=True
         )
-        ctrlr = Controller(opts)
+        ctrlr = _GameController(opts)
         coord = (1, 2)
         ctrlr.select_cell(coord)
         assert ctrlr._game.board[coord] == CellNum(8)
@@ -423,7 +423,7 @@ class TestController:
         passed = False
         attempts = 0
         while not passed:
-            ctrlr = Controller(opts)
+            ctrlr = _GameController(opts)
             ctrlr.select_cell(coord)
             attempts += 1
             if attempts >= 10:
@@ -812,7 +812,7 @@ class TestController:
         """
         if opts is None:
             opts = cls.opts
-        ctrlr = Controller(opts)
+        ctrlr = _GameController(opts)
         if set_mf:
             ctrlr._game.mf = cls.mf
         if cb:

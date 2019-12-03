@@ -9,10 +9,10 @@ TODO
 
 import abc
 import logging
-from typing import Callable, Dict, Iterable, List
+from typing import Callable, Dict, Iterable, List, Optional
 
 from ..core import board
-from ..types import CellContentsType, GameState
+from ..types import CellContentsType, GameState, UIMode
 from ..typing import Coord_T
 from . import utils
 
@@ -42,6 +42,13 @@ class AbstractListener(metaclass=abc.ABCMeta):
             The number of columns.
         :param mines:
             The number of mines.
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
+    def set_mines(self, mines: int) -> None:
+        """
+        Called to indicate the number of mines at reset has changed.
         """
         return NotImplemented
 
@@ -146,7 +153,7 @@ class Caller(AbstractListener):
         except ValueError:
             self._logger.debug("Listener not registered - nothing to do")
 
-    def _call_registered(self, func) -> Callable:
+    def _call_registered(self, func: str) -> Callable:
         """
         Decorator to call all registered listeners.
 
@@ -177,18 +184,22 @@ class Caller(AbstractListener):
         """
         self._logger.debug("Calling reset()")
 
-    def resize(self, x_size: int, y_size: int, mines: int) -> None:
+    def resize(self, x_size: int, y_size: int) -> None:
         """
-        Called to indicate the board is being changed.
+        Called to indicate the board shape has changed.
 
         :param x_size:
             The number of rows.
         :param y_size:
             The number of columns.
-        :param mines:
-            The number of mines.
         """
-        self._logger.debug(f"Calling resize() with {x_size}, {y_size}, {mines}")
+        self._logger.debug(f"Calling resize() with {x_size}, {y_size}")
+
+    def set_mines(self, mines: int) -> None:
+        """
+        Called to indicate the number of mines at reset has changed.
+        """
+        self._logger.debug(f"Calling set_mines() with {mines}")
 
     def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
         """
@@ -241,10 +252,10 @@ class AbstractController(metaclass=abc.ABCMeta):
     updates.
     """
 
-    def __init__(self, opts: utils.GameOptsStruct):
+    def __init__(self, opts: utils.GameOptsStruct, *, notif: Optional[Caller] = None):
         self.opts = utils.GameOptsStruct._from_struct(opts)
         # The registered functions to be called with updates.
-        self._notif: Caller = Caller()
+        self._notif: Caller = notif if notif else Caller()
         self._logger = logging.getLogger(
             ".".join([type(self).__module__, type(self).__name__])
         )
@@ -330,7 +341,7 @@ class AbstractController(metaclass=abc.ABCMeta):
         self._logger.info("Flags in cell %s being removed", coord)
 
     @abc.abstractmethod
-    def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
+    def resize_board(self, *, x_size: int, y_size: int, mines: int) -> None:
         """
         Resize the board and/or change the number of mines.
         """
@@ -351,3 +362,9 @@ class AbstractController(metaclass=abc.ABCMeta):
         Set the maximum number of mines per cell.
         """
         self._logger.info("Setting per cell to %s", value)
+
+    def switch_mode(self, mode: UIMode) -> None:
+        """
+        Switch the mode of the UI, e.g. into 'create' mode.
+        """
+        self._logger.info("Requested switch to mode %s", mode)

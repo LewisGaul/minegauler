@@ -185,3 +185,8 @@ class CellImageType(enum.Flag):
     NUMBERS = enum.auto()
     MARKERS = enum.auto()
     ALL = BUTTONS | NUMBERS | MARKERS
+
+
+class UIMode(enum.Enum):
+    GAME = enum.auto()
+    CREATE = enum.auto()

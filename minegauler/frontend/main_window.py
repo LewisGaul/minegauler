@@ -32,7 +32,8 @@ from PyQt5.QtWidgets import (
 )
 
 from .. import core
-from ..utils import GameState, get_difficulty
+from ..types import UIMode
+from ..utils import get_difficulty
 from . import api, utils
 from .minefield import MinefieldWidget
 from .panel import PanelWidget
@@ -224,6 +225,7 @@ class MinegaulerGUI(BaseMainWindow):
 
     def _populate_menubars(self) -> None:
         """Fill in the menubars."""
+
         # ----------
         # Game menu
         # ----------
@@ -236,6 +238,13 @@ class MinegaulerGUI(BaseMainWindow):
         replay_act.setShortcut("F3")
 
         # Create board
+        def switch_create_mode(checked: bool):
+            mode = UIMode.CREATE if checked else UIMode.GAME
+            self.ctrlr.switch_mode(mode)
+
+        create_act = QAction("Create board", self, checkable=True, checked=False)
+        self._game_menu.addAction(create_act)
+        create_act.triggered.connect(switch_create_mode)
 
         # Save board
 

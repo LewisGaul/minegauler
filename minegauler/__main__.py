@@ -35,7 +35,7 @@ logger.debug("GUI options: %s", gui_opts)
 
 logger.info("Starting up")
 
-ctrlr = core.Controller(game_opts)
+ctrlr = core.BaseController(game_opts)
 # ctrlr = core.create.CreateController(game_opts)
 
 gui = frontend.create_gui(ctrlr, gui_opts, game_opts)

@@ -149,7 +149,9 @@ class PanelWidget(QWidget):
             self.set_face(FaceState.READY)
 
     def set_mines(self, mines: int) -> None:
+        """Set the default number of mines and update the mines counter."""
         self._mines = mines
+        self.set_mines_counter(mines)
 
     def set_mines_counter(self, num: int) -> None:
         """

@@ -9,14 +9,16 @@ Controller (class)
     frontend implementation.
 """
 
+__all__ = ("BaseController",)
+
 import logging
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional
 
 import attr
 
-from ..types import *
+from ..types import CellContentsType, CellFlag, CellUnclicked, GameState, UIMode
 from ..typing import Coord_T
-from . import api, board, game, utils
+from . import api, board, create, game, utils
 
 
 logger = logging.getLogger(__name__)
@@ -50,7 +52,88 @@ class SharedInfo:
     finish_time: Optional[float] = None
 
 
-class Controller(api.AbstractController):
+class BaseController(api.AbstractController):
+    """Base controller implementing all user interaction methods."""
+
+    def __init__(
+        self, opts: utils.GameOptsStruct, *, notif: Optional[api.Caller] = None
+    ):
+        super().__init__(opts, notif=notif)
+        self._active_ctrlr: api.AbstractController = _GameController(
+            self.opts, notif=self._notif
+        )
+
+        # Do the method wrapping here because we need the registered controller.
+        for method in api.AbstractController.__abstractmethods__:
+            if not isinstance(getattr(type(self), method), property):
+                setattr(self, method, self._call_active_ctrlr(method))
+
+    def _call_active_ctrlr(self, func: str) -> Callable:
+        """
+        Decorator to call the active controller.
+
+        :param func:
+            The name of the method to decorate.
+        :return:
+            The decorated version of the method.
+        """
+        if not hasattr(self, func + "_orig"):
+            setattr(self, func + "_orig", getattr(self, func))
+
+        def wrapped(*args, **kwargs):
+            getattr(self, func + "_orig")(*args, **kwargs)
+            return getattr(self._active_ctrlr, func)(*args, **kwargs)
+
+        return wrapped
+
+    def switch_mode(self, mode: UIMode) -> None:
+        """Switch the mode of the UI, e.g. into 'create' mode."""
+        super().switch_mode(mode)
+        if mode is UIMode.GAME:
+            self._active_ctrlr = _GameController(self.opts, notif=self._notif)
+        elif mode is UIMode.CREATE:
+            self._active_ctrlr = create.CreateController(self.opts, notif=self._notif)
+        else:
+            raise ValueError(f"Unrecognised UI mode: {mode}")
+
+    # ----------------------------------
+    # Implement abstractmethods
+    # ----------------------------------
+    @property
+    def board(self) -> board.Board:
+        return self._active_ctrlr.board
+
+    def new_game(self) -> None:
+        pass
+
+    def restart_game(self) -> None:
+        pass
+
+    def select_cell(self, coord: Coord_T) -> None:
+        pass
+
+    def flag_cell(self, coord: Coord_T, *, flag_only: bool = False) -> None:
+        pass
+
+    def chord_on_cell(self, coord: Coord_T) -> None:
+        pass
+
+    def remove_cell_flags(self, coord: Coord_T) -> None:
+        pass
+
+    def resize_board(self, *, x_size: int, y_size: int, mines: int) -> None:
+        self.opts.x_size = x_size
+        self.opts.y_size = y_size
+        self.opts.mines = mines
+
+    def set_first_success(self, value: bool) -> None:
+        self.opts.first_success = value
+
+    def set_per_cell(self, value: int) -> None:
+        self.opts.per_cell = value
+
+
+class _GameController(api.AbstractController):
     """
     Class for processing all game logic. Implements functions defined in
     AbstractController that are called from UI.
@@ -60,17 +143,20 @@ class Controller(api.AbstractController):
         Options for use in games.
     """
 
-    def __init__(self, opts: utils.GameOptsStruct):
+    def __init__(
+        self, opts: utils.GameOptsStruct, *, notif: Optional[api.Caller] = None
+    ):
         """
         Arguments:
         opts (GameOptsStruct)
             Object containing the required game options as attributes.
         """
-        super().__init__(opts)
+        super().__init__(opts, notif=notif)
 
         self._game: Optional[game.Game] = None
         self._last_update: SharedInfo
 
+        self._notif.set_mines(self.opts.mines)
         self.new_game()
 
     @property
@@ -138,7 +224,7 @@ class Controller(api.AbstractController):
 
     def resize_board(self, *, x_size: int, y_size: int, mines: int) -> None:
         """See AbstractController."""
-        super().resize_board(x_size, y_size, mines)
+        super().resize_board(x_size=x_size, y_size=y_size, mines=mines)
         if (
             x_size == self.opts.x_size
             and y_size == self.opts.y_size
@@ -191,7 +277,8 @@ class Controller(api.AbstractController):
         self._cells_updated = dict()
 
     def _send_resize_update(self) -> None:
-        self._notif.resize(self.opts.x_size, self.opts.y_size, self.opts.mines)
+        self._notif.resize(self.opts.x_size, self.opts.y_size)
+        self._notif.set_mines(self.opts.mines)
 
     def _send_updates(self, cells_updated: Dict[Coord_T, CellContentsType]) -> None:
         """Send updates to registered listeners."""

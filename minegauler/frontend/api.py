@@ -37,22 +37,25 @@ class Listener(AbstractListener):
         """
         Called to indicate the state should be reset.
         """
-        self._mf_widget.reset()
         self._panel_widget.reset()
+        self._mf_widget.reset()
 
-    def resize(self, x_size: int, y_size: int, mines: int) -> None:
+    def resize(self, x_size: int, y_size: int) -> None:
         """
-        Called to indicate the board is being changed.
+        Called to indicate the board shape has changed.
 
         :param x_size:
             The number of rows.
         :param y_size:
             The number of columns.
-        :param mines:
-            The number of mines.
+        """
+        self._mf_widget.resize(x_size, y_size)
+
+    def set_mines(self, mines: int) -> None:
+        """
+        Called to indicate the default number of mines has changed.
         """
         self._panel_widget.set_mines(mines)
-        self._mf_widget.resize(x_size, y_size)
 
     def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
         for c, state in cell_updates.items():
