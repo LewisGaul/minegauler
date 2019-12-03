@@ -3,6 +3,10 @@
 Remake of the classic Minesweeper game, written in Python (requires Python 3.6+).
 
 
+![img1](img/screenshots/beginner_start.png)
+![img2](img/screenshots/beginner_win.png)
+
+
 ### Quick Start
 
  - Clone the repo
