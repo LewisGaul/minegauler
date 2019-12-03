@@ -36,12 +36,9 @@ logger.debug("GUI options: %s", gui_opts)
 logger.info("Starting up")
 
 ctrlr = core.BaseController(game_opts)
-# ctrlr = core.create.CreateController(game_opts)
 
 gui = frontend.create_gui(ctrlr, gui_opts, game_opts)
 
-# TODO: Legacy - remove
-# ctrlr.register_callback(frontend.get_callback(gui, gui.panel_widget, gui.body_widget))
 ctrlr.register_listener(frontend.Listener(gui))
 
 rc = frontend.run()
