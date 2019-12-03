@@ -12,10 +12,11 @@ import logging
 import time as tm
 from typing import Callable, Dict, Iterable, Optional, Tuple, Union
 
+from minegauler.core import Minefield
+
 from ..types import *
 from ..typing import Coord_T
 from .board import Board
-from .minefield import Minefield
 
 
 logger = logging.getLogger(__name__)

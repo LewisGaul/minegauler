@@ -1,10 +1,10 @@
 """
-minefield_widget_test.py - Test the minefield widget module
+minefield_test.py - Test the minefield widget module
 
 December 2018, Lewis Gaul
 
-Uses pytest - simply run 'python -m pytest tests/ [-k minefield_widget_test]'
-from the root directory.
+Uses pytest - simply run 'python -m pytest [-k minefield_test]' from
+the root directory.
 """
 
 from unittest.mock import Mock

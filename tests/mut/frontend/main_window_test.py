@@ -7,7 +7,6 @@ Uses pytest - simply run 'python -m pytest tests/ [-k main_window_test]' from
 the root directory.
 """
 
-
 import pytest
 
 from minegauler.core.utils import GameOptsStruct

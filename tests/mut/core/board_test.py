@@ -1,9 +1,9 @@
 """
-minefield_test.py - Test the minefield module
+board_test.py - Test the board module
 
 October 2018, Lewis Gaul
 
-Uses pytest - simply run 'python -m pytest tests/ [-k minefield_test]' from the
+Uses pytest - simply run 'python -m pytest [-k board_test]' from the
 root directory.
 """
 
@@ -11,9 +11,8 @@ from typing import List
 
 import pytest
 
-from minegauler.core.board import Board
-from minegauler.core.grid import Grid
-from minegauler.core.minefield import Minefield
+from minegauler.core.board import Board, Minefield
+from minegauler.core.utils import Grid
 from minegauler.types import *
 from minegauler.typing import Coord_T
 

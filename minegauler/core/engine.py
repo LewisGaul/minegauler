@@ -9,8 +9,7 @@ BaseController (class)
     frontend implementation.
 """
 
-__all__ = ("BaseController",)
-
+__all__ = ("BaseController", "CreateController", "GameController")
 
 import logging
 from typing import Dict, Optional
@@ -68,7 +67,7 @@ class BaseController(api.AbstractController):
         self, opts: utils.GameOptsStruct, *, notif: Optional[api.Caller] = None
     ):
         super().__init__(opts, notif=notif)
-        self._active_ctrlr: api.AbstractController = _GameController(
+        self._active_ctrlr: api.AbstractController = GameController(
             self.opts, notif=self._notif
         )
 
@@ -76,9 +75,9 @@ class BaseController(api.AbstractController):
         """Switch the mode of the UI, e.g. into 'create' mode."""
         super().switch_mode(mode)
         if mode is UIMode.GAME:
-            self._active_ctrlr = _GameController(self.opts, notif=self._notif)
+            self._active_ctrlr = GameController(self.opts, notif=self._notif)
         elif mode is UIMode.CREATE:
-            self._active_ctrlr = _CreateController(self.opts, notif=self._notif)
+            self._active_ctrlr = CreateController(self.opts, notif=self._notif)
         else:
             raise ValueError(f"Unrecognised UI mode: {mode}")
 
@@ -122,7 +121,7 @@ class BaseController(api.AbstractController):
         self._active_ctrlr.set_per_cell(value)
 
 
-class _GameController(api.AbstractController):
+class GameController(api.AbstractController):
     """
     Class for processing all game logic. Implements functions defined in
     AbstractController that are called from UI.
@@ -296,7 +295,7 @@ class _GameController(api.AbstractController):
         self._last_update = update
 
 
-class _CreateController(api.AbstractController):
+class CreateController(api.AbstractController):
     """A controller for creating boards."""
 
     def __init__(
