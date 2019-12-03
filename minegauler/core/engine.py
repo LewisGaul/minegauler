@@ -4,28 +4,37 @@ engine.py - The core game logic
 November 2018, Lewis Gaul
 
 Exports:
-Controller (class)
+BaseController (class)
     Implementation of game logic and provision of functions to be called by a
     frontend implementation.
 """
 
 __all__ = ("BaseController",)
 
+
 import logging
-from typing import Callable, Dict, Optional
+from typing import Dict, Optional
 
 import attr
 
-from ..types import CellContentsType, CellFlag, CellUnclicked, GameState, UIMode
+from ..types import (
+    CellContentsType,
+    CellFlag,
+    CellMine,
+    CellNum,
+    CellUnclicked,
+    GameState,
+    UIMode,
+)
 from ..typing import Coord_T
-from . import api, board, create, game, utils
+from . import api, board, game, utils
 
 
 logger = logging.getLogger(__name__)
 
 
 @attr.attrs(auto_attribs=True)
-class SharedInfo:
+class _SharedInfo:
     """
     Information to pass to frontends.
     
@@ -41,7 +50,7 @@ class SharedInfo:
         flags. If the number is unchanged, None may be passed.
     lives_remaining (int)
         The number of lives remaining.
-    elapsed_time (float | None)
+    finish_time (float | None)
         The time elapsed if the game has ended, otherwise None.
     """
 
@@ -63,36 +72,13 @@ class BaseController(api.AbstractController):
             self.opts, notif=self._notif
         )
 
-        # Do the method wrapping here because we need the registered controller.
-        for method in api.AbstractController.__abstractmethods__:
-            if not isinstance(getattr(type(self), method), property):
-                setattr(self, method, self._call_active_ctrlr(method))
-
-    def _call_active_ctrlr(self, func: str) -> Callable:
-        """
-        Decorator to call the active controller.
-
-        :param func:
-            The name of the method to decorate.
-        :return:
-            The decorated version of the method.
-        """
-        if not hasattr(self, func + "_orig"):
-            setattr(self, func + "_orig", getattr(self, func))
-
-        def wrapped(*args, **kwargs):
-            getattr(self, func + "_orig")(*args, **kwargs)
-            return getattr(self._active_ctrlr, func)(*args, **kwargs)
-
-        return wrapped
-
     def switch_mode(self, mode: UIMode) -> None:
         """Switch the mode of the UI, e.g. into 'create' mode."""
         super().switch_mode(mode)
         if mode is UIMode.GAME:
             self._active_ctrlr = _GameController(self.opts, notif=self._notif)
         elif mode is UIMode.CREATE:
-            self._active_ctrlr = create.CreateController(self.opts, notif=self._notif)
+            self._active_ctrlr = _CreateController(self.opts, notif=self._notif)
         else:
             raise ValueError(f"Unrecognised UI mode: {mode}")
 
@@ -104,33 +90,36 @@ class BaseController(api.AbstractController):
         return self._active_ctrlr.board
 
     def new_game(self) -> None:
-        pass
+        self._active_ctrlr.new_game()
 
     def restart_game(self) -> None:
-        pass
+        self._active_ctrlr.restart_game()
 
     def select_cell(self, coord: Coord_T) -> None:
-        pass
+        self._active_ctrlr.select_cell(coord)
 
     def flag_cell(self, coord: Coord_T, *, flag_only: bool = False) -> None:
-        pass
+        self._active_ctrlr.flag_cell(coord, flag_only=flag_only)
 
     def chord_on_cell(self, coord: Coord_T) -> None:
-        pass
+        self._active_ctrlr.chord_on_cell(coord)
 
     def remove_cell_flags(self, coord: Coord_T) -> None:
-        pass
+        self._active_ctrlr.remove_cell_flags(coord)
 
     def resize_board(self, *, x_size: int, y_size: int, mines: int) -> None:
         self.opts.x_size = x_size
         self.opts.y_size = y_size
         self.opts.mines = mines
+        self._active_ctrlr.resize_board(x_size=x_size, y_size=y_size, mines=mines)
 
     def set_first_success(self, value: bool) -> None:
         self.opts.first_success = value
+        self._active_ctrlr.set_first_success(value)
 
     def set_per_cell(self, value: int) -> None:
         self.opts.per_cell = value
+        self._active_ctrlr.set_per_cell(value)
 
 
 class _GameController(api.AbstractController):
@@ -154,7 +143,7 @@ class _GameController(api.AbstractController):
         super().__init__(opts, notif=notif)
 
         self._game: Optional[game.Game] = None
-        self._last_update: SharedInfo
+        self._last_update: _SharedInfo
 
         self._notif.set_mines(self.opts.mines)
         self.new_game()
@@ -273,7 +262,7 @@ class _GameController(api.AbstractController):
     # --------------------------------------------------------------------------
     def _send_reset_update(self) -> None:
         self._notif.reset()
-        self._last_update = SharedInfo()
+        self._last_update = _SharedInfo()
         self._cells_updated = dict()
 
     def _send_resize_update(self) -> None:
@@ -282,7 +271,7 @@ class _GameController(api.AbstractController):
 
     def _send_updates(self, cells_updated: Dict[Coord_T, CellContentsType]) -> None:
         """Send updates to registered listeners."""
-        update = SharedInfo(
+        update = _SharedInfo(
             cell_updates=cells_updated,
             mines_remaining=self._game.mines_remaining,
             lives_remaining=self._game.lives_remaining,
@@ -305,3 +294,108 @@ class _GameController(api.AbstractController):
             self._notif.set_finish_time(update.finish_time)
 
         self._last_update = update
+
+
+class _CreateController(api.AbstractController):
+    """A controller for creating boards."""
+
+    def __init__(
+        self, opts: utils.GameOptsStruct, *, notif: Optional[api.Caller] = None
+    ):
+        super().__init__(opts, notif=notif)
+        self._board: board.Board = board.Board(self.opts.x_size, self.opts.y_size)
+        self._flags: int = 0
+        self._notif.set_mines(self._flags)
+        self._notif.reset()
+
+    @property
+    def board(self) -> board.Board:
+        return self._board
+
+    def new_game(self) -> None:
+        """See AbstractController."""
+        super().new_game()
+        self._board = board.Board(self.opts.x_size, self.opts.y_size)
+        self._flags = 0
+        self._notif.reset()
+
+    def restart_game(self) -> None:
+        super().restart_game()
+        self.new_game()
+
+    def select_cell(self, coord: Coord_T) -> None:
+        super().select_cell(coord)
+        cell = self._board[coord]
+        if cell is CellUnclicked():
+            self._board[coord] = CellNum(0)
+        elif isinstance(cell, CellNum):
+            self._board[coord] += 1
+        else:
+            return
+        self._notif.update_cells({coord: self._board[coord]})
+
+    def flag_cell(self, coord: Coord_T, *, flag_only: bool = False) -> None:
+        super().flag_cell(coord)
+        cell = self._board[coord]
+
+        if cell is CellUnclicked():
+            self._board[coord] = CellMine(1)
+            self._flags += 1
+        elif isinstance(cell, CellMine):
+            if cell.num == self.opts.per_cell:
+                if flag_only:
+                    return
+                self._board[coord] = CellUnclicked()
+                self._flags -= self.opts.per_cell
+            else:
+                self._board[coord] += 1
+                self._flags += 1
+        elif isinstance(cell, CellNum):
+            self.board[coord] = CellUnclicked()
+        else:
+            return
+        self._notif.update_cells({coord: self._board[coord]})
+        self._notif.update_mines_remaining(self._flags)
+
+    def chord_on_cell(self, coord: Coord_T) -> None:
+        super().chord_on_cell(coord)
+
+    def remove_cell_flags(self, coord: Coord_T) -> None:
+        super().remove_cell_flags(coord)
+        cell = self._board[coord]
+        if not isinstance(cell, CellMine):
+            return
+        self._board[coord] = CellUnclicked()
+        self._flags -= cell.num
+        self._notif.update_cells({coord: self._board[coord]})
+        self._notif.update_mines_remaining(self._flags)
+
+    def resize_board(self, *, x_size: int, y_size: int, mines: int) -> None:
+        super().resize_board(x_size=x_size, y_size=y_size, mines=mines)
+        if x_size == self.opts.x_size and y_size == self.opts.y_size:
+            logger.info(
+                "No resize required as the parameters are unchanged, starting a new game"
+            )
+            self.new_game()
+            return
+
+        logger.info(
+            "Resizing board from %sx%s to %sx%s",
+            self.opts.x_size,
+            self.opts.y_size,
+            x_size,
+            y_size,
+        )
+        self.opts.x_size = x_size
+        self.opts.y_size = y_size
+        self._notif.resize(x_size, y_size)
+        self.new_game()
+
+    def set_first_success(self, value: bool) -> None:
+        super().set_first_success(value)
+        # Store the value so it can be retrieved from the next controller.
+        self.opts.first_success = value
+
+    def set_per_cell(self, value: int) -> None:
+        super().set_per_cell(value)
+        self.opts.per_cell = value
