@@ -1,21 +1,25 @@
 # Minegauler
 
-Remake of the classic Minesweeper game, written in Python (requires Python 3.6+).
+Remake of the classic Minesweeper game, written in Python.
 
 
 ![img1](img/screenshots/beginner_start.png)
 ![img2](img/screenshots/beginner_win.png)
 
 
-### Quick Start
+## Try it out!
 
- - Clone the repo
- - Recommended to set up a [virtual environment](https://docs.python.org/3/tutorial/venv.html)
+### Run the code
+
+You will need Python3.6+ to run the code.
+
+ - Clone the repo: `git clone https://github.com/LewisGaul/minegauler`
+ - Consider setting up a [virtual environment](https://docs.python.org/3/tutorial/venv.html)
  - Install requirements with `pip install -r requirements.txt`
  - Run with `python -m minegauler`
 
 
-### Download the Executable Application
+### Download the executable application
 
 [Download from here](https://raw.githubusercontent.com/LewisGaul/minegauler/master/releases/MineGauler1.2.2.zip) to try out my most feature-rich version without any Python requirements (for Windows and Linux).
 
@@ -24,17 +28,26 @@ Note that I initially wrote this in Python 2 using Tkinter (now using PyQt5) and
 Read more about the project history on [my website](https://www.lewisgaul.co.uk/minegauler.html).
 
 
-### Contact
 
-Email at minegauler@gmail.com, any questions/suggestions/requests welcome.
+## What's new/upcoming?
 
-Alternatively, feel free to open an issue if you find a bug or have a feature request.
+Check the [changelog](CHANGELOG.md) to see a log of changes that have been made, as well as some of the upcoming features and planned fixes.
+
+If there's a feature you'd like to see added, please don't hesitate to [contact me](#Contact)!
 
 
-## Developer information
+## Development guide
 
 Install the developer requirements (e.g. pytest + plugins) with `pip install -r requirements-dev.txt`.
 
 Run the tests with the command: `python -m pytest`.
 
 Get coverage information using the pytest-cov plugin: `python -m pytest --cov [--cov-report html]`.
+
+
+
+## Contact
+
+Email at minegauler@gmail.com, any questions/suggestions/requests welcome.
+
+Alternatively, feel free to open an issue if you find a bug or have a feature request.
