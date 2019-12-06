@@ -32,6 +32,8 @@ class _NumericCellContentsMixin:
     A mixin for numeric cell contents types, allowing adding and subtracting integers.
     """
 
+    char: str
+
     def __init__(self, num):
         if not isinstance(num, int):
             raise TypeError("Number should be an integer")
@@ -56,7 +58,7 @@ class _NumericCellContentsMixin:
 class CellContentsType:
     """Abstract base class for contents of a minesweeper board cell."""
 
-    char = None
+    char: str
 
     @functools.lru_cache(maxsize=None)
     def __new__(cls, *args):
