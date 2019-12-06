@@ -4,13 +4,17 @@ api.py - The API with the backend
 December 2018, Lewis Gaul
 """
 
-__all__ = ("AbstractController", "Listener")
+__all__ = ("AbstractController", "AbstractSwitchingController", "Listener")
 
 import logging
 import traceback
 from typing import Dict
 
-from minegauler.core.api import AbstractController, AbstractListener
+from minegauler.core.api import (
+    AbstractController,
+    AbstractListener,
+    AbstractSwitchingController,
+)
 from minegauler.types import CellContentsType, GameState
 from minegauler.typing import Coord_T
 

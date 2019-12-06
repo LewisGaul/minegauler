@@ -14,7 +14,6 @@ MinegaulerGUI
 __all__ = ("MinegaulerGUI",)
 
 import logging
-import os
 from typing import Optional
 
 from PyQt5.QtCore import Qt
@@ -183,13 +182,12 @@ class BaseMainWindow(QMainWindow):
 class MinegaulerGUI(BaseMainWindow):
     def __init__(
         self,
-        ctrlr: api.AbstractController,
+        ctrlr: api.AbstractSwitchingController,
         gui_opts: utils.GuiOptsStruct = None,
         game_opts: core.utils.GameOptsStruct = None,
     ):
         """
-        Arguments:
-        ctrlr (Controller)
+        :param ctrlr:
             The core controller.
         """
         self.ctrlr: api.AbstractController = ctrlr

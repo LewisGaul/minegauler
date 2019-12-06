@@ -7,7 +7,12 @@ Exports:
 TODO
 """
 
-__all__ = ("AbstractController", "AbstractListener", "Caller")
+__all__ = (
+    "AbstractController",
+    "AbstractListener",
+    "AbstractSwitchingController",
+    "Caller",
+)
 
 import abc
 import logging
@@ -365,6 +370,11 @@ class AbstractController(metaclass=abc.ABCMeta):
         """
         self._logger.info("Setting per cell to %s", value)
 
+
+class AbstractSwitchingController(AbstractController):
+    """An abstract base class for controllers that support switching mode."""
+
+    @abc.abstractmethod
     def switch_mode(self, mode: UIMode) -> None:
         """
         Switch the mode of the UI, e.g. into 'create' mode.

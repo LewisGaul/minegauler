@@ -60,7 +60,7 @@ class _SharedInfo:
     finish_time: Optional[float] = None
 
 
-class BaseController(api.AbstractController):
+class BaseController(api.AbstractSwitchingController):
     """Base controller implementing all user interaction methods."""
 
     def __init__(
@@ -82,7 +82,7 @@ class BaseController(api.AbstractController):
             raise ValueError(f"Unrecognised UI mode: {mode}")
 
     # ----------------------------------
-    # Implement abstractmethods
+    # Delegated abstractmethods
     # ----------------------------------
     @property
     def board(self) -> board.Board:
