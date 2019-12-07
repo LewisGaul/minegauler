@@ -18,5 +18,5 @@ def ctrlr():
     mock = MagicMock()
     mock.opts = core_utils.GameOptsStruct()
     mock.board = board.Board(mock.opts.x_size, mock.opts.y_size)
-    mock.mock_add_spec(core_api.AbstractController, spec_set=True)
+    mock.mock_add_spec(core_api.AbstractSwitchingController, spec_set=True)
     return mock

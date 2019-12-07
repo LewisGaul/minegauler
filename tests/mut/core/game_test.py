@@ -9,7 +9,7 @@ the root directory.
 
 from unittest.mock import Mock
 
-from minegauler.core.game import Game, ignore_if, ignore_if_not
+from minegauler.core.game import Game, _ignore_if, _ignore_if_not
 from minegauler.types import *
 
 
@@ -23,7 +23,7 @@ def test_ignore_if_decorators():
 
     # First test 'ignore if'.
     # Test with one ignored cell state (flagged).
-    decorated_mock = ignore_if(cell_state=CellFlag)(mock_func)
+    decorated_mock = _ignore_if(cell_state=CellFlag)(mock_func)
     decorated_mock(game, (0, 0))  # unclicked
     mock_func.assert_called_once()
     mock_func.reset_mock()
@@ -33,7 +33,7 @@ def test_ignore_if_decorators():
     mock_func.assert_not_called()
 
     # Test with multiple ignored cell states.
-    decorated_mock = ignore_if(cell_state=(CellFlag, CellUnclicked))(mock_func)
+    decorated_mock = _ignore_if(cell_state=(CellFlag, CellUnclicked))(mock_func)
     decorated_mock(game, (0, 0))  # flagged
     mock_func.assert_not_called()
 
@@ -43,7 +43,7 @@ def test_ignore_if_decorators():
     # Next test 'ignore if not'.
     mock_func.reset_mock()
     # Test with one game state (READY).
-    decorated_mock = ignore_if_not(game_state=GameState.READY)(mock_func)
+    decorated_mock = _ignore_if_not(game_state=GameState.READY)(mock_func)
     game.state = GameState.READY
     decorated_mock(game)
     mock_func.assert_called_once()
@@ -54,7 +54,7 @@ def test_ignore_if_decorators():
     mock_func.assert_not_called()
 
     # Test with multiple ignored cell states.
-    decorated_mock = ignore_if_not(game_state=(GameState.READY, GameState.ACTIVE))(
+    decorated_mock = _ignore_if_not(game_state=(GameState.READY, GameState.ACTIVE))(
         mock_func
     )
     game.state = GameState.READY

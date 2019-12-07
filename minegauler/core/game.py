@@ -7,14 +7,25 @@ Exports:
 Game (class)
     Representation of a minesweeper game.
 """
-
+import functools
 import logging
 import time as tm
+import typing
 from typing import Callable, Dict, Iterable, Optional, Tuple, Union
 
 from minegauler.core import Minefield
 
-from ..types import *
+from ..types import (
+    CellContentsType,
+    CellFlag,
+    CellHitMine,
+    CellMine,
+    CellMineType,
+    CellNum,
+    CellUnclicked,
+    CellWrongFlag,
+    GameState,
+)
 from ..typing import Coord_T
 from .board import Board
 
@@ -22,16 +33,16 @@ from .board import Board
 logger = logging.getLogger(__name__)
 
 
-def check_coord(method):
+def _check_coord(method: Callable) -> Callable:
     """
-    wrap a method that takes a coord to check it is inside the valid range.
+    Wrap a method that takes a coord to check it is inside the valid range.
 
     :raise ValueError:
         If the coord is not valid.
     """
 
     @functools.wraps(method)
-    def wrapped(self, coord: Coord_T, *args, **kwargs):
+    def wrapped(self: "Game", coord: Coord_T, *args, **kwargs):
         if not 0 <= coord[0] < self.x_size or not 0 <= coord[1] < self.y_size:
             raise ValueError(
                 f"Coordinate is out of bounds, should be between (0,0) and "
@@ -42,7 +53,7 @@ def check_coord(method):
     return wrapped
 
 
-def ignore_if(
+def _ignore_if(
     *,
     game_state: Optional[
         Union[str, GameState, Iterable[str], Iterable[GameState]]
@@ -61,13 +72,13 @@ def ignore_if(
         decorated method must take the cell coordinate as the first argument.
     """
 
-    def decorator(method):
+    def decorator(method: Callable) -> Callable:
         # If the cell state is specified it is assumed the coord is passed in
         # as the first arg.
         if cell_state is None:
 
             @functools.wraps(method)
-            def wrapped(self, *args, **kwargs):
+            def wrapped(self: "Game", *args, **kwargs):
                 if game_state is not None and (
                     self.state == game_state or self.state in game_state
                 ):
@@ -77,7 +88,7 @@ def ignore_if(
         else:
 
             @functools.wraps(method)
-            def wrapped(self, coord, *args, **kwargs):
+            def wrapped(self: "Game", coord: Coord_T, *args, **kwargs):
                 if (
                     game_state is not None
                     and (self.state == game_state or self.state in game_state)
@@ -90,7 +101,7 @@ def ignore_if(
     return decorator
 
 
-def ignore_if_not(
+def _ignore_if_not(
     *,
     game_state: Optional[
         Union[str, GameState, Iterable[str], Iterable[GameState]]
@@ -109,13 +120,13 @@ def ignore_if_not(
         decorated method must take the cell coordinate as the first argument.
     """
 
-    def decorator(method):
+    def decorator(method: Callable) -> Callable:
         # If the cell state is specified it is assumed the coord is passed in
         # as the first arg.
         if cell_state is None:
 
             @functools.wraps(method)
-            def wrapped(self, *args, **kwargs):
+            def wrapped(self: "Game", *args, **kwargs):
                 if (
                     game_state is not None
                     and self.state != game_state
@@ -127,7 +138,7 @@ def ignore_if_not(
         else:
 
             @functools.wraps(method)
-            def wrapped(self, coord, *args, **kwargs):
+            def wrapped(self: "Game", coord: Coord_T, *args, **kwargs):
                 if (
                     game_state is not None
                     and self.state != game_state
@@ -139,6 +150,24 @@ def ignore_if_not(
         return wrapped
 
     return decorator
+
+
+def _check_game_started(method: Callable) -> Callable:
+    """Check the game has been started, raising an error if not."""
+
+    @functools.wraps(method)
+    def wrapped(self: "Game", *args, **kwargs):
+        if self.state is GameState.READY:
+            raise GameNotStartedError("Minefield not yet created")
+        assert self.mf is not None
+        assert self.start_time is not None
+        return method(self, *args, **kwargs)
+
+    return wrapped
+
+
+class GameNotStartedError(Exception):
+    """Game has not been started, so no minefield has been created."""
 
 
 class Game:
@@ -154,7 +183,7 @@ class Game:
         x_size: Optional[int] = None,
         y_size: Optional[int] = None,
         mines: Optional[int] = None,
-        per_cell: Optional[int] = 1,
+        per_cell: int = 1,
         lives: int = 1,
         first_success: bool = False,
         minefield: Optional[Minefield] = None,
@@ -193,6 +222,10 @@ class Game:
             first_success = False
             self.mf = minefield
         else:
+            if x_size is None or y_size is None or mines is None:
+                raise ValueError(
+                    "x_size, y_size and mines must be integers if a minefield is not provided"
+                )
             Minefield.check_enough_space(
                 x_size=x_size, y_size=y_size, mines=mines, per_cell=per_cell
             )
@@ -211,16 +244,14 @@ class Game:
         self.lives_remaining: int = self.lives
         self._cell_updates: Dict[Coord_T, CellContentsType] = dict()
 
+    @_check_game_started
     def get_rem_3bv(self) -> int:
         """
         Calculate the minimum remaining number of clicks needed to solve.
         """
         if self.state == GameState.WON:
             return 0
-        elif self.state == GameState.READY:
-            return self.mf.bbbv
         else:
-            pass
             # TODO
             # lost_mf = Minefield(auto_create=False, **self.settings)
             # lost_mf.mine_coords = self.mf.mine_coords
@@ -237,21 +268,21 @@ class Game:
             # completed_3bv = len({c for c in where_coords(self.grid >= 0)
             #                      if c not in rem_opening_coords})
             # return lost_mf.get_3bv() - completed_3bv
+            return -100
 
+    @_check_game_started
     def get_prop_complete(self) -> float:
         """
         Calculate the progress of solving the board using 3bv.
         """
         return (self.mf.bbbv - self.get_rem_3bv()) / self.mf.bbbv
 
+    @_check_game_started
     def get_3bvps(self) -> float:
         """
         Calculate the 3bv/s based on current progress.
         """
-        if self.start_time:
-            return (
-                self.mf.bbbv * self.get_prop_complete() / (tm.time() - self.start_time)
-            )
+        return self.mf.bbbv * self.get_prop_complete() / (tm.time() - self.start_time)
 
     def get_elapsed(self) -> float:
         """
@@ -420,8 +451,8 @@ class Game:
                 ):
                     self._set_cell(c, CellFlag(self.mf[c]))
 
-    @check_coord
-    @ignore_if_not(game_state=("READY", "ACTIVE"), cell_state=CellUnclicked)
+    @_check_coord
+    @_ignore_if_not(game_state=("READY", "ACTIVE"), cell_state=CellUnclicked)
     def select_cell(self, coord: Coord_T) -> Dict[Coord_T, CellContentsType]:
         """
         Perform the action of selecting/clicking a cell. Game must be started
@@ -440,8 +471,10 @@ class Game:
         finally:
             self._cell_updates = dict()
 
-    @check_coord
-    @ignore_if_not(game_state=("READY", "ACTIVE"), cell_state=(CellFlag, CellUnclicked))
+    @_check_coord
+    @_ignore_if_not(
+        game_state=("READY", "ACTIVE"), cell_state=(CellFlag, CellUnclicked)
+    )
     def set_cell_flags(
         self, coord: Coord_T, nr_flags: int
     ) -> Dict[Coord_T, CellContentsType]:
@@ -466,8 +499,8 @@ class Game:
         finally:
             self._cell_updates = dict()
 
-    @check_coord
-    @ignore_if_not(game_state="ACTIVE", cell_state=CellNum)
+    @_check_coord
+    @_ignore_if_not(game_state="ACTIVE", cell_state=CellNum)
     def chord_on_cell(self, coord: Coord_T) -> Dict[Coord_T, CellContentsType]:
         """Chord on a cell that contains a revealed number."""
         nbrs = self.board.get_nbrs(coord)
@@ -482,7 +515,7 @@ class Game:
 
         unclicked_nbrs = [c for c in nbrs if self.board[c] is CellUnclicked()]
         if self.board[coord] != CellNum(num_flagged_nbrs) or not unclicked_nbrs:
-            return
+            return dict()
 
         logger.info("Successful chording, selecting cells %s", unclicked_nbrs)
         for c in unclicked_nbrs:

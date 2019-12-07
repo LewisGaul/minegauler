@@ -10,7 +10,7 @@ TODO
 __all__ = ("GameOptsStruct", "Grid", "StructConstructorMixin")
 
 import logging
-from typing import Iterable
+from typing import Any, Iterable, List
 
 import attr
 
@@ -84,7 +84,7 @@ class Grid(list):
         List of all coordinates in the grid.
     """
 
-    def __init__(self, x_size, y_size, *, fill=0):
+    def __init__(self, x_size: int, y_size: int, *, fill: Any = 0):
         """
         Arguments:
         x_size (int > 0)
@@ -98,8 +98,11 @@ class Grid(list):
         for j in range(y_size):
             row = x_size * [fill]
             self.append(row)
-        self.x_size, self.y_size = x_size, y_size
-        self.all_coords = [(x, y) for x in range(x_size) for y in range(y_size)]
+        self.x_size: int = x_size
+        self.y_size: int = y_size
+        self.all_coords: List[Coord_T] = [
+            (x, y) for x in range(x_size) for y in range(y_size)
+        ]
 
     def __repr__(self):
         return f"<{self.x_size}x{self.y_size} grid>"

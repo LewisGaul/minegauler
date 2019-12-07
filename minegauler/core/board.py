@@ -13,7 +13,7 @@ Minefield (class)
 __all__ = ("Board", "Minefield")
 
 import random as rnd
-from typing import Iterable, List, Optional, Union
+from typing import Collection, Iterable, List, Optional, Union
 
 from ..types import CellContentsType, CellFlag, CellMineType, CellNum, CellUnclicked
 from ..typing import Coord_T
@@ -129,7 +129,7 @@ class Minefield(utils.Grid):
         # The successfully completed board for the minefield.
         self.completed_board: Board
         # Groups of cells that form the board openings.
-        self.openings: Iterable[Iterable[Coord_T]]
+        self.openings: Collection[Collection[Coord_T]]
         # The 3bv of the minefield.
         self.bbbv: int
 
@@ -183,7 +183,7 @@ class Minefield(utils.Grid):
         return cls.from_grid(utils.Grid.from_2d_array(array), per_cell=per_cell)
 
     def _choose_mine_coords(
-        self, safe_coords: Optional[List[Coord_T]] = None
+        self, safe_coords: Optional[Iterable[Coord_T]] = None
     ) -> List[Coord_T]:
         """
         Randomly choose coordinates for mines to be in.
@@ -197,12 +197,13 @@ class Minefield(utils.Grid):
         :raise ValueError:
             If the number of mines is too high to fit in the grid.
         """
+        safe_coords = set(safe_coords) if safe_coords else None
         self.check_enough_space(
             x_size=self.x_size,
             y_size=self.y_size,
             mines=self.nr_mines,
             per_cell=self.per_cell,
-            nr_safe_cells=len(set(safe_coords)) if safe_coords else 1,
+            nr_safe_cells=len(safe_coords) if safe_coords else 1,
         )
 
         # Get a list of coordinates which can have mines placed in them.
@@ -275,9 +276,11 @@ class Minefield(utils.Grid):
 
     def _find_openings(self) -> List[List[Coord_T]]:
         """
-        Find the openings of the board. A list of openings is stored, each
-        represented as a list of coordinates belonging to that opening.
-        Note that each cell cannot belong to multiple openings.
+        Find the openings of the board.
+
+        A list of openings is stored, each represented as a list of
+        coordinates belonging to that opening. Note that each cell
+        cannot belong to multiple openings.
         """
         openings = []
         blanks_to_check = {

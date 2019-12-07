@@ -190,10 +190,9 @@ class MinegaulerGUI(BaseMainWindow):
         :param ctrlr:
             The core controller.
         """
-        self.ctrlr: api.AbstractController = ctrlr
+        self.ctrlr: api.AbstractSwitchingController = ctrlr
         self.gui_opts: utils.GuiOptsStruct
         self.game_opts: core.utils.GameOptsStruct  # TODO: This is wrong.
-        self._minefield_widget: MinefieldWidget
 
         if gui_opts:
             self.gui_opts = gui_opts.copy()
@@ -207,8 +206,8 @@ class MinegaulerGUI(BaseMainWindow):
         # TODO: Something's not right, this should come first...
         super().__init__("MineGauler")
 
-        self._panel_widget = PanelWidget(self, ctrlr, self.game_opts.mines)
-        self._minefield_widget = MinefieldWidget(
+        self._panel_widget: PanelWidget = PanelWidget(self, ctrlr, self.game_opts.mines)
+        self._minefield_widget: MinefieldWidget = MinefieldWidget(
             self,
             ctrlr,
             btn_size=self.gui_opts.btn_size,

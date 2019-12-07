@@ -13,7 +13,7 @@ __all__ = ("MinefieldWidget",)
 
 import logging
 import sys
-from typing import Dict, Optional
+from typing import Dict, Optional, Set
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QPainter, QPixmap
@@ -159,7 +159,7 @@ class MinefieldWidget(QGraphicsView):
         self.was_double_left_click = False
         self.unflag_on_right_drag = False
         # Set of coords for cells which are sunken.
-        self.sunken_cells = set()
+        self.sunken_cells: Set = set()
 
         self._ignore_clicks = False
         self._game_state = GameState.READY
@@ -405,11 +405,10 @@ class MinefieldWidget(QGraphicsView):
         x, y = coord
         return 0 <= x < self.x_size and 0 <= y < self.y_size
 
-    def coord_from_event(self, event) -> Coord_T:
+    def coord_from_event(self, event) -> Optional[Coord_T]:
         coord = event.x() // self.btn_size, event.y() // self.btn_size
         if not self.is_coord_in_grid(coord):
-            coord = None
-
+            return None
         return coord
 
     def reset(self) -> None:
@@ -498,9 +497,10 @@ class MinefieldWidget(QGraphicsView):
 
 
 if __name__ == "__main__":
-    from minegauler.core import Controller, GameOptsStruct, Board
+    from minegauler.core import BaseController
+    from minegauler.core.utils import GameOptsStruct
 
     app = QApplication(sys.argv)
-    mf_widget = MinefieldWidget(None, Controller(GameOptsStruct()), btn_size=100)
+    mf_widget = MinefieldWidget(None, BaseController(GameOptsStruct()), btn_size=100)
     mf_widget.show()
     sys.exit(app.exec_())

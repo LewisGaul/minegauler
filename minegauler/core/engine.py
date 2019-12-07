@@ -26,7 +26,9 @@ from ..types import (
     UIMode,
 )
 from ..typing import Coord_T
-from . import api, board, game, utils
+from . import api
+from . import board as brd
+from . import game, utils
 
 
 logger = logging.getLogger(__name__)
@@ -85,7 +87,7 @@ class BaseController(api.AbstractSwitchingController):
     # Delegated abstractmethods
     # ----------------------------------
     @property
-    def board(self) -> board.Board:
+    def board(self) -> brd.Board:
         return self._active_ctrlr.board
 
     def new_game(self) -> None:
@@ -141,14 +143,20 @@ class GameController(api.AbstractController):
         """
         super().__init__(opts, notif=notif)
 
-        self._game: Optional[game.Game] = None
+        self._game = game.Game(
+            x_size=self.opts.x_size,
+            y_size=self.opts.y_size,
+            mines=self.opts.mines,
+            per_cell=self.opts.per_cell,
+            lives=self.opts.lives,
+            first_success=self.opts.first_success,
+        )
+        self._notif.set_mines(self.opts.mines)
+        self._send_reset_update()
         self._last_update: _SharedInfo
 
-        self._notif.set_mines(self.opts.mines)
-        self.new_game()
-
     @property
-    def board(self) -> board.Board:
+    def board(self) -> brd.Board:
         return self._game.board
 
     # --------------------------------------------------------------------------
@@ -262,7 +270,6 @@ class GameController(api.AbstractController):
     def _send_reset_update(self) -> None:
         self._notif.reset()
         self._last_update = _SharedInfo()
-        self._cells_updated = dict()
 
     def _send_resize_update(self) -> None:
         self._notif.resize(self.opts.x_size, self.opts.y_size)
@@ -302,19 +309,19 @@ class CreateController(api.AbstractController):
         self, opts: utils.GameOptsStruct, *, notif: Optional[api.Caller] = None
     ):
         super().__init__(opts, notif=notif)
-        self._board: board.Board = board.Board(self.opts.x_size, self.opts.y_size)
+        self._board: brd.Board = brd.Board(self.opts.x_size, self.opts.y_size)
         self._flags: int = 0
         self._notif.set_mines(self._flags)
         self._notif.reset()
 
     @property
-    def board(self) -> board.Board:
+    def board(self) -> brd.Board:
         return self._board
 
     def new_game(self) -> None:
         """See AbstractController."""
         super().new_game()
-        self._board = board.Board(self.opts.x_size, self.opts.y_size)
+        self._board = brd.Board(self.opts.x_size, self.opts.y_size)
         self._flags = 0
         self._notif.reset()
 

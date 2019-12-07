@@ -18,7 +18,7 @@ import abc
 import logging
 from typing import Callable, Dict, Iterable, List, Optional
 
-from ..core import board
+from ..core import board as brd
 from ..types import CellContentsType, GameState, UIMode
 from ..typing import Coord_T
 from . import utils
@@ -39,7 +39,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def resize(self, x_size: int, y_size: int, mines: int) -> None:
+    def resize(self, x_size: int, y_size: int) -> None:
         """
         Called to indicate the board is being changed.
 
@@ -47,8 +47,6 @@ class AbstractListener(metaclass=abc.ABCMeta):
             The number of rows.
         :param y_size:
             The number of columns.
-        :param mines:
-            The number of mines.
         """
         return NotImplemented
 
@@ -299,7 +297,7 @@ class AbstractController(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def board(self) -> board.Board:
+    def board(self) -> brd.Board:
         return NotImplemented
 
     # --------------------------------------------------------------------------

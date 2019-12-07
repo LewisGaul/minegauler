@@ -21,7 +21,7 @@ gui = None
 
 
 def create_gui(
-    ctrlr: api.AbstractController,
+    ctrlr: api.AbstractSwitchingController,
     gui_opts: utils.GuiOptsStruct,
     game_opts: core.utils.GameOptsStruct,
 ):

@@ -236,9 +236,10 @@ class Timer(QTimer):
 
 
 if __name__ == "__main__":
-    from minegauler.core import Controller, GameOptsStruct
+    from minegauler.core import BaseController
+    from minegauler.core.utils import GameOptsStruct
 
     app = QApplication(sys.argv)
-    panel_widget = PanelWidget(None, Controller(GameOptsStruct()))
+    panel_widget = PanelWidget(None, BaseController(GameOptsStruct()), 123)
     panel_widget.show()
     sys.exit(app.exec_())
