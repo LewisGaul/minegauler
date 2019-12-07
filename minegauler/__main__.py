@@ -7,7 +7,8 @@ December 2018, Lewis Gaul
 import logging
 import sys
 
-from minegauler import core, frontend, utils
+from . import core, frontend, utils
+from ._version import __version__
 
 
 logger = logging.getLogger(__name__)

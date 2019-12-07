@@ -16,3 +16,4 @@ htmlcov/
 *.log
 *.ipynb
 .ipynb_checkpoints/
+.mypy_cache/

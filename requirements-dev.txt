@@ -2,6 +2,7 @@
 
 appdirs==1.4.3
 black==19.10b0
+bump2version==0.5.11
 Click==7.0
 coverage==4.5.4
 importlib-metadata==1.1.0
