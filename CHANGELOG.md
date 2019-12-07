@@ -16,6 +16,10 @@ All notable changes to this project will be documented in this file.
  - Ensure GUI window is the correct size for beginner mode
 
 
+## 4.0.0-a1 (2019-12-07)
+ - Minor code/project improvements
+
+
 ## 4.0.0-a0 (2019-12-03)
 
 First point of tracking for rewrite coming under version 4.0.
