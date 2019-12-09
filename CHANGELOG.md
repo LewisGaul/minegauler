@@ -8,12 +8,15 @@ All notable changes to this project will be documented in this file.
 ### Additions
  - Ability to save and load created boards
  - Option of having multiple lives
- - Ability to specify custom board sizes
  - Entries in the 'Help' menu
  - Button styles
 
 ### Fixes
  - Ensure GUI window is the correct size for beginner mode
+
+
+## 4.0.1-a0 (2019-12-09)
+ - Ability to specify custom board sizes
 
 
 ## 4.0.0-a1 (2019-12-07)
