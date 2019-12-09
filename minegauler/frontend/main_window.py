@@ -92,7 +92,7 @@ class BaseMainWindow(QMainWindow):
             self.set_body_widget(self._body_widget)
         if self._footer_widget is not None:
             self.set_footer_widget(self._footer_widget)
-        # Keep track of all subwindows that are open.
+        # Keep track of all non-modal subwindows that are open.
         self._open_subwindows: Dict[Type[QWidget], QWidget] = {}
 
     # --------------------------------------------------------------------------
@@ -371,14 +371,13 @@ class MinegaulerGUI(BaseMainWindow):
         self.update_size()
 
     def _open_custom_board_modal(self) -> None:
-        window = _CustomBoardModal(
+        _CustomBoardModal(
             self,
             self._game_opts.x_size,
             self._game_opts.y_size,
             self._game_opts.mines,
             self._ctrlr.resize_board,
-        )
-        self._open_subwindows[type(window)] = window
+        ).show()
 
     def get_panel_widget(self) -> PanelWidget:
         return self._panel_widget
@@ -409,7 +408,6 @@ class _CustomBoardModal(QDialog):
         self._callback: Callable = callback
         self.setModal(True)
         self.setup_ui()
-        self.show()
 
     def setup_ui(self) -> None:
         """Set up the UI."""
