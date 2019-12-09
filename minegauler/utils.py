@@ -75,12 +75,14 @@ def write_settings_to_file(settings: PersistSettingsStruct) -> None:
 
 
 def get_difficulty(x_size: int, y_size: int, mines: int) -> str:
+    """Get the difficulty code based on the board dimensions and mines."""
     if x_size == 8 and y_size == 8 and mines == 10:
         return "B"
-    if x_size == 16 and y_size == 16 and mines == 40:
+    elif x_size == 16 and y_size == 16 and mines == 40:
         return "I"
-    if x_size == 30 and y_size == 16 and mines == 99:
+    elif x_size == 30 and y_size == 16 and mines == 99:
         return "E"
-    if x_size == 30 and y_size == 30 and mines == 200:
+    elif x_size == 30 and y_size == 30 and mines == 200:
         return "M"
-    return "C"
+    else:
+        return "C"

@@ -53,12 +53,14 @@ class Listener(AbstractListener):
         :param y_size:
             The number of columns.
         """
+        self._gui.update_game_opts(x_size=x_size, y_size=y_size)
         self._mf_widget.resize(x_size, y_size)
 
     def set_mines(self, mines: int) -> None:
         """
         Called to indicate the default number of mines has changed.
         """
+        self._gui.update_game_opts(mines=mines)
         self._panel_widget.set_mines(mines)
 
     def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
@@ -89,3 +91,4 @@ class Listener(AbstractListener):
             "".join(traceback.format_exception(None, exc, exc.__traceback__)),
             exc,
         )
+        raise RuntimeError(exc)

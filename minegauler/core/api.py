@@ -346,7 +346,7 @@ class AbstractController(metaclass=abc.ABCMeta):
         self._logger.info("Flags in cell %s being removed", coord)
 
     @abc.abstractmethod
-    def resize_board(self, *, x_size: int, y_size: int, mines: int) -> None:
+    def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
         """
         Resize the board and/or change the number of mines.
         """

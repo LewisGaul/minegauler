@@ -108,7 +108,7 @@ class BaseController(api.AbstractSwitchingController):
     def remove_cell_flags(self, coord: Coord_T) -> None:
         self._active_ctrlr.remove_cell_flags(coord)
 
-    def resize_board(self, *, x_size: int, y_size: int, mines: int) -> None:
+    def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
         self.opts.x_size = x_size
         self.opts.y_size = y_size
         self.opts.mines = mines
@@ -218,7 +218,7 @@ class GameController(api.AbstractController):
         cells = self._game.chord_on_cell(coord)
         self._send_updates(cells)
 
-    def resize_board(self, *, x_size: int, y_size: int, mines: int) -> None:
+    def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
         """See AbstractController."""
         super().resize_board(x_size=x_size, y_size=y_size, mines=mines)
         if (
@@ -376,7 +376,7 @@ class CreateController(api.AbstractController):
         self._notif.update_cells({coord: self._board[coord]})
         self._notif.update_mines_remaining(self._flags)
 
-    def resize_board(self, *, x_size: int, y_size: int, mines: int) -> None:
+    def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
         super().resize_board(x_size=x_size, y_size=y_size, mines=mines)
         if x_size == self.opts.x_size and y_size == self.opts.y_size:
             logger.info(

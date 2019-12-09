@@ -14,18 +14,24 @@ MinegaulerGUI
 __all__ = ("MinegaulerGUI",)
 
 import logging
-from typing import Optional
+from typing import Callable, Dict, Optional, Type
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QAction,
     QActionGroup,
+    QDialog,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
+    QLabel,
     QMainWindow,
     QMenuBar,
+    QPushButton,
     QSizePolicy,
+    QSlider,
+    QSpinBox,
     QVBoxLayout,
     QWidget,
 )
@@ -87,7 +93,7 @@ class BaseMainWindow(QMainWindow):
         if self._footer_widget is not None:
             self.set_footer_widget(self._footer_widget)
         # Keep track of all subwindows that are open.
-        self._open_subwindows = {}
+        self._open_subwindows: Dict[Type[QWidget], QWidget] = {}
 
     # --------------------------------------------------------------------------
     # UI setup
@@ -190,29 +196,31 @@ class MinegaulerGUI(BaseMainWindow):
         :param ctrlr:
             The core controller.
         """
-        self.ctrlr: api.AbstractSwitchingController = ctrlr
-        self.gui_opts: utils.GuiOptsStruct
-        self.game_opts: core.utils.GameOptsStruct  # TODO: This is wrong.
+        self._ctrlr: api.AbstractSwitchingController = ctrlr
+        self._gui_opts: utils.GuiOptsStruct
+        self._game_opts: core.utils.GameOptsStruct  # TODO: This is wrong.
 
         if gui_opts:
-            self.gui_opts = gui_opts.copy()
+            self._gui_opts = gui_opts.copy()
         else:
-            self.gui_opts = utils.GuiOptsStruct(drag_select=False)
+            self._gui_opts = utils.GuiOptsStruct(drag_select=False)
         if game_opts:
-            self.game_opts = game_opts.copy()
+            self._game_opts = game_opts.copy()
         else:
-            self.game_opts = core.utils.GameOptsStruct()
+            self._game_opts = core.utils.GameOptsStruct()
 
         # TODO: Something's not right, this should come first...
         super().__init__("MineGauler")
 
-        self._panel_widget: PanelWidget = PanelWidget(self, ctrlr, self.game_opts.mines)
+        self._panel_widget: PanelWidget = PanelWidget(
+            self, ctrlr, self._game_opts.mines
+        )
         self._minefield_widget: MinefieldWidget = MinefieldWidget(
             self,
             ctrlr,
-            btn_size=self.gui_opts.btn_size,
-            styles=self.gui_opts.styles,
-            drag_select=self.gui_opts.drag_select,
+            btn_size=self._gui_opts.btn_size,
+            styles=self._gui_opts.styles,
+            drag_select=self._gui_opts.drag_select,
         )
         self.set_panel_widget(self._panel_widget)
         self.set_body_widget(self._minefield_widget)
@@ -227,17 +235,17 @@ class MinegaulerGUI(BaseMainWindow):
         # Game menu
         # ----------
         # New game (F2)
-        new_game_act = self._game_menu.addAction("New game", self.ctrlr.new_game)
+        new_game_act = self._game_menu.addAction("New game", self._ctrlr.new_game)
         new_game_act.setShortcut("F2")
 
         # Replay game (F3)
-        replay_act = self._game_menu.addAction("Replay", self.ctrlr.restart_game)
+        replay_act = self._game_menu.addAction("Replay", self._ctrlr.restart_game)
         replay_act.setShortcut("F3")
 
         # Create board
         def switch_create_mode(checked: bool):
             mode = UIMode.CREATE if checked else UIMode.GAME
-            self.ctrlr.switch_mode(mode)
+            self._ctrlr.switch_mode(mode)
 
         create_act = QAction("Create board", self, checkable=True, checked=False)
         self._game_menu.addAction(create_act)
@@ -269,12 +277,12 @@ class MinegaulerGUI(BaseMainWindow):
         # - Master (m)
         # - Custom (c)
         diff_group = QActionGroup(self, exclusive=True)
-        for diff in ["Beginner", "Intermediate", "Expert", "Master"]:  # , 'Custom']:
+        for diff in ["Beginner", "Intermediate", "Expert", "Master", "Custom"]:
             diff_act = QAction(diff, diff_group, checkable=True)
             self._game_menu.addAction(diff_act)
             diff_act.id = diff[0]
             if diff_act.id == get_difficulty(
-                self.game_opts.x_size, self.game_opts.y_size, self.game_opts.mines
+                self._game_opts.x_size, self._game_opts.y_size, self._game_opts.mines
             ):
                 diff_act.setChecked(True)
             diff_act.triggered.connect(
@@ -301,29 +309,29 @@ class MinegaulerGUI(BaseMainWindow):
         # ----------
         # First-click success
         def toggle_first_success():
-            self.game_opts.first_success = not self.game_opts.first_success
-            self.ctrlr.set_first_success(self.game_opts.first_success)
+            self._game_opts.first_success = not self._game_opts.first_success
+            self._ctrlr.set_first_success(self._game_opts.first_success)
 
         first_act = QAction(
-            "Safe start", self, checkable=True, checked=self.game_opts.first_success
+            "Safe start", self, checkable=True, checked=self._game_opts.first_success
         )
         self._opts_menu.addAction(first_act)
         first_act.triggered.connect(toggle_first_success)
 
         # Drag select
         def toggle_drag_select():
-            self.gui_opts.drag_select = not self.gui_opts.drag_select
-            self._minefield_widget.drag_select = self.gui_opts.drag_select
+            self._gui_opts.drag_select = not self._gui_opts.drag_select
+            self._minefield_widget.drag_select = self._gui_opts.drag_select
 
         drag_act = self._opts_menu.addAction("Drag select", toggle_drag_select)
         drag_act.setCheckable(True)
-        drag_act.setChecked(self.gui_opts.drag_select)
+        drag_act.setChecked(self._gui_opts.drag_select)
 
         # Max mines per cell option
         def get_change_per_cell_func(n):
             def change_per_cell():
-                self.game_opts.per_cell = n
-                self.ctrlr.set_per_cell(n)
+                self._game_opts.per_cell = n
+                self._ctrlr.set_per_cell(n)
 
             return change_per_cell
 
@@ -334,7 +342,7 @@ class MinegaulerGUI(BaseMainWindow):
             action = QAction(str(i), self, checkable=True)
             per_cell_menu.addAction(action)
             per_cell_group.addAction(action)
-            if self.game_opts.per_cell == i:
+            if self._game_opts.per_cell == i:
                 action.setChecked(True)
             action.triggered.connect(get_change_per_cell_func(i))
 
@@ -352,14 +360,141 @@ class MinegaulerGUI(BaseMainWindow):
             x, y, m = 30, 16, 99
         elif id_ == "M":
             x, y, m = 30, 30, 200
+        elif id_ == "C":
+            logger.info("Opening popup window for selecting custom board")
+            self._open_custom_board_modal()
+            return
         else:
             raise ValueError(f"Unrecognised difficulty '{id_}'")
 
-        self.ctrlr.resize_board(x_size=x, y_size=y, mines=m)
+        self._ctrlr.resize_board(x_size=x, y_size=y, mines=m)
         self.update_size()
+
+    def _open_custom_board_modal(self) -> None:
+        window = _CustomBoardModal(
+            self,
+            self._game_opts.x_size,
+            self._game_opts.y_size,
+            self._game_opts.mines,
+            self._ctrlr.resize_board,
+        )
+        self._open_subwindows[type(window)] = window
 
     def get_panel_widget(self) -> PanelWidget:
         return self._panel_widget
 
     def get_mf_widget(self) -> MinefieldWidget:
         return self._minefield_widget
+
+    def update_game_opts(self, **kwargs) -> None:
+        """Update the stored game options."""
+        # TODO: Should this API even exist? :/
+        for k, v in kwargs.items():
+            setattr(self._game_opts, k, v)
+
+    def get_gui_opts(self) -> utils.GuiOptsStruct:
+        return self._gui_opts
+
+
+class _CustomBoardModal(QDialog):
+    """A popup window to select custom board dimensions."""
+
+    def __init__(
+        self, parent: QWidget, cols: int, rows: int, mines: int, callback: Callable
+    ):
+        super().__init__(parent)
+        self._cols: int = cols
+        self._rows: int = rows
+        self._mines: int = mines
+        self._callback: Callable = callback
+        self.setModal(True)
+        self.setup_ui()
+        self.show()
+
+    def setup_ui(self) -> None:
+        """Set up the UI."""
+        base_layout = QVBoxLayout(self)
+        base_layout.addWidget(
+            QLabel("Select the number of rows, columns and mines.", self)
+        )
+
+        # Set up the input sliders and spin boxes.
+        grid_layout = QGridLayout()
+        base_layout.addLayout(grid_layout)
+
+        def make_row(
+            row: int, label: str, current: int, minval: int, maxval: int
+        ) -> _SliderSpinner:
+            grid_layout.addWidget(QLabel(label, self), row, 0)
+            slider = _SliderSpinner(self)
+            grid_layout.addWidget(slider, row, 1)
+            slider.setValue(current)
+            slider.setMinimum(minval)
+            slider.setMaximum(maxval)
+            return slider
+
+        y_slider = make_row(1, "Rows", self._rows, 2, 50)
+        x_slider = make_row(2, "Columns", self._cols, 2, 50)
+        m_slider = make_row(3, "Mines", self._mines, 1, self._rows * self._cols - 1)
+
+        def set_mines_max():
+            m_slider.setMaximum(x_slider.value() * y_slider.value() - 1)
+
+        x_slider.valueChanged.connect(set_mines_max)
+        y_slider.valueChanged.connect(set_mines_max)
+
+        # Ok/Cancel buttons.
+        def ok_pressed():
+            self._callback(x_slider.value(), y_slider.value(), m_slider.value())
+            self.close()
+
+        ok_btn = QPushButton("Ok", self)
+        ok_btn.pressed.connect(ok_pressed)
+        cancel_btn = QPushButton("Cancel", self)
+        cancel_btn.pressed.connect(self.close)
+        btns_layout = QHBoxLayout()
+        base_layout.addLayout(btns_layout)
+        btns_layout.addWidget(ok_btn)
+        btns_layout.addWidget(cancel_btn)
+
+
+class _SliderSpinner(QWidget):
+    """A combination of a slider and a spinbox."""
+
+    valueChanged = pyqtSignal(int)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.slider = QSlider(Qt.Horizontal)
+        self.numbox = QSpinBox()
+        self.numbox.setRange(self.slider.minimum(), self.slider.maximum())
+        self.numbox.setFixedWidth(50)
+        self.slider.valueChanged.connect(self.numbox.setValue)
+        self.slider.rangeChanged.connect(self.numbox.setRange)
+        self.numbox.valueChanged.connect(self.slider.setValue)
+        self.slider.valueChanged.connect(self.valueChanged.emit)
+        self.valueChanged.connect(self.setValue)
+        layout = QHBoxLayout(self)
+        layout.addWidget(self.slider)
+        layout.addWidget(self.numbox)
+
+    def setMinimum(self, minval: int):
+        self.slider.setMinimum(minval)
+
+    def setMaximum(self, maxval: int):
+        self.slider.setMaximum(maxval)
+
+    def setValue(self, value: int):
+        self.slider.setValue(value)
+
+    def value(self) -> int:
+        return self.slider.value()
+
+
+if __name__ == "__main__":
+    from PyQt5.QtWidgets import QApplication
+    import sys
+
+    app = QApplication(sys.argv)
+    widget = _CustomBoardModal(None, 10, 20, 30, lambda x, y, z: print(x, y, z))
+    app.exec()
