@@ -47,7 +47,7 @@ from .panel import PanelWidget
 logger = logging.getLogger(__name__)
 
 
-class BaseMainWindow(QMainWindow):
+class _BaseMainWindow(QMainWindow):
     """
     Base class for the application implementing the general layout.
     """
@@ -185,7 +185,9 @@ class BaseMainWindow(QMainWindow):
         self.adjustSize()
 
 
-class MinegaulerGUI(BaseMainWindow):
+class MinegaulerGUI(_BaseMainWindow):
+    """The main Minegauler GUI window."""
+
     def __init__(
         self,
         ctrlr: api.AbstractSwitchingController,
@@ -402,6 +404,7 @@ class _CustomBoardModal(QDialog):
         self, parent: QWidget, cols: int, rows: int, mines: int, callback: Callable
     ):
         super().__init__(parent)
+        self.setWindowTitle("Custom")
         self._cols: int = cols
         self._rows: int = rows
         self._mines: int = mines
