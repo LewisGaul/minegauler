@@ -15,7 +15,7 @@ import sys
 from typing import Optional, Union
 
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QColor, QFont, QPalette, QPixmap
 from PyQt5.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QWidget
 
 from ..types import FaceState, GameState
@@ -55,9 +55,7 @@ class PanelWidget(QWidget):
         layout.setContentsMargins(6, 2, 6, 2)
         layout.setAlignment(Qt.AlignCenter)
         # Mine counter widget.
-        self.mines_counter = QLabel(self)
-        self.mines_counter.setFixedSize(39, 26)
-        self.mines_counter.setStyleSheet(self.get_counter_stylesheet())
+        self.mines_counter = _CounterWidget(self)
         layout.addWidget(self.mines_counter)
         self.set_mines_counter(self._mines)
         layout.addStretch()
@@ -73,15 +71,6 @@ class PanelWidget(QWidget):
         # Timer widget.
         self.timer = Timer(self)
         layout.addWidget(self.timer.widget)
-
-    @staticmethod
-    def get_counter_stylesheet(positive: bool = True) -> str:
-        return f"""
-            color: {"red" if positive else "black"};
-            background: {"black" if positive else "red"};
-            font: bold 14px Tahoma;
-            padding-left: 1px;
-            """
 
     # --------------------------------------------------------------------------
     # Qt method overrides
@@ -155,8 +144,7 @@ class PanelWidget(QWidget):
         the widget itself can have no way of knowing how many mines are left to
         be found.
         """
-        self.mines_counter.setStyleSheet(self.get_counter_stylesheet(num > 0))
-        self.mines_counter.setText(f"{min(999, abs(num)):03d}")
+        self.mines_counter.set_count(num)
 
     def update_game_state(self, state: GameState) -> None:
         """
@@ -177,14 +165,54 @@ class PanelWidget(QWidget):
                 self.set_face(state)
 
 
+class _CounterWidget(QLabel):
+    """A widget template for the counters."""
+
+    def __init__(self, parent: QWidget, count: int = 0):
+        super().__init__(parent)
+        self.setFrameShadow(QFrame.Sunken)
+        self.setFrameShape(QFrame.Panel)
+        self.setLineWidth(2)
+        self.setFixedSize(39, 26)
+        self.setAutoFillBackground(True)
+        self._palette = QPalette()
+        self._palette.setColor(QPalette.Window, QColor("black"))
+        self._palette.setColor(QPalette.WindowText, QColor("red"))
+        self.setPalette(self._palette)
+        self._font = QFont()
+        self._font.setFamily("Helvetica")
+        self._font.setPixelSize(13)
+        self._font.setBold(True)
+        self.setFont(self._font)
+        self._count = count
+        self.set_count(self._count)
+
+    def set_count(self, count: int) -> None:
+        """Set the value of the counter."""
+        self.setText(f"{min(999, abs(count)):03d}")
+        if count < 0:
+            self._invert(False)
+        else:
+            self._invert(True)
+        self._count = count
+
+    def _invert(self, normal: bool = True) -> None:
+        """Invert the colours."""
+        if normal:
+            self._palette.setColor(QPalette.Window, QColor("black"))
+            self._palette.setColor(QPalette.WindowText, QColor("red"))
+        else:
+            self._palette.setColor(QPalette.Window, QColor("red"))
+            self._palette.setColor(QPalette.WindowText, QColor("black"))
+        self.setPalette(self._palette)
+
+
 class Timer(QTimer):
     """A timer for the panel."""
 
     def __init__(self, parent):
         super().__init__()
-        self.widget = QLabel("000", parent)
-        self.widget.setFixedSize(39, 26)
-        self.widget.setStyleSheet(PanelWidget.get_counter_stylesheet())
+        self.widget = _CounterWidget(parent)
         self.timeout.connect(self.update)
 
     # -------
@@ -219,5 +247,6 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     panel_widget = PanelWidget(None, BaseController(GameOptsStruct()), 123)
+    panel_widget.timer.start()
     panel_widget.show()
     sys.exit(app.exec_())
