@@ -9,6 +9,7 @@ LaTex/
 *.diff
 coverage/
 .coverage
+coverage.xml
 *,cover
 htmlcov/
 .pytest*

@@ -1,3 +1,5 @@
+[![codecov badge](https://codecov.io/gh/LewisGaul/minegauler/branch/master/graph/badge.svg)](https://codecov.io/gh/LewisGaul/minegauler/)
+
 # Minegauler
 
 Remake of the classic Minesweeper game, written in Python.
