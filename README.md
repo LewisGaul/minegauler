@@ -1,4 +1,5 @@
-[![codecov badge](https://codecov.io/gh/LewisGaul/minegauler/branch/master/graph/badge.svg)](https://codecov.io/gh/LewisGaul/minegauler/)
+[![Codecov badge](https://img.shields.io/codecov/c/github/LewisGaul/minegauler?token=85d4f08d368940708556d49c3150c06a)](https://codecov.io/gh/LewisGaul/minegauler/)
+[![Code style badge](https://img.shields.io/badge/code%20style-black-000000.svg)](https://black.readthedocs.io/en/stable/)
 
 # Minegauler
 
