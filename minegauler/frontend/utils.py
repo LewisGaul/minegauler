@@ -10,8 +10,8 @@ from typing import Dict
 import attr
 
 from minegauler import ROOT_DIR
-from minegauler.utils import StructConstructorMixin
 from minegauler.types import *
+from minegauler.utils import StructConstructorMixin
 
 
 IMG_DIR: pathlib.Path = ROOT_DIR / "images"

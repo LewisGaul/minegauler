@@ -16,6 +16,7 @@ from typing import Dict, Optional
 
 import attr
 
+from .. import utils
 from ..types import (
     CellContentsType,
     CellFlag,
@@ -29,7 +30,6 @@ from ..typing import Coord_T
 from . import api
 from . import board as brd
 from . import game, highscores
-from .. import utils
 
 
 logger = logging.getLogger(__name__)

@@ -38,7 +38,7 @@ from PyQt5.QtWidgets import (
 
 from .. import core
 from ..types import UIMode
-from ..utils import get_difficulty, GuiOptsStruct, GameOptsStruct
+from ..utils import GameOptsStruct, GuiOptsStruct, get_difficulty
 from . import api, utils
 from .minefield import MinefieldWidget
 from .panel import PanelWidget

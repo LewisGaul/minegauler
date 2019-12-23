@@ -7,7 +7,7 @@ Exports:
 TODO
 """
 
-__all__ = ("Grid")
+__all__ = ("Grid",)
 
 import logging
 from typing import Any, Iterable, List
