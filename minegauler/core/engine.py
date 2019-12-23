@@ -28,7 +28,8 @@ from ..types import (
 from ..typing import Coord_T
 from . import api
 from . import board as brd
-from . import game, utils
+from . import game, highscores
+from .. import utils
 
 
 logger = logging.getLogger(__name__)
@@ -293,6 +294,8 @@ class GameController(api.AbstractController):
         #     self._notif.update_lives_remaining(update.lives_remaining)
         if update.game_state is not self._last_update.game_state:
             self._notif.update_game_state(update.game_state)
+            if update.game_state is GameState.WON:
+                highscores.check_highscore(self._game)
         if (
             update.finish_time is not None
             and update.finish_time != self._last_update.finish_time

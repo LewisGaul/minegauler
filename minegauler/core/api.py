@@ -21,7 +21,7 @@ from typing import Callable, Dict, Iterable, List, Optional
 from ..core import board as brd
 from ..types import CellContentsType, GameState, UIMode
 from ..typing import Coord_T
-from . import utils
+from .. import utils
 
 
 class AbstractListener(metaclass=abc.ABCMeta):

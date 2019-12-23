@@ -38,7 +38,7 @@ from PyQt5.QtWidgets import (
 
 from .. import core
 from ..types import UIMode
-from ..utils import get_difficulty
+from ..utils import get_difficulty, GuiOptsStruct, GameOptsStruct
 from . import api, utils
 from .minefield import MinefieldWidget
 from .panel import PanelWidget
@@ -189,25 +189,25 @@ class MinegaulerGUI(BaseMainWindow):
     def __init__(
         self,
         ctrlr: api.AbstractSwitchingController,
-        gui_opts: utils.GuiOptsStruct = None,
-        game_opts: core.utils.GameOptsStruct = None,
+        gui_opts: GuiOptsStruct = None,
+        game_opts: GameOptsStruct = None,
     ):
         """
         :param ctrlr:
             The core controller.
         """
         self._ctrlr: api.AbstractSwitchingController = ctrlr
-        self._gui_opts: utils.GuiOptsStruct
-        self._game_opts: core.utils.GameOptsStruct  # TODO: This is wrong.
+        self._gui_opts: GuiOptsStruct
+        self._game_opts: GameOptsStruct  # TODO: This is wrong.
 
         if gui_opts:
             self._gui_opts = gui_opts.copy()
         else:
-            self._gui_opts = utils.GuiOptsStruct(drag_select=False)
+            self._gui_opts = GuiOptsStruct(drag_select=False)
         if game_opts:
             self._game_opts = game_opts.copy()
         else:
-            self._game_opts = core.utils.GameOptsStruct()
+            self._game_opts = GameOptsStruct()
 
         # TODO: Something's not right, this should come first...
         super().__init__("MineGauler")
@@ -391,7 +391,7 @@ class MinegaulerGUI(BaseMainWindow):
         for k, v in kwargs.items():
             setattr(self._game_opts, k, v)
 
-    def get_gui_opts(self) -> utils.GuiOptsStruct:
+    def get_gui_opts(self) -> GuiOptsStruct:
         return self._gui_opts
 
 

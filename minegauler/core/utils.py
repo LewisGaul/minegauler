@@ -7,7 +7,7 @@ Exports:
 TODO
 """
 
-__all__ = ("GameOptsStruct", "Grid", "StructConstructorMixin")
+__all__ = ("Grid")
 
 import logging
 from typing import Any, Iterable, List
@@ -18,57 +18,6 @@ from ..typing import Coord_T
 
 
 logger = logging.getLogger(__name__)
-
-
-class StructConstructorMixin:
-    """
-    A mixin class for creating a struct class from a dictionary or struct.
-
-    Methods:
-    _from_struct (classmethod)
-        Create an instance from another structure-like object.
-    _from_dict (classmethod)
-        Create an instance from a dictionary.
-    """
-
-    @classmethod
-    def _from_struct(cls, struct):
-        """
-        Create an instance of the structure by extracting element values from
-        an object with any of the elements as attributes. Ignores extra
-        attributes.
-        """
-        return cls._from_dict(attr.asdict(struct))
-
-    @classmethod
-    def _from_dict(cls, dict_):
-        """
-        Create an instance of the structure by extracting element values from
-        a dictionary. Ignores extra attributes.
-        """
-        args = {a: v for a, v in dict_.items() if a in attr.fields_dict(cls)}
-        return cls(**args)
-
-    def copy(self):
-        """
-        Create and return a copy of the struct instance.
-        """
-        return self._from_struct(self)
-
-
-@attr.attrs(auto_attribs=True)
-class GameOptsStruct(StructConstructorMixin):
-    """
-    Structure of game options.
-    """
-
-    x_size: int = 8
-    y_size: int = 8
-    mines: int = 10
-    first_success: bool = True
-    per_cell: int = 1
-    lives: int = 1
-    # game_mode: None = None,
 
 
 class Grid(list):

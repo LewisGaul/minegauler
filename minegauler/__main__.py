@@ -23,13 +23,13 @@ logging.basicConfig(
 read_settings = utils.read_settings_from_file()
 
 if read_settings:
-    game_opts = core.utils.GameOptsStruct._from_struct(read_settings)
-    gui_opts = frontend.utils.GuiOptsStruct._from_struct(read_settings)
+    game_opts = utils.GameOptsStruct._from_struct(read_settings)
+    gui_opts = utils.GuiOptsStruct._from_struct(read_settings)
     logger.info("Settings read from file")
 else:
     logger.info("Using default settings")
-    game_opts = core.utils.GameOptsStruct()
-    gui_opts = frontend.utils.GuiOptsStruct()
+    game_opts = utils.GameOptsStruct()
+    gui_opts = utils.GuiOptsStruct()
 logger.debug("Game options: %s", game_opts)
 logger.debug("GUI options: %s", gui_opts)
 
