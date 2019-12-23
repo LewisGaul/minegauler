@@ -175,6 +175,7 @@ class _CounterWidget(QLabel):
         self.setLineWidth(2)
         self.setFixedSize(39, 26)
         self.setAutoFillBackground(True)
+        self.setAlignment(Qt.AlignCenter)
         self._palette = QPalette()
         self._palette.setColor(QPalette.Window, QColor("black"))
         self._palette.setColor(QPalette.WindowText, QColor("red"))
