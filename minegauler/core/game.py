@@ -7,13 +7,11 @@ Exports:
 Game (class)
     Representation of a minesweeper game.
 """
+
 import functools
 import logging
 import time as tm
-import typing
 from typing import Callable, Dict, Iterable, Optional, Tuple, Union
-
-from minegauler.core import Minefield
 
 from ..types import (
     CellContentsType,
@@ -27,7 +25,7 @@ from ..types import (
     GameState,
 )
 from ..typing import Coord_T
-from .board import Board
+from .board import Board, Minefield
 
 
 logger = logging.getLogger(__name__)
