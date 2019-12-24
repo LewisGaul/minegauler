@@ -13,7 +13,7 @@ __all__ = (
 
 import os
 import sqlite3
-from typing import Iterable, Tuple
+from typing import Dict, Iterable, Optional, Tuple
 
 import attr
 
@@ -91,6 +91,55 @@ def get_highscores(settings: HighscoreSettingsStruct) -> Iterable[HighscoreStruc
         ", ".join(_highscore_fields), settings.difficulty.upper(), settings.per_cell
     )
     return cursor.execute(query).fetchall()
+
+
+def filter_and_sort(
+    highscores: Iterable[HighscoreStruct],
+    sort_key: str,
+    filters: Dict[str, Optional[str]],
+) -> Iterable[HighscoreStruct]:
+    """
+    Filter and sort an iterable of highscores.
+
+    :param highscores:
+        The iterable of highscores to filter and sort.
+    :param sort_key:
+        What to sort by.
+    :param filters:
+        What filters to apply.
+    :return:
+        A new iterable of highscores.
+    """
+    ret = []
+    filters = {k: f for k, f in filters.items() if f}
+    for hs in highscores:
+        all_pass = True
+        for key, f in filters.items():
+            if hs[key].lower() != f.lower():
+                all_pass = False
+                break
+        if all_pass:
+            # All filters satisfied.
+            ret.append(hs)
+    # Sort first by either time or 3bv/s, then by 3bv if there's a tie
+    #  (higher 3bv higher for equal time, lower for equal 3bv/s).
+    if sort_key == "time":
+        ret.sort(key=lambda h: (h.elapsed, -h.bbbv))
+    elif sort_key == "3bv/s":
+        ret.sort(key=lambda h: (h.bbbvps, -h.bbbv), reverse=True)
+    # if "name" not in filters:
+    #     # If no name filter, only include best highscore for each name.
+    #     names = []
+    #     i = 0
+    #     while i < len(ret):
+    #         hs = ret[i]
+    #         name = hs["name"].lower()
+    #         if name in names:
+    #             ret.pop(i)
+    #         else:
+    #             names.append(name)
+    #             i += 1
+    return ret
 
 
 def check_highscore(game: "core.game.Game") -> None:
