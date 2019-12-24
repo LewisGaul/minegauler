@@ -278,7 +278,8 @@ class MinegaulerGUI(_BaseMainWindow):
         # - Expert (e)
         # - Master (m)
         # - Custom (c)
-        diff_group = QActionGroup(self, exclusive=True)
+        diff_group = QActionGroup(self)
+        diff_group.setExclusive(True)
         for diff in ["Beginner", "Intermediate", "Expert", "Master", "Custom"]:
             diff_act = QAction(diff, diff_group, checkable=True)
             self._game_menu.addAction(diff_act)
@@ -338,7 +339,8 @@ class MinegaulerGUI(_BaseMainWindow):
             return change_per_cell
 
         per_cell_menu = self._opts_menu.addMenu("Max per cell")
-        per_cell_group = QActionGroup(self, exclusive=True)
+        per_cell_group = QActionGroup(self)
+        per_cell_group.setExclusive(True)
         for i in range(1, 4):
 
             action = QAction(str(i), self, checkable=True)
