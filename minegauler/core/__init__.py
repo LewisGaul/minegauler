@@ -12,11 +12,10 @@ __all__ = (
     "api",
     "board",
     "engine",
+    "game",
     "utils",
 )
 
-from minegauler.core.board import Minefield
-
-from . import api, board, engine, utils
+from . import api, board, engine, game, utils
 from .board import Minefield
 from .engine import BaseController, CreateController, GameController
