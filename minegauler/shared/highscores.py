@@ -10,8 +10,8 @@ from typing import Iterable
 
 import attr
 
-from .. import ROOT_DIR, core
-from ..utils import get_difficulty
+from minegauler import ROOT_DIR, core
+from minegauler.utils import get_difficulty
 
 
 @attr.attrs(auto_attribs=True)

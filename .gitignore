@@ -4,7 +4,7 @@ build/
 bin/
 images/raw/
 settings.cfg
-files/*.csv
+data/
 LaTex/
 *.diff
 coverage/
