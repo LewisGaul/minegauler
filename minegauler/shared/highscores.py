@@ -4,32 +4,60 @@ highscores.py - Highscores handling
 December 2019, Felix Gaul
 """
 
+__all__ = (
+    "HighscoreSettingsStruct",
+    "HighscoreStruct",
+    "check_highscore",
+    "get_highscores",
+)
+
 import os
 import sqlite3
-from typing import Iterable
+from typing import Iterable, Tuple
 
 import attr
 
-from minegauler import ROOT_DIR, core
-from minegauler.utils import get_difficulty
+from .. import ROOT_DIR, utils
 
 
 @attr.attrs(auto_attribs=True)
-class HighscoreStruct:
+class HighscoreSettingsStruct:
+    """A set of highscore settings."""
+
+    difficulty: str
+    per_cell: int
+    # TODO: add 'drag_select: bool'
+    # TODO: add 'name: str'
+
+    def __getitem__(self, item):
+        return getattr(self, item)
+
+
+@attr.attrs(auto_attribs=True)
+class HighscoreStruct(HighscoreSettingsStruct):
     """A single highscore."""
 
     timestamp: int
-    difficulty: str
-    per_cell: int
     elapsed: float
     bbbv: int
     bbbvps: float
+    # TODO: add 'flagging: float' (% cells flagged)
+
+    @classmethod
+    def from_sql_row(cls, cursor: sqlite3.Cursor, row: Tuple) -> "HighscoreStruct":
+        """Create an instance from an SQL row."""
+        return cls(**{col[0]: row[i] for i, col in enumerate(cursor.description)})
+
+    @classmethod
+    def from_iterable(cls, container: Iterable) -> "HighscoreStruct":
+        """Create an instance from an iterable."""
+        return cls(*container)
 
 
-_highscore_fields = [a.name for a in HighscoreStruct.__attrs_attrs__]
+_highscore_fields = attr.fields_dict(HighscoreStruct).keys()
 
 
-def init_db():
+def _init_db():
     db_file = ROOT_DIR / "data" / "highscores.db"
     os.makedirs(db_file.parent, exist_ok=True)
     conn = sqlite3.connect(str(db_file))
@@ -37,49 +65,61 @@ def init_db():
 
     create_table_sql = """
     CREATE TABLE IF NOT EXISTS highscores (
-        id integer PRIMARY KEY,
-        timestamp integer,
-        difficulty text,
-        per_cell integer,
-        elapsed real NOT NULL,
-        bbbv integer,
-        bbbvps real
-    );"""
-    # TODO: add drag select
+        id INTEGER PRIMARY KEY,
+        difficulty TEXT,
+        per_cell INTEGER,
+        timestamp INTEGER,
+        elapsed REAL NOT NULL,
+        bbbv INTEGER,
+        bbbvps REAL
+    )"""
     cursor.execute(create_table_sql)
 
     return conn
 
 
-def get_data(difficulty: str, per_cell: int) -> Iterable[HighscoreStruct]:
-    conn = init_db()
+def get_highscores(settings: HighscoreSettingsStruct) -> Iterable[HighscoreStruct]:
+    conn = _init_db()
+    conn.row_factory = HighscoreStruct.from_sql_row
     cursor = conn.cursor()
     query = (
         "SELECT {} "
         "FROM highscores "
-        "WHERE difficulty = '{}' AND per_cell = {} "
-        "ORDER BY elapsed DESC;"
-    ).format(", ".join(_highscore_fields), difficulty, per_cell)
-    result_list = cursor.execute(query).fetchall()
-    return [HighscoreStruct(*result) for result in result_list]
+        "WHERE difficulty='{}' AND per_cell={} "
+        "ORDER BY elapsed DESC"
+    ).format(
+        ", ".join(_highscore_fields), settings.difficulty.upper(), settings.per_cell
+    )
+    return cursor.execute(query).fetchall()
 
 
-def check_highscore(game: core.game.Game) -> None:
+def check_highscore(game: "core.game.Game") -> None:
     # Row values.
     timestamp = int(game.start_time)
-    difficulty = get_difficulty(game.mf.x_size, game.mf.y_size, game.mf.nr_mines)
+    difficulty = utils.get_difficulty(game.mf.x_size, game.mf.y_size, game.mf.nr_mines)
     per_cell = game.mf.per_cell
     hs_time = game.get_elapsed()
     bbbv = game.mf.bbbv
     bbbvps = game.get_3bvps()
     # Insert into the DB.
-    conn = init_db()
+    conn = _init_db()
     cursor = conn.cursor()
-    insert_sql = "INSERT INTO highscores ({}) " "VALUES ({});".format(
-        ", ".join(_highscore_fields), ", ".join("?" for _ in _highscore_fields)
+    insert_sql = "INSERT INTO highscores ({}) " "VALUES ({})".format(
+        ", ".join(_highscore_fields), ", ".join(f":{f}" for f in _highscore_fields)
     )
-    cursor.execute(insert_sql, (timestamp, difficulty, per_cell, hs_time, bbbv, bbbvps))
+    cursor.execute(
+        insert_sql,
+        {
+            "timestamp": timestamp,
+            "difficulty": difficulty.upper(),
+            "per_cell": per_cell,
+            # "name": "",
+            "elapsed": hs_time,
+            "bbbv": bbbv,
+            "bbbvps": bbbvps,
+        },
+    )
 
     conn.commit()
 
-    print(cursor.execute("SELECT * FROM highscores;").fetchall())
+    print(cursor.execute("SELECT * FROM highscores").fetchall())
