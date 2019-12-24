@@ -1,89 +1,85 @@
+"""
+highscores.py - Highscores handling
+
+December 2019, Felix Gaul
+"""
+
+import os
 import sqlite3
-from sqlite3 import Error
+from typing import Iterable
 
 import attr
 
-from .. import ROOT_DIR
+from .. import ROOT_DIR, core
 from ..utils import get_difficulty
 
 
 @attr.attrs(auto_attribs=True)
 class HighscoreStruct:
+    """A single highscore."""
 
-    elapsed: float
     timestamp: int
     difficulty: str
     per_cell: int
+    elapsed: float
+    bbbv: int
     bbbvps: float
+
+
+_highscore_fields = [a.name for a in HighscoreStruct.__attrs_attrs__]
 
 
 def init_db():
     db_file = ROOT_DIR / "data" / "highscores.db"
+    os.makedirs(db_file.parent, exist_ok=True)
     conn = sqlite3.connect(str(db_file))
     cursor = conn.cursor()
 
     create_table_sql = """
     CREATE TABLE IF NOT EXISTS highscores (
-            id integer PRIMARY KEY,
-            elapsed real NOT NULL, 
-            timestamp integer,
-            difficulty text,
-            per_cell integer,
-            bbbvps real
+        id integer PRIMARY KEY,
+        timestamp integer,
+        difficulty text,
+        per_cell integer,
+        elapsed real NOT NULL,
+        bbbv integer,
+        bbbvps real
     );"""
-    # add drag select check
+    # TODO: add drag select
     cursor.execute(create_table_sql)
 
     return conn
 
 
-def get_data(difficulty, per_cell):
+def get_data(difficulty: str, per_cell: int) -> Iterable[HighscoreStruct]:
     conn = init_db()
     cursor = conn.cursor()
     query = (
-        "SELECT elapsed, timestamp, difficulty, per_cell, bbbvps FROM highscores WHERE difficulty = '"
-        + difficulty
-        + "' AND per_cell = "
-        + str(per_cell)
-        + " ORDER BY elapsed DESC;"
-    )
+        "SELECT {} "
+        "FROM highscores "
+        "WHERE difficulty = '{}' AND per_cell = {} "
+        "ORDER BY elapsed DESC;"
+    ).format(", ".join(_highscore_fields), difficulty, per_cell)
     result_list = cursor.execute(query).fetchall()
     return [HighscoreStruct(*result) for result in result_list]
 
 
-def check_highscore(game):
+def check_highscore(game: core.game.Game) -> None:
+    # Row values.
+    timestamp = int(game.start_time)
+    difficulty = get_difficulty(game.mf.x_size, game.mf.y_size, game.mf.nr_mines)
+    per_cell = game.mf.per_cell
+    hs_time = game.get_elapsed()
+    bbbv = game.mf.bbbv
+    bbbvps = game.get_3bvps()
+    # Insert into the DB.
     conn = init_db()
     cursor = conn.cursor()
-    game_difficulty = get_difficulty(game.mf.x_size, game.mf.y_size, game.mf.nr_mines)
-    record_time = game.get_elapsed()
-    timestamp = game.start_time
-    per_cell = game.mf.per_cell
-    bbbvps = game.get_3bvps()
-    insert_sql = "INSERT INTO highscores (elapsed, timestamp, difficulty, per_cell, bbbvps) VALUES (?, ?, ?, ?, ?);"
-    to_beat_sql = (
-        "SELECT id, elapsed FROM highscores WHERE difficulty = '"
-        + game_difficulty
-        + "' ORDER BY elapsed DESC;"
+    insert_sql = "INSERT INTO highscores ({}) " "VALUES ({});".format(
+        ", ".join(_highscore_fields), ", ".join("?" for _ in _highscore_fields)
     )
-    to_beat_size = cursor.execute(to_beat_sql).fetchall()
-    check_size = len(to_beat_size)
-    if check_size < 3:
-        cursor.execute(
-            insert_sql, (record_time, timestamp, game_difficulty, per_cell, bbbvps)
-        )
-    else:
-        to_beat = cursor.execute(
-            "SELECT id, elapsed FROM highscores WHERE difficulty = '"
-            + game_difficulty
-            + "' ORDER BY elapsed DESC;"
-        )
-        to_beat_query = to_beat.fetchone()
-        if to_beat_query[1] > record_time:
-            print("New highscore!")
-            update_sql = "UPDATE highscores SET elapsed = ? , date = ? , bbbvps = ? WHERE id = ?;"
-            cursor.execute(
-                update_sql, (record_time, timestamp, bbbvps, to_beat_query[0])
-            )
+    cursor.execute(insert_sql, (timestamp, difficulty, per_cell, hs_time, bbbv, bbbvps))
 
     conn.commit()
+
     print(cursor.execute("SELECT * FROM highscores;").fetchall())

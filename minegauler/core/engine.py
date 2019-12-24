@@ -286,6 +286,7 @@ class GameController(api.AbstractController):
             finish_time=self._game.get_elapsed() if self._game.is_finished() else None,
         )
 
+        # Send updates to registered frontends.
         if update.cell_updates:
             self._notif.update_cells(update.cell_updates)
         if update.mines_remaining != self._last_update.mines_remaining:
@@ -294,13 +295,18 @@ class GameController(api.AbstractController):
         #     self._notif.update_lives_remaining(update.lives_remaining)
         if update.game_state is not self._last_update.game_state:
             self._notif.update_game_state(update.game_state)
-            if update.game_state is GameState.WON:
-                highscores.check_highscore(self._game)
         if (
             update.finish_time is not None
             and update.finish_time != self._last_update.finish_time
         ):
             self._notif.set_finish_time(update.finish_time)
+
+        # Save highscore if the game was won.
+        if (
+            update.game_state is not self._last_update.game_state
+            and update.game_state is GameState.WON
+        ):
+            highscores.check_highscore(self._game)
 
         self._last_update = update
 
