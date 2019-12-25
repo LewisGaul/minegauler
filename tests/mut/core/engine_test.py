@@ -8,7 +8,7 @@ the root directory.
 """
 
 import logging
-from unittest.mock import Mock
+from unittest import mock
 
 import pytest
 
@@ -23,12 +23,12 @@ logger = logging.getLogger(__name__)
 
 @pytest.fixture()
 def frontend1():
-    return Mock()
+    return mock.Mock()
 
 
 @pytest.fixture()
 def frontend2():
-    return Mock()
+    return mock.Mock()
 
 
 class TestController:
@@ -52,6 +52,14 @@ class TestController:
         per_cell=mf.per_cell,
         first_success=True,
     )
+
+    @classmethod
+    def setup_class(cls):
+        mock.patch("minegauler.shared.highscores.check_highscore").start()
+
+    @classmethod
+    def teardown_class(cls):
+        mock.patch.stopall()
 
     # --------------------------------------------------------------------------
     # Test cases
