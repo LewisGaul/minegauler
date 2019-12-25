@@ -37,9 +37,11 @@ from PyQt5.QtWidgets import (
 )
 
 from .. import core
+from ..shared import highscores
 from ..types import UIMode
 from ..utils import GameOptsStruct, GuiOptsStruct, get_difficulty
 from . import api, utils
+from .highscores import HighscoresWindow
 from .minefield import MinefieldWidget
 from .panel import PanelWidget
 
@@ -257,7 +259,7 @@ class MinegaulerGUI(_BaseMainWindow):
 
         # Load board
 
-        # self._game_menu.addSeparator()
+        self._game_menu.addSeparator()
 
         # Current info (F4)
 
@@ -267,6 +269,16 @@ class MinegaulerGUI(_BaseMainWindow):
         # - Auto click (Ctrl+Enter)
 
         # Highscores (F6)
+        def open_highscores():
+            try:
+                settings = self._ctrlr.get_highscore_settings()
+            except AttributeError:
+                logger.exception("Unable to get highscore settings")
+                settings = highscores.HighscoreSettingsStruct("B", 1)
+            self.open_highscores_window(settings)
+
+        highscores_act = self._game_menu.addAction("Highscores", open_highscores)
+        highscores_act.setShortcut("F6")
 
         # Stats (F7)
 
@@ -397,6 +409,10 @@ class MinegaulerGUI(_BaseMainWindow):
 
     def get_gui_opts(self) -> GuiOptsStruct:
         return self._gui_opts
+
+    def open_highscores_window(self, settings: highscores.HighscoreSettingsStruct) -> None:
+        self._open_subwindows["highscores"] = HighscoresWindow(settings)
+        self._open_subwindows["highscores"].show()
 
 
 class _CustomBoardModal(QDialog):

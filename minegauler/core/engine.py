@@ -92,6 +92,9 @@ class BaseController(api.AbstractSwitchingController):
     def board(self) -> brd.Board:
         return self._active_ctrlr.board
 
+    def get_highscore_settings(self) -> highscores.HighscoreSettingsStruct:
+        return self._active_ctrlr.get_highscore_settings()
+
     def new_game(self) -> None:
         self._active_ctrlr.new_game()
 
@@ -160,6 +163,11 @@ class GameController(api.AbstractController):
     @property
     def board(self) -> brd.Board:
         return self._game.board
+
+    def get_highscore_settings(self) -> highscores.HighscoreSettingsStruct:
+        return highscores.HighscoreSettingsStruct(
+            self._game.difficulty, self._game.per_cell
+        )
 
     # --------------------------------------------------------------------------
     # Methods triggered by user interaction

@@ -13,6 +13,7 @@ import logging
 import time as tm
 from typing import Callable, Dict, Iterable, Optional, Tuple, Union
 
+from .. import utils
 from ..types import (
     CellContentsType,
     CellFlag,
@@ -241,6 +242,10 @@ class Game:
         self.mines_remaining: int = self.mines
         self.lives_remaining: int = self.lives
         self._cell_updates: Dict[Coord_T, CellContentsType] = dict()
+
+    @property
+    def difficulty(self) -> str:
+        return utils.get_difficulty(self.x_size, self.y_size, self.mines)
 
     @_check_game_started
     def get_rem_3bv(self) -> int:

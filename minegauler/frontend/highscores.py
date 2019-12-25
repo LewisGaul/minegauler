@@ -4,6 +4,8 @@ highscores.py - Highscores window implementation
 July 2018, Lewis Gaul
 """
 
+__all__ = ("HighscoresWindow",)
+
 import logging
 import sys
 from typing import List, Optional
@@ -35,15 +37,16 @@ from PyQt5.QtWidgets import (
 
 from ..shared import highscores
 
-
 logger = logging.getLogger(__name__)
 
 
 class HighscoresWindow(QWidget):
     """A standalone highscores window."""
 
-    def __init__(self, parent):
-        super().__init__(parent)
+    def __init__(
+        self, settings: highscores.HighscoreSettingsStruct, sort_by: str = "time",
+    ):
+        super().__init__(None)
         self.setWindowTitle("Highscores")
         self._model = HighscoresModel(self)
         self._table = HighscoresTable(self._model)
@@ -51,10 +54,8 @@ class HighscoresWindow(QWidget):
         self.setFixedWidth(self._table.width() + 46)
         self._model.sort_changed.connect(self._table.set_sort_indicator)
         self._table.add_filter.connect(self.set_filter)
-        self.set_sort_column("time")
-        self._model.update_highscores_group(
-            highscores.HighscoreSettingsStruct(difficulty="B", per_cell=1)
-        )
+        self.set_sort_column(sort_by)
+        self._model.update_highscores_group(settings)
 
     def setup_ui(self) -> None:
         lyt = QHBoxLayout(self)
