@@ -2,7 +2,6 @@ __pycache__/
 *venv*
 build/
 bin/
-images/raw/
 settings.cfg
 data/
 LaTex/
@@ -13,7 +12,8 @@ coverage.xml
 *,cover
 htmlcov/
 .pytest*
-.idea
+.idea/
+.vscode/
 *.log
 *.ipynb
 .ipynb_checkpoints/
