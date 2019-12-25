@@ -145,8 +145,8 @@ def filter_and_sort(
 def check_highscore(game: "core.game.Game") -> None:
     # Row values.
     timestamp = int(game.start_time)
-    difficulty = utils.get_difficulty(game.mf.x_size, game.mf.y_size, game.mf.nr_mines)
-    per_cell = game.mf.per_cell
+    difficulty = utils.get_difficulty(game.x_size, game.y_size, game.mines)
+    per_cell = game.per_cell
     hs_time = game.get_elapsed()
     bbbv = game.mf.bbbv
     bbbvps = game.get_3bvps()
