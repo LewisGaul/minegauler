@@ -44,7 +44,7 @@ class HighscoresWindow(QWidget):
     """A standalone highscores window."""
 
     def __init__(
-        self, settings: highscores.HighscoreSettingsStruct, sort_by: str = "time",
+        self, settings: highscores.HighscoreSettingsStruct, sort_by: str = "time"
     ):
         super().__init__(None)
         self.setWindowTitle("Highscores")

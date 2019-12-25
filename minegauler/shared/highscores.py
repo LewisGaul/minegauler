@@ -11,6 +11,7 @@ __all__ = (
     "get_highscores",
 )
 
+import logging
 import os
 import sqlite3
 from typing import Dict, Iterable, Optional, Tuple
@@ -18,6 +19,11 @@ from typing import Dict, Iterable, Optional, Tuple
 import attr
 
 from .. import ROOT_DIR, utils
+
+
+logger = logging.getLogger(__name__)
+
+_DB_FILE = ROOT_DIR / "data" / "highscores.db"
 
 
 @attr.attrs(auto_attribs=True)
@@ -57,28 +63,37 @@ class HighscoreStruct(HighscoreSettingsStruct):
 _highscore_fields = attr.fields_dict(HighscoreStruct).keys()
 
 
-def _init_db():
-    db_file = ROOT_DIR / "data" / "highscores.db"
-    os.makedirs(db_file.parent, exist_ok=True)
-    conn = sqlite3.connect(str(db_file))
-    cursor = conn.cursor()
+def _init_db() -> sqlite3.Connection:
+    """
+    Initialise the SQL database.
 
-    create_table_sql = """
-    CREATE TABLE IF NOT EXISTS highscores (
-        id INTEGER PRIMARY KEY,
-        difficulty TEXT,
-        per_cell INTEGER,
-        timestamp INTEGER,
-        elapsed REAL NOT NULL,
-        bbbv INTEGER,
-        bbbvps REAL
-    )"""
-    cursor.execute(create_table_sql)
+    :return:
+        An open connection to the database.
+    """
+    if os.path.exists(_DB_FILE):
+        conn = sqlite3.connect(str(_DB_FILE))
+    else:
+        os.makedirs(_DB_FILE.parent, exist_ok=True)
+        conn = sqlite3.connect(str(_DB_FILE))
+        cursor = conn.cursor()
+
+        create_table_sql = """
+        CREATE TABLE IF NOT EXISTS highscores (
+            id INTEGER PRIMARY KEY,
+            difficulty TEXT,
+            per_cell INTEGER,
+            timestamp INTEGER,
+            elapsed REAL NOT NULL,
+            bbbv INTEGER,
+            bbbvps REAL
+        )"""
+        cursor.execute(create_table_sql)
 
     return conn
 
 
 def get_highscores(settings: HighscoreSettingsStruct) -> Iterable[HighscoreStruct]:
+    """Fetch highscores from the database."""
     conn = _init_db()
     conn.row_factory = HighscoreStruct.from_sql_row
     cursor = conn.cursor()
@@ -90,6 +105,7 @@ def get_highscores(settings: HighscoreSettingsStruct) -> Iterable[HighscoreStruc
     ).format(
         ", ".join(_highscore_fields), settings.difficulty.upper(), settings.per_cell
     )
+    logger.debug("Getting highscores with SQL query: %r", query)
     return cursor.execute(query).fetchall()
 
 
@@ -156,11 +172,20 @@ def check_highscore(game: "core.game.Game") -> None:
     insert_sql = "INSERT INTO highscores ({}) " "VALUES ({})".format(
         ", ".join(_highscore_fields), ", ".join(f":{f}" for f in _highscore_fields)
     )
+    logger.info(
+        "Inserting highscore into DB: (%d, %s, %d, %f, %d, %f)",
+        timestamp,
+        difficulty,
+        per_cell,
+        hs_time,
+        bbbv,
+        bbbvps,
+    )
     cursor.execute(
         insert_sql,
         {
             "timestamp": timestamp,
-            "difficulty": difficulty.upper(),
+            "difficulty": difficulty,
             "per_cell": per_cell,
             # "name": "",
             "elapsed": hs_time,
@@ -168,7 +193,4 @@ def check_highscore(game: "core.game.Game") -> None:
             "bbbvps": bbbvps,
         },
     )
-
     conn.commit()
-
-    print(cursor.execute("SELECT * FROM highscores").fetchall())

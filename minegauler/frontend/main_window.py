@@ -410,7 +410,9 @@ class MinegaulerGUI(_BaseMainWindow):
     def get_gui_opts(self) -> GuiOptsStruct:
         return self._gui_opts
 
-    def open_highscores_window(self, settings: highscores.HighscoreSettingsStruct) -> None:
+    def open_highscores_window(
+        self, settings: highscores.HighscoreSettingsStruct
+    ) -> None:
         self._open_subwindows["highscores"] = HighscoresWindow(settings)
         self._open_subwindows["highscores"].show()
 
