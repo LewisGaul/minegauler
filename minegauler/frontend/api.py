@@ -97,6 +97,9 @@ class Listener(AbstractListener):
                 name=self._gui.get_gui_opts().name,
             )
             shared.highscores.insert_highscore(highscore)
+            new_best = shared.highscores.is_highscore_new_best(highscore)
+            if new_best:
+                self._gui.open_highscores_window(highscore, new_best)
 
     def handle_exception(self, method: str, exc: Exception) -> None:
         logger.error(

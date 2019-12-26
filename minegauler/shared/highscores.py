@@ -194,3 +194,24 @@ def insert_highscore(highscore: HighscoreStruct) -> None:
         },
     )
     conn.commit()
+
+
+def is_highscore_new_best(highscore: HighscoreStruct) -> Optional[str]:
+    """
+    Test to see if a new top highscore has been set.
+
+    :param highscore:
+        The highscore to check.
+    :return:
+        If a new highscore was set, return which category it was set in. If not, return None.
+    """
+
+    highscore_list = get_highscores(highscore)
+    top_time = filter_and_sort(highscore_list, "time", {"name": highscore.name},)
+    top_3bvps = filter_and_sort(highscore_list, "3bv/s", {"name": highscore.name},)
+    if highscore.elapsed <= top_time[0].elapsed:
+        return "time"
+    elif highscore.bbbvps >= top_3bvps[0].bbbvps:
+        return "3bv/s"
+    else:
+        return None
