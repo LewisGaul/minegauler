@@ -8,6 +8,7 @@ __all__ = ("HighscoresWindow",)
 
 import logging
 import sys
+import time as tm
 from typing import List, Optional
 
 from PyQt5.QtCore import (
@@ -198,6 +199,10 @@ class HighscoresModel(QAbstractTableModel):
             return f"{h.bbbv:3d}"
         elif key == "3bv/s":
             return f"{h.bbbvps + 0.005 : .2f}"
+        elif key == "name":
+            return h.name
+        elif key == "date":
+            return tm.strftime("%Y-%m-%d %H:%M:%S", tm.localtime(h.timestamp))
         else:
             return "<unhandled>"
 

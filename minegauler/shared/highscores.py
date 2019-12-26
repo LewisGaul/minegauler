@@ -147,18 +147,18 @@ def filter_and_sort(
         ret.sort(key=lambda h: (h.elapsed, -h.bbbv))
     elif sort_key == "3bv/s":
         ret.sort(key=lambda h: (h.bbbvps, -h.bbbv), reverse=True)
-    # if "name" not in filters:
-    #     # If no name filter, only include best highscore for each name.
-    #     names = []
-    #     i = 0
-    #     while i < len(ret):
-    #         hs = ret[i]
-    #         name = hs["name"].lower()
-    #         if name in names:
-    #             ret.pop(i)
-    #         else:
-    #             names.append(name)
-    #             i += 1
+    if "name" not in filters:
+        # If no name filter, only include best highscore for each name.
+        names = []
+        i = 0
+        while i < len(ret):
+            hs = ret[i]
+            name = hs["name"].lower()
+            if name in names:
+                ret.pop(i)
+            else:
+                names.append(name)
+                i += 1
     return ret
 
 
