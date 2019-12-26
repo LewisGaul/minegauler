@@ -17,7 +17,7 @@ import logging
 from typing import Callable, Dict, Optional, Type
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QFocusEvent, QFont, QIcon, QKeyEvent
 from PyQt5.QtWidgets import (
     QAction,
     QActionGroup,
@@ -26,6 +26,7 @@ from PyQt5.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMenuBar,
     QPushButton,
@@ -36,7 +37,6 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from .. import core
 from ..shared import highscores
 from ..types import UIMode
 from ..utils import GameOptsStruct, GuiOptsStruct, get_difficulty
@@ -202,7 +202,7 @@ class MinegaulerGUI(_BaseMainWindow):
         """
         self._ctrlr: api.AbstractSwitchingController = ctrlr
         self._gui_opts: GuiOptsStruct
-        self._game_opts: GameOptsStruct  # TODO: This is wrong.
+        self._game_opts: GameOptsStruct  # TODO: This is wrong. Use self._ctrlr.get_game_options().
 
         if gui_opts:
             self._gui_opts = gui_opts.copy()
@@ -226,12 +226,29 @@ class MinegaulerGUI(_BaseMainWindow):
             styles=self._gui_opts.styles,
             drag_select=self._gui_opts.drag_select,
         )
+        self._name_entry_widget: _NameEntryBar = _NameEntryBar(
+            self, self._gui_opts.name
+        )
         self.set_panel_widget(self._panel_widget)
         self.set_body_widget(self._minefield_widget)
+        self.set_footer_widget(self._name_entry_widget)
 
         self._minefield_widget.at_risk_signal.connect(self._panel_widget.at_risk)
         self._minefield_widget.no_risk_signal.connect(self._panel_widget.no_risk)
+        self._name_entry_widget.name_updated_signal.connect(
+            lambda x: setattr(self._gui_opts, "name", x)
+        )
 
+    # --------------------------------------------------------------------------
+    # Qt method overrides
+    # --------------------------------------------------------------------------
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        self._name_entry_widget.clearFocus()
+
+    # --------------------------------------------------------------------------
+    # Other methods
+    # --------------------------------------------------------------------------
     def _populate_menubars(self) -> None:
         """Fill in the menubars."""
 
@@ -270,11 +287,14 @@ class MinegaulerGUI(_BaseMainWindow):
 
         # Highscores (F6)
         def open_highscores():
-            try:
-                settings = self._ctrlr.get_highscore_settings()
-            except AttributeError:
-                logger.exception("Unable to get highscore settings")
-                settings = highscores.HighscoreSettingsStruct("B", 1)
+            game_opts = self._ctrlr.get_game_options()
+            settings = highscores.HighscoreSettingsStruct(
+                difficulty=get_difficulty(
+                    game_opts.x_size, game_opts.y_size, game_opts.mines
+                ),
+                per_cell=game_opts.per_cell,
+                drag_select=self._gui_opts.drag_select,
+            )
             self.open_highscores_window(settings)
 
         highscores_act = self._game_menu.addAction("Highscores", open_highscores)
@@ -510,6 +530,31 @@ class _SliderSpinner(QWidget):
 
     def value(self) -> int:
         return self.slider.value()
+
+
+class _NameEntryBar(QLineEdit):
+    """Entry bar for entering a name."""
+
+    name_updated_signal = pyqtSignal(str)
+
+    def __init__(self, parent, text: str = ""):
+        super().__init__(parent)
+        self.setText(text)
+        self.setPlaceholderText("Name")
+        self.setAlignment(Qt.AlignCenter)
+        font = QFont("Helvetica")
+        font.setBold(True)
+        self.setFont(font)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        super().keyPressEvent(event)
+        if event.key() in [Qt.Key_Return, Qt.Key_Enter]:
+            self.clearFocus()
+
+    def focusOutEvent(self, event: QFocusEvent):
+        super().focusOutEvent(event)
+        logger.info("Setting name to %r", self.text())
+        self.name_updated_signal.emit(self.text())
 
 
 if __name__ == "__main__":

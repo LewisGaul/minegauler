@@ -77,6 +77,7 @@ class PanelWidget(QWidget):
     # --------------------------------------------------------------------------
     def mousePressEvent(self, event):
         """Handle mouse press event."""
+        super().mousePressEvent(event)
         if event.button() == Qt.LeftButton:
             self.face_button.setFrameShadow(QFrame.Sunken)
 

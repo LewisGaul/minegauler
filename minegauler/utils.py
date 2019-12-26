@@ -76,6 +76,7 @@ class GuiOptsStruct(StructConstructorMixin):
 
     btn_size: int = 16
     drag_select: bool = False
+    name: str = ""
     styles: Dict[CellImageType, str] = {
         CellImageType.BUTTONS: "Standard",
         CellImageType.NUMBERS: "Standard",

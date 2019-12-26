@@ -7,8 +7,8 @@ December 2019, Felix Gaul
 __all__ = (
     "HighscoreSettingsStruct",
     "HighscoreStruct",
-    "check_highscore",
     "get_highscores",
+    "insert_highscore",
 )
 
 import logging
@@ -32,17 +32,21 @@ class HighscoreSettingsStruct:
 
     difficulty: str
     per_cell: int
-    # TODO: add 'drag_select: bool'
-    # TODO: add 'name: str'
+    drag_select: bool
 
     def __getitem__(self, item):
         return getattr(self, item)
+
+    @classmethod
+    def get_default(cls) -> "HighscoreSettingsStruct":
+        return cls("B", 1, False)
 
 
 @attr.attrs(auto_attribs=True)
 class HighscoreStruct(HighscoreSettingsStruct):
     """A single highscore."""
 
+    name: str
     timestamp: int
     elapsed: float
     bbbv: int
@@ -53,11 +57,6 @@ class HighscoreStruct(HighscoreSettingsStruct):
     def from_sql_row(cls, cursor: sqlite3.Cursor, row: Tuple) -> "HighscoreStruct":
         """Create an instance from an SQL row."""
         return cls(**{col[0]: row[i] for i, col in enumerate(cursor.description)})
-
-    @classmethod
-    def from_iterable(cls, container: Iterable) -> "HighscoreStruct":
-        """Create an instance from an iterable."""
-        return cls(*container)
 
 
 _highscore_fields = attr.fields_dict(HighscoreStruct).keys()
@@ -82,6 +81,8 @@ def _init_db() -> sqlite3.Connection:
             id INTEGER PRIMARY KEY,
             difficulty TEXT,
             per_cell INTEGER,
+            drag_select INTEGER,
+            name TEXT,
             timestamp INTEGER,
             elapsed REAL NOT NULL,
             bbbv INTEGER,
@@ -100,10 +101,13 @@ def get_highscores(settings: HighscoreSettingsStruct) -> Iterable[HighscoreStruc
     query = (
         "SELECT {} "
         "FROM highscores "
-        "WHERE difficulty='{}' AND per_cell={} "
+        "WHERE difficulty='{}' AND per_cell={} AND drag_select={:d} "
         "ORDER BY elapsed DESC"
     ).format(
-        ", ".join(_highscore_fields), settings.difficulty.upper(), settings.per_cell
+        ", ".join(_highscore_fields),
+        settings.difficulty.upper(),
+        settings.per_cell,
+        settings.drag_select,
     )
     logger.debug("Getting highscores with SQL query: %r", query)
     return cursor.execute(query).fetchall()
@@ -158,14 +162,7 @@ def filter_and_sort(
     return ret
 
 
-def check_highscore(game: "core.game.Game") -> None:
-    # Row values.
-    timestamp = int(game.start_time)
-    difficulty = utils.get_difficulty(game.x_size, game.y_size, game.mines)
-    per_cell = game.per_cell
-    hs_time = game.get_elapsed()
-    bbbv = game.mf.bbbv
-    bbbvps = game.get_3bvps()
+def insert_highscore(highscore: HighscoreStruct) -> None:
     # Insert into the DB.
     conn = _init_db()
     cursor = conn.cursor()
@@ -173,24 +170,27 @@ def check_highscore(game: "core.game.Game") -> None:
         ", ".join(_highscore_fields), ", ".join(f":{f}" for f in _highscore_fields)
     )
     logger.info(
-        "Inserting highscore into DB: (%d, %s, %d, %f, %d, %f)",
-        timestamp,
-        difficulty,
-        per_cell,
-        hs_time,
-        bbbv,
-        bbbvps,
+        "Inserting highscore into DB: (%d, %s, %d, %s, %s, %f, %d, %f)",
+        highscore.timestamp,
+        highscore.difficulty,
+        highscore.per_cell,
+        highscore.drag_select,
+        highscore.name,
+        highscore.elapsed,
+        highscore.bbbv,
+        highscore.bbbvps,
     )
     cursor.execute(
         insert_sql,
         {
-            "timestamp": timestamp,
-            "difficulty": difficulty,
-            "per_cell": per_cell,
-            # "name": "",
-            "elapsed": hs_time,
-            "bbbv": bbbv,
-            "bbbvps": bbbvps,
+            "timestamp": highscore.timestamp,
+            "difficulty": highscore.difficulty,
+            "per_cell": highscore.per_cell,
+            "drag_select": int(highscore.drag_select),
+            "name": highscore.name,
+            "elapsed": highscore.elapsed,
+            "bbbv": highscore.bbbv,
+            "bbbvps": highscore.bbbvps,
         },
     )
     conn.commit()

@@ -46,7 +46,7 @@ rc = frontend.run()
 
 
 persist_settings = utils.PersistSettingsStruct._from_multiple_structs(
-    ctrlr.opts, gui.get_gui_opts()
+    ctrlr.get_game_options(), gui.get_gui_opts()
 )
 utils.write_settings_to_file(persist_settings)
 

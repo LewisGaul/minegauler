@@ -136,8 +136,8 @@ class MinefieldWidget(QGraphicsView):
         super().__init__(parent)
         self.setStyleSheet("border: 0px")
         self.ctrlr: AbstractController = ctrlr
-        self.x_size: int = ctrlr.opts.x_size
-        self.y_size: int = ctrlr.opts.y_size
+        self.x_size: int = ctrlr._opts.x_size  # TODO: Sort this out
+        self.y_size: int = ctrlr._opts.y_size
         self.btn_size: int = btn_size
         if styles:
             # for kw in [CellImageType.BUTTONS]:

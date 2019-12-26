@@ -10,14 +10,15 @@ import logging
 import traceback
 from typing import Dict
 
-from minegauler.core.api import (
+from .. import shared
+from ..core.api import (
     AbstractController,
     AbstractListener,
     AbstractSwitchingController,
+    EndedGameInfo,
 )
-from minegauler.types import CellContentsType, GameState
-from minegauler.typing import Coord_T
-
+from ..types import CellContentsType, GameState
+from ..typing import Coord_T
 from .main_window import MinegaulerGUI
 from .minefield import MinefieldWidget
 from .panel import PanelWidget
@@ -74,15 +75,28 @@ class Listener(AbstractListener):
     def update_mines_remaining(self, mines_remaining: int) -> None:
         self._panel_widget.set_mines_counter(mines_remaining)
 
-    def set_finish_time(self, finish_time: float) -> None:
+    def handle_finished_game(self, info: EndedGameInfo) -> None:
         """
-        Called when a game has ended to pass the exact elapsed game time.
+        Called once when a game ends.
 
-        :param finish_time:
-            The elapsed game time in seconds.
+        :param info:
+            A store of end-game information.
         """
         self._panel_widget.timer.stop()
-        self._panel_widget.timer.set_time(int(finish_time + 1))
+        self._panel_widget.timer.set_time(int(info.elapsed + 1))
+        # Store the highscore if the game was won.
+        if info.game_state is GameState.WON:
+            highscore = shared.highscores.HighscoreStruct(
+                difficulty=info.difficulty,
+                per_cell=info.per_cell,
+                timestamp=int(info.start_time),
+                elapsed=info.elapsed,
+                bbbv=info.bbbv,
+                bbbvps=info.bbbv / info.elapsed,
+                drag_select=self._gui.get_gui_opts().drag_select,  # TODO: this needs handling for when it's changed mid-game
+                name=self._gui.get_gui_opts().name,
+            )
+            shared.highscores.insert_highscore(highscore)
 
     def handle_exception(self, method: str, exc: Exception) -> None:
         logger.error(
