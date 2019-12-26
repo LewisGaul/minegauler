@@ -152,3 +152,7 @@ def get_difficulty(x_size: int, y_size: int, mines: int) -> str:
         return "M"
     else:
         return "C"
+
+
+def is_flagging_threshold(proportion: float) -> bool:
+    return proportion > 0.1

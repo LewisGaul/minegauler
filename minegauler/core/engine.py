@@ -290,6 +290,7 @@ class GameController(api.AbstractController):
                 start_time=self._game.start_time,
                 elapsed=self._game.get_elapsed(),
                 bbbv=self._game.mf.bbbv,
+                flagging=self._game.get_flag_proportion(),
             )
         update = _SharedInfo(
             cell_updates=cells_updated,

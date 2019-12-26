@@ -95,6 +95,7 @@ class Listener(AbstractListener):
                 bbbvps=info.bbbv / info.elapsed,
                 drag_select=self._gui.get_gui_opts().drag_select,  # TODO: this needs handling for when it's changed mid-game
                 name=self._gui.get_gui_opts().name,
+                flagging=info.flagging,
             )
             shared.highscores.insert_highscore(highscore)
             new_best = shared.highscores.is_highscore_new_best(highscore)

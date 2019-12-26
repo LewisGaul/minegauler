@@ -242,6 +242,7 @@ class Game:
         self.mines_remaining: int = self.mines
         self.lives_remaining: int = self.lives
         self._cell_updates: Dict[Coord_T, CellContentsType] = dict()
+        self._num_flags: int = 0
 
     @property
     def difficulty(self) -> str:
@@ -302,6 +303,9 @@ class Game:
             return tm.time() - self.start_time
         else:
             return 0
+
+    def get_flag_proportion(self) -> float:
+        return self._num_flags / self.mines
 
     def is_finished(self) -> bool:
         return self.state.finished()
@@ -496,6 +500,7 @@ class Game:
         else:
             self._set_cell(coord, CellFlag(nr_flags))
         self.mines_remaining += old_nr_flags - nr_flags
+        self._num_flags += nr_flags - old_nr_flags
 
         try:
             return self._cell_updates

@@ -51,7 +51,7 @@ class HighscoreStruct(HighscoreSettingsStruct):
     elapsed: float
     bbbv: int
     bbbvps: float
-    # TODO: add 'flagging: float' (% cells flagged)
+    flagging: float
 
     @classmethod
     def from_sql_row(cls, cursor: sqlite3.Cursor, row: Tuple) -> "HighscoreStruct":
@@ -86,7 +86,8 @@ def _init_db() -> sqlite3.Connection:
             timestamp INTEGER,
             elapsed REAL NOT NULL,
             bbbv INTEGER,
-            bbbvps REAL
+            bbbvps REAL,
+            flagging REAL
         )"""
         cursor.execute(create_table_sql)
 
@@ -134,10 +135,14 @@ def filter_and_sort(
     filters = {k: f for k, f in filters.items() if f}
     for hs in highscores:
         all_pass = True
-        for key, f in filters.items():
-            if hs[key].lower() != f.lower():
+        if "flagging" in filters:
+            if (
+                filters["flagging"] == "F"
+                and not utils.is_flagging_threshold(hs.flagging)
+                or filters["flagging"] == "NF"
+                and utils.is_flagging_threshold(hs.flagging)
+            ):
                 all_pass = False
-                break
         if all_pass:
             # All filters satisfied.
             ret.append(hs)
@@ -170,7 +175,7 @@ def insert_highscore(highscore: HighscoreStruct) -> None:
         ", ".join(_highscore_fields), ", ".join(f":{f}" for f in _highscore_fields)
     )
     logger.info(
-        "Inserting highscore into DB: (%d, %s, %d, %s, %s, %f, %d, %f)",
+        "Inserting highscore into DB: (%d, %s, %d, %s, %s, %.2f, %d, %.2f, %.2f)",
         highscore.timestamp,
         highscore.difficulty,
         highscore.per_cell,
@@ -179,6 +184,7 @@ def insert_highscore(highscore: HighscoreStruct) -> None:
         highscore.elapsed,
         highscore.bbbv,
         highscore.bbbvps,
+        highscore.flagging,
     )
     cursor.execute(
         insert_sql,
@@ -191,6 +197,7 @@ def insert_highscore(highscore: HighscoreStruct) -> None:
             "elapsed": highscore.elapsed,
             "bbbv": highscore.bbbv,
             "bbbvps": highscore.bbbvps,
+            "flagging": highscore.flagging,
         },
     )
     conn.commit()

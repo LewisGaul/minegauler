@@ -38,6 +38,7 @@ class EndedGameInfo:
     start_time: float
     elapsed: float
     bbbv: int
+    flagging: float
 
 
 class AbstractListener(metaclass=abc.ABCMeta):
