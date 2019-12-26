@@ -91,6 +91,9 @@ class HighscoresWindow(QWidget):
         self._model._filters[filter_by] = filter
         self._model.filter_and_sort()
 
+    def set_current_highscore(self, hs: Optional[highscores.HighscoreStruct]) -> None:
+        self._model.set_current_highscore(hs)
+
 
 class HighscoresModel(QAbstractTableModel):
     """Model handling sorting and filtering of a highscore group."""
@@ -179,7 +182,7 @@ class HighscoresModel(QAbstractTableModel):
         self._all_data = highscores.get_highscores(settings)
         self.filter_and_sort()
 
-    def set_current_highscore(self, hs):
+    def set_current_highscore(self, hs: Optional[highscores.HighscoreStruct]) -> None:
         self._active_hscore = hs
         # if hs is None:
         #     # Restore old sort order and filters on new game

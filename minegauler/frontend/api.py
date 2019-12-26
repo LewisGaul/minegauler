@@ -69,6 +69,8 @@ class Listener(AbstractListener):
             self._mf_widget.set_cell_image(c, state)
 
     def update_game_state(self, game_state: GameState) -> None:
+        if game_state is not GameState.WON:
+            self._gui.set_current_highscore(None)
         self._panel_widget.update_game_state(game_state)
         self._mf_widget.update_game_state(game_state)
 
@@ -98,6 +100,8 @@ class Listener(AbstractListener):
                 flagging=info.flagging,
             )
             shared.highscores.insert_highscore(highscore)
+            self._gui.set_current_highscore(highscore)
+            # Check whether to pop up the highscores window.
             new_best = shared.highscores.is_highscore_new_best(highscore)
             if new_best:
                 self._gui.open_highscores_window(highscore, new_best)
@@ -109,4 +113,4 @@ class Listener(AbstractListener):
             "".join(traceback.format_exception(None, exc, exc.__traceback__)),
             exc,
         )
-        raise RuntimeError(exc)
+        raise RuntimeError(exc).with_traceback(exc.__traceback__)

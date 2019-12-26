@@ -233,6 +233,8 @@ class MinegaulerGUI(_BaseMainWindow):
         self.set_body_widget(self._minefield_widget)
         self.set_footer_widget(self._name_entry_widget)
 
+        self._current_highscore: Optional[highscores.HighscoreStruct] = None
+
         self._minefield_widget.at_risk_signal.connect(self._panel_widget.at_risk)
         self._minefield_widget.no_risk_signal.connect(self._panel_widget.no_risk)
         self._name_entry_widget.name_updated_signal.connect(
@@ -433,8 +435,13 @@ class MinegaulerGUI(_BaseMainWindow):
     def open_highscores_window(
         self, settings: highscores.HighscoreSettingsStruct, sort_by: str = "time"
     ) -> None:
-        self._open_subwindows["highscores"] = HighscoresWindow(settings, sort_by)
-        self._open_subwindows["highscores"].show()
+        win = HighscoresWindow(settings, sort_by)
+        win.set_current_highscore(self._current_highscore)
+        win.show()
+        self._open_subwindows["highscores"] = win
+
+    def set_current_highscore(self, hs: Optional[highscores.HighscoreStruct]) -> None:
+        self._current_highscore = hs
 
 
 class _CustomBoardModal(QDialog):

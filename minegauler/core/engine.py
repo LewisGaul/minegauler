@@ -17,7 +17,6 @@ from typing import Dict, Optional
 import attr
 
 from .. import utils
-from ..shared import highscores
 from ..types import (
     CellContentsType,
     CellFlag,
@@ -155,9 +154,9 @@ class GameController(api.AbstractController):
             lives=self._opts.lives,
             first_success=self._opts.first_success,
         )
+        self._last_update: _SharedInfo = _SharedInfo()
         self._notif.set_mines(self._opts.mines)
         self._send_reset_update()
-        self._last_update: _SharedInfo
 
     @property
     def board(self) -> brd.Board:
@@ -272,17 +271,22 @@ class GameController(api.AbstractController):
     # Helper methods
     # --------------------------------------------------------------------------
     def _send_reset_update(self) -> None:
+        self._send_updates({})
         self._notif.reset()
         self._last_update = _SharedInfo()
 
     def _send_resize_update(self) -> None:
+        self._send_updates({})
         self._notif.resize(self._opts.x_size, self._opts.y_size)
         self._notif.set_mines(self._opts.mines)
 
     def _send_updates(self, cells_updated: Dict[Coord_T, CellContentsType]) -> None:
         """Send updates to registered listeners."""
         end_game_info = None
-        if self._game.is_finished():
+        if (
+            self._game.is_finished()
+            and self._game.state is not self._last_update.game_state
+        ):
             end_game_info = api.EndedGameInfo(
                 game_state=self._game.state,
                 difficulty=self._game.difficulty,
@@ -309,9 +313,8 @@ class GameController(api.AbstractController):
         #     self._notif.update_lives_remaining(update.lives_remaining)
         if update.game_state is not self._last_update.game_state:
             self._notif.update_game_state(update.game_state)
-            # Send end-of-game info once when the game state changes.
-            if update.end_game_info is not None:
-                self._notif.handle_finished_game(update.end_game_info)
+        if update.end_game_info is not None:
+            self._notif.handle_finished_game(update.end_game_info)
 
         self._last_update = update
 
