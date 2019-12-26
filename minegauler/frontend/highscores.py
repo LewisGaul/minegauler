@@ -27,6 +27,7 @@ from PyQt5.QtWidgets import (
     QAbstractScrollArea,
     QAction,
     QActionGroup,
+    QDialog,
     QHBoxLayout,
     QHeaderView,
     QLineEdit,
@@ -43,13 +44,16 @@ from ..utils import is_flagging_threshold
 logger = logging.getLogger(__name__)
 
 
-class HighscoresWindow(QWidget):
+class HighscoresWindow(QDialog):
     """A standalone highscores window."""
 
     def __init__(
-        self, settings: highscores.HighscoreSettingsStruct, sort_by: str = "time"
+        self,
+        parent: Optional[QWidget],
+        settings: highscores.HighscoreSettingsStruct,
+        sort_by: str = "time",
     ):
-        super().__init__(None)
+        super().__init__(parent)
         self.setWindowTitle("Highscores")
         self._model = HighscoresModel(self)
         self._table = HighscoresTable(self._model)
@@ -360,7 +364,6 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     settings = highscores.HighscoreSettingsStruct(difficulty="b", per_cell=1)
-    win = HighscoresWindow(None)
-    win._model.update_highscores_group(settings)
+    win = HighscoresWindow(None, settings)
     win.show()
     sys.exit(app.exec_())

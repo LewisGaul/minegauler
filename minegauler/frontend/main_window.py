@@ -435,7 +435,7 @@ class MinegaulerGUI(_BaseMainWindow):
     def open_highscores_window(
         self, settings: highscores.HighscoreSettingsStruct, sort_by: str = "time"
     ) -> None:
-        win = HighscoresWindow(settings, sort_by)
+        win = HighscoresWindow(self, settings, sort_by)
         win.set_current_highscore(self._current_highscore)
         win.show()
         self._open_subwindows["highscores"] = win
