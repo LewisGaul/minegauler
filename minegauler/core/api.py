@@ -275,7 +275,7 @@ class AbstractController(metaclass=abc.ABCMeta):
     """
 
     def __init__(self, opts: utils.GameOptsStruct, *, notif: Optional[Caller] = None):
-        self._opts = utils.GameOptsStruct._from_struct(opts)
+        self._opts = utils.GameOptsStruct.from_structs(opts)
         # The registered functions to be called with updates.
         self._notif: Caller = notif if notif else Caller()
         self._logger = logging.getLogger(

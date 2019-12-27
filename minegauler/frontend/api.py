@@ -4,11 +4,13 @@ api.py - The API with the backend
 December 2018, Lewis Gaul
 """
 
-__all__ = ("AbstractController", "AbstractSwitchingController", "Listener")
+__all__ = ("AbstractController", "AbstractSwitchingController", "FrontendController")
 
 import logging
 import traceback
 from typing import Dict
+
+import attr
 
 from .. import shared
 from ..core.api import (
@@ -27,10 +29,12 @@ from .panel import PanelWidget
 logger = logging.getLogger(__name__)
 
 
-class Listener(AbstractListener):
+class FrontendController(AbstractListener):
     """
-    Concrete implementation of a listener to receive callbacks from the
-    backend.
+    Frontend controller - handles callbacks from the backend.
+
+    This class also tracks all frontend-specific state and handles frontend
+    logic.
     """
 
     def __init__(self, gui: MinegaulerGUI):
@@ -40,7 +44,9 @@ class Listener(AbstractListener):
 
     def reset(self) -> None:
         """
-        Called to indicate the state should be reset.
+        Called to indicate the GUI state should be soft-reset.
+
+        This is distinct from a factory reset (settings are not changed).
         """
         self._panel_widget.reset()
         self._mf_widget.reset()
@@ -59,7 +65,7 @@ class Listener(AbstractListener):
 
     def set_mines(self, mines: int) -> None:
         """
-        Called to indicate the default number of mines has changed.
+        Called to indicate the base number of mines has changed.
         """
         self._gui.update_game_opts(mines=mines)
         self._panel_widget.set_mines(mines)

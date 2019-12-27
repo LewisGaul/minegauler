@@ -4,7 +4,7 @@ __init__.py - Available imports from the package
 December 2018, Lewis Gaul
 """
 
-__all__ = ("Listener", "MinegaulerGUI", "create_gui", "run", "utils")
+__all__ = ("FrontendController", "MinegaulerGUI", "create_gui", "run", "utils")
 
 import sys
 
@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QApplication
 from .. import core
 from ..utils import GameOptsStruct, GuiOptsStruct
 from . import api, utils
-from .api import Listener
+from .api import FrontendController
 from .main_window import MinegaulerGUI
 
 
