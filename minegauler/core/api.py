@@ -21,9 +21,8 @@ from typing import Callable, Dict, Iterable, List, Optional
 
 import attr
 
-from .. import utils
 from ..core import board as brd
-from ..shared import highscores
+from ..shared import utils
 from ..types import CellContentsType, GameState, UIMode
 from ..typing import Coord_T
 

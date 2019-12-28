@@ -8,12 +8,14 @@ Game (class)
     Representation of a minesweeper game.
 """
 
+__all__ = ("Game", "GameNotStartedError")
+
 import functools
 import logging
 import time as tm
 from typing import Callable, Dict, Iterable, Optional, Tuple, Union
 
-from .. import utils
+from ..shared import utils
 from ..types import (
     CellContentsType,
     CellFlag,

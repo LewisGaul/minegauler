@@ -4,38 +4,35 @@ __init__.py - Available imports from the package
 December 2018, Lewis Gaul
 """
 
-__all__ = ("FrontendController", "MinegaulerGUI", "create_gui", "run", "utils")
+__all__ = ("MinegaulerGUI", "init_app", "run_app")
 
 import sys
 
 from PyQt5.QtWidgets import QApplication
 
-from .. import core
-from ..utils import GameOptsStruct, GuiOptsStruct
-from . import api, utils
-from .api import FrontendController
 from .main_window import MinegaulerGUI
 
 
-app = None
-gui = None
+_app = None
 
 
-def create_gui(
-    ctrlr: api.AbstractSwitchingController,
-    gui_opts: GuiOptsStruct,
-    game_opts: GameOptsStruct,
-):
-    global app, gui
-    app = QApplication(sys.argv)
-    gui = MinegaulerGUI(ctrlr, gui_opts, game_opts)
-    return gui
+def init_app() -> None:
+    global _app
+    _app = QApplication(sys.argv)
 
 
-def run():
-    if not app:
-        raise RuntimeError("Must create the app before calling run")
+def run_app(gui: MinegaulerGUI) -> int:
+    """
+    Run the GUI application.
+
+    :param gui:
+        The main PyQt GUI object.
+    :return:
+        Exit code.
+    """
+    if not _app:
+        raise RuntimeError("Must create the app before running the app")
 
     gui.show()
 
-    return app.exec_()
+    return _app.exec_()

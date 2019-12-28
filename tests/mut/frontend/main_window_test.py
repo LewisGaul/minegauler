@@ -12,7 +12,7 @@ import pytest
 from minegauler.frontend.main_window import MinegaulerGUI
 from minegauler.frontend.minefield import MinefieldWidget
 from minegauler.frontend.panel import PanelWidget
-from minegauler.utils import GameOptsStruct
+from minegauler.shared.utils import GameOptsStruct
 
 
 class TestMinegaulerGUI:
@@ -21,6 +21,6 @@ class TestMinegaulerGUI:
         ctrlr.opts = GameOptsStruct()
         gui = MinegaulerGUI(ctrlr)
         assert type(gui._panel_widget) == PanelWidget
-        assert type(gui._minefield_widget) == MinefieldWidget
+        assert type(gui._mf_widget) == MinefieldWidget
         qtbot.addWidget(gui)
         gui.show()

@@ -16,7 +16,7 @@ from typing import Dict, Optional
 
 import attr
 
-from .. import utils
+from ..shared import utils
 from ..types import (
     CellContentsType,
     CellFlag,

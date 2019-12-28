@@ -14,6 +14,7 @@ MinegaulerGUI
 __all__ = ("MinegaulerGUI",)
 
 import logging
+import traceback
 from typing import Callable, Dict, Optional, Type
 
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -37,13 +38,13 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from ..shared import highscores
-from ..types import UIMode
-from ..utils import GameOptsStruct, GuiOptsStruct, get_difficulty
-from . import api, utils
-from .highscores import HighscoresWindow
-from .minefield import MinefieldWidget
-from .panel import PanelWidget
+from .. import shared
+from ..core import api
+from ..shared.highscores import HighscoreSettingsStruct, HighscoreStruct
+from ..shared.utils import AllOptsStruct, GUIOptsStruct, get_difficulty
+from ..types import CellContentsType, GameState, UIMode
+from ..typing import Coord_T
+from . import highscores, minefield, panel, utils
 
 
 logger = logging.getLogger(__name__)
@@ -56,20 +57,12 @@ class _BaseMainWindow(QMainWindow):
 
     BODY_FRAME_WIDTH = 5
 
-    def __init__(
-        self,
-        title: Optional[str] = None,
-        *,
-        panel_widget: Optional[QWidget] = None,
-        body_widget: Optional[QWidget] = None,
-        footer_widget: Optional[QWidget] = None,
-    ):
+    def __init__(self, parent: Optional[QWidget], title: Optional[str] = None):
         """
-        Arguments:
-          title=None (string | None)
+        :param title:
             The window title.
         """
-        super().__init__()
+        super().__init__(parent)
         self._menubar: QMenuBar = self.menuBar()
         self._game_menu = self._menubar.addMenu("Game")
         self._opts_menu = self._menubar.addMenu("Options")
@@ -77,23 +70,16 @@ class _BaseMainWindow(QMainWindow):
         self._panel_frame: QFrame
         self._body_frame: QFrame
         self._footer_frame: QFrame
-        self._panel_widget: Optional[QWidget] = panel_widget
-        self._body_widget: Optional[QWidget] = body_widget
-        self._footer_widget: Optional[QWidget] = footer_widget
+        self._panel_widget: Optional[QWidget]
+        self._body_widget: Optional[QWidget]
+        self._footer_widget: Optional[QWidget]
         self._icon: QIcon = QIcon(str(utils.IMG_DIR / "icon.ico"))
         self.setWindowTitle(title)
         self.setWindowIcon(self._icon)
         # Disable maximise button
         self.setWindowFlags(self.windowFlags() | Qt.CustomizeWindowHint)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowMaximizeButtonHint)
-        self._populate_menubars()
         self._setup_ui()
-        if self._panel_widget is not None:
-            self.set_panel_widget(self._panel_widget)
-        if self._body_widget is not None:
-            self.set_body_widget(self._body_widget)
-        if self._footer_widget is not None:
-            self.set_footer_widget(self._footer_widget)
         # Keep track of all non-modal subwindows that are open.
         self._open_subwindows: Dict[Type[QWidget], QWidget] = {}
 
@@ -172,11 +158,6 @@ class _BaseMainWindow(QMainWindow):
         lyt.addWidget(widget)
         self._footer_widget = widget
 
-    def _populate_menubars(self):
-        # GAME MENU
-        exit_act = self._game_menu.addAction("Exit", self.close)
-        exit_act.setShortcut("Alt+F4")
-
     # --------------------------------------------------------------------------
     # Other methods
     # --------------------------------------------------------------------------
@@ -187,59 +168,133 @@ class _BaseMainWindow(QMainWindow):
         self.adjustSize()
 
 
-class MinegaulerGUI(_BaseMainWindow):
+class _MinegaulerGUIMeta(type(api.AbstractListener), type(_BaseMainWindow)):
+    pass
+
+
+class MinegaulerGUI(
+    api.AbstractListener, _BaseMainWindow, metaclass=_MinegaulerGUIMeta
+):
     """The main Minegauler GUI window."""
 
-    def __init__(
-        self,
-        ctrlr: api.AbstractSwitchingController,
-        gui_opts: GuiOptsStruct = None,
-        game_opts: GameOptsStruct = None,
-    ):
+    def __init__(self, ctrlr: api.AbstractSwitchingController, opts: AllOptsStruct):
         """
         :param ctrlr:
             The core controller.
+        :param opts:
+            All application settings.
         """
         self._ctrlr: api.AbstractSwitchingController = ctrlr
-        self._gui_opts: GuiOptsStruct
-        self._game_opts: GameOptsStruct  # TODO: This is wrong. Use self._ctrlr.get_game_options().
+        super().__init__(None, "Minegauler")
+        self._opts: AllOptsStruct = opts.copy()
 
-        if gui_opts:
-            self._gui_opts = gui_opts.copy()
-        else:
-            self._gui_opts = GuiOptsStruct(drag_select=False)
-        if game_opts:
-            self._game_opts = game_opts.copy()
-        else:
-            self._game_opts = GameOptsStruct()
-
-        # TODO: Something's not right, this should come first...
-        super().__init__("MineGauler")
-
-        self._panel_widget: PanelWidget = PanelWidget(
-            self, ctrlr, self._game_opts.mines
-        )
-        self._minefield_widget: MinefieldWidget = MinefieldWidget(
+        self._panel_widget = panel.PanelWidget(self, self._opts.mines)
+        self._mf_widget = minefield.MinefieldWidget(
             self,
-            ctrlr,
-            btn_size=self._gui_opts.btn_size,
-            styles=self._gui_opts.styles,
-            drag_select=self._gui_opts.drag_select,
+            self._ctrlr,
+            x_size=self._opts.x_size,
+            y_size=self._opts.y_size,
+            btn_size=self._opts.btn_size,
+            styles=self._opts.styles,
+            drag_select=self._opts.drag_select,
         )
-        self._name_entry_widget: _NameEntryBar = _NameEntryBar(
-            self, self._gui_opts.name
-        )
+        self._populate_menubars()
         self.set_panel_widget(self._panel_widget)
-        self.set_body_widget(self._minefield_widget)
+        self.set_body_widget(self._mf_widget)
+        self._name_entry_widget = _NameEntryBar(self, self._opts.name)
         self.set_footer_widget(self._name_entry_widget)
 
         self._current_highscore: Optional[highscores.HighscoreStruct] = None
 
-        self._minefield_widget.at_risk_signal.connect(self._panel_widget.at_risk)
-        self._minefield_widget.no_risk_signal.connect(self._panel_widget.no_risk)
+        self._panel_widget.clicked.connect(self._ctrlr.new_game)
+        self._mf_widget.at_risk_signal.connect(self._panel_widget.at_risk)
+        self._mf_widget.no_risk_signal.connect(self._panel_widget.no_risk)
         self._name_entry_widget.name_updated_signal.connect(
-            lambda x: setattr(self._gui_opts, "name", x)
+            lambda x: setattr(self._opts, "name", x)
         )
+
+    # ----------------------------------
+    # Implemented abstractmethods
+    # ----------------------------------
+    def reset(self) -> None:
+        """
+        Called to indicate the GUI state should be soft-reset.
+
+        This is distinct from a factory reset (settings are not changed).
+        """
+        self._panel_widget.reset()
+        self._mf_widget.reset()
+
+    def resize(self, x_size: int, y_size: int) -> None:
+        """
+        Called to indicate the board shape has changed.
+
+        :param x_size:
+            The number of rows.
+        :param y_size:
+            The number of columns.
+        """
+        self._opts.x_size = x_size
+        self._opts.y_size = y_size
+        self._mf_widget.resize(x_size, y_size)
+
+    def set_mines(self, mines: int) -> None:
+        """
+        Called to indicate the base number of mines has changed.
+        """
+        self._opts.mines = mines
+        self._panel_widget.set_mines(mines)  # TODO: Shouldn't be needed :)
+
+    def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
+        for c, state in cell_updates.items():
+            self._mf_widget.set_cell_image(c, state)
+
+    def update_game_state(self, game_state: GameState) -> None:
+        if game_state is not GameState.WON:
+            self.set_current_highscore(None)
+        self._panel_widget.update_game_state(game_state)
+        self._mf_widget.update_game_state(game_state)
+
+    def update_mines_remaining(self, mines_remaining: int) -> None:
+        self._panel_widget.set_mines_counter(mines_remaining)
+
+    def handle_finished_game(self, info: api.EndedGameInfo) -> None:
+        """
+        Called once when a game ends.
+
+        :param info:
+            A store of end-game information.
+        """
+        self._panel_widget.timer.stop()
+        self._panel_widget.timer.set_time(int(info.elapsed + 1))
+        # Store the highscore if the game was won.
+        if info.game_state is GameState.WON:
+            highscore = HighscoreStruct(
+                difficulty=info.difficulty,
+                per_cell=info.per_cell,
+                timestamp=int(info.start_time),
+                elapsed=info.elapsed,
+                bbbv=info.bbbv,
+                bbbvps=info.bbbv / info.elapsed,
+                drag_select=self._opts.drag_select,  # TODO: this needs handling for when it's changed mid-game
+                name=self._opts.name,
+                flagging=info.flagging,
+            )
+            shared.highscores.insert_highscore(highscore)
+            self.set_current_highscore(highscore)
+            # Check whether to pop up the highscores window.
+            new_best = shared.highscores.is_highscore_new_best(highscore)
+            if new_best:
+                self.open_highscores_window(highscore, new_best)
+
+    def handle_exception(self, method: str, exc: Exception) -> None:
+        logger.error(
+            "Error occurred when calling %s() from backend:\n%s\n%s",
+            method,
+            "".join(traceback.format_exception(None, exc, exc.__traceback__)),
+            exc,
+        )
+        raise RuntimeError(exc).with_traceback(exc.__traceback__)
 
     # --------------------------------------------------------------------------
     # Qt method overrides
@@ -290,12 +345,12 @@ class MinegaulerGUI(_BaseMainWindow):
         # Highscores (F6)
         def open_highscores():
             game_opts = self._ctrlr.get_game_options()
-            settings = highscores.HighscoreSettingsStruct(
+            settings = HighscoreSettingsStruct(
                 difficulty=get_difficulty(
                     game_opts.x_size, game_opts.y_size, game_opts.mines
                 ),
                 per_cell=game_opts.per_cell,
-                drag_select=self._gui_opts.drag_select,
+                drag_select=self._opts.drag_select,
             )
             self.open_highscores_window(settings)
 
@@ -319,7 +374,7 @@ class MinegaulerGUI(_BaseMainWindow):
             self._game_menu.addAction(diff_act)
             diff_act.id = diff[0]
             if diff_act.id == get_difficulty(
-                self._game_opts.x_size, self._game_opts.y_size, self._game_opts.mines
+                self._opts.x_size, self._opts.y_size, self._opts.mines
             ):
                 diff_act.setChecked(True)
             diff_act.triggered.connect(
@@ -346,28 +401,28 @@ class MinegaulerGUI(_BaseMainWindow):
         # ----------
         # First-click success
         def toggle_first_success():
-            self._game_opts.first_success = not self._game_opts.first_success
-            self._ctrlr.set_first_success(self._game_opts.first_success)
+            self._opts.first_success = not self._opts.first_success
+            self._ctrlr.set_first_success(self._opts.first_success)
 
         first_act = QAction(
-            "Safe start", self, checkable=True, checked=self._game_opts.first_success
+            "Safe start", self, checkable=True, checked=self._opts.first_success
         )
         self._opts_menu.addAction(first_act)
         first_act.triggered.connect(toggle_first_success)
 
         # Drag select
         def toggle_drag_select():
-            self._gui_opts.drag_select = not self._gui_opts.drag_select
-            self._minefield_widget.drag_select = self._gui_opts.drag_select
+            self._opts.drag_select = not self._opts.drag_select
+            self._mf_widget.drag_select = self._opts.drag_select
 
         drag_act = self._opts_menu.addAction("Drag select", toggle_drag_select)
         drag_act.setCheckable(True)
-        drag_act.setChecked(self._gui_opts.drag_select)
+        drag_act.setChecked(self._opts.drag_select)
 
         # Max mines per cell option
         def get_change_per_cell_func(n):
             def change_per_cell():
-                self._game_opts.per_cell = n
+                self._opts.per_cell = n
                 self._ctrlr.set_per_cell(n)
 
             return change_per_cell
@@ -380,7 +435,7 @@ class MinegaulerGUI(_BaseMainWindow):
             action = QAction(str(i), self, checkable=True)
             per_cell_menu.addAction(action)
             per_cell_group.addAction(action)
-            if self._game_opts.per_cell == i:
+            if self._opts.per_cell == i:
                 action.setChecked(True)
             action.triggered.connect(get_change_per_cell_func(i))
 
@@ -411,36 +466,24 @@ class MinegaulerGUI(_BaseMainWindow):
     def _open_custom_board_modal(self) -> None:
         _CustomBoardModal(
             self,
-            self._game_opts.x_size,
-            self._game_opts.y_size,
-            self._game_opts.mines,
+            self._opts.x_size,
+            self._opts.y_size,
+            self._opts.mines,
             self._ctrlr.resize_board,
         ).show()
 
-    def get_panel_widget(self) -> PanelWidget:
-        return self._panel_widget
-
-    def get_mf_widget(self) -> MinefieldWidget:
-        return self._minefield_widget
-
-    def update_game_opts(self, **kwargs) -> None:
-        """Update the stored game options."""
-        # TODO: Should this API even exist? :/
-        for k, v in kwargs.items():
-            setattr(self._game_opts, k, v)
-
-    def get_gui_opts(self) -> GuiOptsStruct:
-        return self._gui_opts
+    def get_gui_opts(self) -> GUIOptsStruct:
+        return GUIOptsStruct.from_structs(self._opts)
 
     def open_highscores_window(
-        self, settings: highscores.HighscoreSettingsStruct, sort_by: str = "time"
+        self, settings: HighscoreSettingsStruct, sort_by: str = "time"
     ) -> None:
-        win = HighscoresWindow(self, settings, sort_by)
+        win = highscores.HighscoresWindow(self, settings, sort_by)
         win.set_current_highscore(self._current_highscore)
         win.show()
         self._open_subwindows["highscores"] = win
 
-    def set_current_highscore(self, hs: Optional[highscores.HighscoreStruct]) -> None:
+    def set_current_highscore(self, hs: Optional[HighscoreStruct]) -> None:
         self._current_highscore = hs
 
 
@@ -568,6 +611,7 @@ if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
     import sys
 
-    app = QApplication(sys.argv)
+    _app = QApplication(sys.argv)
     widget = _CustomBoardModal(None, 10, 20, 30, lambda x, y, z: print(x, y, z))
-    app.exec()
+    widget.show()
+    _app.exec()

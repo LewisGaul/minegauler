@@ -15,9 +15,9 @@ __all__ = ("Board", "Minefield")
 import random as rnd
 from typing import Collection, Iterable, List, Optional, Union
 
+from ..shared import utils
 from ..types import CellContentsType, CellFlag, CellMineType, CellNum, CellUnclicked
 from ..typing import Coord_T
-from . import utils
 
 
 class Board(utils.Grid):

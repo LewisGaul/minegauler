@@ -12,7 +12,7 @@ from typing import List
 import pytest
 
 from minegauler.core.board import Board, Minefield
-from minegauler.core.utils import Grid
+from minegauler.shared.utils import Grid
 from minegauler.types import *
 from minegauler.typing import Coord_T
 

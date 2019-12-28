@@ -13,9 +13,8 @@ __all__ = (
     "board",
     "engine",
     "game",
-    "utils",
 )
 
-from . import api, board, engine, game, utils
+from . import api, board, engine, game
 from .board import Minefield
 from .engine import BaseController, CreateController, GameController

@@ -28,7 +28,9 @@ class TestMinefieldWidget:
         about unexpected calls (it is assumed this is an unlikely bug).
     """
 
-    # Default button size to use.
+    # Defaults to use.
+    x_size = 3
+    y_size = 4
     btn_size = 30
     # Callbacks for signals.
     at_risk_signal_cb = Mock()
@@ -41,7 +43,9 @@ class TestMinefieldWidget:
 
     @pytest.fixture
     def mf_widget(self, qtbot, ctrlr):
-        widget = MinefieldWidget(None, ctrlr, btn_size=self.btn_size)
+        widget = MinefieldWidget(
+            None, ctrlr, x_size=self.x_size, y_size=self.y_size, btn_size=self.btn_size
+        )
         qtbot.addWidget(widget)
         widget.set_cell_image = Mock(wraps=widget.set_cell_image)
         widget.at_risk_signal.connect(self.at_risk_signal_cb)
@@ -62,11 +66,11 @@ class TestMinefieldWidget:
     # Testcases
     # --------------------------------------------------------------------------
     def test_create(self, qtbot, ctrlr):
-        widget = MinefieldWidget(None, ctrlr)
+        widget = MinefieldWidget(None, ctrlr, x_size=self.x_size, y_size=self.y_size)
         qtbot.addWidget(widget)
         widget.show()
 
-    def test_leftclick_no_drag(self, qtbot, mf_widget):
+    def test_leftclick_no_drag(self, qtbot, mf_widget: MinefieldWidget):
         """
         Test left-clicks with drag select off.
         """
@@ -77,7 +81,7 @@ class TestMinefieldWidget:
             self.left_press((0, 1))
         self.assert_cell_sank((0, 1))
         self.left_release()
-        mf_widget.ctrlr.select_cell.assert_called_with((0, 1))
+        mf_widget._ctrlr.select_cell.assert_called_with((0, 1))
 
         ## Mouse move.
         self.left_press((1, 0))
@@ -123,10 +127,10 @@ class TestMinefieldWidget:
         self.reset_mocks()
         # Release.
         self.left_release()
-        mf_widget.ctrlr.select_cell.assert_called_with((3, 7))
+        mf_widget._ctrlr.select_cell.assert_called_with((3, 7))
         self.reset_mocks()
 
-    def test_rightclick_no_drag(self, qtbot, mf_widget):
+    def test_rightclick_no_drag(self, qtbot, mf_widget: MinefieldWidget):
         """
         Test right-clicks with drag select off.
         """
@@ -134,26 +138,26 @@ class TestMinefieldWidget:
 
         ## Basic right down and release on a cell.
         self.right_press((0, 1))
-        mf_widget.ctrlr.flag_cell.assert_called_with((0, 1))
+        mf_widget._ctrlr.flag_cell.assert_called_with((0, 1))
         self.at_risk_signal_cb.assert_not_called()
         self.reset_mocks()
         self.right_release()
-        mf_widget.ctrlr.flag_cell.assert_not_called()
+        mf_widget._ctrlr.flag_cell.assert_not_called()
 
         ## Mouse move.
         self.right_press((1, 0))
-        mf_widget.ctrlr.flag_cell.assert_called_with((1, 0))
+        mf_widget._ctrlr.flag_cell.assert_called_with((1, 0))
         self.reset_mocks()
         # Move one cell away.
         self.mouse_move((2, 0))
-        mf_widget.ctrlr.flag_cell.assert_not_called()
+        mf_widget._ctrlr.flag_cell.assert_not_called()
         self.reset_mocks()
         # Release.
         self.right_release()
-        mf_widget.ctrlr.flag_cell.assert_not_called()
+        mf_widget._ctrlr.flag_cell.assert_not_called()
         self.reset_mocks()
 
-    def test_chording_no_drag(self, qtbot, mf_widget):
+    def test_chording_no_drag(self, qtbot, mf_widget: MinefieldWidget):
         """
         Test chording clicks with drag select off.
         """
@@ -257,7 +261,7 @@ class TestMinefieldWidget:
 
     def reset_mocks(self):
         self._mf_widget.set_cell_image.reset_mock()
-        self._mf_widget.ctrlr.reset_mock()
+        self._mf_widget._ctrlr.reset_mock()
         self.at_risk_signal_cb.reset_mock()
         self.no_risk_signal_cb.reset_mock()
 

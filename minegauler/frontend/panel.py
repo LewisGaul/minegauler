@@ -14,12 +14,11 @@ __all__ = ("PanelWidget",)
 import sys
 from typing import Optional, Union
 
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QColor, QFont, QPalette, QPixmap
 from PyQt5.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QWidget
 
 from ..types import FaceState, GameState
-from .api import AbstractController
 from .utils import IMG_DIR
 
 
@@ -28,9 +27,9 @@ class PanelWidget(QWidget):
     The panel widget.
     """
 
-    def __init__(
-        self, parent: Optional[QWidget], ctrlr: AbstractController, mines: int
-    ):
+    clicked = pyqtSignal()
+
+    def __init__(self, parent: Optional[QWidget], mines: int):
         """
         Arguments:
         parent
@@ -39,7 +38,6 @@ class PanelWidget(QWidget):
             To access game engine methods (call-only).
         """
         super().__init__(parent)
-        self._ctrlr: AbstractController = ctrlr
         self._mines: int = mines
         self._game_state: GameState = GameState.READY
 
@@ -86,20 +84,11 @@ class PanelWidget(QWidget):
         if event.button() == Qt.LeftButton:
             self.face_button.setFrameShadow(QFrame.Raised)
             if self.rect().contains(event.pos()):
-                self.request_new_game()
+                self.clicked.emit()
 
     # --------------------------------------------------------------------------
     # Other methods
     # --------------------------------------------------------------------------
-    def request_new_game(self):
-        """
-        A new game has been requested, call backend.
-        """
-        self.set_face(FaceState.READY)
-        self.timer.stop()
-        self.timer.set_time(0)
-        self._ctrlr.new_game()
-
     def reset(self, mines: int = None) -> None:
         """
         Reset the panel state.
@@ -244,11 +233,8 @@ class Timer(QTimer):
 
 
 if __name__ == "__main__":
-    from minegauler.core import BaseController
-    from minegauler.core.utils import GameOptsStruct
-
     app = QApplication(sys.argv)
-    panel_widget = PanelWidget(None, BaseController(GameOptsStruct()), 123)
+    panel_widget = PanelWidget(None, 123)
     panel_widget.timer.start()
     panel_widget.show()
     sys.exit(app.exec_())

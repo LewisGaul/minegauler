@@ -18,7 +18,9 @@ from typing import Dict, Iterable, Optional, Tuple
 
 import attr
 
-from .. import ROOT_DIR, utils
+from .. import ROOT_DIR
+from ..utils import StructConstructorMixin
+from . import utils
 
 
 logger = logging.getLogger(__name__)
@@ -27,7 +29,7 @@ _DB_FILE = ROOT_DIR / "data" / "highscores.db"
 
 
 @attr.attrs(auto_attribs=True)
-class HighscoreSettingsStruct:
+class HighscoreSettingsStruct(StructConstructorMixin):
     """A set of highscore settings."""
 
     difficulty: str

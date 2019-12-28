@@ -37,8 +37,7 @@ from PyQt5.QtWidgets import (
     QWidgetAction,
 )
 
-from ..shared import highscores
-from ..utils import is_flagging_threshold
+from ..shared import highscores, utils
 
 
 logger = logging.getLogger(__name__)
@@ -213,7 +212,7 @@ class HighscoresModel(QAbstractTableModel):
         elif key == "date":
             return tm.strftime("%Y-%m-%d %H:%M:%S", tm.localtime(h.timestamp))
         elif key == "flagging":
-            return "F" if is_flagging_threshold(h.flagging) else "NF"
+            return "F" if utils.is_flagging_threshold(h.flagging) else "NF"
         else:
             return "<unhandled>"
 

@@ -19,7 +19,8 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QPainter, QPixmap
 from PyQt5.QtWidgets import QApplication, QGraphicsScene, QGraphicsView, QWidget
 
-from minegauler.types import (
+from .. import core
+from ..types import (
     CellFlag,
     CellHitMine,
     CellImageType,
@@ -30,9 +31,7 @@ from minegauler.types import (
     CellWrongFlag,
     GameState,
 )
-from minegauler.typing import Coord_T
-
-from .api import AbstractController
+from ..typing import Coord_T
 from .utils import IMG_DIR
 
 
@@ -126,18 +125,19 @@ class MinefieldWidget(QGraphicsView):
     def __init__(
         self,
         parent: Optional[QWidget],
-        ctrlr: AbstractController,
+        ctrlr: core.api.AbstractController,
         *,
+        x_size: int,
+        y_size: int,
         btn_size: int = 16,
-        styles=None,
+        styles: Dict = None,
         drag_select: bool = False,
     ):
-        logger.info("Initialising minefield widget")
         super().__init__(parent)
-        self.setStyleSheet("border: 0px")
-        self.ctrlr: AbstractController = ctrlr
-        self.x_size: int = ctrlr._opts.x_size  # TODO: Sort this out
-        self.y_size: int = ctrlr._opts.y_size
+        self._ctrlr = ctrlr
+        logger.info("Initialising minefield widget")
+        self.x_size: int = x_size
+        self.y_size: int = y_size
         self.btn_size: int = btn_size
         if styles:
             # for kw in [CellImageType.BUTTONS]:
@@ -146,12 +146,14 @@ class MinefieldWidget(QGraphicsView):
         else:
             self.img_styles = {CellImageType.BUTTONS: "standard"}
         self.drag_select: bool = drag_select
-
         self.cell_images: Dict = {}
-        init_or_update_cell_images(self.cell_images, btn_size, self.img_styles)
+        init_or_update_cell_images(self.cell_images, self.btn_size, self.img_styles)
+
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
+        self.setStyleSheet("border: 0px")
         self.setFixedSize(self.x_size * self.btn_size, self.y_size * self.btn_size)
+
         # Keep track of mouse button states.
         self.mouse_coord = None
         self.both_mouse_buttons_pressed = False
@@ -167,7 +169,8 @@ class MinefieldWidget(QGraphicsView):
 
     @property
     def _board(self):
-        return self.ctrlr.board
+        # TODO: I don't like this.
+        return self._ctrlr.board
 
     # --------------------------------------------------------------------------
     # Qt method overrides
@@ -293,7 +296,7 @@ class MinefieldWidget(QGraphicsView):
         """
         if self.drag_select:
             self.at_risk_signal.emit()
-            self.ctrlr.select_cell(coord)
+            self._ctrlr.select_cell(coord)
         else:
             self.sink_unclicked_cell(coord)
 
@@ -302,7 +305,7 @@ class MinefieldWidget(QGraphicsView):
         Left button was double clicked. Call callback to remove any flags that
         were on the cell.
         """
-        self.ctrlr.remove_cell_flags(coord)
+        self._ctrlr.remove_cell_flags(coord)
 
     def left_button_move(self, coord: Coord_T) -> None:
         """
@@ -329,14 +332,14 @@ class MinefieldWidget(QGraphicsView):
         self.raise_all_sunken_cells()
         self.no_risk_signal.emit()
         if not self.drag_select and coord is not None:
-            self.ctrlr.select_cell(coord)
+            self._ctrlr.select_cell(coord)
 
     def right_button_down(self, coord: Coord_T) -> None:
         """
         Right mouse button was pressed. Change display and call callback
         functions as appropriate.
         """
-        self.ctrlr.flag_cell(coord)
+        self._ctrlr.flag_cell(coord)
         if self._board[coord] == CellUnclicked():
             self.unflag_on_right_drag = True
         else:
@@ -348,9 +351,9 @@ class MinefieldWidget(QGraphicsView):
         """
         if coord is not None and self.drag_select:
             if self.unflag_on_right_drag:
-                self.ctrlr.remove_cell_flags(coord)
+                self._ctrlr.remove_cell_flags(coord)
             else:
-                self.ctrlr.flag_cell(coord, flag_only=True)
+                self._ctrlr.flag_cell(coord, flag_only=True)
 
     def both_buttons_down(self, coord: Coord_T) -> None:
         """
@@ -362,7 +365,7 @@ class MinefieldWidget(QGraphicsView):
                 self.sink_unclicked_cell(c)
         if self.drag_select:
             self.at_risk_signal.emit()
-            self.ctrlr.chord_on_cell(coord)
+            self._ctrlr.chord_on_cell(coord)
 
     def both_buttons_move(self, coord: Coord_T) -> None:
         """
@@ -384,7 +387,7 @@ class MinefieldWidget(QGraphicsView):
         if not self.drag_select:
             self.no_risk_signal.emit()
             if coord is not None:
-                self.ctrlr.chord_on_cell(coord)
+                self._ctrlr.chord_on_cell(coord)
 
     def all_buttons_release(self) -> None:
         """
@@ -402,8 +405,7 @@ class MinefieldWidget(QGraphicsView):
     # Other methods
     # --------------------------------------------------------------------------
     def is_coord_in_grid(self, coord: Coord_T) -> bool:
-        x, y = coord
-        return 0 <= x < self.x_size and 0 <= y < self.y_size
+        return self._board.is_coord_in_grid(coord)
 
     def coord_from_event(self, event) -> Optional[Coord_T]:
         coord = event.x() // self.btn_size, event.y() // self.btn_size
@@ -497,10 +499,12 @@ class MinefieldWidget(QGraphicsView):
 
 
 if __name__ == "__main__":
-    from minegauler.core import BaseController
-    from minegauler.core.utils import GameOptsStruct
+    from minegauler.core import GameController
+    from minegauler.shared.utils import GameOptsStruct
 
-    app = QApplication(sys.argv)
-    mf_widget = MinefieldWidget(None, BaseController(GameOptsStruct()), btn_size=100)
+    _app = QApplication(sys.argv)
+    x, y = 6, 4
+    ctrlr = GameController(GameOptsStruct(x_size=x, y_size=y))
+    mf_widget = MinefieldWidget(None, ctrlr, x_size=x, y_size=y, btn_size=100)
     mf_widget.show()
-    sys.exit(app.exec_())
+    sys.exit(_app.exec_())
