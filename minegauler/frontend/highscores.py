@@ -21,7 +21,7 @@ from PyQt5.QtCore import (
     pyqtSignal,
     pyqtSlot,
 )
-from PyQt5.QtGui import QCursor, QFont
+from PyQt5.QtGui import QCursor, QFont, QHideEvent
 from PyQt5.QtWidgets import (
     QAbstractItemView,
     QAbstractScrollArea,
@@ -58,7 +58,7 @@ class HighscoresWindow(QDialog):
         self._model = HighscoresModel(self)
         self._table = HighscoresTable(self._model)
         self.setup_ui()
-        self.setFixedWidth(self._table.width() + 46)
+        self.setFixedWidth(self._table.width())
         self._model.sort_changed.connect(self._table.set_sort_indicator)
         self._table.add_filter.connect(self.set_filter)
         self.set_sort_column(sort_by)
@@ -238,7 +238,7 @@ class HighscoresTable(QTableView):
         self._index = self.verticalHeader()
         self.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
         # self.setMinimumWidth(500)
-        self.setMinimumHeight(500)
+        self.setMinimumHeight(300)
         self.setStyleSheet(
             """
             background: rgb(215,215,255);
@@ -272,6 +272,9 @@ class HighscoresTable(QTableView):
     def _model(self) -> HighscoresModel:
         return self.model()
 
+    def hideEvent(self, event: QHideEvent):
+        self._filter_menu.close()
+
     @pyqtSlot()
     @pyqtSlot(int)
     def set_sort_indicator(self, col=None):
@@ -298,12 +301,14 @@ class HighscoresTable(QTableView):
             return cb
 
         if key == "flagging":
-            group = QActionGroup(self, exclusive=True)
+            group = QActionGroup(self)
+            group.setExclusive(True)
             for filter_string in ["All", "F", "NF"]:
                 action = QAction(filter_string, group, checkable=True)
-                if filter_string == "All":
-                    filter_string = None
-                if filter_string == self._model._filters["flagging"]:
+                if filter_string == "All" and not self._model._filters["flagging"]:
+                    action.setChecked(True)
+                    filter_string = ""
+                elif filter_string == self._model._filters["flagging"]:
                     action.setChecked(True)
                 self._filter_menu.addAction(action)
                 action.triggered.connect(get_filter_cb(key, filter_string))
@@ -363,7 +368,7 @@ if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
-    settings = highscores.HighscoreSettingsStruct(difficulty="b", per_cell=1)
+    settings = highscores.HighscoreSettingsStruct.get_default()
     win = HighscoresWindow(None, settings)
     win.show()
     sys.exit(app.exec_())
