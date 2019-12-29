@@ -145,6 +145,8 @@ def filter_and_sort(
                 and utils.is_flagging_threshold(hs.flagging)
             ):
                 all_pass = False
+        if "name" in filters and filters["name"] != hs.name:
+            all_pass = False
         if all_pass:
             # All filters satisfied.
             ret.append(hs)

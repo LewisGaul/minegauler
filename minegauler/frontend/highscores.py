@@ -9,7 +9,7 @@ __all__ = ("HighscoresWindow",)
 import logging
 import sys
 import time as tm
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from PyQt5.QtCore import (
     QAbstractTableModel,
@@ -38,6 +38,7 @@ from PyQt5.QtWidgets import (
 )
 
 from ..shared import highscores, utils
+from . import state
 
 
 logger = logging.getLogger(__name__)
@@ -50,19 +51,17 @@ class HighscoresWindow(QDialog):
         self,
         parent: Optional[QWidget],
         settings: highscores.HighscoreSettingsStruct,
-        sort_by: str = "time",
-        *,
-        name_hint: Optional[str] = None,
+        state_: state.HighscoreWindowState,
     ):
         super().__init__(parent)
+        self._state = state_
         self.setWindowTitle("Highscores")
-        self._model = HighscoresModel(self)
-        self._table = HighscoresTable(self._model, name_hint=name_hint)
+        self._model = HighscoresModel(self, self._state)
+        self._table = HighscoresTable(self._model, self._state)
         self.setup_ui()
         self.setFixedWidth(self._table.width())
         self._model.sort_changed.connect(self._table.set_sort_indicator)
         self._table.add_filter.connect(self.set_filter)
-        self.set_sort_column(sort_by)
         self._model.update_highscores_group(settings)
 
     def setup_ui(self) -> None:
@@ -85,19 +84,15 @@ class HighscoresWindow(QDialog):
         else:
             super().keyPressEvent(event)
 
-    def set_name_hint(self, name: Optional[str]) -> None:
-        self._table.set_name_hint(name)
-
-    def set_sort_column(self, sort_by: str) -> None:
-        self._model.sort(self._model.headers.index(sort_by))
-
     @pyqtSlot(str, str)
     def set_filter(self, filter_by: str, filter: str) -> None:
-        self._model._filters[filter_by] = filter
+        if filter_by == "name":
+            self._state.name_filter = filter
+        elif filter_by == "flagging":
+            self._state.flagging_filter = filter
+        else:
+            raise ValueError(f"Unrecognised header to filter by: '{filter_by}'")
         self._model.filter_and_sort()
-
-    def set_current_highscore(self, hs: Optional[highscores.HighscoreStruct]) -> None:
-        self._model.set_current_highscore(hs)
 
 
 class HighscoresModel(QAbstractTableModel):
@@ -106,14 +101,18 @@ class HighscoresModel(QAbstractTableModel):
     sort_changed = pyqtSignal(int)
     headers = ["name", "time", "3bv", "3bv/s", "date", "flagging"]
 
-    def __init__(self, parent):
+    def __init__(self, parent: Optional[QWidget], state_: state.HighscoreWindowState):
         super().__init__(parent)
+        self._state: state.HighscoreWindowState = state_
         self._all_data: List[highscores.HighscoreStruct] = []
         self._displayed_data: List[highscores.HighscoreStruct] = []
-        self._active_hscore: Optional[highscores.HighscoreStruct] = None
-        self._sort_index: int = 1  # sort by time by default
-        # Initialise filters for each column.
-        self._filters = {h: None for h in self.headers}
+
+    @property
+    def _filters(self) -> Dict[str, Optional[str]]:
+        return {
+            "name": self._state.name_filter,
+            "flagging": self._state.flagging_filter,
+        }
 
     # -------------------------------------------------------------------------
     # Implement abstract methods
@@ -152,7 +151,10 @@ class HighscoresModel(QAbstractTableModel):
             if role == Qt.DisplayRole:
                 return QVariant(header.capitalize())
             elif role == Qt.FontRole:
-                if self._filters[header] or self._sort_index == index:
+                if (
+                    self._filters.get(header)
+                    or self._state.sort_by == self.headers[index]
+                ):
                     return bold_font
             elif role == Qt.SizeHintRole:
                 # Set size hint for 'Name' column width (minimum width).
@@ -167,11 +169,11 @@ class HighscoresModel(QAbstractTableModel):
                     return bold_font
         return QVariant()
 
-    def sort(self, index, order=Qt.DescendingOrder):
+    def sort(self, index: int, order=Qt.DescendingOrder):
         header = self.headers[index]
         if header not in ["time", "3bv/s"]:
             return
-        self._sort_index = index
+        self._state.sort_by = header
         self.filter_and_sort()
         self.sort_changed.emit(index)
 
@@ -187,16 +189,10 @@ class HighscoresModel(QAbstractTableModel):
         self._all_data = highscores.get_highscores(settings)
         self.filter_and_sort()
 
-    def set_current_highscore(self, hs: Optional[highscores.HighscoreStruct]) -> None:
-        self._active_hscore = hs
-        # if hs is None:
-        #     # Restore old sort order and filters on new game
-        # #[Scroll to this hscore if get_active_row()]
-
     def get_active_row(self) -> Optional[int]:
         """Get the index of the row containing the active highscore."""
-        if self._active_hscore in self._displayed_data:
-            return self._displayed_data.index(self._active_hscore)
+        if self._state.current_highscore in self._displayed_data:
+            return self._displayed_data.index(self._state.current_highscore)
         else:
             return None
 
@@ -222,7 +218,7 @@ class HighscoresModel(QAbstractTableModel):
         """Update the displayed data based on current filters/sorting."""
         self.layoutAboutToBeChanged.emit()
         self._displayed_data = highscores.filter_and_sort(
-            self._all_data, self.headers[self._sort_index], self._filters
+            self._all_data, self._state.sort_by, self._filters
         )
         self.layoutChanged.emit()
 
@@ -232,8 +228,9 @@ class HighscoresTable(QTableView):
 
     add_filter = pyqtSignal(str, str)
 
-    def __init__(self, model: HighscoresModel, *, name_hint: Optional[str] = None):
+    def __init__(self, model: HighscoresModel, state_: state.HighscoreWindowState):
         super().__init__()
+        self._state: state.HighscoreWindowState = state_
         self.setModel(model)
         self._header = self.horizontalHeader()
         self._index = self.verticalHeader()
@@ -254,20 +251,17 @@ class HighscoresTable(QTableView):
         # Fix width of all columns, let first column stretch to width.
         self._header.setSectionResizeMode(QHeaderView.ResizeToContents)
         self._header.setSortIndicatorShown(True)
+        self.set_sort_indicator()
         # Sort indicator is changed by clicking a header column, although in
         #  most cases this won't change the sorting, so the indicator needs to
         #  be changed back.
-        self._header.sortIndicatorChanged.connect(
-            lambda _1, _2: self.set_sort_indicator()
-        )
+        self._header.sortIndicatorChanged.connect(self.set_sort_indicator)
         self._header.sectionClicked.connect(self.show_header_menu)
         # Set height of rows.
         self._index.setSectionResizeMode(QHeaderView.ResizeToContents)
         self._index.setSectionsClickable(False)
-        self._sort_index = 0
         self._filter_menu = QMenu(None)
         self._block_header_menu = False
-        self._name_hint: Optional[str] = name_hint
 
     @property
     def _model(self) -> HighscoresModel:
@@ -276,16 +270,11 @@ class HighscoresTable(QTableView):
     def hideEvent(self, event: QHideEvent):
         self._filter_menu.close()
 
-    def set_name_hint(self, name: Optional[str]) -> None:
-        self._name_hint = name
-
-    @pyqtSlot()
-    @pyqtSlot(int)
-    def set_sort_indicator(self, col=None):
+    def set_sort_indicator(self, *_):
         """Set the sort indicator to match the actual sorting."""
-        if col is not None:
-            self._sort_index = col
-        self._header.setSortIndicator(self._sort_index, Qt.DescendingOrder)
+        self._header.setSortIndicator(
+            self._model.headers.index(self._state.sort_by), Qt.DescendingOrder
+        )
 
     @pyqtSlot(int)
     def show_header_menu(self, col):
@@ -309,10 +298,10 @@ class HighscoresTable(QTableView):
             group.setExclusive(True)
             for filter_string in ["All", "F", "NF"]:
                 action = QAction(filter_string, group, checkable=True)
-                if filter_string == "All" and not self._model._filters["flagging"]:
+                if filter_string == "All" and not self._state.flagging_filter:
                     action.setChecked(True)
                     filter_string = ""
-                elif filter_string == self._model._filters["flagging"]:
+                elif filter_string == self._state.flagging_filter:
                     action.setChecked(True)
                 self._filter_menu.addAction(action)
                 action.triggered.connect(get_filter_cb(key, filter_string))
@@ -326,16 +315,16 @@ class HighscoresTable(QTableView):
             self._filter_menu.addAction(all_action)  # add to menu
             self._filter_menu.addSeparator()  # patch highlighting with mouse movement
             ## Make entry bar for name filter.
-            # Create the entry bar with the existing filter as the text
-            if self._name_hint:
-                # Name in entry bar, if any
-                text = self._name_hint
+            # Create the entry bar with the existing filter as the text.
+            if self._state.name_hint:
+                # Name in entry bar, if any.
+                text = self._state.name_hint
             else:
-                # If no name in entry bar, name currently filtered by
-                text = self._model._filters["name"]
+                # If no name in entry bar, name currently filtered by.
+                text = self._state.name_filter
             entry = QLineEdit(text, self)
             entry.selectAll()  # select all the text
-            # Set focus to the entry bar when the menu is opened
+            # Set focus to the entry bar when the menu is opened.
             self._filter_menu.aboutToShow.connect(entry.setFocus)
 
             def set_name_filter():

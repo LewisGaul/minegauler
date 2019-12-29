@@ -34,8 +34,10 @@ class HighscoreWindowState(utils.StructConstructorMixin):
     """State associated with the highscores window."""
 
     name_filter: Optional[str] = None
+    name_hint: str = ""
     flagging_filter: Optional[str] = None
     sort_by: str = "time"
+    current_highscore: Optional[shared.HighscoreStruct] = None
 
 
 @attr.attrs(auto_attribs=True, kw_only=True)
@@ -57,7 +59,7 @@ class State:
 
     ui_mode: types.UIMode = types.UIMode.GAME
 
-    highscore_window_state: HighscoreWindowState = HighscoreWindowState()
+    highscores_state: HighscoreWindowState = HighscoreWindowState()
 
     # ---------------------------------
     # Handling for game state fields

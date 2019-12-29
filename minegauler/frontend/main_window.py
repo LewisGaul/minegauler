@@ -242,11 +242,9 @@ class MinegaulerGUI(
 
     def update_game_state(self, game_state: GameState) -> None:
         self._state.game_status = game_state
-        if game_state is not GameState.WON:
-            self.set_current_highscore(None)
-
+        if game_state is GameState.READY:
+            self._state.highscores_state.current_highscore = None
         self._panel_widget.update_game_state(game_state)
-        self._mf_widget.update_game_state(game_state)
 
     def update_mines_remaining(self, mines_remaining: int) -> None:
         self._panel_widget.set_mines_counter(mines_remaining)
@@ -274,7 +272,7 @@ class MinegaulerGUI(
                 flagging=info.flagging,
             )
             shared.highscores.insert_highscore(highscore)
-            self.set_current_highscore(highscore)
+            self._state.highscores_state.current_highscore = highscore
             # Check whether to pop up the highscores window.
             new_best = shared.highscores.is_highscore_new_best(highscore)
             if new_best:
@@ -342,17 +340,9 @@ class MinegaulerGUI(
         # - Auto click (Ctrl+Enter)
 
         # Highscores (F6)
-        def open_highscores():
-            settings = HighscoreSettingsStruct(
-                difficulty=get_difficulty(
-                    self._state.x_size, self._state.y_size, self._state.mines
-                ),
-                per_cell=self._state.per_cell,
-                drag_select=self._state.drag_select,
-            )
-            self.open_highscores_window(settings)
-
-        highscores_act = self._game_menu.addAction("Highscores", open_highscores)
+        highscores_act = self._game_menu.addAction(
+            "Highscores", self.open_highscores_window
+        )
         highscores_act.setShortcut("F6")
 
         # Stats (F7)
@@ -410,11 +400,12 @@ class MinegaulerGUI(
         first_act.triggered.connect(toggle_first_success)
 
         # Drag select
-        def toggle_drag_select():
-            new_val = not self._state.pending_drag_select
-            self._state.drag_select = new_val
-
-        drag_act = self._opts_menu.addAction("Drag select", toggle_drag_select)
+        drag_act = self._opts_menu.addAction(
+            "Drag select",
+            lambda: setattr(
+                self._state, "drag_select", not self._state.pending_drag_select
+            ),
+        )
         drag_act.setCheckable(True)
         drag_act.setChecked(self._state.drag_select)
 
@@ -444,6 +435,13 @@ class MinegaulerGUI(
         # TODO: None yet...
 
     def _change_difficulty(self, id_: str) -> None:
+        """
+        Change the difficulty via the core controller.
+
+        :param id_:
+            The difficulty ('b', 'i', 'e', 'm' or 'c').
+        """
+        id_ = id_.upper()
         if id_ == "B":
             x, y, m = 8, 8, 10
         elif id_ == "I":
@@ -464,8 +462,7 @@ class MinegaulerGUI(
 
     def _set_name(self, name: str) -> None:
         self._state.name = name
-        if "highscores" in self._open_subwindows:
-            self._open_subwindows["highscores"].set_name_hint(name)
+        self._state.highscores_state.name_hint = name
 
     def _open_custom_board_modal(self) -> None:
         _CustomBoardModal(
@@ -477,20 +474,39 @@ class MinegaulerGUI(
         ).show()
 
     def get_gui_opts(self) -> GUIOptsStruct:
-        return GUIOptsStruct.from_structs(self._state, self._state.current_game_state)
+        return GUIOptsStruct.from_structs(self._state, self._state.pending_game_state)
 
     def open_highscores_window(
-        self, settings: HighscoreSettingsStruct, sort_by: str = "time"
+        self,
+        settings: Optional[HighscoreSettingsStruct] = None,
+        sort_by: Optional[str] = None,
     ) -> None:
-        win = highscores.HighscoresWindow(
-            self, settings, sort_by, name_hint=self._state.name
-        )
-        win.set_current_highscore(self._current_highscore)
+        """
+        Open the highscores window.
+
+        :param settings:
+            Optionally specify the highscore settings to display highscores
+            for. By default the current frontend state is used.
+        :param sort_by:
+            Optionally specify the key to sort the highscores by. Defaults to
+            the previous sort key.
+        """
+        if self._open_subwindows.get("highscores"):
+            self._open_subwindows.get("highscores").close()
+        if not settings:
+            settings = HighscoreSettingsStruct(
+                difficulty=get_difficulty(
+                    self._state.x_size, self._state.y_size, self._state.mines
+                ),
+                per_cell=self._state.per_cell,
+                drag_select=self._state.drag_select,
+            )
+        if sort_by:
+            self._state.highscores_state.sort_by = sort_by
+        self._state.highscores_state.name_hint = self._state.name
+        win = highscores.HighscoresWindow(self, settings, self._state.highscores_state)
         win.show()
         self._open_subwindows["highscores"] = win
-
-    def set_current_highscore(self, hs: Optional[HighscoreStruct]) -> None:
-        self._current_highscore = hs
 
 
 class _CustomBoardModal(QDialog):

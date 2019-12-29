@@ -154,7 +154,6 @@ class MinefieldWidget(QGraphicsView):
         self.sunken_cells: Set = set()
 
         self._ignore_clicks = False
-        self._game_state = GameState.READY
         self.reset()
 
     @property
@@ -409,7 +408,6 @@ class MinefieldWidget(QGraphicsView):
         self.mouse_coord = None
         self.both_mouse_buttons_pressed = False
         self.await_release_all_buttons = True
-        self.update_game_state(GameState.READY)
         for c in self._board.all_coords:
             self.set_cell_image(c, CellUnclicked())
 
@@ -417,7 +415,7 @@ class MinefieldWidget(QGraphicsView):
         """
         Set an unclicked cell to appear sunken.
         """
-        if self._game_state.finished():
+        if self._state.game_status.finished():
             return
         if self._board[coord] == CellUnclicked():
             self.set_cell_image(coord, "btn_down")
@@ -477,15 +475,6 @@ class MinefieldWidget(QGraphicsView):
         #                            self.img_styles, img_type)
         # for coord in self.board.all_coords:
         #     self.set_cell_image(coord)
-
-    def update_game_state(self, state: GameState) -> None:
-        """
-        Receive an update in the game state.
-
-        :param state:
-            The new game state.
-        """
-        self._game_state = state
 
 
 if __name__ == "__main__":
