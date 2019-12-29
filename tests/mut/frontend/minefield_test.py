@@ -12,9 +12,13 @@ from unittest.mock import Mock
 import pytest
 from PyQt5.QtCore import QEvent, QPoint, Qt
 from PyQt5.QtGui import QMouseEvent
+from pytestqt.qtbot import QtBot
 
+from minegauler.core import api
 from minegauler.frontend import state
 from minegauler.frontend.minefield import MinefieldWidget
+
+from . import utils
 
 
 class TestMinefieldWidget:
@@ -35,20 +39,21 @@ class TestMinefieldWidget:
     # Callbacks for signals.
     at_risk_signal_cb = Mock()
     no_risk_signal_cb = Mock()
+
     # Store references to per-test created objects for convenience in helper
     #  functions.
     _qtbot = None
     _mf_widget = None
     _mouse_buttons_down = Qt.NoButton
+    _mouse_down_pos = None
 
     @pytest.fixture
-    def mf_widget(self, qtbot, ctrlr):
+    def mf_widget(self, qtbot: QtBot, ctrlr: api.AbstractController):
         widget = MinefieldWidget(None, ctrlr, self.state)
         qtbot.addWidget(widget)
         widget.set_cell_image = Mock(wraps=widget.set_cell_image)
         widget.at_risk_signal.connect(self.at_risk_signal_cb)
         widget.no_risk_signal.connect(self.no_risk_signal_cb)
-        widget.show()
 
         self._qtbot = qtbot
         self._mf_widget = widget
@@ -59,16 +64,19 @@ class TestMinefieldWidget:
 
         self._qtbot = None
         self._mf_widget = None
+        self._mouse_buttons_down = Qt.NoButton
+        self._mouse_down_pos = None
 
     # --------------------------------------------------------------------------
     # Testcases
     # --------------------------------------------------------------------------
-    def test_create(self, qtbot, ctrlr):
+    def test_create(self, qtbot: QtBot, ctrlr: api.AbstractController):
         widget = MinefieldWidget(None, ctrlr, self.state)
         qtbot.addWidget(widget)
         widget.show()
+        utils.maybe_stop_for_interaction(qtbot)
 
-    def test_leftclick_no_drag(self, qtbot, mf_widget: MinefieldWidget):
+    def test_leftclick_no_drag(self, qtbot: QtBot, mf_widget: MinefieldWidget):
         """
         Test left-clicks with drag select off.
         """
@@ -128,7 +136,7 @@ class TestMinefieldWidget:
         mf_widget._ctrlr.select_cell.assert_called_with((3, 7))
         self.reset_mocks()
 
-    def test_rightclick_no_drag(self, qtbot, mf_widget: MinefieldWidget):
+    def test_rightclick_no_drag(self, qtbot: QtBot, mf_widget: MinefieldWidget):
         """
         Test right-clicks with drag select off.
         """
@@ -156,7 +164,7 @@ class TestMinefieldWidget:
         self.reset_mocks()
 
     @pytest.mark.skip
-    def test_chording_no_drag(self, qtbot, mf_widget: MinefieldWidget):
+    def test_chording_no_drag(self, qtbot: QtBot, mf_widget: MinefieldWidget):
         """
         Test chording clicks with drag select off.
         """
