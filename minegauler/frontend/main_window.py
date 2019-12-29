@@ -317,9 +317,15 @@ class MinegaulerGUI(
         # Create board
         def switch_create_mode(checked: bool):
             mode = UIMode.CREATE if checked else UIMode.GAME
+            self._state.ui_mode = mode
             self._ctrlr.switch_mode(mode)
 
-        create_act = QAction("Create board", self, checkable=True, checked=False)
+        create_act = QAction(
+            "Create board",
+            self,
+            checkable=True,
+            checked=self._state.ui_mode is UIMode.CREATE,
+        )
         self._game_menu.addAction(create_act)
         create_act.triggered.connect(switch_create_mode)
 

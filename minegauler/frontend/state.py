@@ -55,6 +55,8 @@ class State:
 
     _game_status: types.GameState = types.GameState.READY
 
+    ui_mode: types.UIMode = types.UIMode.GAME
+
     highscore_window_state: HighscoreWindowState = HighscoreWindowState()
 
     # ---------------------------------
