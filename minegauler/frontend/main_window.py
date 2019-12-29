@@ -209,9 +209,7 @@ class MinegaulerGUI(
         self._panel_widget.clicked.connect(self._ctrlr.new_game)
         self._mf_widget.at_risk_signal.connect(self._panel_widget.at_risk)
         self._mf_widget.no_risk_signal.connect(self._panel_widget.no_risk)
-        self._name_entry_widget.name_updated_signal.connect(
-            lambda x: setattr(self._opts, "name", x)
-        )
+        self._name_entry_widget.name_updated_signal.connect(self._set_name)
 
     # ----------------------------------
     # Implemented abstractmethods
@@ -463,6 +461,11 @@ class MinegaulerGUI(
         self._ctrlr.resize_board(x_size=x, y_size=y, mines=m)
         self.update_size()
 
+    def _set_name(self, name: str) -> None:
+        self._opts.name = name
+        if "highscores" in self._open_subwindows:
+            self._open_subwindows["highscores"].set_name_hint(name)
+
     def _open_custom_board_modal(self) -> None:
         _CustomBoardModal(
             self,
@@ -478,7 +481,9 @@ class MinegaulerGUI(
     def open_highscores_window(
         self, settings: HighscoreSettingsStruct, sort_by: str = "time"
     ) -> None:
-        win = highscores.HighscoresWindow(self, settings, sort_by)
+        win = highscores.HighscoresWindow(
+            self, settings, sort_by, name_hint=self._opts.name
+        )
         win.set_current_highscore(self._current_highscore)
         win.show()
         self._open_subwindows["highscores"] = win

@@ -51,11 +51,13 @@ class HighscoresWindow(QDialog):
         parent: Optional[QWidget],
         settings: highscores.HighscoreSettingsStruct,
         sort_by: str = "time",
+        *,
+        name_hint: Optional[str] = None,
     ):
         super().__init__(parent)
         self.setWindowTitle("Highscores")
         self._model = HighscoresModel(self)
-        self._table = HighscoresTable(self._model)
+        self._table = HighscoresTable(self._model, name_hint=name_hint)
         self.setup_ui()
         self.setFixedWidth(self._table.width())
         self._model.sort_changed.connect(self._table.set_sort_indicator)
@@ -79,18 +81,18 @@ class HighscoresWindow(QDialog):
         """Override the QWidget method for receiving key presses."""
         # Make enter/return/escape close the window.
         if event.key() in [Qt.Key_Return, Qt.Key_Enter, Qt.Key_Escape]:
-            if self.parent():
-                self.hide()
-            else:
-                self.close()
+            self.close()
         else:
             super().keyPressEvent(event)
 
-    def set_sort_column(self, sort_by):
+    def set_name_hint(self, name: Optional[str]) -> None:
+        self._table.set_name_hint(name)
+
+    def set_sort_column(self, sort_by: str) -> None:
         self._model.sort(self._model.headers.index(sort_by))
 
     @pyqtSlot(str, str)
-    def set_filter(self, filter_by, filter):
+    def set_filter(self, filter_by: str, filter: str) -> None:
         self._model._filters[filter_by] = filter
         self._model.filter_and_sort()
 
@@ -230,7 +232,7 @@ class HighscoresTable(QTableView):
 
     add_filter = pyqtSignal(str, str)
 
-    def __init__(self, model: HighscoresModel):
+    def __init__(self, model: HighscoresModel, *, name_hint: Optional[str] = None):
         super().__init__()
         self.setModel(model)
         self._header = self.horizontalHeader()
@@ -265,7 +267,7 @@ class HighscoresTable(QTableView):
         self._sort_index = 0
         self._filter_menu = QMenu(None)
         self._block_header_menu = False
-        self._name_hint = None
+        self._name_hint: Optional[str] = name_hint
 
     @property
     def _model(self) -> HighscoresModel:
@@ -273,6 +275,9 @@ class HighscoresTable(QTableView):
 
     def hideEvent(self, event: QHideEvent):
         self._filter_menu.close()
+
+    def set_name_hint(self, name: Optional[str]) -> None:
+        self._name_hint = name
 
     @pyqtSlot()
     @pyqtSlot(int)
