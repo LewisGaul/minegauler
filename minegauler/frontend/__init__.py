@@ -4,12 +4,13 @@ __init__.py - Available imports from the package
 December 2018, Lewis Gaul
 """
 
-__all__ = ("MinegaulerGUI", "init_app", "run_app")
+__all__ = ("MinegaulerGUI", "init_app", "run_app", "state")
 
 import sys
 
 from PyQt5.QtWidgets import QApplication
 
+from . import state
 from .main_window import MinegaulerGUI
 
 

@@ -341,28 +341,28 @@ class AbstractController(metaclass=abc.ABCMeta):
         """
         Select a cell for a regular click.
         """
-        self._logger.info("Cell %s selected", coord)
+        self._logger.debug("Cell %s selected", coord)
 
     @abc.abstractmethod
     def flag_cell(self, coord: Coord_T, *, flag_only: bool = False) -> None:
         """
         Select a cell for flagging.
         """
-        self._logger.info("Cell %s selected for flagging", coord)
+        self._logger.debug("Cell %s selected for flagging", coord)
 
     @abc.abstractmethod
     def chord_on_cell(self, coord: Coord_T) -> None:
         """
         Select a cell for chording.
         """
-        self._logger.info("Cell %s selected for chording", coord)
+        self._logger.debug("Cell %s selected for chording", coord)
 
     @abc.abstractmethod
     def remove_cell_flags(self, coord: Coord_T) -> None:
         """
         Remove flags in a cell, if any.
         """
-        self._logger.info("Flags in cell %s being removed", coord)
+        self._logger.debug("Flags in cell %s being removed", coord)
 
     @abc.abstractmethod
     def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
@@ -378,14 +378,14 @@ class AbstractController(metaclass=abc.ABCMeta):
         """
         Set whether the first click should be a guaranteed success.
         """
-        self._logger.info("Setting first success to %s", value)
+        self._logger.debug("Setting first success to %s", value)
 
     @abc.abstractmethod
     def set_per_cell(self, value: int) -> None:
         """
         Set the maximum number of mines per cell.
         """
-        self._logger.info("Setting per cell to %s", value)
+        self._logger.debug("Setting per cell to %s", value)
 
 
 class AbstractSwitchingController(AbstractController):

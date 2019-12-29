@@ -4,20 +4,17 @@ conftest.py - Pytest conf file
 December 2018, Lewis Gaul
 """
 
-from unittest.mock import MagicMock
+from unittest import mock
 
 import pytest
 
-import minegauler.shared.utils
-from minegauler import utils
-from minegauler.core import api as core_api
-from minegauler.core import board
+from minegauler.core import api, board
+from minegauler.shared import utils
 
 
 @pytest.fixture
-def ctrlr():
-    mock = MagicMock()
-    mock._opts = minegauler.shared.utils.GameOptsStruct()
-    mock.board = board.Board(mock._opts.x_size, mock._opts.y_size)
-    mock.mock_add_spec(core_api.AbstractSwitchingController, spec_set=True)
-    return mock
+def ctrlr() -> api.AbstractSwitchingController:
+    ret = mock.Mock(spec=api.AbstractSwitchingController)
+    ret._opts = utils.GameOptsStruct()
+    ret.board = board.Board(ret._opts.x_size, ret._opts.y_size)
+    return ret

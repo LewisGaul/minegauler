@@ -7,9 +7,7 @@ December 2018, Lewis Gaul
 import logging
 import sys
 
-import minegauler.shared.utils
-
-from . import core, frontend, utils
+from . import core, frontend, shared
 from ._version import __version__
 
 
@@ -22,16 +20,16 @@ logging.basicConfig(
 )
 
 
-read_settings = minegauler.shared.utils.read_settings_from_file()
+read_settings = shared.read_settings_from_file()
 
 if read_settings:
-    game_opts = minegauler.shared.utils.GameOptsStruct.from_structs(read_settings)
-    gui_opts = minegauler.shared.utils.GUIOptsStruct.from_structs(read_settings)
+    game_opts = shared.GameOptsStruct.from_structs(read_settings)
+    gui_opts = shared.GUIOptsStruct.from_structs(read_settings)
     logger.info("Settings read from file")
 else:
     logger.info("Using default settings")
-    game_opts = minegauler.shared.utils.GameOptsStruct()
-    gui_opts = minegauler.shared.utils.GUIOptsStruct()
+    game_opts = shared.GameOptsStruct()
+    gui_opts = shared.GUIOptsStruct()
 logger.debug("Game options: %s", game_opts)
 logger.debug("GUI options: %s", gui_opts)
 
@@ -42,9 +40,7 @@ logger.info("Starting up")
 ctrlr = core.BaseController(game_opts)
 # Init frontend and create controller.
 frontend.init_app()
-gui = frontend.MinegaulerGUI(
-    ctrlr, minegauler.shared.utils.AllOptsStruct.from_structs(game_opts, gui_opts)
-)
+gui = frontend.MinegaulerGUI(ctrlr, frontend.state.State.from_opts(game_opts, gui_opts))
 # Register frontend with core controller.
 ctrlr.register_listener(gui)
 
@@ -54,10 +50,10 @@ rc = frontend.run_app(gui)
 logger.debug("Exiting event loop")
 
 
-persist_settings = minegauler.shared.utils.AllOptsStruct.from_structs(
+persist_settings = shared.AllOptsStruct.from_structs(
     ctrlr.get_game_options(), gui.get_gui_opts()
 )
-minegauler.shared.utils.write_settings_to_file(persist_settings)
+shared.write_settings_to_file(persist_settings)
 
 
 logger.info("Exiting with exit code %d", rc)
