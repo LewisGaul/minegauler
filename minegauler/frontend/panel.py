@@ -19,6 +19,7 @@ from PyQt5.QtGui import QColor, QFont, QPalette, QPixmap
 from PyQt5.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QWidget
 
 from ..types import FaceState, GameState
+from . import state
 from .utils import IMG_DIR
 
 
@@ -29,20 +30,22 @@ class PanelWidget(QWidget):
 
     clicked = pyqtSignal()
 
-    def __init__(self, parent: Optional[QWidget], mines: int):
+    def __init__(self, parent: Optional[QWidget], state_: state.State):
         """
-        Arguments:
-        parent
-            Qt container widget.
-        ctrlr (minegauler.core.Controller)
-            To access game engine methods (call-only).
+        :param parent:
+            Parent widget.
+        :param state_:
+            Shared frontend state.
         """
         super().__init__(parent)
-        self._mines: int = mines
-        self._game_state: GameState = GameState.READY
+        self._state: state.State = state_
 
         self.setFixedHeight(40)
         self.setMinimumWidth(120)
+
+        self._mines_counter = _CounterWidget(self)
+        self._face_button = QLabel(self)
+        self.timer = Timer(self)
         self.setup_ui()
 
     def setup_ui(self):
@@ -53,21 +56,19 @@ class PanelWidget(QWidget):
         layout.setContentsMargins(6, 2, 6, 2)
         layout.setAlignment(Qt.AlignCenter)
         # Mine counter widget.
-        self.mines_counter = _CounterWidget(self)
-        layout.addWidget(self.mines_counter)
-        self.set_mines_counter(self._mines)
+        layout.addWidget(self._mines_counter)
+        self.set_mines_counter(self._state.mines)
         layout.addStretch()
         # Face button.
-        self.face_button = QLabel(self)
-        self.face_button.setFixedSize(32, 32)
-        self.face_button.setFrameShape(QFrame.Panel)
-        self.face_button.setFrameShadow(QFrame.Raised)
-        self.face_button.setLineWidth(3)
-        layout.addWidget(self.face_button)
+        self._face_button = QLabel(self)
+        self._face_button.setFixedSize(32, 32)
+        self._face_button.setFrameShape(QFrame.Panel)
+        self._face_button.setFrameShadow(QFrame.Raised)
+        self._face_button.setLineWidth(3)
+        layout.addWidget(self._face_button)
         self.set_face(FaceState.READY)
         layout.addStretch()
         # Timer widget.
-        self.timer = Timer(self)
         layout.addWidget(self.timer.widget)
 
     # --------------------------------------------------------------------------
@@ -77,26 +78,24 @@ class PanelWidget(QWidget):
         """Handle mouse press event."""
         super().mousePressEvent(event)
         if event.button() == Qt.LeftButton:
-            self.face_button.setFrameShadow(QFrame.Sunken)
+            self._face_button.setFrameShadow(QFrame.Sunken)
 
     def mouseReleaseEvent(self, event):
         """Handle mouse release event."""
         if event.button() == Qt.LeftButton:
-            self.face_button.setFrameShadow(QFrame.Raised)
+            self._face_button.setFrameShadow(QFrame.Raised)
             if self.rect().contains(event.pos()):
                 self.clicked.emit()
 
     # --------------------------------------------------------------------------
     # Other methods
     # --------------------------------------------------------------------------
-    def reset(self, mines: int = None) -> None:
+    def reset(self) -> None:
         """
         Reset the panel state.
         """
-        if mines:
-            self._mines = mines
         self.update_game_state(GameState.READY)
-        self.set_mines_counter(self._mines)
+        self.set_mines_counter(self._state.mines)
         self.timer.reset()
 
     def set_face(self, state: Union[FaceState, GameState, str]) -> None:
@@ -111,22 +110,17 @@ class PanelWidget(QWidget):
         life = 1
         fname = f"face{life}{state}.png"
         pixmap = QPixmap(str(IMG_DIR / "faces" / fname))
-        self.face_button.setPixmap(
+        self._face_button.setPixmap(
             pixmap.scaled(26, 26, transformMode=Qt.SmoothTransformation)
         )
 
     def at_risk(self) -> None:
-        if not self._game_state.finished():
+        if not self._state.game_status.finished():
             self.set_face(FaceState.ACTIVE)
 
     def no_risk(self) -> None:
-        if not self._game_state.finished():
+        if not self._state.game_status.finished():
             self.set_face(FaceState.READY)
-
-    def set_mines(self, mines: int) -> None:
-        """Set the default number of mines and update the mines counter."""
-        self._mines = mines
-        self.set_mines_counter(mines)
 
     def set_mines_counter(self, num: int) -> None:
         """
@@ -134,25 +128,22 @@ class PanelWidget(QWidget):
         the widget itself can have no way of knowing how many mines are left to
         be found.
         """
-        self.mines_counter.set_count(num)
+        self._mines_counter.set_count(num)
 
     def update_game_state(self, state: GameState) -> None:
         """
         Receive an update from a backend.
 
-        Arguments:
-        state (GameState)
-            The current game state.
+        :param state:
+            The new game state.
         """
-        if self._game_state != state:
-            self._game_state = state
-            if state is GameState.ACTIVE:
-                self.timer.start()
-            elif state in {GameState.WON, GameState.LOST}:
-                self.timer.stop()
-                self.set_face(state)
-            else:
-                self.set_face(state)
+        if state is GameState.ACTIVE:
+            self.timer.start()
+        elif state in {GameState.WON, GameState.LOST}:
+            self.timer.stop()
+            self.set_face(state)
+        else:
+            self.set_face(state)
 
 
 class _CounterWidget(QLabel):

@@ -169,7 +169,7 @@ class _BaseMainWindow(QMainWindow):
 
 
 class _MinegaulerGUIMeta(type(api.AbstractListener), type(_BaseMainWindow)):
-    pass
+    """Combined metaclass for the MinegaulerGUI class."""
 
 
 class MinegaulerGUI(
@@ -183,14 +183,14 @@ class MinegaulerGUI(
         """
         :param ctrlr:
             The core controller.
-        :param opts:
-            All application settings.
+        :param initial_state:
+            Initial application state.
         """
-        self._ctrlr: api.AbstractSwitchingController = ctrlr
         super().__init__(None, "Minegauler")
+        self._ctrlr: api.AbstractSwitchingController = ctrlr
         self._state: state.State = initial_state.deepcopy()
 
-        self._panel_widget = panel.PanelWidget(self, self._state.mines)
+        self._panel_widget = panel.PanelWidget(self, self._state)
         self._mf_widget = minefield.MinefieldWidget(self, self._ctrlr, self._state)
         self._populate_menubars()
         self.set_panel_widget(self._panel_widget)
@@ -235,7 +235,6 @@ class MinegaulerGUI(
         Called to indicate the base number of mines has changed.
         """
         self._state.mines = mines
-        self._panel_widget.set_mines(mines)  # TODO: Shouldn't be needed :)
 
     def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
         for c, state in cell_updates.items():
