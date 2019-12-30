@@ -16,7 +16,14 @@ from typing import Optional, Union
 
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QColor, QFont, QPalette, QPixmap
-from PyQt5.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QWidget
+from PyQt5.QtWidgets import (
+    QApplication,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QWidget,
+    QSizePolicy,
+)
 
 from ..types import FaceState, GameState
 from . import state
@@ -70,6 +77,7 @@ class PanelWidget(QWidget):
         layout.addStretch()
         # Timer widget.
         layout.addWidget(self.timer.widget)
+        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
 
     # --------------------------------------------------------------------------
     # Qt method overrides

@@ -55,7 +55,7 @@ class _BaseMainWindow(QMainWindow):
     Base class for the application implementing the general layout.
     """
 
-    BODY_FRAME_WIDTH = 5
+    BODY_FRAME_WIDTH = 10
 
     def __init__(self, parent: Optional[QWidget], title: Optional[str] = None):
         """
@@ -109,7 +109,7 @@ class _BaseMainWindow(QMainWindow):
         self._body_frame = QFrame(central_widget)
         self._body_frame.setFrameShadow(QFrame.Raised)
         self._body_frame.setFrameShape(QFrame.Box)
-        self._body_frame.setLineWidth(self.BODY_FRAME_WIDTH)
+        self._body_frame.setLineWidth(self.BODY_FRAME_WIDTH/2)
         self._body_frame.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         hstretch.addWidget(self._body_frame)
         hstretch.addStretch()  # right-padding for centering
@@ -163,6 +163,8 @@ class _BaseMainWindow(QMainWindow):
     # --------------------------------------------------------------------------
     def update_size(self):
         """Update the window size."""
+        width = max(self._mf_widget.width()+self.BODY_FRAME_WIDTH*2, self._panel_frame.minimumWidth())
+        self.setFixedSize(width, self.sizeHint().height())
         self._body_frame.adjustSize()
         self.centralWidget().adjustSize()
         self.adjustSize()
@@ -197,6 +199,7 @@ class MinegaulerGUI(
         self.set_body_widget(self._mf_widget)
         self._name_entry_widget = _NameEntryBar(self, self._state.name)
         self.set_footer_widget(self._name_entry_widget)
+        #self.setFixedWidth(self._mf_widget.width()+self.BODY_FRAME_WIDTH*2)
 
         self._current_highscore: Optional[highscores.HighscoreStruct] = None
 
@@ -311,6 +314,11 @@ class MinegaulerGUI(
     # --------------------------------------------------------------------------
     # Qt method overrides
     # --------------------------------------------------------------------------
+
+    def show(self) -> None:
+        super().show()
+        self.update_size()
+
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
         self._name_entry_widget.clearFocus()
