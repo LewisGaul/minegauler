@@ -15,7 +15,7 @@ __all__ = ("MinegaulerGUI",)
 
 import logging
 import traceback
-from typing import Callable, Dict, Optional, Type
+from typing import Callable, Dict, Mapping, Optional, Type
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFocusEvent, QFont, QIcon, QKeyEvent
@@ -233,20 +233,41 @@ class MinegaulerGUI(
     def set_mines(self, mines: int) -> None:
         """
         Called to indicate the base number of mines has changed.
+
+        :param mines:
+            The number of mines.
         """
         self._state.mines = mines
 
-    def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
+    def update_cells(self, cell_updates: Mapping[Coord_T, CellContentsType]) -> None:
+        """
+        Called to indicate some cells have changed state.
+
+        :param cell_updates:
+            A mapping of cell coordinates to their new state.
+        """
         for c, state in cell_updates.items():
             self._mf_widget.set_cell_image(c, state)
 
     def update_game_state(self, game_state: GameState) -> None:
+        """
+        Called to indicate the game state has changed.
+
+        :param game_state:
+            The new game state.
+        """
         self._state.game_status = game_state
         if game_state is GameState.READY:
             self._state.highscores_state.current_highscore = None
         self._panel_widget.update_game_state(game_state)
 
     def update_mines_remaining(self, mines_remaining: int) -> None:
+        """
+        Called to indicate the number of remaining mines has changed.
+
+        :param mines_remaining:
+            The remaining number of mines.
+        """
         self._panel_widget.set_mines_counter(mines_remaining)
 
     def handle_finished_game(self, info: api.EndedGameInfo) -> None:
@@ -267,7 +288,7 @@ class MinegaulerGUI(
                 elapsed=info.elapsed,
                 bbbv=info.bbbv,
                 bbbvps=info.bbbv / info.elapsed,
-                drag_select=self._state.drag_select,  # TODO: this needs handling for when it's changed mid-game
+                drag_select=self._state.drag_select,
                 name=self._state.name,
                 flagging=info.flagging,
             )

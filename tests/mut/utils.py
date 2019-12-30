@@ -10,7 +10,7 @@ from unittest import mock
 
 
 @contextlib.contextmanager
-def active_patches(patches: Iterable[mock._patch]):
+def activate_patches(patches: Iterable[mock._patch]):
     """
     Context manager to activate multiple mock patches.
 
