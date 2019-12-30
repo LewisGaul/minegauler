@@ -222,9 +222,9 @@ class MinegaulerGUI(
         Called to indicate the board shape has changed.
 
         :param x_size:
-            The number of rows.
-        :param y_size:
             The number of columns.
+        :param y_size:
+            The number of rows.
         """
         self._state.x_size = x_size
         self._state.y_size = y_size

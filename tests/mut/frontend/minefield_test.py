@@ -40,8 +40,7 @@ class TestMinefieldWidget:
     at_risk_signal_cb = Mock()
     no_risk_signal_cb = Mock()
 
-    # Store references to per-test created objects for convenience in helper
-    #  functions.
+    # Stored for convenience in helper functions.
     _qtbot = None
     _mf_widget = None
     _mouse_buttons_down = Qt.NoButton
