@@ -17,7 +17,7 @@ import logging
 from typing import Callable, Dict, Optional, Type
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QFocusEvent, QFont, QIcon, QKeyEvent
 from PyQt5.QtWidgets import (
     QAction,
     QActionGroup,
@@ -26,6 +26,7 @@ from PyQt5.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMenuBar,
     QPushButton,
@@ -36,10 +37,11 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from .. import core
+from ..shared import highscores
 from ..types import UIMode
-from ..utils import get_difficulty
+from ..utils import GameOptsStruct, GuiOptsStruct, get_difficulty
 from . import api, utils
+from .highscores import HighscoresWindow
 from .minefield import MinefieldWidget
 from .panel import PanelWidget
 
@@ -191,25 +193,25 @@ class MinegaulerGUI(_BaseMainWindow):
     def __init__(
         self,
         ctrlr: api.AbstractSwitchingController,
-        gui_opts: utils.GuiOptsStruct = None,
-        game_opts: core.utils.GameOptsStruct = None,
+        gui_opts: GuiOptsStruct = None,
+        game_opts: GameOptsStruct = None,
     ):
         """
         :param ctrlr:
             The core controller.
         """
         self._ctrlr: api.AbstractSwitchingController = ctrlr
-        self._gui_opts: utils.GuiOptsStruct
-        self._game_opts: core.utils.GameOptsStruct  # TODO: This is wrong.
+        self._gui_opts: GuiOptsStruct
+        self._game_opts: GameOptsStruct  # TODO: This is wrong. Use self._ctrlr.get_game_options().
 
         if gui_opts:
             self._gui_opts = gui_opts.copy()
         else:
-            self._gui_opts = utils.GuiOptsStruct(drag_select=False)
+            self._gui_opts = GuiOptsStruct(drag_select=False)
         if game_opts:
             self._game_opts = game_opts.copy()
         else:
-            self._game_opts = core.utils.GameOptsStruct()
+            self._game_opts = GameOptsStruct()
 
         # TODO: Something's not right, this should come first...
         super().__init__("MineGauler")
@@ -224,12 +226,31 @@ class MinegaulerGUI(_BaseMainWindow):
             styles=self._gui_opts.styles,
             drag_select=self._gui_opts.drag_select,
         )
+        self._name_entry_widget: _NameEntryBar = _NameEntryBar(
+            self, self._gui_opts.name
+        )
         self.set_panel_widget(self._panel_widget)
         self.set_body_widget(self._minefield_widget)
+        self.set_footer_widget(self._name_entry_widget)
+
+        self._current_highscore: Optional[highscores.HighscoreStruct] = None
 
         self._minefield_widget.at_risk_signal.connect(self._panel_widget.at_risk)
         self._minefield_widget.no_risk_signal.connect(self._panel_widget.no_risk)
+        self._name_entry_widget.name_updated_signal.connect(
+            lambda x: setattr(self._gui_opts, "name", x)
+        )
 
+    # --------------------------------------------------------------------------
+    # Qt method overrides
+    # --------------------------------------------------------------------------
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        self._name_entry_widget.clearFocus()
+
+    # --------------------------------------------------------------------------
+    # Other methods
+    # --------------------------------------------------------------------------
     def _populate_menubars(self) -> None:
         """Fill in the menubars."""
 
@@ -257,7 +278,7 @@ class MinegaulerGUI(_BaseMainWindow):
 
         # Load board
 
-        # self._game_menu.addSeparator()
+        self._game_menu.addSeparator()
 
         # Current info (F4)
 
@@ -267,6 +288,19 @@ class MinegaulerGUI(_BaseMainWindow):
         # - Auto click (Ctrl+Enter)
 
         # Highscores (F6)
+        def open_highscores():
+            game_opts = self._ctrlr.get_game_options()
+            settings = highscores.HighscoreSettingsStruct(
+                difficulty=get_difficulty(
+                    game_opts.x_size, game_opts.y_size, game_opts.mines
+                ),
+                per_cell=game_opts.per_cell,
+                drag_select=self._gui_opts.drag_select,
+            )
+            self.open_highscores_window(settings)
+
+        highscores_act = self._game_menu.addAction("Highscores", open_highscores)
+        highscores_act.setShortcut("F6")
 
         # Stats (F7)
 
@@ -395,8 +429,19 @@ class MinegaulerGUI(_BaseMainWindow):
         for k, v in kwargs.items():
             setattr(self._game_opts, k, v)
 
-    def get_gui_opts(self) -> utils.GuiOptsStruct:
+    def get_gui_opts(self) -> GuiOptsStruct:
         return self._gui_opts
+
+    def open_highscores_window(
+        self, settings: highscores.HighscoreSettingsStruct, sort_by: str = "time"
+    ) -> None:
+        win = HighscoresWindow(self, settings, sort_by)
+        win.set_current_highscore(self._current_highscore)
+        win.show()
+        self._open_subwindows["highscores"] = win
+
+    def set_current_highscore(self, hs: Optional[highscores.HighscoreStruct]) -> None:
+        self._current_highscore = hs
 
 
 class _CustomBoardModal(QDialog):
@@ -492,6 +537,31 @@ class _SliderSpinner(QWidget):
 
     def value(self) -> int:
         return self.slider.value()
+
+
+class _NameEntryBar(QLineEdit):
+    """Entry bar for entering a name."""
+
+    name_updated_signal = pyqtSignal(str)
+
+    def __init__(self, parent, text: str = ""):
+        super().__init__(parent)
+        self.setText(text)
+        self.setPlaceholderText("Name")
+        self.setAlignment(Qt.AlignCenter)
+        font = QFont("Helvetica")
+        font.setBold(True)
+        self.setFont(font)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        super().keyPressEvent(event)
+        if event.key() in [Qt.Key_Return, Qt.Key_Enter]:
+            self.clearFocus()
+
+    def focusOutEvent(self, event: QFocusEvent):
+        super().focusOutEvent(event)
+        logger.info("Setting name to %r", self.text())
+        self.name_updated_signal.emit(self.text())
 
 
 if __name__ == "__main__":

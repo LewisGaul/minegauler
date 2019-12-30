@@ -1,47 +1,101 @@
 """
-utils.py - Utilities for the frontend.
+utils.py - General utilities
 
 December 2018, Lewis Gaul
 """
 
 import json
 import logging
+from typing import Any, Dict
 
 import attr
 
-from minegauler import SETTINGS_FILE
-from minegauler.core.utils import GameOptsStruct
-from minegauler.frontend.utils import GuiOptsStruct
-from minegauler.types import *
+from . import SETTINGS_FILE
+from .types import *
 
 
 logger = logging.getLogger(__name__)
 
 
-@attr.attrs(auto_attribs=True)
-class PersistSettingsStruct(GameOptsStruct, GuiOptsStruct):
+class StructConstructorMixin:
     """
-    Strucure of settings to be persisted when closing the app.
+    A mixin class adding methods for ways to create instances.
     """
 
     @classmethod
-    def _from_multiple_structs(cls, *args):
+    def from_structs(cls, *structs):
         """
-        Construct an instance of the class using multiple struct instances.
-        Later arguments take precedence over earlier.
+        Create an instance using namespace(s) containing the required fields.
+
+        Later arguments take precedence.
         """
         dict_ = {}
-        for struct in args:
+        for struct in structs:
             dict_.update(attr.asdict(struct))
-        return cls._from_dict(dict_)
+        return cls.from_dict(dict_)
 
-    def encode_to_json(self):
+    @classmethod
+    def from_dict(cls, dict_: Dict[str, Any]):
+        """
+        Create an instance from a dictionary.
+
+        Ignores extra attributes.
+        """
+        args = {a: v for a, v in dict_.items() if a in attr.fields_dict(cls)}
+        return cls(**args)
+
+    def copy(self):
+        """
+        Create and return a copy of the instance.
+
+        This is a shallow copy.
+        """
+        return self.from_structs(self)
+
+
+@attr.attrs(auto_attribs=True)
+class GameOptsStruct(StructConstructorMixin):
+    """
+    Structure of game options.
+    """
+
+    x_size: int = 8
+    y_size: int = 8
+    mines: int = 10
+    first_success: bool = True
+    per_cell: int = 1
+    lives: int = 1
+
+
+@attr.attrs(auto_attribs=True)
+class GuiOptsStruct(StructConstructorMixin):
+    """
+    Structure of GUI options.
+    """
+
+    btn_size: int = 16
+    drag_select: bool = False
+    name: str = ""
+    styles: Dict[CellImageType, str] = {
+        CellImageType.BUTTONS: "Standard",
+        CellImageType.NUMBERS: "Standard",
+        CellImageType.MARKERS: "Standard",
+    }
+
+
+@attr.attrs(auto_attribs=True)
+class AllOptsStruct(GameOptsStruct, GuiOptsStruct):
+    """
+    Structure containing all application options.
+    """
+
+    def encode_to_json(self) -> Dict[str, Any]:
         ret = attr.asdict(self)
         ret["styles"] = {k.name: v for k, v in self.styles.items()}
         return ret
 
     @classmethod
-    def decode_from_json(cls, dict_):
+    def decode_from_json(cls, dict_: Dict[str, Any]) -> "AllOptsStruct":
         dict_["styles"] = {
             getattr(CellImageType, k): v for k, v in dict_["styles"].items()
         }
@@ -52,7 +106,7 @@ def read_settings_from_file():
     read_settings = None
     try:
         with open(SETTINGS_FILE, "r") as f:
-            read_settings = PersistSettingsStruct.decode_from_json(json.load(f))
+            read_settings = AllOptsStruct.decode_from_json(json.load(f))
     except FileNotFoundError:
         logger.info("Settings file not found")
     except json.JSONDecodeError:
@@ -64,7 +118,7 @@ def read_settings_from_file():
     return read_settings
 
 
-def write_settings_to_file(settings: PersistSettingsStruct) -> None:
+def write_settings_to_file(settings: AllOptsStruct) -> None:
     logger.info("Saving settings to file: %s", SETTINGS_FILE)
     logger.debug("%s", settings)
     try:
@@ -86,3 +140,8 @@ def get_difficulty(x_size: int, y_size: int, mines: int) -> str:
         return "M"
     else:
         return "C"
+
+
+def is_flagging_threshold(proportion: float) -> bool:
+    """Does the given proportion correspond to a board solved with 'flagging'?"""
+    return proportion > 0.1

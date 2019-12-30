@@ -4,15 +4,16 @@ __init__.py - Available imports from the package
 December 2018, Lewis Gaul
 """
 
-__all__ = ("Listener", "MinegaulerGUI", "create_gui", "run", "utils")
+__all__ = ("FrontendController", "MinegaulerGUI", "create_gui", "run", "utils")
 
 import sys
 
 from PyQt5.QtWidgets import QApplication
 
 from .. import core
+from ..utils import GameOptsStruct, GuiOptsStruct
 from . import api, utils
-from .api import Listener
+from .api import FrontendController
 from .main_window import MinegaulerGUI
 
 
@@ -22,8 +23,8 @@ gui = None
 
 def create_gui(
     ctrlr: api.AbstractSwitchingController,
-    gui_opts: utils.GuiOptsStruct,
-    game_opts: core.utils.GameOptsStruct,
+    gui_opts: GuiOptsStruct,
+    game_opts: GameOptsStruct,
 ):
     global app, gui
     app = QApplication(sys.argv)

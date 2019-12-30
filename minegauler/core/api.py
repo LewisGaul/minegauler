@@ -12,16 +12,33 @@ __all__ = (
     "AbstractListener",
     "AbstractSwitchingController",
     "Caller",
+    "EndedGameInfo",
 )
 
 import abc
 import logging
 from typing import Callable, Dict, Iterable, List, Optional
 
+import attr
+
+from .. import utils
 from ..core import board as brd
+from ..shared import highscores
 from ..types import CellContentsType, GameState, UIMode
 from ..typing import Coord_T
-from . import utils
+
+
+@attr.attrs(auto_attribs=True)
+class EndedGameInfo:
+    """Information about a finished game."""
+
+    game_state: GameState
+    difficulty: str
+    per_cell: int
+    start_time: float
+    elapsed: float
+    bbbv: int
+    flagging: float
 
 
 class AbstractListener(metaclass=abc.ABCMeta):
@@ -88,12 +105,12 @@ class AbstractListener(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def set_finish_time(self, finish_time: float) -> None:
+    def handle_finished_game(self, info: EndedGameInfo) -> None:
         """
-        Called when a game has ended to pass the exact elapsed game time.
+        Called once when a game ends.
 
-        :param finish_time:
-            The elapsed game time in seconds.
+        :param info:
+            A store of end-game information.
         """
         return NotImplemented
 
@@ -235,14 +252,14 @@ class Caller(AbstractListener):
         """
         self._logger.debug(f"Calling update_mines_remaining() with {mines_remaining}")
 
-    def set_finish_time(self, finish_time: float) -> None:
+    def handle_finished_game(self, info: EndedGameInfo) -> None:
         """
-        Called when a game has ended to pass the exact elapsed game time.
+        Called once when a game ends.
 
-        :param finish_time:
-            The elapsed game time in seconds.
+        :param info:
+            A store of end-game information.
         """
-        self._logger.debug(f"Calling set_finish_time() with {finish_time}")
+        self._logger.debug(f"Calling handle_finished_game() with {info}")
 
     def handle_exception(self, method: str, exc: Exception) -> None:
         """
@@ -258,7 +275,7 @@ class AbstractController(metaclass=abc.ABCMeta):
     """
 
     def __init__(self, opts: utils.GameOptsStruct, *, notif: Optional[Caller] = None):
-        self.opts = utils.GameOptsStruct._from_struct(opts)
+        self._opts = utils.GameOptsStruct.from_structs(opts)
         # The registered functions to be called with updates.
         self._notif: Caller = notif if notif else Caller()
         self._logger = logging.getLogger(
@@ -299,6 +316,9 @@ class AbstractController(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def board(self) -> brd.Board:
         return NotImplemented
+
+    def get_game_options(self) -> utils.GameOptsStruct:
+        return self._opts
 
     # --------------------------------------------------------------------------
     # Methods triggered by user interaction

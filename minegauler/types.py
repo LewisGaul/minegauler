@@ -142,7 +142,7 @@ class CellFlag(CellMineType):
     char = "F"
 
 
-class CellWrongFlag(CellMineType):
+class CellWrongFlag(CellFlag):
     """Number of incorrect flags in a cell shown on a minesweeper board."""
 
     char = "X"

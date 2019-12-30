@@ -23,13 +23,13 @@ logging.basicConfig(
 read_settings = utils.read_settings_from_file()
 
 if read_settings:
-    game_opts = core.utils.GameOptsStruct._from_struct(read_settings)
-    gui_opts = frontend.utils.GuiOptsStruct._from_struct(read_settings)
+    game_opts = utils.GameOptsStruct.from_structs(read_settings)
+    gui_opts = utils.GuiOptsStruct.from_structs(read_settings)
     logger.info("Settings read from file")
 else:
     logger.info("Using default settings")
-    game_opts = core.utils.GameOptsStruct()
-    gui_opts = frontend.utils.GuiOptsStruct()
+    game_opts = utils.GameOptsStruct()
+    gui_opts = utils.GuiOptsStruct()
 logger.debug("Game options: %s", game_opts)
 logger.debug("GUI options: %s", gui_opts)
 
@@ -40,13 +40,13 @@ ctrlr = core.BaseController(game_opts)
 
 gui = frontend.create_gui(ctrlr, gui_opts, game_opts)
 
-ctrlr.register_listener(frontend.Listener(gui))
+ctrlr.register_listener(frontend.FrontendController(gui))
 
 rc = frontend.run()
 
 
-persist_settings = utils.PersistSettingsStruct._from_multiple_structs(
-    ctrlr.opts, gui.get_gui_opts()
+persist_settings = utils.AllOptsStruct.from_structs(
+    ctrlr.get_game_options(), gui.get_gui_opts()
 )
 utils.write_settings_to_file(persist_settings)
 

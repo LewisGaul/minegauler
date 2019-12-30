@@ -13,6 +13,7 @@ import logging
 import time as tm
 from typing import Callable, Dict, Iterable, Optional, Tuple, Union
 
+from .. import utils
 from ..types import (
     CellContentsType,
     CellFlag,
@@ -213,12 +214,14 @@ class Game:
             If the number of mines is too high to fit in the grid.
         """
         self.mf: Optional[Minefield]
+        self.minefield_known: bool
         if minefield:
             x_size, y_size = minefield.x_size, minefield.y_size
             mines = minefield.nr_mines
             per_cell = minefield.per_cell
             first_success = False
             self.mf = minefield
+            self.minefield_known = True
         else:
             if x_size is None or y_size is None or mines is None:
                 raise ValueError(
@@ -228,6 +231,7 @@ class Game:
                 x_size=x_size, y_size=y_size, mines=mines, per_cell=per_cell
             )
             self.mf = None
+            self.minefield_known = False
         self.x_size: int = x_size
         self.y_size: int = y_size
         self.mines: int = mines
@@ -241,6 +245,11 @@ class Game:
         self.mines_remaining: int = self.mines
         self.lives_remaining: int = self.lives
         self._cell_updates: Dict[Coord_T, CellContentsType] = dict()
+        self._num_flags: int = 0
+
+    @property
+    def difficulty(self) -> str:
+        return utils.get_difficulty(self.x_size, self.y_size, self.mines)
 
     @_check_game_started
     def get_rem_3bv(self) -> int:
@@ -297,6 +306,9 @@ class Game:
             return tm.time() - self.start_time
         else:
             return 0
+
+    def get_flag_proportion(self) -> float:
+        return self._num_flags / self.mines
 
     def is_finished(self) -> bool:
         return self.state.finished()
@@ -491,6 +503,7 @@ class Game:
         else:
             self._set_cell(coord, CellFlag(nr_flags))
         self.mines_remaining += old_nr_flags - nr_flags
+        self._num_flags += nr_flags - old_nr_flags
 
         try:
             return self._cell_updates
