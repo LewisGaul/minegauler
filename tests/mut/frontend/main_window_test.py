@@ -24,7 +24,6 @@ from . import utils
 
 _MockPanelWidget = make_true_mock(panel.PanelWidget)
 _MockMinefieldWidget = make_true_mock(minefield.MinefieldWidget)
-_MockNameEntryBar = make_true_mock(main_window._NameEntryBar)
 
 
 class TestMinegaulerGUI:
@@ -47,10 +46,6 @@ class TestMinegaulerGUI:
             "minegauler.frontend.minefield.MinefieldWidget",
             side_effect=_MockMinefieldWidget,
         ).start()
-        cls._name_bar_class_mock = mock.patch(
-            "minegauler.frontend.main_window._NameEntryBar",
-            side_effect=_MockNameEntryBar,
-        ).start()
         mock.patch("minegauler.frontend.minefield.init_or_update_cell_images").start()
         mock.patch("minegauler.shared.highscores.insert_highscore").start()
         mock.patch("minegauler.shared.highscores.is_highscore_new_best").start()
@@ -60,7 +55,9 @@ class TestMinegaulerGUI:
         mock.patch.stopall()
 
     @pytest.fixture
-    def gui(self, qtbot: QtBot, ctrlr: api.AbstractController) -> MinegaulerGUI:
+    def gui(
+        self, qtbot: QtBot, ctrlr: api.AbstractSwitchingController
+    ) -> MinegaulerGUI:
         gui = MinegaulerGUI(ctrlr, self.initial_state)
         qtbot.addWidget(gui)
         self._reset_gui_mocks(gui)
@@ -83,8 +80,7 @@ class TestMinegaulerGUI:
         self._panel_class_mock.assert_called_once()
         assert type(gui._mf_widget) is _MockMinefieldWidget
         self._minefield_class_mock.assert_called_once()
-        assert type(gui._name_entry_widget) is _MockNameEntryBar
-        self._name_bar_class_mock.assert_called_once()
+        assert type(gui._name_entry_widget) is main_window._NameEntryBar
         gui.show()
         utils.maybe_stop_for_interaction(qtbot)
 
@@ -155,4 +151,3 @@ class TestMinegaulerGUI:
         """Reset mocks associated with a gui instance."""
         gui._panel_widget.reset_mock()
         gui._mf_widget.reset_mock()
-        gui._name_entry_widget.reset_mock()
