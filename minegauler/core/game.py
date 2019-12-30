@@ -216,12 +216,14 @@ class Game:
             If the number of mines is too high to fit in the grid.
         """
         self.mf: Optional[Minefield]
+        self.minefield_known: bool
         if minefield:
             x_size, y_size = minefield.x_size, minefield.y_size
             mines = minefield.nr_mines
             per_cell = minefield.per_cell
             first_success = False
             self.mf = minefield
+            self.minefield_known = True
         else:
             if x_size is None or y_size is None or mines is None:
                 raise ValueError(
@@ -231,6 +233,7 @@ class Game:
                 x_size=x_size, y_size=y_size, mines=mines, per_cell=per_cell
             )
             self.mf = None
+            self.minefield_known = False
         self.x_size: int = x_size
         self.y_size: int = y_size
         self.mines: int = mines
