@@ -38,6 +38,7 @@ class EndedGameInfo:
     elapsed: float
     bbbv: int
     flagging: float
+    minefield_known: bool
 
 
 class AbstractListener(metaclass=abc.ABCMeta):

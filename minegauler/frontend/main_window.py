@@ -280,7 +280,7 @@ class MinegaulerGUI(
         self._panel_widget.timer.stop()
         self._panel_widget.timer.set_time(int(info.elapsed + 1))
         # Store the highscore if the game was won.
-        if info.game_state is GameState.WON and info.difficulty != "C":
+        if info.game_state is GameState.WON and info.difficulty != "C" and not info.minefield_known:
             highscore = HighscoreStruct(
                 difficulty=info.difficulty,
                 per_cell=info.per_cell,

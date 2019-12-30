@@ -295,6 +295,7 @@ class GameController(api.AbstractController):
                 elapsed=self._game.get_elapsed(),
                 bbbv=self._game.mf.bbbv,
                 flagging=self._game.get_flag_proportion(),
+                minefield_known=self._game.minefield_known,
             )
         update = _SharedInfo(
             cell_updates=cells_updated,
