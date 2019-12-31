@@ -22,7 +22,7 @@ You will need Python 3.6+ to run the code (see note below for getting it to run 
  4. Run with `python -m minegauler`
 
 
-##### Python 3.8+
+#### Python 3.8+
 
 Annoyingly, the requirements listed in `requirements.txt` don't seem to work for Python 3.8+ due to the following dependency facts:
 
@@ -45,7 +45,7 @@ However, if you want to run on Python 3.8+ you can do so!
 
 [Download from here](https://raw.githubusercontent.com/LewisGaul/minegauler/master/releases/MineGauler1.2.2.zip) to try out my most feature-rich version without any Python requirements (for Windows and Linux).
 
-Note that I initially wrote this in Python 2 using Tkinter (now using PyQt5) and have since attempted multiple rewrites. While the codebase has improved drastically, sadly a lot of the features I once had have not yet rematerialised. Try the link above if you're interested in playing an *extremely* feature-rich (and possibly a little unstable) version.
+Note that I initially wrote this in Python 2 using `Tkinter` and have since attempted multiple rewrites (now using `PyQt5`). While the codebase has improved drastically, sadly some of the features I once had have not yet rematerialised. Try the link above if you're interested in playing an *extremely* feature-rich (and slightly unstable) version.
 
 Read more about the project history on [my website](https://www.lewisgaul.co.uk/minegauler.html).
 
