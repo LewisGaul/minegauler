@@ -484,13 +484,14 @@ class MinefieldWidget(QGraphicsView):
         for c in [(i, j) for i in range(self.x_size) for j in range(self.y_size)]:
             self.set_cell_image(c, CellUnclicked())
 
-    def update_style(self, img_type, style):
+    def update_style(self, img_type: CellImageType, style: str) -> None:
+        """Update the cell images."""
         logger.info("Updating %s style to '%s'", img_type.name, style)
-        # self._state.img_styles[img_type] = style
-        # init_or_update_cell_images(self.cell_images, self.btn_size,
-        #                            self.img_styles, img_type)
-        # for coord in self.board.all_coords:
-        #     self.set_cell_image(coord)
+        init_or_update_cell_images(
+            self._cell_images, self.btn_size, self._state.styles, img_type
+        )
+        for coord in self._board.all_coords:
+            self.set_cell_image(coord, self._board[coord])
 
 
 if __name__ == "__main__":

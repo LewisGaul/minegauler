@@ -29,6 +29,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QLineEdit,
     QMainWindow,
+    QMenu,
     QMenuBar,
     QPushButton,
     QSizePolicy,
@@ -42,7 +43,7 @@ from .. import shared
 from ..core import api
 from ..shared.highscores import HighscoreSettingsStruct, HighscoreStruct
 from ..shared.utils import GUIOptsStruct, get_difficulty
-from ..types import CellContentsType, GameState, UIMode
+from ..types import CellContentsType, CellImageType, GameState, UIMode
 from ..typing import Coord_T
 from . import highscores, minefield, panel, state, utils
 
@@ -410,8 +411,30 @@ class MinegaulerGUI(
         # - Buttons
         # - Images
         # - Numbers
+        def get_change_style_func(grp, style):
+            def change_style():
+                self._state.styles[grp] = style
+                self._mf_widget.update_style(grp, style)
 
-        # self._game_menu.addSeparator()
+            return change_style
+
+        styles_menu = QMenu("Styles", self)
+        self._game_menu.addMenu(styles_menu)
+        for img_group in [CellImageType.BUTTONS]:
+            img_group_name = img_group.name.capitalize()
+            submenu = QMenu(img_group_name, self)
+            styles_menu.addMenu(submenu)
+            group = QActionGroup(self, exclusive=True)
+            for folder in (utils.IMG_DIR / img_group_name).glob("*"):
+                style = folder.name
+                style_act = QAction(style, self, checkable=True)
+                if style == self._state.styles[img_group]:
+                    style_act.setChecked(True)
+                group.addAction(style_act)
+                style_act.triggered.connect(get_change_style_func(img_group, style))
+                submenu.addAction(style_act)
+
+        self._game_menu.addSeparator()
 
         # Exit (F4)
         self._game_menu.addAction("Exit", self.close, shortcut="Alt+F4")
@@ -453,7 +476,6 @@ class MinegaulerGUI(
         per_cell_group = QActionGroup(self)
         per_cell_group.setExclusive(True)
         for i in range(1, 4):
-
             action = QAction(str(i), self, checkable=True)
             per_cell_menu.addAction(action)
             per_cell_group.addAction(action)
