@@ -14,6 +14,7 @@ MinegaulerGUI
 __all__ = ("MinegaulerGUI",)
 
 import logging
+import os
 import traceback
 from typing import Callable, Dict, Mapping, Optional, Type
 
@@ -46,6 +47,7 @@ from ..shared.utils import GUIOptsStruct, get_difficulty
 from ..types import CellContentsType, CellImageType, GameState, UIMode
 from ..typing import Coord_T
 from . import highscores, minefield, panel, state, utils
+from .utils import FILES_DIR
 
 
 logger = logging.getLogger(__name__)
@@ -65,9 +67,9 @@ class _BaseMainWindow(QMainWindow):
         """
         super().__init__(parent)
         self._menubar: QMenuBar = self.menuBar()
-        self._game_menu = self._menubar.addMenu("Game")
-        self._opts_menu = self._menubar.addMenu("Options")
-        self._help_menu = self._menubar.addMenu("Help")
+        self._game_menu: QMenu = self._menubar.addMenu("Game")
+        self._opts_menu: QMenu = self._menubar.addMenu("Options")
+        self._help_menu: QMenu = self._menubar.addMenu("Help")
         self._panel_frame: QFrame
         self._body_frame: QFrame
         self._footer_frame: QFrame
@@ -486,7 +488,25 @@ class MinegaulerGUI(
         # ----------
         # Help menu
         # ----------
-        # TODO: None yet...
+        rules_act = QAction("Rules", self)
+        self._help_menu.addAction(rules_act)
+        rules_act.triggered.connect(
+            lambda: self._open_text_popup("Rules", FILES_DIR / "rules.txt")
+        )
+
+        tips_act = QAction("Tips", self)
+        self._help_menu.addAction(tips_act)
+        tips_act.triggered.connect(
+            lambda: self._open_text_popup("Tips", FILES_DIR / "tips.txt")
+        )
+
+        self._help_menu.addSeparator()
+
+        about_act = QAction("About", self)
+        self._help_menu.addAction(about_act)
+        about_act.triggered.connect(
+            lambda: self._open_text_popup("About", FILES_DIR / "about.txt")
+        )
 
     def _change_difficulty(self, id_: str) -> None:
         """
@@ -528,6 +548,18 @@ class MinegaulerGUI(
         _CustomBoardModal(
             self, self._state.x_size, self._state.y_size, self._state.mines, callback
         ).show()
+
+    def _open_text_popup(self, title: str, file: os.PathLike):
+        """Open a text popup window."""
+        if title in self._open_subwindows:
+            try:
+                # self._open_subwindows[title].setFocus()  # TODO: doesn't work!
+                return
+            except:
+                self._open_subwindows.pop(title)
+        win = _TextPopup(self, title, file)
+        win.show()
+        self._open_subwindows[title] = win
 
     def get_gui_opts(self) -> GUIOptsStruct:
         return GUIOptsStruct.from_structs(self._state, self._state.pending_game_state)
@@ -668,7 +700,7 @@ class _NameEntryBar(QLineEdit):
     def __init__(self, parent, text: str = ""):
         super().__init__(parent)
         self.setText(text)
-        self.setPlaceholderText("Name")
+        self.setPlaceholderText("Enter name here")
         self.setAlignment(Qt.AlignCenter)
         font = QFont("Helvetica")
         font.setBold(True)
@@ -684,6 +716,44 @@ class _NameEntryBar(QLineEdit):
         self.setText(self.text().strip())
         logger.info("Setting name to %r", self.text())
         self.name_updated_signal.emit(self.text())
+
+
+class _TextPopup(QWidget):
+    """A popup window containing a block of text."""
+
+    def __init__(self, parent: Optional[QWidget], title: str, file: os.PathLike):
+        super().__init__(parent)
+        self.setWindowFlag(Qt.Window)
+        self.setWindowTitle(title)
+        self.setMinimumSize(300, 300)
+
+        self._text_widget = QLabel(self)
+        self._ok_button = QPushButton(self)
+        self.setup_ui()
+
+        with open(file) as f:
+            self._text_widget.setText(f.read())
+
+    def setup_ui(self) -> None:
+        """Set up the UI layout."""
+        lyt = QVBoxLayout(self)
+        # lyt.setAlignment(Qt.AlignCenter)
+
+        self._text_widget.setLineWidth(1)
+        self._text_widget.setFrameShape(QFrame.Panel)
+        self._text_widget.setMargin(10)
+        self._text_widget.setStyleSheet(
+            """
+            background-color: white;
+            """
+        )
+        self._text_widget.setWordWrap(True)
+        lyt.addWidget(self._text_widget)
+
+        self._ok_button.setText("Ok")
+        self._ok_button.setMaximumWidth(50)
+        self._ok_button.clicked.connect(self.close)
+        lyt.addWidget(self._ok_button)
 
 
 if __name__ == "__main__":
