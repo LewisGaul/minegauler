@@ -138,8 +138,8 @@ class MinefieldWidget(QGraphicsView):
         logger.info("Initialising minefield widget")
         self._ctrlr: api.AbstractController = ctrlr
         self._state: state.State = state_
-        self.cell_images: Dict = {}
-        init_or_update_cell_images(self.cell_images, self.btn_size, self._state.styles)
+        self._cell_images: Dict = {}
+        init_or_update_cell_images(self._cell_images, self.btn_size, self._state.styles)
 
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
@@ -460,8 +460,11 @@ class MinefieldWidget(QGraphicsView):
         state
             The cell_images key for the image to be set.
         """
+        if state not in self._cell_images:
+            logger.error("Missing cell image for state: %s", state)
+            return
         x, y = coord
-        b = self.scene.addPixmap(self.cell_images[state])
+        b = self.scene.addPixmap(self._cell_images[state])
         b.setPos(x * self.btn_size, y * self.btn_size)
 
     def ignore_clicks(self) -> None:
