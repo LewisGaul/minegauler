@@ -7,12 +7,20 @@ All notable changes to this project will be documented in this file.
 
 ### Additions
  - Ability to save and load created boards
- - Option of having multiple lives
  - Entries in the 'Help' menu
- - Button styles
+ - Ability to pause a game
+ - Ability to change size of minefield cells
+ - Option of having multiple lives
 
 ### Fixes
- - Ensure GUI window is the correct size for beginner mode
+ - Remove ability to maximise the main window
+
+
+## 4.1.0-a0 (2019-12-31)
+ - Local highscores
+ - Custom cell styles
+ - Fix main window sizing
+ - Fix crash when exceeding number 18 in create mode
 
 
 ## 4.0.1-a0 (2019-12-09)
