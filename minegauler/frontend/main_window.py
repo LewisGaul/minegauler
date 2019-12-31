@@ -17,7 +17,7 @@ import logging
 import traceback
 from typing import Callable, Dict, Mapping, Optional, Type
 
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QFocusEvent, QFont, QIcon, QKeyEvent
 from PyQt5.QtWidgets import (
     QAction,
@@ -92,6 +92,7 @@ class _BaseMainWindow(QMainWindow):
         """
         # QMainWindow objects have a central widget to be set.
         central_widget = QWidget(self)
+        central_widget.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.setCentralWidget(central_widget)
         vlayout = QVBoxLayout(central_widget)
         vlayout.setContentsMargins(0, 0, 0, 0)
@@ -101,7 +102,7 @@ class _BaseMainWindow(QMainWindow):
         self._panel_frame.setFrameShadow(QFrame.Sunken)
         self._panel_frame.setFrameShape(QFrame.Panel)
         self._panel_frame.setLineWidth(2)
-        self._panel_frame.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        self._panel_frame.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
         vlayout.addWidget(self._panel_frame)
         # Main body widget config - use horizontal layout for centre alignment.
         hstretch = QHBoxLayout()
@@ -109,12 +110,11 @@ class _BaseMainWindow(QMainWindow):
         self._body_frame = QFrame(central_widget)
         self._body_frame.setFrameShadow(QFrame.Raised)
         self._body_frame.setFrameShape(QFrame.Box)
-        self._body_frame.setLineWidth(self.BODY_FRAME_WIDTH/2)
-        self._body_frame.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self._body_frame.setLineWidth(self.BODY_FRAME_WIDTH / 2)
+        # self._body_frame.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         hstretch.addWidget(self._body_frame)
         hstretch.addStretch()  # right-padding for centering
         vlayout.addLayout(hstretch)
-
         # Name entry bar underneath the minefield
         self._footer_frame = QFrame(central_widget)
         vlayout.addWidget(self._footer_frame)
@@ -158,17 +158,6 @@ class _BaseMainWindow(QMainWindow):
         lyt.addWidget(widget)
         self._footer_widget = widget
 
-    # --------------------------------------------------------------------------
-    # Other methods
-    # --------------------------------------------------------------------------
-    def update_size(self):
-        """Update the window size."""
-        width = max(self._mf_widget.width()+self.BODY_FRAME_WIDTH*2, self._panel_frame.minimumWidth())
-        self.setFixedSize(width, self.sizeHint().height())
-        self._body_frame.adjustSize()
-        self.centralWidget().adjustSize()
-        self.adjustSize()
-
 
 class _MinegaulerGUIMeta(type(api.AbstractListener), type(_BaseMainWindow)):
     """Combined metaclass for the MinegaulerGUI class."""
@@ -199,9 +188,7 @@ class MinegaulerGUI(
         self.set_body_widget(self._mf_widget)
         self._name_entry_widget = _NameEntryBar(self, self._state.name)
         self.set_footer_widget(self._name_entry_widget)
-        #self.setFixedWidth(self._mf_widget.width()+self.BODY_FRAME_WIDTH*2)
-
-        self._current_highscore: Optional[highscores.HighscoreStruct] = None
+        self._update_size()
 
         self._panel_widget.clicked.connect(self._ctrlr.new_game)
         self._mf_widget.at_risk_signal.connect(self._panel_widget.at_risk)
@@ -220,7 +207,7 @@ class MinegaulerGUI(
         self._panel_widget.reset()
         self._mf_widget.reset()
 
-    def resize(self, x_size: int, y_size: int) -> None:
+    def resize_minefield(self, x_size: int, y_size: int) -> None:
         """
         Called to indicate the board shape has changed.
 
@@ -231,7 +218,7 @@ class MinegaulerGUI(
         """
         self._state.x_size = x_size
         self._state.y_size = y_size
-        self._mf_widget.resize(x_size, y_size)
+        self._mf_widget.reshape(x_size, y_size)
 
     def set_mines(self, mines: int) -> None:
         """
@@ -283,7 +270,11 @@ class MinegaulerGUI(
         self._panel_widget.timer.stop()
         self._panel_widget.timer.set_time(int(info.elapsed + 1))
         # Store the highscore if the game was won.
-        if info.game_state is GameState.WON and info.difficulty != "C" and not info.minefield_known:
+        if (
+            info.game_state is GameState.WON
+            and info.difficulty != "C"
+            and not info.minefield_known
+        ):
             highscore = HighscoreStruct(
                 difficulty=info.difficulty,
                 per_cell=info.per_cell,
@@ -314,10 +305,18 @@ class MinegaulerGUI(
     # --------------------------------------------------------------------------
     # Qt method overrides
     # --------------------------------------------------------------------------
-
-    def show(self) -> None:
-        super().show()
-        self.update_size()
+    def sizeHint(self) -> QSize:
+        width = max(
+            self._body_frame.sizeHint().width(),
+            self._panel_frame.minimumSizeHint().width(),
+        )
+        height = (
+            self._menubar.sizeHint().height()
+            + self._panel_frame.sizeHint().height()
+            + self._body_frame.sizeHint().height()
+            + self._name_entry_widget.sizeHint().height()
+        )
+        return QSize(width, height)
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
@@ -326,6 +325,10 @@ class MinegaulerGUI(
     # --------------------------------------------------------------------------
     # Other methods
     # --------------------------------------------------------------------------
+    def _update_size(self):
+        """Update the window size."""
+        self.setFixedSize(self.sizeHint())
+
     def _populate_menubars(self) -> None:
         """Fill in the menubars."""
 
@@ -487,19 +490,21 @@ class MinegaulerGUI(
             raise ValueError(f"Unrecognised difficulty '{id_}'")
 
         self._ctrlr.resize_board(x_size=x, y_size=y, mines=m)
-        self.update_size()
+        self._update_size()
 
     def _set_name(self, name: str) -> None:
         self._state.name = name
         self._state.highscores_state.name_hint = name
 
     def _open_custom_board_modal(self) -> None:
+        """Open the modal popup to select the custom difficulty."""
+
+        def callback(x, y, m):
+            self._ctrlr.resize_board(x, y, m)
+            self._update_size()
+
         _CustomBoardModal(
-            self,
-            self._state.x_size,
-            self._state.y_size,
-            self._state.mines,
-            self._ctrlr.resize_board,
+            self, self._state.x_size, self._state.y_size, self._state.mines, callback
         ).show()
 
     def get_gui_opts(self) -> GUIOptsStruct:

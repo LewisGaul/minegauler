@@ -247,8 +247,16 @@ class GameController(api.AbstractController):
         self._opts.x_size = x_size
         self._opts.y_size = y_size
         self._opts.mines = mines
+
+        self._game = game.Game(
+            x_size=self._opts.x_size,
+            y_size=self._opts.y_size,
+            mines=self._opts.mines,
+            per_cell=self._opts.per_cell,
+            lives=self._opts.lives,
+            first_success=self._opts.first_success,
+        )
         self._send_resize_update()
-        self.new_game()
 
     def set_first_success(self, value: bool) -> None:
         """
@@ -277,8 +285,9 @@ class GameController(api.AbstractController):
 
     def _send_resize_update(self) -> None:
         self._send_updates({})
-        self._notif.resize(self._opts.x_size, self._opts.y_size)
+        self._notif.resize_minefield(self._opts.x_size, self._opts.y_size)
         self._notif.set_mines(self._opts.mines)
+        self._notif.reset()
 
     def _send_updates(self, cells_updated: Dict[Coord_T, CellContentsType]) -> None:
         """Send updates to registered listeners."""
@@ -412,7 +421,7 @@ class CreateController(api.AbstractController):
         )
         self._opts.x_size = x_size
         self._opts.y_size = y_size
-        self._notif.resize(x_size, y_size)
+        self._notif.resize_minefield(x_size, y_size)
         self.new_game()
 
     def set_first_success(self, value: bool) -> None:

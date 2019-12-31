@@ -15,9 +15,15 @@ import logging
 import sys
 from typing import Dict, Optional, Set
 
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QPainter, QPixmap
-from PyQt5.QtWidgets import QApplication, QGraphicsScene, QGraphicsView, QWidget
+from PyQt5.QtWidgets import (
+    QApplication,
+    QGraphicsScene,
+    QGraphicsView,
+    QSizePolicy,
+    QWidget,
+)
 
 from ..core import api
 from ..types import (
@@ -29,7 +35,6 @@ from ..types import (
     CellNum,
     CellUnclicked,
     CellWrongFlag,
-    GameState,
 )
 from ..typing import Coord_T
 from . import state
@@ -133,16 +138,14 @@ class MinefieldWidget(QGraphicsView):
         logger.info("Initialising minefield widget")
         self._ctrlr: api.AbstractController = ctrlr
         self._state: state.State = state_
-        self.x_size: int = state_.x_size
-        self.y_size: int = state_.y_size
-        self.btn_size: int = state_.btn_size
         self.cell_images: Dict = {}
         init_or_update_cell_images(self.cell_images, self.btn_size, self._state.styles)
 
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
         self.setStyleSheet("border: 0px")
-        self.setFixedSize(self.x_size * self.btn_size, self.y_size * self.btn_size)
+        self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.setFixedSize(self.sizeHint())
 
         # Keep track of mouse button states.
         self.mouse_coord = None
@@ -161,9 +164,24 @@ class MinefieldWidget(QGraphicsView):
         # TODO: I don't like this.
         return self._ctrlr.board
 
+    @property
+    def x_size(self) -> int:
+        return self._state.x_size
+
+    @property
+    def y_size(self) -> int:
+        return self._state.y_size
+
+    @property
+    def btn_size(self) -> int:
+        return self._state.btn_size
+
     # --------------------------------------------------------------------------
     # Qt method overrides
     # --------------------------------------------------------------------------
+    def sizeHint(self) -> QSize:
+        return QSize(self.x_size * self.btn_size, self.y_size * self.btn_size)
+
     def mousePressEvent(self, event):
         """Handle mouse press events."""
 
@@ -452,16 +470,11 @@ class MinefieldWidget(QGraphicsView):
     def accept_clicks(self) -> None:
         self._ignore_clicks = False
 
-    def resize(self, x_size: int, y_size: int) -> None:
-        logger.info(
-            "Resizing minefield from %sx%s to %sx%s",
-            self.x_size,
-            self.y_size,
-            x_size,
-            y_size,
-        )
-        self.x_size, self.y_size = x_size, y_size
-        self.setFixedSize(self.x_size * self.btn_size, self.y_size * self.btn_size)
+    def reshape(self, x_size: int, y_size: int) -> None:
+        logger.info("Resizing minefield to %sx%s", x_size, y_size)
+        self.setFixedSize(self.sizeHint())
+        # self.resize(self.sizeHint())  # For when the lower size bound is removed
+        self.updateGeometry()
         self.setSceneRect(
             0, 0, self.x_size * self.btn_size, self.y_size * self.btn_size
         )

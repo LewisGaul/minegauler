@@ -16,14 +16,7 @@ from typing import Optional, Union
 
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QColor, QFont, QPalette, QPixmap
-from PyQt5.QtWidgets import (
-    QApplication,
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    QWidget,
-    QSizePolicy,
-)
+from PyQt5.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QWidget
 
 from ..types import FaceState, GameState
 from . import state
@@ -50,7 +43,7 @@ class PanelWidget(QWidget):
         self.setFixedHeight(40)
         self.setMinimumWidth(120)
 
-        self._mines_counter = _CounterWidget(self)
+        self._mines_counter = _CounterWidget(self, self._state.mines)
         self._face_button = QLabel(self)
         self.timer = Timer(self)
         self.setup_ui()
@@ -64,7 +57,6 @@ class PanelWidget(QWidget):
         layout.setAlignment(Qt.AlignCenter)
         # Mine counter widget.
         layout.addWidget(self._mines_counter)
-        self.set_mines_counter(self._state.mines)
         layout.addStretch()
         # Face button.
         self._face_button = QLabel(self)
@@ -77,7 +69,6 @@ class PanelWidget(QWidget):
         layout.addStretch()
         # Timer widget.
         layout.addWidget(self.timer.widget)
-        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
 
     # --------------------------------------------------------------------------
     # Qt method overrides
