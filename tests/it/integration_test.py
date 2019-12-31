@@ -8,6 +8,7 @@ the root directory.
 """
 
 import logging
+import os
 import time
 import types
 from importlib.util import find_spec
@@ -21,43 +22,80 @@ from minegauler import core, frontend
 logger = logging.getLogger(__name__)
 
 
-def test_basic_run():
+def _run_minegauler__main__() -> types.ModuleType:
     """
-    Run the app using a manual processing of events.
+    Run minegauler via the __main__ module.
+
+    :return:
+        The __main__ module namespace.
     """
-
-    def run_app(gui: frontend.MinegaulerGUI) -> int:
-        logger.info("In run_app()")
-        gui.show()
-        return 0
-
-    def process_events(wait: int = 0) -> None:
-        start_time = time.time()
-        while QApplication.hasPendingEvents():
-            QApplication.processEvents()
-        time.sleep(wait - (time.time() - start_time))
-
-    logger.info("Executing __main__ without starting app event loop")
-    main = types.ModuleType("minegauler.__main__")
+    module = types.ModuleType("minegauler.__main__")
     spec = find_spec("minegauler.__main__")
-    loader = spec.loader
-    with mock.patch("minegauler.frontend.run_app", run_app), mock.patch("sys.exit"):
-        loader.exec_module(main)
+    spec.loader.exec_module(module)
+    return module
 
-    logger.info("Starting test checks")
 
-    assert type(main.ctrlr) is core.BaseController
-    assert type(main.gui) is frontend.MinegaulerGUI
-    ctrlr: core.BaseController = main.ctrlr
-    gui: frontend.MinegaulerGUI = main.gui
-    assert gui._ctrlr is ctrlr
+class TestMain:
+    """Test running minegauler in an IT way."""
 
-    process_events(1)
-    ctrlr.select_cell((1, 2))
-    process_events(1)
-    ctrlr.select_cell((6, 4))
-    process_events(1)
-    ctrlr.resize_board(40, 1, 0)
-    process_events(1)
+    main_module: types.ModuleType
+    ctrlr: core.BaseController
+    gui: frontend.MinegaulerGUI
 
-    gui.close()
+    @classmethod
+    def setup_class(cls):
+        """Set up the app to be run using manual processing of events."""
+
+        def run_app(gui: frontend.MinegaulerGUI) -> int:
+            logger.info("In run_app()")
+            gui.show()
+            return 0
+
+        logger.info("Executing __main__ without starting app event loop")
+        with mock.patch("minegauler.frontend.run_app", run_app), mock.patch("sys.exit"):
+            cls.main_module = _run_minegauler__main__()
+
+        cls.ctrlr = cls.main_module.ctrlr
+        cls.gui = cls.main_module.gui
+
+    @classmethod
+    def teardown_class(cls):
+        """Undo class setup."""
+
+    def test_setup(self):
+        """Test the setup is sane."""
+        assert type(self.ctrlr) is core.BaseController
+        assert type(self.gui) is frontend.MinegaulerGUI
+        assert self.gui._ctrlr is self.ctrlr
+
+    def test_play_game(self):
+        """Test basic playing of a game."""
+        self._process_events()
+        self.ctrlr.select_cell((1, 2))
+        self._process_events()
+        self.ctrlr.select_cell((6, 4))
+        self._process_events()
+
+    def test_change_board(self):
+        """Test changing the board."""
+        self.ctrlr.resize_board(40, 1, 1)
+        self._process_events()
+
+    # -------------------------------------------
+    # Helper methods
+    # -------------------------------------------
+    @staticmethod
+    def _process_events() -> None:
+        """
+        Manually process Qt events (normally taken care of by the event loop).
+
+        The environment variable TEST_IT_EVENT_WAIT can be used to set the
+        amount of time to spend processing events (in seconds).
+        """
+        start_time = time.time()
+        if os.environ.get("TEST_IT_EVENT_WAIT"):
+            wait = float(os.environ["TEST_IT_EVENT_WAIT"])
+        else:
+            wait = 0
+        while QApplication.hasPendingEvents() or time.time() - start_time < wait:
+            QApplication.processEvents()
