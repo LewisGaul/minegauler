@@ -43,7 +43,7 @@ class PanelWidget(QWidget):
         self.setFixedHeight(40)
         self.setMinimumWidth(120)
 
-        self._mines_counter = _CounterWidget(self)
+        self._mines_counter = _CounterWidget(self, self._state.mines)
         self._face_button = QLabel(self)
         self.timer = Timer(self)
         self.setup_ui()
@@ -57,7 +57,6 @@ class PanelWidget(QWidget):
         layout.setAlignment(Qt.AlignCenter)
         # Mine counter widget.
         layout.addWidget(self._mines_counter)
-        self.set_mines_counter(self._state.mines)
         layout.addStretch()
         # Face button.
         self._face_button = QLabel(self)

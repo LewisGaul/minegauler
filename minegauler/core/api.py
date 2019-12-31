@@ -38,6 +38,7 @@ class EndedGameInfo:
     elapsed: float
     bbbv: int
     flagging: float
+    minefield_known: bool
 
 
 class AbstractListener(metaclass=abc.ABCMeta):
@@ -55,14 +56,14 @@ class AbstractListener(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def resize(self, x_size: int, y_size: int) -> None:
+    def resize_minefield(self, x_size: int, y_size: int) -> None:
         """
         Called to indicate the board is being changed.
 
         :param x_size:
-            The number of rows.
-        :param y_size:
             The number of columns.
+        :param y_size:
+            The number of rows.
         """
         return NotImplemented
 
@@ -205,7 +206,7 @@ class Caller(AbstractListener):
         """
         self._logger.debug("Calling reset()")
 
-    def resize(self, x_size: int, y_size: int) -> None:
+    def resize_minefield(self, x_size: int, y_size: int) -> None:
         """
         Called to indicate the board shape has changed.
 
@@ -214,7 +215,7 @@ class Caller(AbstractListener):
         :param y_size:
             The number of columns.
         """
-        self._logger.debug(f"Calling resize() with {x_size}, {y_size}")
+        self._logger.debug(f"Calling resize_minefield() with {x_size}, {y_size}")
 
     def set_mines(self, mines: int) -> None:
         """

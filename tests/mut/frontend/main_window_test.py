@@ -46,6 +46,7 @@ class TestMinegaulerGUI:
             "minegauler.frontend.minefield.MinefieldWidget",
             side_effect=_MockMinefieldWidget,
         ).start()
+        mock.patch("minegauler.frontend.panel._CounterWidget").start()
         mock.patch("minegauler.frontend.minefield.init_or_update_cell_images").start()
         mock.patch("minegauler.shared.highscores.insert_highscore").start()
         mock.patch("minegauler.shared.highscores.is_highscore_new_best").start()
@@ -91,13 +92,13 @@ class TestMinegaulerGUI:
         gui._panel_widget.reset.assert_called_once()
         gui._mf_widget.reset.assert_called_once()
 
-        # resize()
+        # resize_minefield()
         gui._state.x_size = 8
         gui._state.y_size = 8
-        gui.resize(3, 6)
+        gui.resize_minefield(3, 6)
         assert gui._state.x_size == 3
         assert gui._state.y_size == 6
-        gui._mf_widget.resize.assert_called_once_with(3, 6)
+        gui._mf_widget.reshape.assert_called_once_with(3, 6)
         self._reset_gui_mocks(gui)
 
         # set_mines()
@@ -126,7 +127,9 @@ class TestMinegaulerGUI:
         gui._panel_widget.set_mines_counter.assert_called_once_with(56)
 
         # handle_finished_game()
-        info = api.EndedGameInfo(GameState.WON, "M", 2, 1234.5678, 99.01, 123, 0.4)
+        info = api.EndedGameInfo(
+            GameState.WON, "M", 2, 1234.5678, 99.01, 123, 0.4, False
+        )
         shared.highscores.is_highscore_new_best.return_value = "3bv/s"
         gui._state.drag_select = False
         gui._state.name = "NAME"
