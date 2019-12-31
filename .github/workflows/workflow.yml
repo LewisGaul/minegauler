@@ -22,7 +22,7 @@ jobs:
     - name: Run tests
       env:
         DISPLAY: ":0"
-      run: python -m pytest tests/mut/ --cov . --cov-report xml --cov-report term
+      run: python -m pytest tests/ --cov . --cov-report xml --cov-report term
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
