@@ -16,7 +16,7 @@ All notable changes to this project will be documented in this file.
  - Remove ability to maximise the main window
 
 
-## 4.1.0-a0 (2019-12-31)
+## 4.0.2-a0 (2019-12-31)
  - Local highscores
  - Custom cell styles
  - Fix main window sizing
