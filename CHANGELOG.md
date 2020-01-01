@@ -26,6 +26,7 @@ This first tracked version includes:
  - Option to select cells by click-and-drag technique with the mouse
  - Option to allow multiple mines per cell
  - Local highscores for standard difficulty modes
+ - Custom cell styles
 
 
 ### 4.0.2-a1 (2020-01-01)
