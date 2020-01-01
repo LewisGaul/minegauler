@@ -1,16 +1,12 @@
 
-import os
 from os.path import join, split, splitext, exists, basename
 import Tkinter as tk
-import tkFileDialog, tkMessageBox
 from PIL import Image as PILImage, ImageTk
-import time as tm
 from glob import glob
 
-import numpy as np
-
-from constants import * #version, platform etc.
+from constants import *  # version, platform etc.
 from utils import direcs
+
 
 diff_dims = {
     'b':(8,8), 'i':(16,16), 'e':(16,30), 'm':(30, 30),
@@ -58,7 +54,7 @@ class BasicGui(tk.Tk, object):
             self.title('MineGauler')
         else:
             self.title('MineGauler' + VERSION)
-        self.iconbitmap(default=join(direcs['images'], 'icon.ico'))
+        # self.iconbitmap(default=join(direcs['images'], 'icon.ico'))
         self.protocol('WM_DELETE_WINDOW', self.close_root)
         # Set default to be that menus cannot be 'torn off'.
         self.option_add('*tearOff', False)

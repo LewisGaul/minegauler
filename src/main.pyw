@@ -8,25 +8,20 @@
 #     FLAG
 #     UNFLAG
 
-import sys
 import os
-from os.path import join
+from os.path import join, isdir
 import Tkinter as tk
-import tkFileDialog, tkMessageBox
-from PIL import Image as PILImage, ImageTk
+import tkFileDialog
 import time as tm
 import json
-from glob import glob
 
 import numpy as np
 
-from constants import * #version, platform etc.
-from utils import direcs, where_coords
-from gui import BasicGui, MenuBar, Window
+from constants import *  # version, platform etc.
+from utils import direcs
+from gui import BasicGui, Window
 from game import Game, Minefield
 
-if PLATFORM == 'win32':
-    import win32com.client
 
 __version__ = VERSION
 
