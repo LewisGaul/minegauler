@@ -261,23 +261,22 @@ class Game:
         if self.state == GameState.WON:
             return 0
         else:
-            # TODO
-            # lost_mf = Minefield(auto_create=False, **self.settings)
-            # lost_mf.mine_coords = self.mf.mine_coords
-            # # Replace any openings already found with normal clicks (ones).
-            # lost_mf.completed_grid = np.where(self.grid<0,
-            #                                   self.mf.completed_grid, 1)
-            # # Find the openings which remain.
-            # lost_mf.get_openings()
-            # rem_opening_coords = [c for opening in lost_mf.openings
-            #                       for c in opening]
-            # # Count the number of essential clicks that have already been
-            # # done by counting clicked cells minus the ones at the edge of
-            # # an undiscovered opening.
-            # completed_3bv = len({c for c in where_coords(self.grid >= 0)
-            #                      if c not in rem_opening_coords})
-            # return lost_mf.get_3bv() - completed_3bv
-            return -100
+            lost_mf = Minefield.from_grid(self.mf, per_cell=self.per_cell)
+            # Replace any openings already found with normal clicks (ones).
+            for c in self.board.all_coords:
+                if type(self.board[c]) is CellNum:
+                    lost_mf.completed_board[c] = CellNum(1)
+            # Find the openings which remain.
+            lost_mf.openings = lost_mf._find_openings()
+            rem_opening_coords = {c for opening in lost_mf.openings for c in opening}
+            # Count the number of essential clicks that have already been
+            # done by counting clicked cells minus the ones at the edge of
+            # an undiscovered opening.
+            completed_3bv = len(
+                {c for c in self.board.all_coords if type(self.board[c]) is CellNum}
+                - rem_opening_coords
+            )
+            return lost_mf._calc_3bv() - completed_3bv
 
     @_check_game_started
     def get_prop_complete(self) -> float:
@@ -291,7 +290,7 @@ class Game:
         """
         Calculate the 3bv/s based on current progress.
         """
-        return self.mf.bbbv * self.get_prop_complete() / (tm.time() - self.start_time)
+        return self.mf.bbbv * self.get_prop_complete() / self.get_elapsed()
 
     def get_elapsed(self) -> float:
         """
@@ -313,9 +312,6 @@ class Game:
         if self.mines == 0:
             return 0
         return self._num_flags / self.mines
-
-    def is_finished(self) -> bool:
-        return self.state.finished()
 
     def _create_minefield(self, coord: Coord_T) -> None:
         """Create the minefield in response to a cell being selected."""

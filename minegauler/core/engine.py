@@ -114,6 +114,9 @@ class BaseController(api.AbstractSwitchingController):
     def board(self) -> brd.Board:
         return self._active_ctrlr.board
 
+    def get_game_info(self) -> api.GameInfo:
+        return self._active_ctrlr.get_game_info()
+
     def new_game(self) -> None:
         self._active_ctrlr.new_game()
 
@@ -199,6 +202,26 @@ class GameController(api.AbstractController):
     @property
     def board(self) -> brd.Board:
         return self._game.board
+
+    def get_game_info(self) -> api.GameInfo:
+        ret = api.GameInfo(
+            game_state=self._game.state,
+            x_size=self._game.x_size,
+            y_size=self._game.y_size,
+            mines=self._game.mines,
+            per_cell=self._game.per_cell,
+        )
+        if self._game.state.finished():
+            ret.finished_info = api.GameInfo.FinishedInfo(
+                start_time=self._game.start_time,
+                elapsed=self._game.get_elapsed(),
+                bbbv=self._game.mf.bbbv,
+                rem_bbbv=self._game.get_rem_3bv(),
+                bbbvps=self._game.get_3bvps(),
+                prop_complete=self._game.get_prop_complete(),
+                prop_flagging=self._game.get_flag_proportion(),
+            )
+        return ret
 
     # --------------------------------------------------------------------------
     # Methods triggered by user interaction
@@ -310,7 +333,7 @@ class GameController(api.AbstractController):
         super().set_per_cell(value)
         if self._opts.per_cell != value:
             self._opts.per_cell = value
-            if self._game.state.unstarted():
+            if not self._game.state.started():
                 self.new_game()
 
     def save_current_minefield(self, file: os.PathLike) -> None:
@@ -362,7 +385,7 @@ class GameController(api.AbstractController):
         """Send updates to registered listeners."""
         end_game_info = None
         if (
-            self._game.is_finished()
+            self._game.state.finished()
             and self._game.state is not self._last_update.game_state
         ):
             end_game_info = api.EndedGameInfo(
@@ -413,6 +436,15 @@ class CreateController(api.AbstractController):
     @property
     def board(self) -> brd.Board:
         return self._board
+
+    def get_game_info(self) -> api.GameInfo:
+        return api.GameInfo(
+            game_state=GameState.ACTIVE,
+            x_size=self._opts.x_size,
+            y_size=self._opts.y_size,
+            mines=self._flags,
+            per_cell=self._opts.per_cell,
+        )
 
     def new_game(self) -> None:
         """See AbstractController."""

@@ -29,6 +29,28 @@ from ..typing import Coord_T
 
 
 @attr.attrs(auto_attribs=True)
+class GameInfo:
+    """General information about a game."""
+
+    @attr.attrs(auto_attribs=True)
+    class FinishedInfo:
+        start_time: float
+        elapsed: float
+        bbbv: int
+        rem_bbbv: int
+        bbbvps: float
+        prop_complete: float
+        prop_flagging: float
+
+    game_state: GameState
+    x_size: int
+    y_size: int
+    mines: int
+    per_cell: int
+    finished_info: Optional[FinishedInfo] = None
+
+
+@attr.attrs(auto_attribs=True)
 class EndedGameInfo:
     """Information about a finished game."""
 
@@ -335,6 +357,11 @@ class AbstractController(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def board(self) -> brd.Board:
+        return NotImplemented
+
+    @abc.abstractmethod
+    def get_game_info(self) -> GameInfo:
+        """Get information about the current game."""
         return NotImplemented
 
     def get_game_options(self) -> utils.GameOptsStruct:

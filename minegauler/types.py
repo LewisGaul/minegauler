@@ -163,8 +163,8 @@ class GameState(str, enum.Enum):
     WON = "WON"
     LOST = "LOST"
 
-    def unstarted(self) -> bool:
-        return self is self.READY
+    def started(self) -> bool:
+        return self is not self.READY
 
     def finished(self) -> bool:
         return self in [self.WON, self.LOST]

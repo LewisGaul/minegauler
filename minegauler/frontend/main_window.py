@@ -15,6 +15,8 @@ __all__ = ("MinegaulerGUI",)
 
 import logging
 import os
+import textwrap
+import time as tm
 import traceback
 from typing import Callable, Dict, Mapping, Optional, Type
 
@@ -397,6 +399,10 @@ class MinegaulerGUI(
         self._game_menu.addSeparator()
 
         # Current info (F4)
+        info_act = self._game_menu.addAction(
+            "Current game info", self._open_current_info_modal
+        )
+        info_act.setShortcut("F4")
 
         # Solver
         # - Probabilities (F5)
@@ -606,6 +612,11 @@ class MinegaulerGUI(
         except Exception:
             logger.exception("Error occurred trying to load minefield from file")
 
+    def _open_current_info_modal(self) -> None:
+        """Open a popup giving the current game info."""
+        info = self._ctrlr.get_game_info()
+        _CurrentInfoModal(self, info, self._state).show()
+
     def _open_custom_board_modal(self) -> None:
         """Open the modal popup to select the custom difficulty."""
         _CustomBoardModal(
@@ -675,6 +686,66 @@ class MinegaulerGUI(
         self._mf_widget.update_btn_size(size)
 
 
+class _CurrentInfoModal(QDialog):
+    """A popup window with information about the current game."""
+
+    def __init__(self, parent: QWidget, info: api.GameInfo, state_: state.State):
+        super().__init__(parent)
+        self._info = info
+        self._state = state_
+        self.setWindowTitle("Game info")
+        self.setModal(True)
+        self._setup_ui()
+
+    def _setup_ui(self) -> None:
+        """Set up the UI."""
+        base_layout = QVBoxLayout(self)
+        base_layout.addWidget(QLabel("Information about the current game:", self))
+        info = self._info
+        info_text = textwrap.dedent(
+            f"""\
+            {info.x_size} x {info.y_size} grid
+            {info.mines} mines
+            Max mines per cell: {info.per_cell}
+            Drag-select: {self._state.drag_select}
+            """
+        )
+        if info.finished_info:
+            start_time = tm.strftime(
+                "%Y-%m-%d %H:%M:%S", tm.localtime(info.finished_info.start_time)
+            )
+            fin_info = info.finished_info
+            state = info.game_state.name.capitalize()
+            info_text += textwrap.dedent(
+                f"""\
+
+                Game was started at {start_time}
+                {state} after {fin_info.elapsed:.2f} seconds
+                The board was {fin_info.prop_flagging * 100:.1f}% flagged
+                The 3bv was: {fin_info.bbbv}
+                The 3bv/s rate was: {fin_info.bbbvps:.2f}
+                """
+            )
+            if info.game_state is GameState.LOST:
+                info_text += textwrap.dedent(
+                    f"""\
+
+                    Remaining 3bv: {fin_info.rem_bbbv}
+                    Game was {fin_info.prop_complete * 100:.1f}% complete
+                    """
+                )
+                if fin_info.prop_complete > 0:
+                    info_text += textwrap.dedent(
+                        f"""\
+                        Predicted completion time: {fin_info.elapsed / fin_info.prop_complete:.2f} seconds
+                        """
+                    )
+        base_layout.addWidget(QLabel(info_text, self))
+        ok_btn = QPushButton("Ok", self)
+        ok_btn.pressed.connect(self.close)
+        base_layout.addWidget(ok_btn)
+
+
 class _CustomBoardModal(QDialog):
     """A popup window to select custom board dimensions."""
 
@@ -682,15 +753,15 @@ class _CustomBoardModal(QDialog):
         self, parent: QWidget, cols: int, rows: int, mines: int, callback: Callable
     ):
         super().__init__(parent)
-        self.setWindowTitle("Custom")
         self._cols: int = cols
         self._rows: int = rows
         self._mines: int = mines
         self._callback: Callable = callback
+        self.setWindowTitle("Custom")
         self.setModal(True)
-        self.setup_ui()
+        self._setup_ui()
 
-    def setup_ui(self) -> None:
+    def _setup_ui(self) -> None:
         """Set up the UI."""
         base_layout = QVBoxLayout(self)
         base_layout.addWidget(
@@ -746,9 +817,9 @@ class _ButtonSizeModal(QDialog):
         self._btn_size: int = btn_size
         self._callback: Callable = callback
         self.setModal(True)
-        self.setup_ui()
+        self._setup_ui()
 
-    def setup_ui(self) -> None:
+    def _setup_ui(self) -> None:
         """Set up the UI."""
         base_layout = QVBoxLayout(self)
         base_layout.addWidget(QLabel("Select the button size in pixels.", self))
@@ -845,12 +916,12 @@ class _TextPopup(QWidget):
 
         self._text_widget = QLabel(self)
         self._ok_button = QPushButton(self)
-        self.setup_ui()
+        self._setup_ui()
 
         with open(file) as f:
             self._text_widget.setText(f.read())
 
-    def setup_ui(self) -> None:
+    def _setup_ui(self) -> None:
         """Set up the UI layout."""
         lyt = QVBoxLayout(self)
         # lyt.setAlignment(Qt.AlignCenter)
