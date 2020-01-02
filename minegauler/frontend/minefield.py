@@ -127,6 +127,7 @@ class MinefieldWidget(QGraphicsView):
 
     at_risk_signal = pyqtSignal()
     no_risk_signal = pyqtSignal()
+    size_changed = pyqtSignal()
 
     def __init__(
         self,
@@ -475,12 +476,7 @@ class MinefieldWidget(QGraphicsView):
 
     def reshape(self, x_size: int, y_size: int) -> None:
         logger.info("Resizing minefield to %sx%s", x_size, y_size)
-        self.setFixedSize(self.sizeHint())
-        # self.resize(self.sizeHint())  # For when the lower size bound is removed
-        self.updateGeometry()
-        self.setSceneRect(
-            0, 0, self.x_size * self.btn_size, self.y_size * self.btn_size
-        )
+        self._update_size()
         for c in [(i, j) for i in range(self.x_size) for j in range(self.y_size)]:
             self.set_cell_image(c, CellUnclicked())
 
@@ -492,6 +488,22 @@ class MinefieldWidget(QGraphicsView):
         )
         for coord in self._board.all_coords:
             self.set_cell_image(coord, self._board[coord])
+
+    def update_btn_size(self, size: int) -> None:
+        """Update the size of the cells."""
+        assert size == self._state.btn_size
+        init_or_update_cell_images(self._cell_images, self.btn_size, self._state.styles)
+        for coord in self._board.all_coords:
+            self.set_cell_image(coord, self._board[coord])
+        self._update_size()
+
+    def _update_size(self) -> None:
+        self.setFixedSize(self.sizeHint())
+        # self.resize(self.sizeHint())  # For when the lower size bound is removed
+        self.setSceneRect(
+            0, 0, self.x_size * self.btn_size, self.y_size * self.btn_size
+        )
+        self.size_changed.emit()
 
 
 if __name__ == "__main__":

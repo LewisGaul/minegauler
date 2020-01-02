@@ -201,6 +201,7 @@ class MinegaulerGUI(
         self._panel_widget.clicked.connect(self._ctrlr.new_game)
         self._mf_widget.at_risk_signal.connect(self._panel_widget.at_risk)
         self._mf_widget.no_risk_signal.connect(self._panel_widget.no_risk)
+        self._mf_widget.size_changed.connect(self._update_size)
         self._name_entry_widget.name_updated_signal.connect(self._set_name)
 
     # ----------------------------------
@@ -227,7 +228,7 @@ class MinegaulerGUI(
         self._state.x_size = x_size
         self._state.y_size = y_size
         self._mf_widget.reshape(x_size, y_size)
-        self._update_size()
+        # self._update_size()
         self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
     def set_mines(self, mines: int) -> None:
@@ -428,6 +429,7 @@ class MinegaulerGUI(
         self._game_menu.addSeparator()
 
         # Zoom
+        self._game_menu.addAction("Button size", self._open_zoom_modal)
 
         # Styles
         # - Buttons
@@ -559,7 +561,7 @@ class MinegaulerGUI(
         self._state.name = name
         self._state.highscores_state.name_hint = name
 
-    def _open_save_board_modal(self):
+    def _open_save_board_modal(self) -> None:
         if not (
             self._state.game_status.finished() or self._state.ui_mode is UIMode.CREATE
         ):
@@ -580,7 +582,7 @@ class MinegaulerGUI(
         except Exception:
             logger.exception("Error occurred trying to save minefield to file")
 
-    def _open_load_board_modal(self):
+    def _open_load_board_modal(self) -> None:
         file, _ = QFileDialog.getOpenFileName(
             self,
             caption="Load board",
@@ -604,6 +606,10 @@ class MinegaulerGUI(
             self._state.mines,
             self._ctrlr.resize_board,
         ).show()
+
+    def _open_zoom_modal(self) -> None:
+        """Open the popup to set the button size."""
+        _ButtonSizeModal(self, self._state.btn_size, self.set_button_size).show()
 
     def _open_text_popup(self, title: str, file: os.PathLike):
         """Open a text popup window."""
@@ -653,6 +659,11 @@ class MinegaulerGUI(
         win = highscores.HighscoresWindow(self, settings, self._state.highscores_state)
         win.show()
         self._open_subwindows["highscores"] = win
+
+    def set_button_size(self, size: int) -> None:
+        """Set the cell size in pixels."""
+        self._state.btn_size = size
+        self._mf_widget.update_btn_size(size)
 
 
 class _CustomBoardModal(QDialog):
@@ -705,6 +716,44 @@ class _CustomBoardModal(QDialog):
         # Ok/Cancel buttons.
         def ok_pressed():
             self._callback(x_slider.value(), y_slider.value(), m_slider.value())
+            self.close()
+
+        ok_btn = QPushButton("Ok", self)
+        ok_btn.pressed.connect(ok_pressed)
+        cancel_btn = QPushButton("Cancel", self)
+        cancel_btn.pressed.connect(self.close)
+        btns_layout = QHBoxLayout()
+        base_layout.addLayout(btns_layout)
+        btns_layout.addWidget(ok_btn)
+        btns_layout.addWidget(cancel_btn)
+
+
+class _ButtonSizeModal(QDialog):
+    """A popup window to select the button size."""
+
+    def __init__(self, parent: QWidget, btn_size: int, callback: Callable):
+        super().__init__(parent)
+        self.setWindowTitle("Button size")
+        self._btn_size: int = btn_size
+        self._callback: Callable = callback
+        self.setModal(True)
+        self.setup_ui()
+
+    def setup_ui(self) -> None:
+        """Set up the UI."""
+        base_layout = QVBoxLayout(self)
+        base_layout.addWidget(QLabel("Select the button size in pixels.", self))
+
+        # Set up the input sliders and spin boxes.
+        slider = _SliderSpinner(self)
+        slider.setValue(self._btn_size)
+        slider.setMinimum(16)
+        slider.setMaximum(40)
+        base_layout.addWidget(slider)
+
+        # Ok/Cancel buttons.
+        def ok_pressed():
+            self._callback(slider.value())
             self.close()
 
         ok_btn = QPushButton("Ok", self)
