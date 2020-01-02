@@ -635,8 +635,9 @@ class MinegaulerGUI(
         """Open a text popup window."""
         if title in self._open_subwindows:
             try:
+                self._open_subwindows[title].close()
                 # self._open_subwindows[title].setFocus()  # TODO: doesn't work!
-                return
+                # return
             except:
                 self._open_subwindows.pop(title)
         win = _TextPopup(self, title, file)
