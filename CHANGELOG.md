@@ -27,6 +27,11 @@ This first tracked version includes:
  - Option to allow multiple mines per cell
  - Local highscores for standard difficulty modes
  - Custom cell styles
+ - Option to change the cell size
+
+
+### 4.0.3-a1 (2020-01-02)
+ - Add option to change the cell size
 
 
 ### 4.0.3-a0 (2020-01-02)
