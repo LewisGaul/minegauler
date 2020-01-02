@@ -310,6 +310,8 @@ class Game:
             return 0
 
     def get_flag_proportion(self) -> float:
+        if self.mines == 0:
+            return 0
         return self._num_flags / self.mines
 
     def is_finished(self) -> bool:

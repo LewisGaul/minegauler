@@ -106,15 +106,17 @@ class Grid(list):
 
     def __getitem__(self, key):
         if type(key) is tuple and len(key) == 2:
-            return self[key[1]][key[0]]
+            x, y = key
+            return super().__getitem__(y)[x]
         else:
-            return super().__getitem__(key)
+            raise TypeError("Grid keys should be tuple coordinates of the form (0, 1)")
 
     def __setitem__(self, key, value):
         if type(key) is tuple and len(key) == 2:
-            self[key[1]][key[0]] = value
+            x, y = key
+            super().__getitem__(y)[x] = value
         else:
-            super().__setitem__(key, value)
+            raise TypeError("Grid keys should be tuple coordinates of the form (0, 1)")
 
     @classmethod
     def from_2d_array(cls, array):

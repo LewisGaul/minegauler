@@ -13,7 +13,7 @@ Minefield (class)
 __all__ = ("Board", "Minefield")
 
 import random as rnd
-from typing import Collection, Iterable, List, Optional, Union
+from typing import Any, Collection, Dict, Iterable, List, Optional, Union
 
 from ..shared import utils
 from ..types import CellContentsType, CellFlag, CellMineType, CellNum, CellUnclicked
@@ -181,6 +181,38 @@ class Minefield(utils.Grid):
         See minegauler.core.utils.Grid and Minefield.from_grid().
         """
         return cls.from_grid(utils.Grid.from_2d_array(array), per_cell=per_cell)
+
+    @classmethod
+    def from_json(cls, dict_: Dict[str, Any]) -> "Minefield":
+        """
+        Create a minefield instance from a JSON encoding.
+
+        :param dict_:
+            The dictionary obtained from decoding JSON. Must contain the
+            following fields: 'x_size', 'y_size', 'mine_coords'.
+        :raise ValueError:
+            If the dictionary is missing required fields.
+        """
+        try:
+            return cls(
+                dict_["x_size"],
+                dict_["y_size"],
+                mines=[tuple(c) for c in dict_["mine_coords"]],
+                per_cell=dict_.get("per_cell", 1),
+            )
+        except KeyError as e:
+            raise ValueError(
+                "Missing key in dictionary when trying to create minefield"
+            ) from e
+
+    def to_json(self) -> Dict[str, Any]:
+        """Convert to a JSON-serialisable format."""
+        return dict(
+            x_size=self.x_size,
+            y_size=self.y_size,
+            mine_coords=self.mine_coords,
+            per_cell=self.per_cell,
+        )
 
     def _choose_mine_coords(
         self, safe_coords: Optional[Iterable[Coord_T]] = None

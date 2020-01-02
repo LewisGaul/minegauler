@@ -17,6 +17,7 @@ __all__ = (
 
 import abc
 import logging
+import os
 from typing import Callable, Dict, Iterable, List, Optional
 
 import attr
@@ -111,6 +112,16 @@ class AbstractListener(metaclass=abc.ABCMeta):
 
         :param info:
             A store of end-game information.
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
+    def switch_mode(self, mode: UIMode) -> None:
+        """
+        Called to indicate the game mode has change.
+
+        :param mode:
+            The mode to change to.
         """
         return NotImplemented
 
@@ -261,6 +272,15 @@ class Caller(AbstractListener):
         """
         self._logger.debug(f"Calling handle_finished_game() with {info}")
 
+    def switch_mode(self, mode: UIMode) -> None:
+        """
+        Called to indicate the game mode has change.
+
+        :param mode:
+            The mode to change to.
+        """
+        self._logger.debug(f"Calling switch_mode() with {mode}")
+
     def handle_exception(self, method: str, exc: Exception) -> None:
         """
         Not used in this class - provided only to satisfy the ABC.
@@ -387,6 +407,28 @@ class AbstractController(metaclass=abc.ABCMeta):
         Set the maximum number of mines per cell.
         """
         self._logger.debug("Setting per cell to %s", value)
+
+    @abc.abstractmethod
+    def save_current_minefield(self, file: os.PathLike) -> None:
+        """
+        Save the current minefield to file.
+
+        :param file:
+            The location of the file to save to. Should have the extension
+            ".mgb".
+        """
+        self._logger.debug("Saving current minefield to file: %s", file)
+
+    @abc.abstractmethod
+    def load_minefield(self, file: os.PathLike) -> None:
+        """
+        Load a minefield from file.
+
+        :param file:
+            The location of the file to load from. Should have the extension
+            ".mgb".
+        """
+        self._logger.debug("Loading minefield from file: %s", file)
 
 
 class AbstractSwitchingController(AbstractController):

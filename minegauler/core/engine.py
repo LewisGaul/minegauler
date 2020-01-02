@@ -11,7 +11,9 @@ BaseController (class)
 
 __all__ = ("BaseController", "CreateController", "GameController")
 
+import json
 import logging
+import os
 from typing import Dict, Optional
 
 import attr
@@ -33,6 +35,22 @@ from . import game
 
 
 logger = logging.getLogger(__name__)
+
+
+def _save_minefield(mf: brd.Minefield, file: os.PathLike) -> None:
+    """
+    Save a minefield to file.
+
+    :param mf:
+        The minefield to save.
+    """
+    if os.path.isfile(file):
+        logger.warning("Overwriting file at %s", file)
+    elif os.path.isdir(file):
+        logger.error("Unable to save minefield - directory exists at %s", file)
+        return
+    with open(file, "w") as f:
+        json.dump(mf.to_json(), f)
 
 
 @attr.attrs(auto_attribs=True)
@@ -70,6 +88,7 @@ class BaseController(api.AbstractSwitchingController):
         self, opts: utils.GameOptsStruct, *, notif: Optional[api.Caller] = None
     ):
         super().__init__(opts, notif=notif)
+        self._mode = UIMode.GAME
         self._active_ctrlr: api.AbstractController = GameController(
             self._opts, notif=self._notif
         )
@@ -77,12 +96,16 @@ class BaseController(api.AbstractSwitchingController):
     def switch_mode(self, mode: UIMode) -> None:
         """Switch the mode of the UI, e.g. into 'create' mode."""
         super().switch_mode(mode)
+        if mode is self._mode:
+            logger.debug("Ignore switch mode request because mode is already %s", mode)
+            return
         if mode is UIMode.GAME:
             self._active_ctrlr = GameController(self._opts, notif=self._notif)
         elif mode is UIMode.CREATE:
             self._active_ctrlr = CreateController(self._opts, notif=self._notif)
         else:
             raise ValueError(f"Unrecognised UI mode: {mode}")
+        self._mode = mode
 
     # ----------------------------------
     # Delegated abstractmethods
@@ -122,6 +145,21 @@ class BaseController(api.AbstractSwitchingController):
     def set_per_cell(self, value: int) -> None:
         self._opts.per_cell = value
         self._active_ctrlr.set_per_cell(value)
+
+    def save_current_minefield(self, file: os.PathLike) -> None:
+        self._active_ctrlr.save_current_minefield(file)
+
+    def load_minefield(self, file: os.PathLike) -> None:
+        with open(file) as f:
+            mf = brd.Minefield.from_json(json.load(f))
+        self._opts.x_size = mf.x_size
+        self._opts.y_size = mf.y_size
+        self._opts.mines = mf.nr_mines
+
+        if self._mode is UIMode.CREATE:
+            self.switch_mode(UIMode.GAME)
+            self._notif.switch_mode(UIMode.GAME)
+        self._active_ctrlr.load_minefield(file)
 
 
 class GameController(api.AbstractController):
@@ -274,6 +312,37 @@ class GameController(api.AbstractController):
             self._opts.per_cell = value
             if self._game.state.unstarted():
                 self.new_game()
+
+    def save_current_minefield(self, file: os.PathLike) -> None:
+        """
+        Save the current minefield to file.
+
+        :param file:
+            The location of the file to save to. Should have the extension
+            ".mgb".
+        """
+        super().save_current_minefield(file)
+        if self._game.mf is None:
+            logger.warning("Unable to save current minefield - doesn't exist")
+            return
+        _save_minefield(self._game.mf, file)
+
+    def load_minefield(self, file: os.PathLike) -> None:
+        """
+        Load a minefield from file.
+
+        :param file:
+            The location of the file to load from. Should have the extension
+            ".mgb".
+        """
+        with open(file) as f:
+            mf = brd.Minefield.from_json(json.load(f))
+
+        self._opts.x_size = mf.x_size
+        self._opts.y_size = mf.y_size
+        self._opts.mines = mf.nr_mines
+        self._game = game.Game(minefield=mf, lives=self._opts.lives)
+        self._send_resize_update()
 
     # --------------------------------------------------------------------------
     # Helper methods
@@ -432,3 +501,22 @@ class CreateController(api.AbstractController):
     def set_per_cell(self, value: int) -> None:
         super().set_per_cell(value)
         self._opts.per_cell = value
+
+    def save_current_minefield(self, file: os.PathLike) -> None:
+        """
+        Save the current created minefield to file.
+
+        :param file:
+            The location of the file to save to. Should have the extension
+            ".mgb".
+        """
+        super().save_current_minefield(file)
+        mines_grid = utils.Grid(self._opts.x_size, self._opts.y_size)
+        for c in self._board.all_coords:
+            if type(self._board[c]) is CellMine:
+                mines_grid[c] = self._board[c].num
+        mf = brd.Minefield.from_grid(mines_grid, per_cell=self._opts.per_cell)
+        _save_minefield(mf, file)
+
+    def load_minefield(self, file: os.PathLike) -> None:
+        return NotImplemented

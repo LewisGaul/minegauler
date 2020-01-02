@@ -44,7 +44,7 @@ class HighscoreWindowState(utils.StructConstructorMixin):
 class State:
     """All state shared between widgets."""
 
-    current_game_state: PerGameState = PerGameState()
+    _current_game_state: PerGameState = PerGameState()
     _pending_game_state: Optional[PerGameState] = None
 
     btn_size: int = 16
@@ -66,13 +66,13 @@ class State:
     # ---------------------------------
     def _update_game_state(self, field: str, value) -> None:
         if self.game_status is types.GameState.READY:
-            setattr(self.current_game_state, field, value)
+            setattr(self._current_game_state, field, value)
         else:
             setattr(self.pending_game_state, field, value)
 
     @property
     def x_size(self):
-        return self.current_game_state.x_size
+        return self._current_game_state.x_size
 
     @x_size.setter
     def x_size(self, value):
@@ -83,11 +83,11 @@ class State:
         if self.has_pending_game_state():
             return self.pending_game_state.x_size
         else:
-            return self.current_game_state.x_size
+            return self._current_game_state.x_size
 
     @property
     def y_size(self):
-        return self.current_game_state.y_size
+        return self._current_game_state.y_size
 
     @y_size.setter
     def y_size(self, value):
@@ -98,11 +98,11 @@ class State:
         if self.has_pending_game_state():
             return self.pending_game_state.y_size
         else:
-            return self.current_game_state.y_size
+            return self._current_game_state.y_size
 
     @property
     def mines(self):
-        return self.current_game_state.mines
+        return self._current_game_state.mines
 
     @mines.setter
     def mines(self, value):
@@ -113,11 +113,11 @@ class State:
         if self.has_pending_game_state():
             return self.pending_game_state.mines
         else:
-            return self.current_game_state.mines
+            return self._current_game_state.mines
 
     @property
     def first_success(self):
-        return self.current_game_state.first_success
+        return self._current_game_state.first_success
 
     @first_success.setter
     def first_success(self, value):
@@ -128,11 +128,11 @@ class State:
         if self.has_pending_game_state():
             return self.pending_game_state.first_success
         else:
-            return self.current_game_state.first_success
+            return self._current_game_state.first_success
 
     @property
     def per_cell(self):
-        return self.current_game_state.per_cell
+        return self._current_game_state.per_cell
 
     @per_cell.setter
     def per_cell(self, value):
@@ -143,11 +143,11 @@ class State:
         if self.has_pending_game_state():
             return self.pending_game_state.per_cell
         else:
-            return self.current_game_state.per_cell
+            return self._current_game_state.per_cell
 
     @property
     def lives(self):
-        return self.current_game_state.lives
+        return self._current_game_state.lives
 
     @lives.setter
     def lives(self, value):
@@ -158,11 +158,11 @@ class State:
         if self.has_pending_game_state():
             return self.pending_game_state.lives
         else:
-            return self.current_game_state.lives
+            return self._current_game_state.lives
 
     @property
     def drag_select(self):
-        return self.current_game_state.drag_select
+        return self._current_game_state.drag_select
 
     @drag_select.setter
     def drag_select(self, value):
@@ -173,13 +173,14 @@ class State:
         if self.has_pending_game_state():
             return self.pending_game_state.drag_select
         else:
-            return self.current_game_state.drag_select
+            return self._current_game_state.drag_select
 
     @property
     def pending_game_state(self) -> PerGameState:
-        if not self._pending_game_state:
-            self._pending_game_state = self.current_game_state.copy()
-        return self._pending_game_state
+        if self.has_pending_game_state():
+            return self._pending_game_state
+        else:
+            return self._current_game_state
 
     @pending_game_state.setter
     def pending_game_state(self, value: Optional[PerGameState]):
@@ -190,7 +191,7 @@ class State:
 
     def _activate_pending_game_state(self) -> None:
         if self._pending_game_state:
-            self.current_game_state = self._pending_game_state
+            self._current_game_state = self._pending_game_state
             self._pending_game_state = None
 
     @property
@@ -203,7 +204,7 @@ class State:
         if value is types.GameState.READY and self.has_pending_game_state():
             logger.info(
                 "Updating game state on new game from %s to %s",
-                self.current_game_state,
+                self._current_game_state,
                 self.pending_game_state,
             )
             self._activate_pending_game_state()
@@ -214,10 +215,10 @@ class State:
     def deepcopy(self) -> "State":
         cls = type(self)
         pending_game_state = None
-        if self.pending_game_state:
+        if self.has_pending_game_state():
             pending_game_state = self.pending_game_state.copy()
         return cls(
-            current_game_state=self.current_game_state.copy(),
+            current_game_state=self._current_game_state.copy(),
             pending_game_state=pending_game_state,
             btn_size=self.btn_size,
             name=self.name,

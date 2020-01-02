@@ -29,9 +29,7 @@ class TestMinefield:
         # Check basic creation.
         mf = Minefield(self.x, self.y, mines=self.mines, per_cell=self.per_cell)
         assert (mf.x_size, mf.y_size) == (self.x, self.y)
-        assert len(mf) == self.y
-        assert len(mf[0]) == self.x
-        assert hasattr(mf, "all_coords")
+        assert len(mf.all_coords) == self.x * self.y
         self.check_mf_created(mf)
         # Check passing safe coords.
         safe_coords = [(0, 0), (0, 1), (1, 0), (1, 1)]

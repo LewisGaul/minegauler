@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (
     QAction,
     QActionGroup,
     QDialog,
+    QFileDialog,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -40,7 +41,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from .. import shared
+from .. import ROOT_DIR, shared
 from ..core import api
 from ..shared.highscores import HighscoreSettingsStruct, HighscoreStruct
 from ..shared.utils import GUIOptsStruct, get_difficulty
@@ -51,6 +52,8 @@ from .utils import FILES_DIR
 
 
 logger = logging.getLogger(__name__)
+
+BOARD_DIR = ROOT_DIR / "boards"
 
 
 class _BaseMainWindow(QMainWindow):
@@ -184,9 +187,11 @@ class MinegaulerGUI(
         self._ctrlr: api.AbstractSwitchingController = ctrlr
         self._state: state.State = initial_state.deepcopy()
 
+        self._create_menu_action: QAction
+        self._diff_menu_actions: Dict[str, QAction] = dict()
+        self._populate_menubars()
         self._panel_widget = panel.PanelWidget(self, self._state)
         self._mf_widget = minefield.MinefieldWidget(self, self._ctrlr, self._state)
-        self._populate_menubars()
         self.set_panel_widget(self._panel_widget)
         self.set_body_widget(self._mf_widget)
         self._name_entry_widget = _NameEntryBar(self, self._state.name)
@@ -222,6 +227,10 @@ class MinegaulerGUI(
         self._state.x_size = x_size
         self._state.y_size = y_size
         self._mf_widget.reshape(x_size, y_size)
+        self._update_size()
+        self._diff_menu_actions[
+            get_difficulty(x_size, y_size, self._state.mines)
+        ].setChecked(True)
 
     def set_mines(self, mines: int) -> None:
         """
@@ -231,6 +240,8 @@ class MinegaulerGUI(
             The number of mines.
         """
         self._state.mines = mines
+        diff = get_difficulty(self._state.x_size, self._state.y_size, mines)
+        self._diff_menu_actions[diff].setChecked(True)
 
     def update_cells(self, cell_updates: Mapping[Coord_T, CellContentsType]) -> None:
         """
@@ -296,6 +307,15 @@ class MinegaulerGUI(
             if new_best:
                 self.open_highscores_window(highscore, new_best)
 
+    def switch_mode(self, mode: UIMode) -> None:
+        """
+        Called to indicate the game mode has change.
+
+        :param mode:
+            The mode to change to.
+        """
+        self._create_menu_action.setChecked(mode is UIMode.CREATE)
+
     def handle_exception(self, method: str, exc: Exception) -> None:
         logger.error(
             "Error occurred when calling %s() from backend:\n%s\n%s",
@@ -352,7 +372,7 @@ class MinegaulerGUI(
             self._state.ui_mode = mode
             self._ctrlr.switch_mode(mode)
 
-        create_act = QAction(
+        self._create_menu_action = create_act = QAction(
             "Create board",
             self,
             checkable=True,
@@ -362,8 +382,10 @@ class MinegaulerGUI(
         create_act.triggered.connect(switch_create_mode)
 
         # Save board
+        self._game_menu.addAction("Save board", self._open_save_board_modal)
 
         # Load board
+        self._game_menu.addAction("Load board", self._open_load_board_modal)
 
         self._game_menu.addSeparator()
 
@@ -394,6 +416,7 @@ class MinegaulerGUI(
         diff_group.setExclusive(True)
         for diff in ["Beginner", "Intermediate", "Expert", "Master", "Custom"]:
             diff_act = QAction(diff, diff_group, checkable=True)
+            self._diff_menu_actions[diff[0]] = diff_act
             self._game_menu.addAction(diff_act)
             diff_act.id = diff[0]
             if diff_act.id == get_difficulty(
@@ -525,6 +548,10 @@ class MinegaulerGUI(
         elif id_ == "M":
             x, y, m = 30, 30, 200
         elif id_ == "C":
+            diff = get_difficulty(
+                self._state.x_size, self._state.y_size, self._state.mines
+            )
+            self._diff_menu_actions[diff].setChecked(True)
             logger.info("Opening popup window for selecting custom board")
             self._open_custom_board_modal()
             return
@@ -532,21 +559,55 @@ class MinegaulerGUI(
             raise ValueError(f"Unrecognised difficulty '{id_}'")
 
         self._ctrlr.resize_board(x_size=x, y_size=y, mines=m)
-        self._update_size()
 
     def _set_name(self, name: str) -> None:
         self._state.name = name
         self._state.highscores_state.name_hint = name
 
+    def _open_save_board_modal(self):
+        if not (
+            self._state.game_status.finished() or self._state.ui_mode is UIMode.CREATE
+        ):
+            return
+        file, _ = QFileDialog.getSaveFileName(
+            self,
+            caption="Save board",
+            directory=str(BOARD_DIR),
+            filter="Minegauler boards (*.mgb)",
+        )
+        if not file:
+            return
+        elif not file.endswith(".mgb"):
+            file += ".mgb"
+        logger.info("Board requested to be saved at %s", file)
+        try:
+            self._ctrlr.save_current_minefield(file)
+        except Exception:
+            logger.exception("Error occurred trying to save minefield to file")
+
+    def _open_load_board_modal(self):
+        file, _ = QFileDialog.getOpenFileName(
+            self,
+            caption="Load board",
+            directory=str(BOARD_DIR),
+            filter="Minegauler boards (*.mgb)",
+        )
+        if not file:
+            return
+        logger.info("Board requested to be loaded from %s", file)
+        try:
+            self._ctrlr.load_minefield(file)
+        except Exception:
+            logger.exception("Error occurred trying to load minefield from file")
+
     def _open_custom_board_modal(self) -> None:
         """Open the modal popup to select the custom difficulty."""
-
-        def callback(x, y, m):
-            self._ctrlr.resize_board(x, y, m)
-            self._update_size()
-
         _CustomBoardModal(
-            self, self._state.x_size, self._state.y_size, self._state.mines, callback
+            self,
+            self._state.x_size,
+            self._state.y_size,
+            self._state.mines,
+            self._ctrlr.resize_board,
         ).show()
 
     def _open_text_popup(self, title: str, file: os.PathLike):
