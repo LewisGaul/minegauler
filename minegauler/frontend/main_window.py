@@ -449,7 +449,8 @@ class MinegaulerGUI(
             img_group_name = img_group.name.capitalize()
             submenu = QMenu(img_group_name, self)
             styles_menu.addMenu(submenu)
-            group = QActionGroup(self, exclusive=True)
+            group = QActionGroup(self)
+            group.setExclusive(True)
             for folder in (utils.IMG_DIR / img_group_name).glob("*"):
                 style = folder.name
                 style_act = QAction(style, self, checkable=True)
