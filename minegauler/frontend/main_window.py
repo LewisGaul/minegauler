@@ -117,7 +117,6 @@ class _BaseMainWindow(QMainWindow):
         self._body_frame.setFrameShadow(QFrame.Raised)
         self._body_frame.setFrameShape(QFrame.Box)
         self._body_frame.setLineWidth(self.BODY_FRAME_WIDTH / 2)
-        # self._body_frame.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         hstretch.addWidget(self._body_frame)
         hstretch.addStretch()  # right-padding for centering
         vlayout.addLayout(hstretch)
@@ -327,14 +326,22 @@ class MinegaulerGUI(
     # Qt method overrides
     # --------------------------------------------------------------------------
     def sizeHint(self) -> QSize:
-        width = max(
-            self._body_frame.sizeHint().width(),
-            self._panel_frame.minimumSizeHint().width(),
-        )
-        height = (
+        width = max(self._body_frame.sizeHint().width(), self.minimumSizeHint().width())
+        height = max(
             self._menubar.sizeHint().height()
             + self._panel_frame.sizeHint().height()
             + self._body_frame.sizeHint().height()
+            + self._name_entry_widget.sizeHint().height(),
+            self.minimumSizeHint().width(),
+        )
+        return QSize(width, height)
+
+    def minimumSizeHint(self) -> QSize:
+        width = self._panel_frame.minimumSizeHint().width()
+        height = (
+            self._menubar.sizeHint().height()
+            + self._panel_frame.sizeHint().height()
+            + 50
             + self._name_entry_widget.sizeHint().height()
         )
         return QSize(width, height)
@@ -348,7 +355,9 @@ class MinegaulerGUI(
     # --------------------------------------------------------------------------
     def _update_size(self):
         """Update the window size."""
-        self.setFixedSize(self.sizeHint())
+        self.setMinimumSize(self.minimumSizeHint())
+        self.setMaximumSize(self.sizeHint())
+        self.resize(self.sizeHint())
 
     def _populate_menubars(self) -> None:
         """Fill in the menubars."""

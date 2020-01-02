@@ -16,7 +16,7 @@ import sys
 from typing import Dict, Optional, Set
 
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
-from PyQt5.QtGui import QImage, QPainter, QPixmap
+from PyQt5.QtGui import QImage, QMouseEvent, QPainter, QPixmap
 from PyQt5.QtWidgets import (
     QApplication,
     QGraphicsScene,
@@ -146,7 +146,7 @@ class MinefieldWidget(QGraphicsView):
         self.setScene(self.scene)
         self.setStyleSheet("border: 0px")
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        self.setFixedSize(self.sizeHint())
+        self.setMaximumSize(self.sizeHint())
 
         # Keep track of mouse button states.
         self.mouse_coord = None
@@ -183,7 +183,7 @@ class MinefieldWidget(QGraphicsView):
     def sizeHint(self) -> QSize:
         return QSize(self.x_size * self.btn_size, self.y_size * self.btn_size)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: QMouseEvent):
         """Handle mouse press events."""
 
         # Ignore any clicks which aren't the left or right mouse buttons.
@@ -197,7 +197,7 @@ class MinefieldWidget(QGraphicsView):
         if self._ignore_clicks or self.was_double_left_click:
             return
 
-        self.mouse_coord = coord = self.coord_from_event(event)
+        self.mouse_coord = coord = self._coord_from_event(event)
 
         ## Bothclick
         if event.buttons() & Qt.LeftButton and event.buttons() & Qt.RightButton:
@@ -214,10 +214,10 @@ class MinefieldWidget(QGraphicsView):
             logger.debug("Right mouse button down on cell %s", coord)
             self.right_button_down(coord)
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event: QMouseEvent):
         """Handle double clicks."""
 
-        coord = self.coord_from_event(event)
+        coord = self._coord_from_event(event)
 
         # Redirect double right-clicks to be two normal clicks.
         if event.button() == Qt.RightButton:
@@ -226,13 +226,13 @@ class MinefieldWidget(QGraphicsView):
             self.was_double_left_click = True
             self.left_button_double_down(coord)
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event: QMouseEvent):
         """Handle mouse move events."""
 
         if self._ignore_clicks:
             return
 
-        coord = self.coord_from_event(event)
+        coord = self._coord_from_event(event)
 
         # Return if not the left or right mouse buttons, or if the mouse wasn't
         #  moved to a different cell.
@@ -262,7 +262,7 @@ class MinefieldWidget(QGraphicsView):
             if event.buttons() & Qt.RightButton:
                 self.right_button_move(coord)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event: QMouseEvent):
         """Handle mouse release events."""
 
         if self.await_release_all_buttons and not event.buttons():
@@ -272,7 +272,7 @@ class MinefieldWidget(QGraphicsView):
         if event.button() not in [Qt.LeftButton, Qt.RightButton] or self._ignore_clicks:
             return
 
-        coord = self.coord_from_event(event)
+        coord = self._coord_from_event(event)
 
         ## Bothclick (one of the buttons still down)
         if event.buttons() & (Qt.LeftButton | Qt.RightButton):
@@ -306,7 +306,7 @@ class MinefieldWidget(QGraphicsView):
             self.at_risk_signal.emit()
             self._ctrlr.select_cell(coord)
         else:
-            self.sink_unclicked_cell(coord)
+            self._sink_unclicked_cell(coord)
 
     def left_button_double_down(self, coord: Coord_T) -> None:
         """
@@ -320,7 +320,7 @@ class MinefieldWidget(QGraphicsView):
         Left mouse button was moved after a single click. Change display as
         appropriate.
         """
-        self.raise_all_sunken_cells()
+        self._raise_all_sunken_cells()
         self.no_risk_signal.emit()
         if coord is not None:
             self.left_button_down(coord)
@@ -337,7 +337,7 @@ class MinefieldWidget(QGraphicsView):
         Left mouse button was released. Change display and call callback
         functions as appropriate.
         """
-        self.raise_all_sunken_cells()
+        self._raise_all_sunken_cells()
         self.no_risk_signal.emit()
         if not self._state.drag_select and coord is not None:
             self._ctrlr.select_cell(coord)
@@ -370,7 +370,7 @@ class MinefieldWidget(QGraphicsView):
         """
         if not isinstance(self._board[coord], CellMineType):
             for c in self._board.get_nbrs(coord, include_origin=True):
-                self.sink_unclicked_cell(c)
+                self._sink_unclicked_cell(c)
         if self._state.drag_select:
             self.at_risk_signal.emit()
             self._ctrlr.chord_on_cell(coord)
@@ -380,7 +380,7 @@ class MinefieldWidget(QGraphicsView):
         Both left and right mouse buttons were moved. Change display as
         appropriate.
         """
-        self.raise_all_sunken_cells()
+        self._raise_all_sunken_cells()
         if not self._state.drag_select:
             self.no_risk_signal.emit()
         if coord is not None:
@@ -391,7 +391,7 @@ class MinefieldWidget(QGraphicsView):
         One of the mouse buttons was released after both were pressed. Change
         display and call callback functions as appropriate.
         """
-        self.raise_all_sunken_cells()
+        self._raise_all_sunken_cells()
         if not self._state.drag_select:
             self.no_risk_signal.emit()
             if coord is not None:
@@ -412,25 +412,18 @@ class MinefieldWidget(QGraphicsView):
     # --------------------------------------------------------------------------
     # Other methods
     # --------------------------------------------------------------------------
-    def is_coord_in_grid(self, coord: Coord_T) -> bool:
+    def _is_coord_in_grid(self, coord: Coord_T) -> bool:
         return self._board.is_coord_in_grid(coord)
 
-    def coord_from_event(self, event) -> Optional[Coord_T]:
-        coord = event.x() // self.btn_size, event.y() // self.btn_size
-        if not self.is_coord_in_grid(coord):
+    def _coord_from_event(self, event: QMouseEvent) -> Optional[Coord_T]:
+        pos = self.mapToScene(event.pos())
+
+        coord = int(pos.x()) // self.btn_size, int(pos.y()) // self.btn_size
+        if not self._is_coord_in_grid(coord):
             return None
         return coord
 
-    def reset(self) -> None:
-        """Reset all cell images and other state for a new game."""
-        logger.info("Resetting minefield widget")
-        self.mouse_coord = None
-        self.both_mouse_buttons_pressed = False
-        self.await_release_all_buttons = True
-        for c in self._board.all_coords:
-            self.set_cell_image(c, CellUnclicked())
-
-    def sink_unclicked_cell(self, coord: Coord_T) -> None:
+    def _sink_unclicked_cell(self, coord: Coord_T) -> None:
         """
         Set an unclicked cell to appear sunken.
         """
@@ -442,7 +435,7 @@ class MinefieldWidget(QGraphicsView):
         if self.sunken_cells:
             self.at_risk_signal.emit()
 
-    def raise_all_sunken_cells(self) -> None:
+    def _raise_all_sunken_cells(self) -> None:
         """
         Reset all sunken cells to appear raised.
         """
@@ -450,6 +443,15 @@ class MinefieldWidget(QGraphicsView):
             coord = self.sunken_cells.pop()
             if self._board[coord] == CellUnclicked():
                 self.set_cell_image(coord, "btn_up")
+
+    def reset(self) -> None:
+        """Reset all cell images and other state for a new game."""
+        logger.info("Resetting minefield widget")
+        self.mouse_coord = None
+        self.both_mouse_buttons_pressed = False
+        self.await_release_all_buttons = True
+        for c in self._board.all_coords:
+            self.set_cell_image(c, CellUnclicked())
 
     def set_cell_image(self, coord: Coord_T, state) -> None:
         """
@@ -498,7 +500,7 @@ class MinefieldWidget(QGraphicsView):
         self._update_size()
 
     def _update_size(self) -> None:
-        self.setFixedSize(self.sizeHint())
+        self.setMaximumSize(self.sizeHint())
         # self.resize(self.sizeHint())  # For when the lower size bound is removed
         self.setSceneRect(
             0, 0, self.x_size * self.btn_size, self.y_size * self.btn_size
