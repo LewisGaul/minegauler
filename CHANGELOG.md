@@ -28,6 +28,11 @@ This first tracked version includes:
  - Local highscores for standard difficulty modes
  - Custom cell styles
  - Option to change the cell size
+ - Ability to reduce the window size and use scroll
+
+
+### 4.0.3-a2 (2020-01-02)
+ - Allow reducing the size of the window which introduces scrollbars to the board
 
 
 ### 4.0.3-a1 (2020-01-02)
