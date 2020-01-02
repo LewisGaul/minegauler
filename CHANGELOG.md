@@ -6,7 +6,6 @@ All notable changes to this project will be documented in this file.
 ## Planned
 
 ### Additions
- - Ability to save and load created boards
  - Ability to pause a game
  - Ability to change size of minefield cells
  - Option of having multiple lives
@@ -22,11 +21,16 @@ This first tracked version includes:
  - Ability to specify custom board size/number of mines
  - Ability to replay a game
  - Mode to create boards
+ - Ability to save and load created boards
  - Option of whether first click will guarantee an opening
  - Option to select cells by click-and-drag technique with the mouse
  - Option to allow multiple mines per cell
  - Local highscores for standard difficulty modes
  - Custom cell styles
+
+
+### 4.0.3-a0 (2020-01-02)
+ - Add ability to save and load created boards
 
 
 ### 4.0.2-a1 (2020-01-01)
