@@ -7,11 +7,9 @@ All notable changes to this project will be documented in this file.
 
 ### Additions
  - Ability to pause a game
- - Ability to change size of minefield cells
  - Option of having multiple lives
-
-### Fixes
- - Remove ability to maximise the main window
+ - Probabilities
+ - New 'split cell' mode
 
 
 ## 4.0
@@ -22,6 +20,7 @@ This first tracked version includes:
  - Ability to replay a game
  - Mode to create boards
  - Ability to save and load created boards
+ - Get current game information, including predicted completion time for lost game
  - Option of whether first click will guarantee an opening
  - Option to select cells by click-and-drag technique with the mouse
  - Option to allow multiple mines per cell
@@ -29,6 +28,10 @@ This first tracked version includes:
  - Custom cell styles
  - Option to change the cell size
  - Ability to reduce the window size and use scroll
+
+
+### 4.0.3-a3 (2020-01-02)
+ - Option to get current game information, including predicted completion time for lost game
 
 
 ### 4.0.3-a2 (2020-01-02)
