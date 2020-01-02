@@ -10,6 +10,7 @@ __all__ = (
     "GUIOptsStruct",
     "HighscoreSettingsStruct",
     "HighscoreStruct",
+    "get_difficulty",
     "highscores",
     "read_settings_from_file",
     "write_settings_to_file",
@@ -21,6 +22,7 @@ from .utils import (
     AllOptsStruct,
     GameOptsStruct,
     GUIOptsStruct,
+    get_difficulty,
     read_settings_from_file,
     write_settings_to_file,
 )

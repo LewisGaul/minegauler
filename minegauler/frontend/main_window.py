@@ -228,9 +228,7 @@ class MinegaulerGUI(
         self._state.y_size = y_size
         self._mf_widget.reshape(x_size, y_size)
         self._update_size()
-        self._diff_menu_actions[
-            get_difficulty(x_size, y_size, self._state.mines)
-        ].setChecked(True)
+        self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
     def set_mines(self, mines: int) -> None:
         """
@@ -240,8 +238,7 @@ class MinegaulerGUI(
             The number of mines.
         """
         self._state.mines = mines
-        diff = get_difficulty(self._state.x_size, self._state.y_size, mines)
-        self._diff_menu_actions[diff].setChecked(True)
+        self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
     def update_cells(self, cell_updates: Mapping[Coord_T, CellContentsType]) -> None:
         """
@@ -549,10 +546,7 @@ class MinegaulerGUI(
         elif id_ == "M":
             x, y, m = 30, 30, 200
         elif id_ == "C":
-            diff = get_difficulty(
-                self._state.x_size, self._state.y_size, self._state.mines
-            )
-            self._diff_menu_actions[diff].setChecked(True)
+            self._diff_menu_actions[self._state.difficulty].setChecked(True)
             logger.info("Opening popup window for selecting custom board")
             self._open_custom_board_modal()
             return
@@ -641,6 +635,8 @@ class MinegaulerGUI(
             Optionally specify the key to sort the highscores by. Defaults to
             the previous sort key.
         """
+        if self._state.difficulty == "C":
+            return
         if self._open_subwindows.get("highscores"):
             self._open_subwindows.get("highscores").close()
         if not settings:

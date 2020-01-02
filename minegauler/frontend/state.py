@@ -109,6 +109,10 @@ class State:
         self._update_game_state("mines", value)
 
     @property
+    def difficulty(self) -> str:
+        return shared.get_difficulty(self.x_size, self.y_size, self.mines)
+
+    @property
     def pending_mines(self):
         if self.has_pending_game_state():
             return self.pending_game_state.mines
