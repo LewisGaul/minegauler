@@ -549,6 +549,7 @@ class MinegaulerGUI(
         about_act.triggered.connect(
             lambda: self._open_text_popup("About", FILES_DIR / "about.txt")
         )
+        about_act.setShortcut("F1")
 
     def _change_difficulty(self, id_: str) -> None:
         """
