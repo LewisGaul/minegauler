@@ -30,6 +30,10 @@ This first tracked version includes:
  - Ability to reduce the window size and use scroll
 
 
+### 4.0.3-a4 (2020-01-04)
+ - Fix scrollbars always appearing
+
+
 ### 4.0.3-a3 (2020-01-02)
  - Option to get current game information, including predicted completion time for lost game
 
