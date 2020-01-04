@@ -181,7 +181,8 @@ class MinefieldWidget(QGraphicsView):
     # Qt method overrides
     # --------------------------------------------------------------------------
     def sizeHint(self) -> QSize:
-        return QSize(self.x_size * self.btn_size, self.y_size * self.btn_size)
+        # TODO: Why is +1 needed for the height?!!
+        return QSize(self.x_size * self.btn_size, self.y_size * self.btn_size + 1)
 
     def mousePressEvent(self, event: QMouseEvent):
         """Handle mouse press events."""
@@ -501,7 +502,6 @@ class MinefieldWidget(QGraphicsView):
 
     def _update_size(self) -> None:
         self.setMaximumSize(self.sizeHint())
-        # self.resize(self.sizeHint())  # For when the lower size bound is removed
         self.setSceneRect(
             0, 0, self.x_size * self.btn_size, self.y_size * self.btn_size
         )

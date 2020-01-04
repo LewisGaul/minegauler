@@ -328,13 +328,12 @@ class MinegaulerGUI(
     # Qt method overrides
     # --------------------------------------------------------------------------
     def sizeHint(self) -> QSize:
-        width = max(self._body_frame.sizeHint().width(), self.minimumSizeHint().width())
-        height = max(
+        width = self._body_frame.sizeHint().width()
+        height = (
             self._menubar.sizeHint().height()
             + self._panel_frame.sizeHint().height()
             + self._body_frame.sizeHint().height()
-            + self._name_entry_widget.sizeHint().height(),
-            self.minimumSizeHint().width(),
+            + self._name_entry_widget.sizeHint().height()
         )
         return QSize(width, height)
 
@@ -343,7 +342,7 @@ class MinegaulerGUI(
         height = (
             self._menubar.sizeHint().height()
             + self._panel_frame.sizeHint().height()
-            + 50
+            + 100
             + self._name_entry_widget.sizeHint().height()
         )
         return QSize(width, height)
@@ -360,6 +359,11 @@ class MinegaulerGUI(
         self.setMinimumSize(self.minimumSizeHint())
         self.setMaximumSize(self.sizeHint())
         self.resize(self.sizeHint())
+        self.adjustSize()
+        # print(self.sizeHint(), self.size())
+        # print(self._body_frame.sizeHint(), self._body_frame.size())
+        # print(self._mf_widget.sizeHint(), self._mf_widget.size())
+        # print()
 
     def _populate_menubars(self) -> None:
         """Fill in the menubars."""
