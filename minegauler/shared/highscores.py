@@ -18,6 +18,8 @@ from typing import Dict, Iterable, Optional, Tuple
 
 import attr
 
+import mysql.connector
+
 from .. import ROOT_DIR
 from ..utils import StructConstructorMixin
 from . import utils
@@ -26,6 +28,10 @@ from . import utils
 logger = logging.getLogger(__name__)
 
 _DB_FILE = ROOT_DIR / "data" / "highscores.db"
+
+_USER = "admin"
+_PASSWORD = os.environ["SQL_DB_PASSWORD"]
+_HOST = "minegauler-highscores.cb4tvkuqujyi.eu-west-2.rds.amazonaws.com"
 
 
 @attr.attrs(auto_attribs=True)
@@ -56,8 +62,8 @@ class HighscoreStruct(HighscoreSettingsStruct):
     flagging: float
 
     @classmethod
-    def from_sql_row(cls, cursor: sqlite3.Cursor, row: Tuple) -> "HighscoreStruct":
-        """Create an instance from an SQL row."""
+    def from_sqlite_row(cls, cursor: sqlite3.Cursor, row: Tuple) -> "HighscoreStruct":
+        """Create an instance from an SQLite row."""
         return cls(**{col[0]: row[i] for i, col in enumerate(cursor.description)})
 
 
@@ -71,36 +77,39 @@ def _init_db() -> sqlite3.Connection:
     :return:
         An open connection to the database.
     """
-    if os.path.exists(_DB_FILE):
-        conn = sqlite3.connect(str(_DB_FILE))
-    else:
-        os.makedirs(_DB_FILE.parent, exist_ok=True)
-        conn = sqlite3.connect(str(_DB_FILE))
-        cursor = conn.cursor()
-
-        create_table_sql = """
-        CREATE TABLE IF NOT EXISTS highscores (
-            id INTEGER PRIMARY KEY,
-            difficulty TEXT,
-            per_cell INTEGER,
-            drag_select INTEGER,
-            name TEXT,
-            timestamp INTEGER,
-            elapsed REAL NOT NULL,
-            bbbv INTEGER,
-            bbbvps REAL,
-            flagging REAL
-        )"""
-        cursor.execute(create_table_sql)
-
-    return conn
+    return mysql.connector.connect(
+        user=_USER, password=_PASSWORD, host=_HOST, database="minegauler"
+    )
+    # if os.path.exists(_DB_FILE):
+    #     conn = sqlite3.connect(str(_DB_FILE))
+    # else:
+    #     os.makedirs(_DB_FILE.parent, exist_ok=True)
+    #     conn = sqlite3.connect(str(_DB_FILE))
+    #     cursor = conn.cursor()
+    #
+    #     create_table_sql = """
+    #     CREATE TABLE IF NOT EXISTS highscores (
+    #         id INTEGER PRIMARY KEY,
+    #         difficulty TEXT,
+    #         per_cell INTEGER,
+    #         drag_select INTEGER,
+    #         name TEXT,
+    #         timestamp INTEGER,
+    #         elapsed REAL NOT NULL,
+    #         bbbv INTEGER,
+    #         bbbvps REAL,
+    #         flagging REAL
+    #     )"""
+    #     cursor.execute(create_table_sql)
+    #
+    # return conn
 
 
 def get_highscores(settings: HighscoreSettingsStruct) -> Iterable[HighscoreStruct]:
     """Fetch highscores from the database."""
     conn = _init_db()
-    conn.row_factory = HighscoreStruct.from_sql_row
-    cursor = conn.cursor()
+    # conn.row_factory = HighscoreStruct.from_sqlite_row
+    cursor = conn.cursor(dictionary=True)
     query = (
         "SELECT {} "
         "FROM highscores "
@@ -113,7 +122,8 @@ def get_highscores(settings: HighscoreSettingsStruct) -> Iterable[HighscoreStruc
         settings.drag_select,
     )
     logger.debug("Getting highscores with SQL query: %r", query)
-    return cursor.execute(query).fetchall()
+    cursor.execute(query)
+    return [HighscoreStruct(**r) for r in cursor.fetchall()]
 
 
 def filter_and_sort(
@@ -176,23 +186,10 @@ def insert_highscore(highscore: HighscoreStruct) -> None:
     conn = _init_db()
     cursor = conn.cursor()
     insert_sql = "INSERT INTO highscores ({}) " "VALUES ({})".format(
-        ", ".join(_highscore_fields), ", ".join(f":{f}" for f in _highscore_fields)
+        ", ".join(_highscore_fields), ", ".join("{%s!r}" % f for f in _highscore_fields)
     )
-    logger.info(
-        "Inserting highscore into DB: (%d, %s, %d, %s, %s, %.2f, %d, %.2f, %.2f)",
-        highscore.timestamp,
-        highscore.difficulty,
-        highscore.per_cell,
-        highscore.drag_select,
-        highscore.name,
-        highscore.elapsed,
-        highscore.bbbv,
-        highscore.bbbvps,
-        highscore.flagging,
-    )
-    cursor.execute(
-        insert_sql,
-        {
+    insert_sql = insert_sql.format(
+        **{
             "timestamp": highscore.timestamp,
             "difficulty": highscore.difficulty,
             "per_cell": highscore.per_cell,
@@ -202,8 +199,11 @@ def insert_highscore(highscore: HighscoreStruct) -> None:
             "bbbv": highscore.bbbv,
             "bbbvps": highscore.bbbvps,
             "flagging": highscore.flagging,
-        },
+        }
     )
+    logger.info("Inserting highscore into DB: %s", highscore)
+    logger.debug("Executing SQL command: %r", insert_sql)
+    cursor.execute(insert_sql)
     conn.commit()
 
 
@@ -217,9 +217,9 @@ def is_highscore_new_best(highscore: HighscoreStruct) -> Optional[str]:
         If a new highscore was set, return which category it was set in. If not, return None.
     """
 
-    highscore_list = get_highscores(highscore)
-    top_time = filter_and_sort(highscore_list, "time", {"name": highscore.name})
-    top_3bvps = filter_and_sort(highscore_list, "3bv/s", {"name": highscore.name})
+    highscores = get_highscores(highscore)
+    top_time = filter_and_sort(highscores, "time", {"name": highscore.name})
+    top_3bvps = filter_and_sort(highscores, "3bv/s", {"name": highscore.name})
     if highscore.elapsed <= top_time[0].elapsed:
         return "time"
     elif highscore.bbbvps >= top_3bvps[0].bbbvps:

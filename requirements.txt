@@ -1,3 +1,6 @@
 attrs==19.3.0
+# Prevent mysql-connector from installing its own libcrypto.so and libssl.so,
+# see https://bugs.mysql.com/bug.php?id=89889.
+mysql-connector-python==8.0.18 #--install-option='--no-deps' --install-option='--only-binary=:all:'
 PyQt5==5.11.3
 PyQt5-sip==4.19.13
