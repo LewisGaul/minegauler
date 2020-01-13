@@ -186,7 +186,7 @@ class HighscoresModel(QAbstractTableModel):
         """
         Change the data to be highscores for a different set of settings.
         """
-        self._all_data = highscores.get_highscores(settings)
+        self._all_data = highscores.get_highscores(settings=settings)
         self.filter_and_sort()
 
     def get_active_row(self) -> Optional[int]:

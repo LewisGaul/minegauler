@@ -302,7 +302,10 @@ class MinegaulerGUI(
             shared.highscores.insert_highscore(highscore)
             self._state.highscores_state.current_highscore = highscore
             # Check whether to pop up the highscores window.
-            new_best = shared.highscores.is_highscore_new_best(highscore)
+            # TODO: This can be too slow...
+            new_best = shared.highscores.is_highscore_new_best(
+                highscore, shared.highscores.get_highscores(settings=highscore)
+            )
             if new_best:
                 self.open_highscores_window(highscore, new_best)
 
