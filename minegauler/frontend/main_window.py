@@ -299,13 +299,19 @@ class MinegaulerGUI(
                 name=self._state.name,
                 flagging=info.flagging,
             )
-            shared.highscores.insert_highscore(highscore)
+            try:
+                shared.highscores.insert_highscore(highscore)
+            except Exception:
+                logger.exception("Error inserting highscore")
             self._state.highscores_state.current_highscore = highscore
             # Check whether to pop up the highscores window.
-            # TODO: This can be too slow...
-            new_best = shared.highscores.is_highscore_new_best(
-                highscore, shared.highscores.get_highscores(settings=highscore)
-            )
+            # TODO: This is too slow...
+            try:
+                new_best = shared.highscores.is_highscore_new_best(
+                    highscore, shared.highscores.get_highscores(settings=highscore)
+                )
+            except Exception:
+                logger.exception("Error getting highscores")
             if new_best:
                 self.open_highscores_window(highscore, new_best)
 

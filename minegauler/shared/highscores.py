@@ -18,12 +18,13 @@ import enum
 import logging
 import os
 import sqlite3
+import threading
 from textwrap import dedent
 from typing import Dict, Iterable, List, Optional, Tuple
 
 import attr
-
 import mysql.connector
+import requests
 
 from .. import ROOT_DIR
 from ..utils import StructConstructorMixin
@@ -31,6 +32,8 @@ from . import utils
 
 
 logger = logging.getLogger(__name__)
+
+_REMOTE_POST_URL = "http://3.10.143.169:8080/api/highscore"
 
 
 @attr.attrs(auto_attribs=True)
@@ -237,8 +240,7 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     """Remote highscores database."""
 
     _USER = "admin"
-    # _PASSWORD = os.environ["SQL_DB_PASSWORD"]
-    _PASSWORD = "minegauler"
+    _PASSWORD = os.environ.get("SQL_DB_PASSWORD")
     _HOST = "minegauler-highscores.cb4tvkuqujyi.eu-west-2.rds.amazonaws.com"
     _DB_NAME = "minegauler"
     _TABLE_NAME = "highscores"
@@ -350,10 +352,14 @@ def get_highscores(
 def insert_highscore(highscore: HighscoreStruct) -> None:
     """Insert a highscore into DBs."""
     LocalHighscoresDB().insert_highscore(highscore)
-    try:
-        RemoteHighscoresDB().insert_highscore(highscore)
-    except DBConnectionError:
-        logger.exception("Failed to insert highscore into remote DB")
+
+    def _post_catch_exc():
+        try:
+            _post_highscore_to_remote(highscore)
+        except Exception:
+            logger.exception("Failed to insert highscore into remote DB")
+
+    threading.Thread(target=_post_catch_exc).start()
 
 
 def filter_and_sort(
@@ -434,3 +440,9 @@ def is_highscore_new_best(
         return "3bv/s"
     else:
         return None
+
+
+def _post_highscore_to_remote(highscore: HighscoreStruct):
+    """Send a highscore to the remote server to be added to the remote DB."""
+    logger.info("Posting highscore to remote")
+    requests.post(_REMOTE_POST_URL, json=attr.asdict(highscore), timeout=5)
