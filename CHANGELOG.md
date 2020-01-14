@@ -25,9 +25,16 @@ This first tracked version includes:
  - Option to select cells by click-and-drag technique with the mouse
  - Option to allow multiple mines per cell
  - Local highscores for standard difficulty modes
+ - Highscores uploaded to remote server when there is an internet connection
  - Custom cell styles
  - Option to change the cell size
  - Ability to reduce the window size and use scroll
+
+
+### 4.0.4-a0 (2020-01-14)
+ - Upload highscores to remote server
+   - Only when there is an internet connection, not queued for later
+   - View highscores e.g. at URL http://3.10.143.169:8080/api/highscores?per_cell=3&name=Siwel%20G&drag_select=1
 
 
 ### 4.0.3-a4 (2020-01-04)

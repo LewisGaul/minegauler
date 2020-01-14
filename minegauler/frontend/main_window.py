@@ -299,10 +299,19 @@ class MinegaulerGUI(
                 name=self._state.name,
                 flagging=info.flagging,
             )
-            shared.highscores.insert_highscore(highscore)
+            try:
+                shared.highscores.insert_highscore(highscore)
+            except Exception:
+                logger.exception("Error inserting highscore")
             self._state.highscores_state.current_highscore = highscore
             # Check whether to pop up the highscores window.
-            new_best = shared.highscores.is_highscore_new_best(highscore)
+            # TODO: This is too slow...
+            try:
+                new_best = shared.highscores.is_highscore_new_best(
+                    highscore, shared.highscores.get_highscores(settings=highscore)
+                )
+            except Exception:
+                logger.exception("Error getting highscores")
             if new_best:
                 self.open_highscores_window(highscore, new_best)
 
@@ -549,6 +558,7 @@ class MinegaulerGUI(
         about_act.triggered.connect(
             lambda: self._open_text_popup("About", FILES_DIR / "about.txt")
         )
+        about_act.setShortcut("F1")
 
     def _change_difficulty(self, id_: str) -> None:
         """
