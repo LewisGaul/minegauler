@@ -33,7 +33,7 @@ from . import utils
 
 logger = logging.getLogger(__name__)
 
-_REMOTE_POST_URL = "http://minegauler.lewisgaul.co.uk:8080/api/v1/highscore"
+_REMOTE_POST_URL = "http://minegauler.lewisgaul.co.uk/api/v1/highscore"
 
 
 @attr.attrs(auto_attribs=True)
