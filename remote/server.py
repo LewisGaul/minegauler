@@ -9,8 +9,8 @@ import os
 import sys
 
 import attr
+from flask import Flask, jsonify, redirect, request
 
-from flask import Flask, jsonify, request
 from minegauler.shared import highscores as hs
 
 
@@ -62,8 +62,7 @@ def api_v1_highscores():
 
 @app.route("/")
 def index():
-    # TODO
-    return "Hello, World!\n"
+    return redirect("https://www.lewisgaul.co.uk/minegauler", 302)
 
 
 @app.route("/highscores")
@@ -80,7 +79,7 @@ def main():
     logging.basicConfig(
         filename="server.log",
         level=logging.DEBUG,
-        format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
+        format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
     )
 
     logger.info("Starting up")
