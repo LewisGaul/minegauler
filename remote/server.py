@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 
-@app.route("/api/highscore", methods=["POST"])
-def api_highscore():
+@app.route("/api/v1/highscore", methods=["POST"])
+def api_v1_highscore():
     """Post a highscore to be added to the remote DB."""
     data = request.get_json()
     # verify_highscore(data)  TODO
@@ -34,8 +34,8 @@ def api_highscore():
     return "", 200
 
 
-@app.route("/api/highscores", methods=["GET"])
-def api_highscores():
+@app.route("/api/v1/highscores", methods=["GET"])
+def api_v1_highscores():
     """Provide a REST API to get highscores from the DB."""
     logger.info("GET highscores with args: %s", dict(request.args))
     difficulty = request.args.get("difficulty")
@@ -77,7 +77,11 @@ def main():
         logger.error("No 'SQL_DB_PASSWORD' env var set")
         sys.exit(1)
 
-    logging.basicConfig(filename="server.log", level=logging.DEBUG)
+    logging.basicConfig(
+        filename="server.log",
+        level=logging.DEBUG,
+        format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
+    )
 
     logger.info("Starting up")
     if "--dev" in sys.argv:
