@@ -168,17 +168,10 @@ class _SQLMixin:
             "WHERE " + " AND ".join(conditions) if conditions else "",
         )
 
-    def _get_insert_highscore_sql(self, format="%") -> str:
+    def _get_insert_highscore_sql(self, format="%s") -> str:
         """Get the SQL command to insert a highscore into a DB."""
-        if format == "?":
-            value_placeholders = ", ".join("?" for _ in _highscore_fields)
-        elif format == "%":
-            value_placeholders = "%s, %s, %d, %d, %s, %f, %d, %f, %f"
-        else:
-            raise ValueError("Unrecognised format specifier, should be '?' or '%'")
-
         return "INSERT INTO highscores ({}) " "VALUES ({})".format(
-            ", ".join(_highscore_fields), value_placeholders
+            ", ".join(_highscore_fields), ", ".join(format for _ in _highscore_fields)
         )
 
 
@@ -293,9 +286,7 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
 
     def insert_highscore(self, highscore: HighscoreStruct) -> None:
         super().insert_highscore(highscore)
-        self.execute(
-            self._get_insert_highscore_sql(format="%"), attr.astuple(highscore)
-        )
+        self.execute(self._get_insert_highscore_sql(), attr.astuple(highscore))
         self.conn.commit()
 
     def execute(self, cmd: str, params: Tuple = (), **cursor_args) -> sqlite3.Cursor:
