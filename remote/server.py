@@ -25,6 +25,14 @@ _BOT_ACCESS_TOKEN = None
 _MY_WEBEX_ID = (
     "Y2lzY29zcGFyazovL3VzL1BFT1BMRS81ZWM5MWVjOS1lYzhjLTRiMTMtYjVhNi1hOTkxN2IyYzZjZjE"
 )
+_WEBEX_GROUP_ROOM_ID = (
+    "Y2lzY29zcGFyazovL3VzL1JPT00vNzYyNjI4NTAtMzg3Ni0xMWVhLTlhM2ItODMyNzMyZDlkZTg3"
+)
+
+
+# ------------------------------------------------------------------------------
+# Helpers
+# ------------------------------------------------------------------------------
 
 
 def _send_myself_message(text: str) -> requests.Response:
@@ -37,6 +45,11 @@ def _send_myself_message(text: str) -> requests.Response:
             "Content-Type": multipart.content_type,
         },
     )
+
+
+# ------------------------------------------------------------------------------
+# REST API
+# ------------------------------------------------------------------------------
 
 
 @app.route("/api/v1/highscore", methods=["POST"])
@@ -85,6 +98,17 @@ def api_v1_highscores():
     )
 
 
+@app.route("/bot/message", methods=["POST"])
+def bot_message():
+    logger.info("POST bot message: %s", request)
+    return "", 200
+
+
+# ------------------------------------------------------------------------------
+# Webpage serving
+# ------------------------------------------------------------------------------
+
+
 @app.route("/")
 def index():
     return redirect("https://www.lewisgaul.co.uk/minegauler", 302)
@@ -93,6 +117,11 @@ def index():
 @app.route("/highscores")
 def highscores():
     return api_v1_highscores()
+
+
+# ------------------------------------------------------------------------------
+# Main
+# ------------------------------------------------------------------------------
 
 
 def main():
