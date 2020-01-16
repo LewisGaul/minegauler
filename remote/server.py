@@ -67,8 +67,7 @@ def index():
 
 @app.route("/highscores")
 def highscores():
-    # TODO: Serve a webpage.
-    return "highscores"
+    return api_v1_highscores()
 
 
 def main():
