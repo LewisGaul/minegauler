@@ -61,9 +61,31 @@ def _send_myself_message(text: str) -> requests.Response:
     return _send_message(_MY_WEBEX_ID, text)
 
 
+def _send_group_message(text: str) -> requests.Response:
+    return _send_message(_WEBEX_GROUP_ROOM_ID, text)
+
+
 def _format_highscores(highscores: Iterable[hs.HighscoreStruct]) -> str:
     lines = [f"{h.name:<15s}  {h.elapsed:.2f}" for h in highscores]
     return "\n".join(lines)
+
+
+def _send_message_if_new_best(h: hs.HighscoreStruct) -> None:
+    all_highscores = hs.get_highscores(hs.HighscoresDatabases.REMOTE, settings=h)
+    if h.difficulty == "B":
+        diff = "beginner"
+    elif h.difficulty == "I":
+        diff = "intermediate"
+    elif h.difficulty == "E":
+        diff = "expert"
+    elif h.difficulty == "M":
+        diff = "master"
+    strbool = lambda x: "True" if x else "False"
+    if hs.is_highscore_new_best(h, all_highscores) == "time":
+        _send_group_message(
+            f"New personal record of {h.elapsed:.2f} set by {h.name} on {diff}!\n"
+            f"Settings: drag-select={strbool(h.drag_select)}, per-cell={h.per_cell}"
+        )
 
 
 # ------------------------------------------------------------------------------
@@ -78,16 +100,25 @@ def api_v1_highscore():
     # verify_highscore(data)  TODO
     highscore = hs.HighscoreStruct.from_dict(data)
     logger.debug("POST highscore: %s", highscore)
+
     if _BOT_ACCESS_TOKEN:
         try:
             _send_myself_message(f"New highscore added:\n{highscore}")
         except Exception:
             logger.exception("Error sending webex message")
+
     try:
         hs.RemoteHighscoresDB().insert_highscore(highscore)
     except hs.DBConnectionError as e:
         logger.exception("Failed to insert highscore into remote DB")
         return str(e), 503
+
+    if _BOT_ACCESS_TOKEN:
+        try:
+            _send_message_if_new_best(highscore)
+        except Exception:
+            logger.exception("Error sending webex message for new best")
+
     return "", 200
 
 
