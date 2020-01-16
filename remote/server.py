@@ -24,12 +24,11 @@ app = Flask(__name__)
 
 
 _BOT_ACCESS_TOKEN = None
-_MY_WEBEX_ID = (
-    "Y2lzY29zcGFyazovL3VzL1BFT1BMRS81ZWM5MWVjOS1lYzhjLTRiMTMtYjVhNi1hOTkxN2IyYzZjZjE"
-)
-_WEBEX_GROUP_ROOM_ID = (
-    "Y2lzY29zcGFyazovL3VzL1JPT00vNzYyNjI4NTAtMzg3Ni0xMWVhLTlhM2ItODMyNzMyZDlkZTg3"
-)
+# fmt: off
+_BOT_WEBEX_ID = "Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yZmVkMGUwNi05NzhmLTQ3YzctYWM5Yi05OTRlMzI2MGJkZGI"
+_MY_WEBEX_ID = "Y2lzY29zcGFyazovL3VzL1BFT1BMRS81ZWM5MWVjOS1lYzhjLTRiMTMtYjVhNi1hOTkxN2IyYzZjZjE"
+_WEBEX_GROUP_ROOM_ID = "Y2lzY29zcGFyazovL3VzL1JPT00vNzYyNjI4NTAtMzg3Ni0xMWVhLTlhM2ItODMyNzMyZDlkZTg3"
+# fmt: on
 
 
 # ------------------------------------------------------------------------------
@@ -152,6 +151,8 @@ def api_v1_highscores():
 def bot_message():
     data = request.get_json()["data"]
     logger.debug("POST bot message: %s", data)
+    if data["personId"] == _BOT_WEBEX_ID:
+        return "", 200
 
     msg_id = data["id"]
     msg_text = _get_message(msg_id)
