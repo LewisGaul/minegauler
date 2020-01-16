@@ -312,8 +312,9 @@ class MinegaulerGUI(
                 )
             except Exception:
                 logger.exception("Error getting highscores")
-            if new_best:
-                self.open_highscores_window(highscore, new_best)
+            else:
+                if new_best:
+                    self.open_highscores_window(highscore, new_best)
 
     def switch_mode(self, mode: UIMode) -> None:
         """

@@ -104,20 +104,24 @@ class AbstractHighscoresDB(abc.ABC):
             "%s: Inserting highscore into DB: %s", type(self).__name__, highscore
         )
 
-    def execute(self, cmd: str, **cursor_args):
+    def execute(self, cmd: str, params: Tuple = (), **cursor_args):
         """
         Execute a command on the database.
 
         :param cmd:
             The command to execute.
+        :param params:
+            Parameters to pass to the command.
         :param cursor_args:
             Keyword arguments to pass on when creating the DB cursor.
         :raise DBConnectionError:
             If executing the command fails due to loss of connection.
         """
         cursor = self.conn.cursor(**cursor_args)
-        logger.debug("%s: Executing command %r", type(self).__name__, cmd)
-        cursor.execute(cmd)
+        logger.debug(
+            "%s: Executing command %r with params: %s", type(self).__name__, cmd, params
+        )
+        cursor.execute(cmd, params)
         return cursor
 
 
@@ -164,26 +168,18 @@ class _SQLMixin:
             "WHERE " + " AND ".join(conditions) if conditions else "",
         )
 
-    def _get_insert_highscore_sql(self, highscore: HighscoreStruct) -> str:
+    def _get_insert_highscore_sql(self, format="%") -> str:
         """Get the SQL command to insert a highscore into a DB."""
-        insert_sql = "INSERT INTO highscores ({}) " "VALUES ({})".format(
-            ", ".join(_highscore_fields),
-            ", ".join("{%s!r}" % f for f in _highscore_fields),
+        if format == "?":
+            value_placeholders = ", ".join("?" for _ in _highscore_fields)
+        elif format == "%":
+            value_placeholders = "%s, %s, %d, %d, %s, %f, %d, %f, %f"
+        else:
+            raise ValueError("Unrecognised format specifier, should be '?' or '%'")
+
+        return "INSERT INTO highscores ({}) " "VALUES ({})".format(
+            ", ".join(_highscore_fields), value_placeholders
         )
-        insert_sql = insert_sql.format(
-            **{
-                "timestamp": highscore.timestamp,
-                "difficulty": highscore.difficulty,
-                "per_cell": highscore.per_cell,
-                "drag_select": int(highscore.drag_select),
-                "name": highscore.name,
-                "elapsed": highscore.elapsed,
-                "bbbv": highscore.bbbv,
-                "bbbvps": highscore.bbbvps,
-                "flagging": highscore.flagging,
-            }
-        )
-        return insert_sql
 
 
 class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
@@ -229,11 +225,13 @@ class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
 
     def insert_highscore(self, highscore: HighscoreStruct) -> None:
         super().insert_highscore(highscore)
-        self.execute(self._get_insert_highscore_sql(highscore))
+        self.execute(
+            self._get_insert_highscore_sql(format="?"), attr.astuple(highscore)
+        )
         self.conn.commit()
 
-    def execute(self, cmd: str, **cursor_args) -> sqlite3.Cursor:
-        return super().execute(cmd, **cursor_args)
+    def execute(self, cmd: str, params: Tuple = (), **cursor_args) -> sqlite3.Cursor:
+        return super().execute(cmd, params, **cursor_args)
 
 
 class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
@@ -295,12 +293,14 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
 
     def insert_highscore(self, highscore: HighscoreStruct) -> None:
         super().insert_highscore(highscore)
-        self.execute(self._get_insert_highscore_sql(highscore))
+        self.execute(
+            self._get_insert_highscore_sql(format="%"), attr.astuple(highscore)
+        )
         self.conn.commit()
 
-    def execute(self, cmd: str, **cursor_args) -> sqlite3.Cursor:
+    def execute(self, cmd: str, params: Tuple = (), **cursor_args) -> sqlite3.Cursor:
         try:
-            return super().execute(cmd, **cursor_args)
+            return super().execute(cmd, params, **cursor_args)
         except mysql.connector.Error as e:
             raise DBConnectionError("Error occurred trying to execute command") from e
 
