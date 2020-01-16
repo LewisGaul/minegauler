@@ -6,7 +6,9 @@ January 2020, Lewis Gaul
 
 import logging
 import os
+import re
 import sys
+from typing import Iterable
 
 import attr
 import requests
@@ -35,8 +37,16 @@ _WEBEX_GROUP_ROOM_ID = (
 # ------------------------------------------------------------------------------
 
 
-def _send_myself_message(text: str) -> requests.Response:
-    multipart = MultipartEncoder({"text": text, "toPersonId": _MY_WEBEX_ID})
+def _get_message(msg_id: str) -> str:
+    response = requests.get(
+        f"https://api.ciscospark.com/v1/messages/{msg_id}",
+        headers={"Authorization": f"Bearer {_BOT_ACCESS_TOKEN}"},
+    )
+    return response.json()["text"]
+
+
+def _send_message(recipient_id: str, text: str) -> requests.Response:
+    multipart = MultipartEncoder({"text": text, "roomId": recipient_id})
     return requests.post(
         "https://api.ciscospark.com/v1/messages",
         data=multipart,
@@ -45,6 +55,15 @@ def _send_myself_message(text: str) -> requests.Response:
             "Content-Type": multipart.content_type,
         },
     )
+
+
+def _send_myself_message(text: str) -> requests.Response:
+    return _send_message(_MY_WEBEX_ID, text)
+
+
+def _format_highscores(highscores: Iterable[hs.HighscoreStruct]) -> str:
+    lines = [f"{h.name:<15s}  {h.elapsed:.2f}" for h in highscores]
+    return "\n".join(lines)
 
 
 # ------------------------------------------------------------------------------
@@ -58,7 +77,7 @@ def api_v1_highscore():
     data = request.get_json()
     # verify_highscore(data)  TODO
     highscore = hs.HighscoreStruct.from_dict(data)
-    logger.info("POST highscore: %s", highscore)
+    logger.debug("POST highscore: %s", highscore)
     if _BOT_ACCESS_TOKEN:
         try:
             _send_myself_message(f"New highscore added:\n{highscore}")
@@ -75,7 +94,7 @@ def api_v1_highscore():
 @app.route("/api/v1/highscores", methods=["GET"])
 def api_v1_highscores():
     """Provide a REST API to get highscores from the DB."""
-    logger.info("GET highscores with args: %s", dict(request.args))
+    logger.debug("GET highscores with args: %s", dict(request.args))
     difficulty = request.args.get("difficulty")
     per_cell = request.args.get("per_cell")
     if per_cell:
@@ -100,7 +119,41 @@ def api_v1_highscores():
 
 @app.route("/bot/message", methods=["POST"])
 def bot_message():
-    logger.info("POST bot message: %s", request)
+    data = request.get_json()["data"]
+    logger.debug("POST bot message: %s", data)
+
+    msg_id = data["id"]
+    msg_text = _get_message(msg_id)
+    logger.debug("Fetched message content: %r", msg_text)
+    if "roomId" in data:
+        room_id = data["roomId"]
+    else:
+        room_id = data["personId"]
+    msg = re.sub(r"@?Minegauler", "", msg_text, 1).strip().lower()
+    logger.debug("Handling message: %r", msg)
+
+    if not msg:
+        return "", 200
+
+    words = msg.split()
+    if re.match(words[0], "beginner"):
+        difficulty = "b"
+    elif re.match(words[0], "intermediate"):
+        difficulty = "i"
+    elif re.match(words[0], "expert"):
+        difficulty = "e"
+    elif re.match(words[0], "master"):
+        difficulty = "m"
+    else:
+        difficulty = None
+    if difficulty:
+        if len(words) > 1 and words[1] == "ranks":
+            highscores = hs.get_highscores(
+                hs.HighscoresDatabases.REMOTE, difficulty=difficulty
+            )
+            highscores = hs.filter_and_sort(highscores, "time", dict())
+            _send_message(room_id, _format_highscores(highscores))
+
     return "", 200
 
 
