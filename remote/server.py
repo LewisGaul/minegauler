@@ -9,7 +9,9 @@ import os
 import sys
 
 import attr
+import requests
 from flask import Flask, jsonify, redirect, request
+from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 from minegauler.shared import highscores as hs
 
@@ -19,6 +21,24 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 
+_BOT_ACCESS_TOKEN = None
+_MY_WEBEX_ID = (
+    "Y2lzY29zcGFyazovL3VzL1BFT1BMRS81ZWM5MWVjOS1lYzhjLTRiMTMtYjVhNi1hOTkxN2IyYzZjZjE"
+)
+
+
+def _send_myself_message(text: str) -> requests.Response:
+    multipart = MultipartEncoder({"text": text, "toPersonId": _MY_WEBEX_ID})
+    return requests.post(
+        "https://api.ciscospark.com/v1/messages",
+        data=multipart,
+        headers={
+            "Authorization": f"Bearer {_BOT_ACCESS_TOKEN}",
+            "Content-Type": multipart.content_type,
+        },
+    )
+
+
 @app.route("/api/v1/highscore", methods=["POST"])
 def api_v1_highscore():
     """Post a highscore to be added to the remote DB."""
@@ -26,6 +46,11 @@ def api_v1_highscore():
     # verify_highscore(data)  TODO
     highscore = hs.HighscoreStruct.from_dict(data)
     logger.info("POST highscore: %s", highscore)
+    if _BOT_ACCESS_TOKEN:
+        try:
+            _send_myself_message(f"New highscore added:\n{highscore}")
+        except Exception:
+            logger.exception("Error sending webex message")
     try:
         hs.RemoteHighscoresDB().insert_highscore(highscore)
     except hs.DBConnectionError as e:
@@ -71,9 +96,16 @@ def highscores():
 
 
 def main():
+    global _BOT_ACCESS_TOKEN
+
     if "SQL_DB_PASSWORD" not in os.environ:
         logger.error("No 'SQL_DB_PASSWORD' env var set")
         sys.exit(1)
+
+    if "BOT_ACCESS_TOKEN" not in os.environ:
+        logger.warning("No 'BOT_ACCESS_TOKEN' env var set")
+    else:
+        _BOT_ACCESS_TOKEN = os.environ["BOT_ACCESS_TOKEN"]
 
     logging.basicConfig(
         filename="server.log",
