@@ -8,7 +8,7 @@ import logging
 import os
 import re
 import sys
-from typing import Iterable
+from typing import Iterable, Optional
 
 import attr
 import requests
@@ -69,8 +69,13 @@ def _format_highscores(highscores: Iterable[hs.HighscoreStruct]) -> str:
     return "\n".join(lines)
 
 
-def _send_message_if_new_best(h: hs.HighscoreStruct) -> None:
+def _is_highscore_new_best(h: hs.HighscoreStruct) -> Optional[str]:
     all_highscores = hs.get_highscores(hs.HighscoresDatabases.REMOTE, settings=h)
+    return hs.is_highscore_new_best(h, all_highscores)
+
+
+def _send_new_best_message(h: hs.HighscoreStruct) -> None:
+    """Send a group message when a new personal time record is set."""
     if h.difficulty == "B":
         diff = "beginner"
     elif h.difficulty == "I":
@@ -80,11 +85,10 @@ def _send_message_if_new_best(h: hs.HighscoreStruct) -> None:
     elif h.difficulty == "M":
         diff = "master"
     strbool = lambda x: "True" if x else "False"
-    if hs.is_highscore_new_best(h, all_highscores) == "time":
-        _send_group_message(
-            f"New personal record of {h.elapsed:.2f} set by {h.name} on {diff}!\n"
-            f"Settings: drag-select={strbool(h.drag_select)}, per-cell={h.per_cell}"
-        )
+    _send_group_message(
+        f"New personal record of {h.elapsed:.2f} set by {h.name} on {diff}!\n"
+        f"Settings: drag-select={strbool(h.drag_select)}, per-cell={h.per_cell}"
+    )
 
 
 # ------------------------------------------------------------------------------
@@ -94,7 +98,12 @@ def _send_message_if_new_best(h: hs.HighscoreStruct) -> None:
 
 @app.route("/api/v1/highscore", methods=["POST"])
 def api_v1_highscore():
-    """Post a highscore to be added to the remote DB."""
+    """
+    Notification of a new highscore being set.
+
+    Perform any desired handling for each highscore (e.g. usage logging), and
+    also perform special handling for new records (e.g. add to the remote DB).
+    """
     data = request.get_json()
     # verify_highscore(data)  TODO
     highscore = hs.HighscoreStruct.from_dict(data)
@@ -106,15 +115,19 @@ def api_v1_highscore():
         except Exception:
             logger.exception("Error sending webex message")
 
+    new_best = _is_highscore_new_best(highscore)
+    if new_best is None:
+        return "", 200
+
     try:
         hs.RemoteHighscoresDB().insert_highscore(highscore)
     except hs.DBConnectionError as e:
         logger.exception("Failed to insert highscore into remote DB")
         return str(e), 503
 
-    if _BOT_ACCESS_TOKEN:
+    if _BOT_ACCESS_TOKEN and new_best == "time":
         try:
-            _send_message_if_new_best(highscore)
+            _send_new_best_message(highscore)
         except Exception:
             logger.exception("Error sending webex message for new best")
 
@@ -149,6 +162,7 @@ def api_v1_highscores():
 
 @app.route("/bot/message", methods=["POST"])
 def bot_message():
+    """Receive a notification of a bot message."""
     data = request.get_json()["data"]
     logger.debug("POST bot message: %s", data)
     if data["personId"] == _BOT_WEBEX_ID:
