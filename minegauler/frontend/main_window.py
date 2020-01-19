@@ -191,6 +191,7 @@ class MinegaulerGUI(
         self._create_menu_action: QAction
         self._diff_menu_actions: Dict[str, QAction] = dict()
         self._populate_menubars()
+        self._menubar.setFixedHeight(self._menubar.sizeHint().height())
         self._panel_widget = panel.PanelWidget(self, self._state)
         self._mf_widget = minefield.MinefieldWidget(self, self._ctrlr, self._state)
         self.set_panel_widget(self._panel_widget)
@@ -371,6 +372,8 @@ class MinegaulerGUI(
         self.resize(self.sizeHint())
         self.adjustSize()
         # print(self.sizeHint(), self.size())
+        # print(self._menubar.sizeHint(), self._menubar.size())
+        # print(self._panel_frame.sizeHint(), self._panel_frame.size())
         # print(self._body_frame.sizeHint(), self._body_frame.size())
         # print(self._mf_widget.sizeHint(), self._mf_widget.size())
         # print()
