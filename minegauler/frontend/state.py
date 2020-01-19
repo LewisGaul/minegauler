@@ -68,6 +68,8 @@ class State:
         if self.game_status is types.GameState.READY:
             setattr(self._current_game_state, field, value)
         else:
+            if not self.has_pending_game_state():
+                self._pending_game_state = self._current_game_state.copy()
             setattr(self.pending_game_state, field, value)
 
     @property
@@ -186,15 +188,11 @@ class State:
         else:
             return self._current_game_state
 
-    @pending_game_state.setter
-    def pending_game_state(self, value: Optional[PerGameState]):
-        self._pending_game_state = value
-
     def has_pending_game_state(self) -> bool:
         return self._pending_game_state is not None
 
     def _activate_pending_game_state(self) -> None:
-        if self._pending_game_state:
+        if self.has_pending_game_state():
             self._current_game_state = self._pending_game_state
             self._pending_game_state = None
 
