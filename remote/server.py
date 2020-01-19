@@ -25,9 +25,9 @@ app = Flask(__name__)
 
 _BOT_ACCESS_TOKEN = None
 _BOT_EMAIL = "minegaulerbot@webex.bot"
-# fmt: off
-_WEBEX_GROUP_ROOM_ID = "Y2lzY29zcGFyazovL3VzL1JPT00vNzYyNjI4NTAtMzg3Ni0xMWVhLTlhM2ItODMyNzMyZDlkZTg3"
-# fmt: on
+_WEBEX_GROUP_ROOM_ID = (
+    "Y2lzY29zcGFyazovL3VzL1JPT00vNzYyNjI4NTAtMzg3Ni0xMWVhLTlhM2ItODMyNzMyZDlkZTg3"
+)
 
 
 # ------------------------------------------------------------------------------
