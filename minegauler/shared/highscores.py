@@ -365,8 +365,8 @@ def insert_highscore(highscore: HighscoreStruct) -> None:
 
 def filter_and_sort(
     highscores: Iterable[HighscoreStruct],
-    sort_key: str,
-    filters: Dict[str, Optional[str]],
+    sort_key: str = "time",
+    filters: Dict[str, Optional[str]] = {},
 ) -> List[HighscoreStruct]:
     """
     Filter and sort an iterable of highscores.

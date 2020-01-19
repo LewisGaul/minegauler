@@ -12,7 +12,7 @@ from typing import Iterable, Optional
 
 import attr
 import requests
-from flask import Flask, jsonify, redirect, request
+from flask import Flask, abort, jsonify, redirect, request
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 from minegauler.shared import highscores as hs
@@ -195,6 +195,32 @@ def api_v1_highscores():
     )
 
 
+@app.route("/api/v1/highscores/ranks", methods=["GET"])
+def api_v1_highscores_ranks():
+    """Provide a REST API to get highscores from the DB."""
+    logger.debug("GET highscores with args: %s", dict(request.args))
+    difficulty = request.args.get("difficulty")
+    per_cell = request.args.get("per_cell")
+    drag_select = request.args.get("drag_select")
+    if not difficulty or not per_cell or not drag_select:
+        abort(404)
+    per_cell = int(per_cell)
+    drag_select = bool(int(drag_select))
+    return jsonify(
+        [
+            attr.asdict(h)
+            for h in hs.filter_and_sort(
+                hs.get_highscores(
+                    hs.HighscoresDatabases.REMOTE,
+                    drag_select=drag_select,
+                    per_cell=per_cell,
+                    difficulty=difficulty,
+                )
+            )
+        ]
+    )
+
+
 @app.route("/bot/message", methods=["POST"])
 def bot_message():
     """Receive a notification of a bot message."""
@@ -229,10 +255,9 @@ def bot_message():
         difficulty = None
     if difficulty:
         if len(words) > 1 and words[1] == "ranks":
-            highscores = hs.get_highscores(
-                hs.HighscoresDatabases.REMOTE, difficulty=difficulty
+            highscores = hs.filter_and_sort(
+                hs.get_highscores(hs.HighscoresDatabases.REMOTE, difficulty=difficulty)
             )
-            highscores = hs.filter_and_sort(highscores, "time", dict())
             _send_message(room_id, _format_highscores(highscores), markdown=True)
 
     return "", 200
