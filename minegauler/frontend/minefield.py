@@ -181,8 +181,7 @@ class MinefieldWidget(QGraphicsView):
     # Qt method overrides
     # --------------------------------------------------------------------------
     def sizeHint(self) -> QSize:
-        # TODO: Why is +1 needed for the height?!!
-        return QSize(self.x_size * self.btn_size, self.y_size * self.btn_size + 1)
+        return QSize(self.x_size * self.btn_size, self.y_size * self.btn_size)
 
     def mousePressEvent(self, event: QMouseEvent):
         """Handle mouse press events."""

@@ -7,6 +7,7 @@ Uses pytest - simply run 'python -m pytest [-k minefield_test]' from
 the root directory.
 """
 
+import functools
 from unittest.mock import Mock
 
 import pytest
@@ -171,10 +172,27 @@ class TestMinefieldWidget:
 
         ## Left down before right down.
 
+    def test_click_out_of_bounds(self, qtbot: QtBot, mf_widget: MinefieldWidget):
+        """Test clicking out of bounds of the minefield."""
+        # First make the widget as big as it will go (should be strictly bounded).
+        mf_widget.resize(mf_widget.maximumSize())
+        # Now try clicking around the edge - should correspond to clicking cells.
+        click = functools.partial(
+            qtbot.mousePress, self._mf_widget.viewport(), Qt.LeftButton
+        )
+        click(pos=QPoint(0, 16))
+        self.assert_cell_sank((0, 1))
+        click(pos=QPoint(16, 0))
+        self.assert_cell_sank((1, 0))
+        click(pos=QPoint(16, mf_widget.height() - 1))
+        self.assert_cell_sank((1, self.state.y_size - 1))
+        click(pos=QPoint(mf_widget.width() - 1, 16))
+        self.assert_cell_sank((self.state.x_size - 1, 1))
+
     # --------------------------------------------------------------------------
     # Helper functions
     # --------------------------------------------------------------------------
-    def point_from_coord(self, coord, *, pos=None, btn_size=None):
+    def point_from_coord(self, coord, *, pos=None, btn_size=None) -> QPoint:
         """
         Arguments:
         coord ((int, int))
