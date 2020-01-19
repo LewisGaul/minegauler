@@ -6,7 +6,7 @@ January 2020, Lewis Gaul
 
 import json
 import logging
-from typing import Dict, List, Mapping, Optional
+from typing import List, Optional
 
 import attr
 
@@ -38,8 +38,8 @@ def _key_to_highscore_settings_v1_2(key: str) -> Optional[hs.HighscoreSettingsSt
     except ValueError:
         raise ValueError(f"Invalid detection value: {detection}")
 
-    difficulty = values[1]
-    if difficulty not in ["b", "i", "e", "m"]:
+    difficulty = values[1].upper()
+    if difficulty not in ["B", "I", "E", "M"]:
         raise ValueError(f"Invalid difficulty value: {difficulty}")
 
     distance_to = values[2]

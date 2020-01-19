@@ -23,7 +23,6 @@ from textwrap import dedent
 from typing import Dict, Iterable, List, Optional, Tuple
 
 import attr
-
 import mysql.connector
 import requests
 
@@ -428,7 +427,8 @@ def is_highscore_new_best(
     :param highscore:
         The highscore to check.
     :param all_highscores:
-        The list of highscores to check against.
+        The list of highscores to check against. May or may not include the
+        highscore being checked.
     :return:
         If a new highscore was set, return which category it was set in. If not,
         return None.
@@ -436,9 +436,9 @@ def is_highscore_new_best(
     all_highscores = list(all_highscores)
     top_time = filter_and_sort(all_highscores, "time", {"name": highscore.name})
     top_3bvps = filter_and_sort(all_highscores, "3bv/s", {"name": highscore.name})
-    if highscore.elapsed <= top_time[0].elapsed:
+    if not top_time or highscore.elapsed <= top_time[0].elapsed:
         return "time"
-    elif highscore.bbbvps >= top_3bvps[0].bbbvps:
+    elif not top_3bvps or highscore.bbbvps >= top_3bvps[0].bbbvps:
         return "3bv/s"
     else:
         return None
