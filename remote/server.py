@@ -11,11 +11,11 @@ import sys
 from typing import Iterable
 
 import attr
-
 import requests
 from flask import Flask, jsonify, redirect, request
-from minegauler.shared import highscores as hs
 from requests_toolbelt.multipart.encoder import MultipartEncoder
+
+from minegauler.shared import highscores as hs
 
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,8 @@ def _get_person_id(name_or_email: str) -> str:
         params=params,
         headers={"Authorization": f"Bearer {_BOT_ACCESS_TOKEN}"},
     )
-    return response.json()["id"]
+    response.raise_for_status()
+    return response.json()["items"][0]["id"]
 
 
 def _get_my_id() -> str:
