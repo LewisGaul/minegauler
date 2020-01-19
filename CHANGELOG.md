@@ -12,14 +12,21 @@ All notable changes to this project will be documented in this file.
  - New 'split cell' mode
 
 
+### Fixes
+ - Gradual slow-down of the app over time
+ - Highscore row sizing
+ - Slow loading of lots of highscores
+ - Crash when hitting single pixel space at the bottom of the minefield
+
+
 ## 4.0
 
-This first tracked version includes:
+This initial release of version 4 includes:
  - Basic functional game
  - Ability to specify custom board size/number of mines
  - Ability to replay a game
  - Mode to create boards
- - Ability to save and load created boards
+ - Ability to save and load boards (created or played)
  - Get current game information, including predicted completion time for lost game
  - Option of whether first click will guarantee an opening
  - Option to select cells by click-and-drag technique with the mouse
@@ -31,10 +38,17 @@ This first tracked version includes:
  - Ability to reduce the window size and use scroll
 
 
+### 4.0.4-a1 (2020-01-19)
+ - Prevent it being possible to change drag select mid-game (for the sake of highscores)
+ - Make safe start apply on an unstarted game without needing to create a new game
+ - Add code for the bot on the remote server
+ - Add code for converting legacy highscores
+
+
 ### 4.0.4-a0 (2020-01-14)
  - Upload highscores to remote server
    - Only when there is an internet connection, not queued for later
-   - View highscores e.g. at URL http://minegauler.lewisgaul.co.uk/api/v1/highscores?per_cell=3&name=Siwel%20G&drag_select=1
+   - View highscores e.g. at URL http://minegauler.lewisgaul.co.uk/highscores?per_cell=3&name=Siwel%20G&drag_select=1
 
 
 ### 4.0.3-a4 (2020-01-04)
