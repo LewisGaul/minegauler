@@ -196,8 +196,9 @@ class GameController(api.AbstractController):
             first_success=self._opts.first_success,
         )
         self._last_update: _SharedInfo = _SharedInfo()
+        self._notif.update_game_state(GameState.READY)
         self._notif.set_mines(self._opts.mines)
-        self._send_reset_update()
+        self._notif.reset()
 
     @property
     def board(self) -> brd.Board:
@@ -430,6 +431,7 @@ class CreateController(api.AbstractController):
         super().__init__(opts, notif=notif)
         self._board: brd.Board = brd.Board(self._opts.x_size, self._opts.y_size)
         self._flags: int = 0
+        self._notif.update_game_state(GameState.READY)
         self._notif.set_mines(self._flags)
         self._notif.reset()
 
