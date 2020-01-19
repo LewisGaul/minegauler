@@ -24,9 +24,8 @@ app = Flask(__name__)
 
 
 _BOT_ACCESS_TOKEN = None
+_BOT_EMAIL = "minegaulerbot@webex.bot"
 # fmt: off
-_BOT_WEBEX_ID = "Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yZmVkMGUwNi05NzhmLTQ3YzctYWM5Yi05OTRlMzI2MGJkZGI"
-_MY_WEBEX_ID = "Y2lzY29zcGFyazovL3VzL1BFT1BMRS81ZWM5MWVjOS1lYzhjLTRiMTMtYjVhNi1hOTkxN2IyYzZjZjE"
 _WEBEX_GROUP_ROOM_ID = "Y2lzY29zcGFyazovL3VzL1JPT00vNzYyNjI4NTAtMzg3Ni0xMWVhLTlhM2ItODMyNzMyZDlkZTg3"
 # fmt: on
 
@@ -34,6 +33,27 @@ _WEBEX_GROUP_ROOM_ID = "Y2lzY29zcGFyazovL3VzL1JPT00vNzYyNjI4NTAtMzg3Ni0xMWVhLTlh
 # ------------------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------------------
+
+
+def _get_person_id(name_or_email: str) -> str:
+    if "@" in name_or_email:
+        params = {"email": name_or_email}
+    else:
+        params = {"displayName": name_or_email}
+    response = requests.get(
+        f"https://api.ciscospark.com/v1/people",
+        params=params,
+        headers={"Authorization": f"Bearer {_BOT_ACCESS_TOKEN}"},
+    )
+    return response.json()["id"]
+
+
+def _get_my_id() -> str:
+    return _get_person_id("Lewis Gaul")
+
+
+def _get_bot_id() -> str:
+    return _get_person_id("Minegauler Bot")
 
 
 def _get_message(msg_id: str) -> str:
@@ -44,9 +64,10 @@ def _get_message(msg_id: str) -> str:
     return response.json()["text"]
 
 
-def _send_message(recipient_id: str, text: str) -> requests.Response:
-    multipart = MultipartEncoder({"text": text, "roomId": recipient_id})
-    return requests.post(
+def _send_message(room_id: str, text: str, *, is_person_id=False) -> requests.Response:
+    id_field = "toPersonId" if is_person_id else "room_id"
+    multipart = MultipartEncoder({"text": text, id_field: room_id})
+    response = requests.post(
         "https://api.ciscospark.com/v1/messages",
         data=multipart,
         headers={
@@ -54,10 +75,12 @@ def _send_message(recipient_id: str, text: str) -> requests.Response:
             "Content-Type": multipart.content_type,
         },
     )
+    response.raise_for_status()
+    return response
 
 
 def _send_myself_message(text: str) -> requests.Response:
-    return _send_message(_MY_WEBEX_ID, text)
+    return _send_message(_get_my_id(), text, is_person_id=True)
 
 
 def _send_group_message(text: str) -> requests.Response:
@@ -79,6 +102,8 @@ def _send_message_if_new_best(h: hs.HighscoreStruct) -> None:
         diff = "expert"
     elif h.difficulty == "M":
         diff = "master"
+    else:
+        assert False
     strbool = lambda x: "True" if x else "False"
     if hs.is_highscore_new_best(h, all_highscores) == "time":
         _send_group_message(
@@ -100,7 +125,7 @@ def api_v1_highscore():
     highscore = hs.HighscoreStruct.from_dict(data)
     logger.debug("POST highscore: %s", highscore)
 
-    if _BOT_ACCESS_TOKEN:
+    if _BOT_ACCESS_TOKEN and highscore.name != "Siwel G":
         try:
             _send_myself_message(f"New highscore added:\n{highscore}")
         except Exception:
@@ -151,7 +176,7 @@ def api_v1_highscores():
 def bot_message():
     data = request.get_json()["data"]
     logger.debug("POST bot message: %s", data)
-    if data["personId"] == _BOT_WEBEX_ID:
+    if data["personEmail"] == _BOT_EMAIL:
         return "", 200
 
     msg_id = data["id"]
