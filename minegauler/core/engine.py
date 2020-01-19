@@ -326,6 +326,8 @@ class GameController(api.AbstractController):
         """
         super().set_first_success(value)
         self._opts.first_success = value
+        if not self._game.state.started():
+            self._game.first_success = value
 
     def set_per_cell(self, value: int) -> None:
         """
