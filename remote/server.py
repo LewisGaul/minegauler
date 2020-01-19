@@ -11,11 +11,11 @@ import sys
 from typing import Iterable
 
 import attr
+
 import requests
 from flask import Flask, jsonify, redirect, request
-from requests_toolbelt.multipart.encoder import MultipartEncoder
-
 from minegauler.shared import highscores as hs
+from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 
 logger = logging.getLogger(__name__)
@@ -65,7 +65,7 @@ def _get_message(msg_id: str) -> str:
 
 
 def _send_message(room_id: str, text: str, *, is_person_id=False) -> requests.Response:
-    id_field = "toPersonId" if is_person_id else "room_id"
+    id_field = "toPersonId" if is_person_id else "roomId"
     multipart = MultipartEncoder({"text": text, id_field: room_id})
     response = requests.post(
         "https://api.ciscospark.com/v1/messages",

@@ -23,6 +23,7 @@ from textwrap import dedent
 from typing import Dict, Iterable, List, Optional, Tuple
 
 import attr
+
 import mysql.connector
 import requests
 
