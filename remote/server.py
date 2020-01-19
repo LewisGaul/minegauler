@@ -65,9 +65,12 @@ def _get_message(msg_id: str) -> str:
     return response.json()["text"]
 
 
-def _send_message(room_id: str, text: str, *, is_person_id=False) -> requests.Response:
+def _send_message(
+    room_id: str, text: str, *, is_person_id=False, markdown=False
+) -> requests.Response:
     id_field = "toPersonId" if is_person_id else "roomId"
-    multipart = MultipartEncoder({"text": text, id_field: room_id})
+    text_field = "markdown" if markdown else "text"
+    multipart = MultipartEncoder({text_field: text, id_field: room_id})
     response = requests.post(
         "https://api.ciscospark.com/v1/messages",
         data=multipart,
@@ -90,6 +93,8 @@ def _send_group_message(text: str) -> requests.Response:
 
 def _format_highscores(highscores: Iterable[hs.HighscoreStruct]) -> str:
     lines = [f"{h.name:<15s}  {h.elapsed:.2f}" for h in highscores]
+    lines.insert(0, "```")
+    lines.append("```")
     return "\n".join(lines)
 
 
@@ -126,7 +131,7 @@ def api_v1_highscore():
     highscore = hs.HighscoreStruct.from_dict(data)
     logger.debug("POST highscore: %s", highscore)
 
-    if _BOT_ACCESS_TOKEN and highscore.name != "Siwel G":
+    if _BOT_ACCESS_TOKEN and highscore.name != "":
         try:
             _send_myself_message(f"New highscore added:\n{highscore}")
         except Exception:
@@ -210,7 +215,7 @@ def bot_message():
                 hs.HighscoresDatabases.REMOTE, difficulty=difficulty
             )
             highscores = hs.filter_and_sort(highscores, "time", dict())
-            _send_message(room_id, _format_highscores(highscores))
+            _send_message(room_id, _format_highscores(highscores), markdown=True)
 
     return "", 200
 
