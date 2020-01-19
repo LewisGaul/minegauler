@@ -68,6 +68,9 @@ def _get_message(msg_id: str) -> str:
 def _send_message(
     room_id: str, text: str, *, is_person_id=False, markdown=False
 ) -> requests.Response:
+    logger.debug(
+        "Sending message to %s: %s", "person" if is_person_id else "room", text
+    )
     id_field = "toPersonId" if is_person_id else "roomId"
     text_field = "markdown" if markdown else "text"
     multipart = MultipartEncoder({text_field: text, id_field: room_id})
@@ -148,6 +151,7 @@ def api_v1_highscore():
 
     new_best = _is_highscore_new_best(highscore)
     if new_best is None:
+        logger.debug("Not a new best, so not storing the highscore")
         return "", 200
 
     try:
