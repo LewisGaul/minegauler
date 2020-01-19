@@ -131,7 +131,7 @@ def api_v1_highscore():
     highscore = hs.HighscoreStruct.from_dict(data)
     logger.debug("POST highscore: %s", highscore)
 
-    if _BOT_ACCESS_TOKEN and highscore.name != "":
+    if _BOT_ACCESS_TOKEN and highscore.name != "Siwel G":
         try:
             _send_myself_message(f"New highscore added:\n{highscore}")
         except Exception:
