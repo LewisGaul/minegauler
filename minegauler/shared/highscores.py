@@ -104,7 +104,7 @@ class AbstractHighscoresDB(abc.ABC):
             "%s: Inserting highscore into DB: %s", type(self).__name__, highscore
         )
 
-    def execute(self, cmd: str, params: Tuple = (), **cursor_args):
+    def execute(self, cmd: str, params: Tuple = (), *, commit=False, **cursor_args):
         """
         Execute a command on the database.
 
@@ -112,6 +112,8 @@ class AbstractHighscoresDB(abc.ABC):
             The command to execute.
         :param params:
             Parameters to pass to the command.
+        :param commit:
+            Whether to do a commit after executing the command.
         :param cursor_args:
             Keyword arguments to pass on when creating the DB cursor.
         :raise DBConnectionError:
@@ -122,6 +124,8 @@ class AbstractHighscoresDB(abc.ABC):
             "%s: Executing command %r with params: %s", type(self).__name__, cmd, params
         )
         cursor.execute(cmd, params)
+        if commit:
+            self.conn.commit()
         return cursor
 
 
@@ -141,7 +145,7 @@ class _SQLMixin:
             elapsed REAL NOT NULL,
             bbbv INTEGER NOT NULL,
             bbbvps REAL NOT NULL,
-            flagging REAL
+            flagging REAL NOT NULL
         )"""
     )
 
@@ -219,12 +223,15 @@ class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     def insert_highscore(self, highscore: HighscoreStruct) -> None:
         super().insert_highscore(highscore)
         self.execute(
-            self._get_insert_highscore_sql(format="?"), attr.astuple(highscore)
+            self._get_insert_highscore_sql(format="?"),
+            attr.astuple(highscore),
+            commit=True,
         )
-        self.conn.commit()
 
-    def execute(self, cmd: str, params: Tuple = (), **cursor_args) -> sqlite3.Cursor:
-        return super().execute(cmd, params, **cursor_args)
+    def execute(
+        self, cmd: str, params: Tuple = (), *, commit=False, **cursor_args
+    ) -> sqlite3.Cursor:
+        return super().execute(cmd, params, commit=commit, **cursor_args)
 
 
 class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
@@ -286,12 +293,15 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
 
     def insert_highscore(self, highscore: HighscoreStruct) -> None:
         super().insert_highscore(highscore)
-        self.execute(self._get_insert_highscore_sql(), attr.astuple(highscore))
-        self.conn.commit()
+        self.execute(
+            self._get_insert_highscore_sql(), attr.astuple(highscore), commit=True
+        )
 
-    def execute(self, cmd: str, params: Tuple = (), **cursor_args) -> sqlite3.Cursor:
+    def execute(
+        self, cmd: str, params: Tuple = (), *, commit=False, **cursor_args
+    ) -> sqlite3.Cursor:
         try:
-            return super().execute(cmd, params, **cursor_args)
+            return super().execute(cmd, params, commit=commit, **cursor_args)
         except mysql.connector.Error as e:
             raise DBConnectionError("Error occurred trying to execute command") from e
 
