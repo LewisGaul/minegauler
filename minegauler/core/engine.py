@@ -336,7 +336,7 @@ class GameController(api.AbstractController):
         super().set_per_cell(value)
         if self._opts.per_cell != value:
             self._opts.per_cell = value
-            if not self._game.state.started():
+            if not (self._game.state.started() or self._game.minefield_known):
                 self.new_game()
 
     def save_current_minefield(self, file: os.PathLike) -> None:
