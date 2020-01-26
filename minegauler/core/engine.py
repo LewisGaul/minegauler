@@ -93,16 +93,20 @@ class BaseController(api.AbstractSwitchingController):
             self._opts, notif=self._notif
         )
 
-    def switch_mode(self, mode: UIMode) -> None:
+    def switch_mode(self, mode: UIMode, *args, **kwargs) -> None:
         """Switch the mode of the UI, e.g. into 'create' mode."""
         super().switch_mode(mode)
         if mode is self._mode:
             logger.debug("Ignore switch mode request because mode is already %s", mode)
             return
         if mode is UIMode.GAME:
-            self._active_ctrlr = GameController(self._opts, notif=self._notif)
+            self._active_ctrlr = GameController(
+                self._opts, notif=self._notif, *args, **kwargs
+            )
         elif mode is UIMode.CREATE:
-            self._active_ctrlr = CreateController(self._opts, notif=self._notif)
+            self._active_ctrlr = CreateController(
+                self._opts, notif=self._notif, *args, **kwargs
+            )
         else:
             raise ValueError(f"Unrecognised UI mode: {mode}")
         self._mode = mode
@@ -160,9 +164,10 @@ class BaseController(api.AbstractSwitchingController):
         self._opts.mines = mf.nr_mines
 
         if self._mode is UIMode.CREATE:
-            self.switch_mode(UIMode.GAME)
+            self.switch_mode(UIMode.GAME, minefield_file=file)
             self._notif.switch_mode(UIMode.GAME)
-        self._active_ctrlr.load_minefield(file)
+        else:
+            self._active_ctrlr.load_minefield(file)
 
 
 class GameController(api.AbstractController):
@@ -176,29 +181,33 @@ class GameController(api.AbstractController):
     """
 
     def __init__(
-        self, opts: utils.GameOptsStruct, *, notif: Optional[api.Caller] = None
+        self,
+        opts: utils.GameOptsStruct,
+        *,
+        notif: Optional[api.Caller] = None,
+        minefield_file: Optional[os.PathLike] = None,
     ):
         """
-        Arguments:
-        opts (GameOptsStruct)
-            Object containing the required game options as attributes.
+        :param opts:
+            Game options.
+        :param notif:
+            Optionally provide a notifier defining callbacks.
+        :param minefield_file:
+            Optionally provide a path to a minefield file to create the initial
+            game from.
         """
         super().__init__(opts, notif=notif)
 
         self._drag_select = False
         self._name = ""
-        self._game = game.Game(
-            x_size=self._opts.x_size,
-            y_size=self._opts.y_size,
-            mines=self._opts.mines,
-            per_cell=self._opts.per_cell,
-            lives=self._opts.lives,
-            first_success=self._opts.first_success,
-        )
+        self._game: game.Game
         self._last_update: _SharedInfo = _SharedInfo()
         self._notif.update_game_state(GameState.READY)
         self._notif.set_mines(self._opts.mines)
-        self._notif.reset()
+        if minefield_file:
+            self.load_minefield(minefield_file)
+        else:
+            self.new_game()
 
     @property
     def board(self) -> brd.Board:
@@ -230,6 +239,16 @@ class GameController(api.AbstractController):
     def new_game(self) -> None:
         """See AbstractController."""
         super().new_game()
+        if self._opts.mines > self._opts.per_cell * (
+            self._opts.x_size * self._opts.y_size - 1
+        ):
+            logger.debug(
+                "Reducing number of mines from %d to %d because they don't fit",
+                self._opts.mines,
+                self._opts.x_size * self._opts.y_size - 1,
+            )
+            self._opts.mines = self._opts.x_size * self._opts.y_size - 1
+            self._notif.set_mines(self._opts.mines)
         self._game = game.Game(
             x_size=self._opts.x_size,
             y_size=self._opts.y_size,
