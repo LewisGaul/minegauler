@@ -21,10 +21,13 @@ pytest-cov==2.8.1
 pytest-qt==3.3.0
 regex==2019.11.1
 requests-toolbelt==0.9.1
+setuptools
 six==1.13.0
 toml==0.10.0
+twine
 typed-ast==1.4.0
 waitress==1.4.2
 wcwidth==0.1.7
 Werkzeug==0.16.0
+wheel
 zipp==0.6.0
