@@ -1,20 +1,34 @@
+# Dev-related
 __pycache__/
 *venv*
 build/
-bin/
-settings.cfg
-data/
-LaTex/
-*.diff
+dist/
+*.egg-info/
+
+# Test-generated
 coverage/
 .coverage
 coverage.xml
 *,cover
 htmlcov/
 .pytest*
+
+# Editor-related
 .idea/
 .vscode/
+
+# Ignored extensions
+*.diff
 *.log
 *.ipynb
+
+# Python tooling
 .ipynb_checkpoints/
 .mypy_cache/
+
+LaTex/
+
+# App-generated per-user data
+minegauler/settings.cfg
+minegauler/data/
+minegauler/boards/_*.mgb
