@@ -93,6 +93,13 @@ class BaseController(api.AbstractSwitchingController):
             self._opts, notif=self._notif
         )
 
+    def reinitialise(self):
+        """Reinitialise the concrete game controller."""
+        self._mode = UIMode.GAME
+        self._active_ctrlr: api.AbstractController = GameController(
+            self._opts, notif=self._notif
+        )
+
     def switch_mode(self, mode: UIMode, *args, **kwargs) -> None:
         """Switch the mode of the UI, e.g. into 'create' mode."""
         super().switch_mode(mode)
@@ -393,12 +400,12 @@ class GameController(api.AbstractController):
     # Helper methods
     # --------------------------------------------------------------------------
     def _send_reset_update(self) -> None:
-        self._send_updates({})
+        self._send_updates(dict())
         self._notif.reset()
         self._last_update = _SharedInfo()
 
     def _send_resize_update(self) -> None:
-        self._send_updates({})
+        self._send_updates(dict())
         self._notif.resize_minefield(self._opts.x_size, self._opts.y_size)
         self._notif.set_mines(self._opts.mines)
         self._notif.reset()

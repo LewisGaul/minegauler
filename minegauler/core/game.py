@@ -12,6 +12,7 @@ __all__ = ("Game", "GameNotStartedError")
 
 import functools
 import logging
+import math
 import time as tm
 from typing import Callable, Dict, Iterable, Optional, Tuple, Union
 
@@ -289,7 +290,12 @@ class Game:
     def get_3bvps(self) -> float:
         """
         Calculate the 3bv/s based on current progress.
+
+        :return:
+            The 3bv/s, or math.inf if elapsed time is zero.
         """
+        if self.get_elapsed() == 0:
+            return math.inf
         return self.mf.bbbv * self.get_prop_complete() / self.get_elapsed()
 
     def get_elapsed(self) -> float:
@@ -468,14 +474,18 @@ class Game:
         Perform the action of selecting/clicking a cell. Game must be started
         before calling this method.
         """
+        just_started = False
         if self.state == GameState.READY:
             if not self.mf:
                 self._create_minefield(coord)
             self.state = GameState.ACTIVE
             self.start_time = tm.time()
+            just_started = True
         self._select_cell_action(coord)
-        if self.state != GameState.LOST:
+        if not self.state.finished():
             self._check_for_completion()
+            if self.state is GameState.WON and just_started:
+                self.end_time = self.start_time
         try:
             return self._cell_updates
         finally:

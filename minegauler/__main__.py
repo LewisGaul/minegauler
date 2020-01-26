@@ -43,6 +43,8 @@ frontend.init_app()
 gui = frontend.MinegaulerGUI(ctrlr, frontend.state.State.from_opts(game_opts, gui_opts))
 # Register frontend with core controller.
 ctrlr.register_listener(gui)
+# Perform initialisation again now that the frontend is registered.
+ctrlr.reinitialise()
 
 # Run the app.
 logger.debug("Entering event loop")

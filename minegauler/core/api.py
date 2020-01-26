@@ -337,6 +337,7 @@ class AbstractController(metaclass=abc.ABCMeta):
             type(listener).__name__,
         )
         self._notif.register_listener(listener)
+        # TODO Implement in subclass to update with current state.
 
     def unregister_listener(self, listener: AbstractListener) -> None:
         """
