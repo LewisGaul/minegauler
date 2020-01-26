@@ -16,7 +16,6 @@ All notable changes to this project will be documented in this file.
  - Gradual slow-down of the app over time
  - Highscore row sizing
  - Slow loading of lots of highscores
- - Crash when hitting single pixel space at the bottom of the minefield
 
 
 ## 4.0
@@ -36,6 +35,13 @@ This initial release of version 4 includes:
  - Custom cell styles
  - Option to change the cell size
  - Ability to reduce the window size and use scroll
+
+
+### 4.0.4-a2 (2020-01-26)
+ - Fix crash when hitting single pixel space at the bottom of the minefield
+ - Fix crash when creating board with too many mines and reducing per-cell
+ - Set elapsed time to zero when completing board in one click
+ - Add license file and other project infra
 
 
 ### 4.0.4-a1 (2020-01-19)
