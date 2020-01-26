@@ -4,6 +4,9 @@ __main__.py - Entry point for the application.
 December 2018, Lewis Gaul
 """
 
+# Workaround to get the mysql libcrypto and libssl libs loaded.
+import mysql.connector  # isort:skip
+
 import logging
 import sys
 
