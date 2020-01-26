@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+pyinstaller run.py --name minegauler \
+    --add-data minegauler/images/:images \
+    --add-data minegauler/files/:files \
+    --add-data minegauler/boards/:boards

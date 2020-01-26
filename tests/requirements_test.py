@@ -10,8 +10,14 @@ the root directory.
 import pathlib
 
 import pkg_resources
-from pip._internal.download import PipSession
+from pip import __version__ as pip_version
 from pip._internal.req import parse_requirements
+
+
+if int(pip_version[:2]) < 20:
+    from pip._internal.download import PipSession
+else:
+    from pip._internal.network.session import PipSession
 
 
 class TestRequirements:
