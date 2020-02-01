@@ -19,5 +19,3 @@ else:
     ROOT_DIR = pathlib.Path(__file__).parent
 
 SETTINGS_FILE: pathlib.Path = ROOT_DIR / "settings.cfg"
-
-print(__file__, ROOT_DIR, IN_EXE)
