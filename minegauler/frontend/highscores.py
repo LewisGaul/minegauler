@@ -130,9 +130,6 @@ class HighscoresModel(QAbstractTableModel):
         elif role == Qt.DisplayRole:
             return QVariant(self.format_data(index.row(), header))
         elif role == Qt.TextAlignmentRole:
-            # if header in ['time', '3bv/s']:
-            #     return QVariant(Qt.AlignRight | Qt.AlignVCenter)
-            # else:
             return QVariant(Qt.AlignHCenter | Qt.AlignVCenter)
         elif role == Qt.FontRole:
             bold_font = QFont("Sans-serif", 8)
@@ -221,6 +218,8 @@ class HighscoresModel(QAbstractTableModel):
             self._all_data, self._state.sort_by, self._filters
         )
         self.layoutChanged.emit()
+        dummy_index = self.createIndex(0, 0)
+        self.dataChanged.emit(dummy_index, dummy_index)
 
 
 class HighscoresTable(QTableView):
