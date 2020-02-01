@@ -59,7 +59,6 @@ class HighscoresWindow(QDialog):
         self._model = HighscoresModel(self, self._state)
         self._table = HighscoresTable(self._model, self._state)
         self.setup_ui()
-        self.setFixedWidth(self._table.width())
         self._model.sort_changed.connect(self._table.set_sort_indicator)
         self._table.add_filter.connect(self.set_filter)
         self._model.update_highscores_group(settings)
