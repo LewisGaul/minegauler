@@ -4,10 +4,15 @@ msgparse.py - Parse bot messages
 February 2020, Lewis Gaul
 """
 
+__all__ = ("parse_msg",)
+
 import argparse
+import logging
 import sys
 from typing import Any, Iterable, Tuple
 
+
+logger = logging.getLogger(__name__)
 
 users = ["legaul", "pasta"]
 
@@ -188,7 +193,7 @@ class ArgParser(argparse.ArgumentParser):
                 kw_value = arg.convert(kws[0])
                 assert arg.validate(kw_value)
             except Exception as e:
-                print(e)
+                logger.debug(e)
                 if arg.parse_name and not matches:
                     # We parsed the name of the arg, so we expected to find
                     # at least one value...
@@ -220,7 +225,7 @@ class ArgParser(argparse.ArgumentParser):
 
 class BotMsgParser(ArgParser):
     def add_username_arg(self, *, nargs=1):
-        self.add_positional_arg("name", nargs=nargs, choices=users)
+        self.add_positional_arg("username", nargs=nargs, choices=users)
 
     def add_difficulty_arg(self):
         self.add_positional_arg(
@@ -305,6 +310,14 @@ def ranks(args):
     args = parser.parse_args(args)
     print(args)
 
+    # kwargs = {k: getattr(args, k) for k in ["difficulty", "per_cell", "drag_select"]}
+    # highscores = hs.filter_and_sort(
+    #     hs.get_highscores(hs.HighscoresDatabases.REMOTE, **kwargs)
+    # )
+    # msg = "```\n{}\n```".format(format.format_highscores(highscores))
+
+    return "Ranks"
+
 
 @helpstring("Get stats")
 def stats(args):
@@ -315,6 +328,7 @@ def stats(args):
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
     print(args)
+    return "Stats"
 
 
 @helpstring("Get player stats")
@@ -327,6 +341,7 @@ def stats_players(args):
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
     print(args)
+    return "Player stats {}".format(", ".join(args.username))
 
 
 @helpstring("Get matchups for given players")
@@ -339,6 +354,7 @@ def matchups(args):
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
     print(args)
+    return "Matchups {}".format(", ".join(args.username))
 
 
 @helpstring("Get the best matchups")
@@ -351,6 +367,7 @@ def best_matchups(args):
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
     print(args)
+    return "Best matchups {}".format(", ".join(args.username))
 
 
 @helpstring("Challenge other players to a game")
@@ -363,6 +380,7 @@ def challenge(args):
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
     print(args)
+    return "Challenge {}".format(", ".join(args.username))
 
 
 @helpstring("Set your nickname")
@@ -372,6 +390,7 @@ def set_nickname(args):
     parser.add_positional_arg("nickname", validate=lambda s: len(s) < 10)
     args = parser.parse_args(args)
     print(args)
+    return f"Nickname set to {args.nickname}"
 
 
 # fmt: off
@@ -416,18 +435,23 @@ def _map_to_cmd(msg):
     return func, words
 
 
-def main():
-    msg = input("msg: ")
+def parse_msg(msg: str) -> str:
     msg = msg.strip()
     if msg.endswith("?"):
         msg = "help " + msg[:-1]
 
     try:
         func, args = _map_to_cmd(msg)
+        assert func is not None
     except:
-        print("Invalid command")
+        return "Invalid command"
     else:
-        func(args)
+        return func(args)
+
+
+def main():
+    msg = input("msg: ")
+    print(parse_msg(msg))
     print()
 
 
