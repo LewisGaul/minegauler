@@ -135,8 +135,8 @@ class ArgParser(argparse.ArgumentParser):
             name = "--" + name.lstrip("-")
         super().add_argument(name, *args, **kwargs)
 
-    def error(self, *args, **kwargs):
-        pass
+    def error(self, message):
+        raise InvalidArgsError(message)
 
     def add_positional_arg(self, name: str, **kwargs) -> None:
         """
@@ -344,7 +344,7 @@ def help_(
         logger.warning("No schema found on message handling function %r", func.__name__)
     else:
         if allow_markdown:
-            lines.append(f"`{schema}`")
+            lines.append(f"\n`{schema}`")
         else:
             lines.append(schema)
 
@@ -552,11 +552,13 @@ def parse_msg(msg: str, allow_markdown: bool = False) -> str:
         if func is None:
             raise InvalidArgsError("Base command not found")
         return func(args, allow_markdown=allow_markdown)
-    except (SystemExit, InvalidArgsError):
+    except InvalidArgsError:
         logger.debug("Invalid message: %r", msg)
         return "\n".join(
-            "Unrecognised command",
-            help_(func, only_schema=True, allow_markdown=allow_markdown),
+            [
+                "Unrecognised command",
+                help_(func, only_schema=True, allow_markdown=allow_markdown),
+            ]
         )
 
 
