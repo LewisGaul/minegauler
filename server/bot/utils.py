@@ -51,6 +51,7 @@ def get_message(msg_id: str) -> str:
         f"https://api.ciscospark.com/v1/messages/{msg_id}",
         headers={"Authorization": f"Bearer {_BOT_ACCESS_TOKEN}"},
     )
+    response.raise_for_status()
     return response.json()["text"]
 
 

@@ -27,12 +27,17 @@ def bot_message():
     """Receive a notification of a bot message."""
     data = request.get_json()["data"]
     logger.debug("POST bot message: %s", data)
-    if utils.user_from_email(data["personEmail"]) == BOT_NAME:
+    user = utils.user_from_email(data["personEmail"])
+    if user == BOT_NAME:
         # Ignore messages sent by the bot.
         return "", 200
 
     msg_id = data["id"]
-    msg_text = utils.get_message(msg_id)
+    try:
+        msg_text = utils.get_message(msg_id)
+    except requests.HTTPError:
+        logger.exception(f"Error getting message from {user}")
+
     logger.debug("Fetched message content: %r", msg_text)
     if "roomId" in data:
         room_id = data["roomId"]
