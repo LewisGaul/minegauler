@@ -54,7 +54,9 @@ def bot_message():
     send_to_person_id = False
     send_to_id = room_id
     try:
-        resp_msg = msgparse.parse_msg(msg, room_type, allow_markdown=True)
+        resp_msg = msgparse.parse_msg(
+            msg, room_type, allow_markdown=True, username=user
+        )
     except msgparse.InvalidArgsError as e:
         resp_msg = str(e)
         if room_type is msgparse.RoomType.GROUP:
@@ -75,7 +77,7 @@ def bot_message():
 
 def activate_bot_msg_handling(app: flask.app.Flask) -> None:
     """Register a route to handle bot messages."""
-    app.add_url_rule("bot/message", "bot_message", bot_message, methods=["POST"])
+    app.add_url_rule("/bot/message", "bot_message", bot_message, methods=["POST"])
 
 
 def _send_myself_error_msg(error: str) -> None:

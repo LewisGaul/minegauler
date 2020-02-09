@@ -344,7 +344,9 @@ def cmd_help(
 
 @helpstring("Get help for a command")
 @schema("help [<command>]")
-def group_help(args, *, allow_markdown: bool = False):
+def group_help(args, **kwargs):
+    allow_markdown = kwargs.get("allow_markdown", False)
+
     func, _ = _map_to_cmd(" ".join(args), _GROUP_COMMANDS)
     if func is None:
         linebreak = "\n\n" if allow_markdown else "\n"
@@ -358,7 +360,9 @@ def group_help(args, *, allow_markdown: bool = False):
 
 @helpstring("Get help for a command")
 @schema("help [<command>]")
-def direct_help(args, *, allow_markdown: bool = False):
+def direct_help(args, **kwargs):
+    allow_markdown = kwargs.get("allow_markdown", False)
+
     func, _ = _map_to_cmd(" ".join(args), _DIRECT_COMMANDS)
     if func is None:
         linebreak = "\n\n" if allow_markdown else "\n"
@@ -372,7 +376,7 @@ def direct_help(args, *, allow_markdown: bool = False):
 
 @helpstring("Get information about the game")
 @schema("info")
-def info(args, *, allow_markdown: bool = False):
+def info(args, **kwargs):
     # Check no args given.
     BotMsgParser().parse_args(args)
     return _GENERAL_INFO
@@ -383,7 +387,7 @@ def info(args, *, allow_markdown: bool = False):
     "player <name> [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def player(args, *, allow_markdown: bool = False):
+def player(args, **kwargs):
 
     parser = BotMsgParser()
     parser.add_difficulty_arg()
@@ -398,7 +402,9 @@ def player(args, *, allow_markdown: bool = False):
     "ranks [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def ranks(args, *, allow_markdown: bool = False) -> str:
+def ranks(args, **kwargs) -> str:
+    allow_markdown = kwargs.get("allow_markdown", False)
+
     parser = BotMsgParser()
     parser.add_rank_type_arg()
     parser.add_per_cell_arg()
@@ -435,7 +441,7 @@ def ranks(args, *, allow_markdown: bool = False) -> str:
     "stats [players ...] [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def stats(args, *, allow_markdown: bool = False):
+def stats(args, **kwargs):
     parser = BotMsgParser()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
@@ -450,7 +456,7 @@ def stats(args, *, allow_markdown: bool = False):
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def stats_players(args, *, allow_markdown: bool = False):
+def stats_players(args, **kwargs):
     parser = BotMsgParser()
     parser.add_username_arg(nargs="+")
     parser.add_difficulty_arg()
@@ -466,7 +472,7 @@ def stats_players(args, *, allow_markdown: bool = False):
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def matchups(args, *, allow_markdown: bool = False):
+def matchups(args, **kwargs):
     parser = BotMsgParser()
     parser.add_username_arg(nargs="+")
     parser.add_difficulty_arg()
@@ -482,7 +488,7 @@ def matchups(args, *, allow_markdown: bool = False):
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def best_matchups(args, *, allow_markdown: bool = False):
+def best_matchups(args, **kwargs):
     parser = BotMsgParser()
     parser.add_username_arg(nargs="*")
     parser.add_difficulty_arg()
@@ -498,7 +504,7 @@ def best_matchups(args, *, allow_markdown: bool = False):
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def challenge(args, *, allow_markdown: bool = False):
+def challenge(args, **kwargs):
     parser = BotMsgParser()
     parser.add_username_arg(nargs="+")
     parser.add_difficulty_arg()
@@ -510,9 +516,12 @@ def challenge(args, *, allow_markdown: bool = False):
 
 @helpstring("Set your nickname")
 @schema("set nickname <name>")
-def set_nickname(args, *, allow_markdown: bool = False):
-    nickname = " ".join(args)
-    return f"Nickname set to {nickname}"
+def set_nickname(args, username: str, **kwargs):
+    new = " ".join(args)
+    old = USER_NAMES[username]
+    USER_NAMES[username] = new
+    # TODO: Save to file.
+    return f"Nickname changed from '{old}' to '{new}'"
 
 
 CommandMapping = Dict[Optional[str], Union[Callable, "CommandMapping"]]
@@ -597,7 +606,26 @@ def _flatten_cmds(cmds: CommandMapping, root: bool = True) -> str:
     return ret
 
 
-def parse_msg(msg: str, room_type: RoomType, *, allow_markdown: bool = False) -> str:
+def parse_msg(
+    msg: str, room_type: RoomType, *, allow_markdown: bool = False, **kwargs
+) -> str:
+    """
+    Parse a message and perform the corresponding action.
+
+    :param msg:
+        The message to parse.
+    :param room_type:
+        The room type the message was received in.
+    :param allow_markdown:
+        Whether to allow markdown in the response.
+    :param kwargs:
+        Other arguments to pass on to sub-command functions.
+    :return:
+        Response text.
+    :raise InvalidArgsError:
+        Unrecognised command. The text of the error is a suitable error/help
+        message.
+    """
     msg = msg.strip()
     if msg.endswith("?") and not (msg.startswith("help ") and msg.split()[1] != "?"):
         # Change "?" at the end to be treated as help, except for the case where
@@ -611,11 +639,13 @@ def parse_msg(msg: str, room_type: RoomType, *, allow_markdown: bool = False) ->
         func, args = _map_to_cmd(msg, cmds)
         if func is None:
             raise InvalidArgsError("Base command not found")
-        return func(args, allow_markdown=allow_markdown)
+        return func(args, allow_markdown=allow_markdown, **kwargs)
     except InvalidArgsError as e:
         logger.debug("Invalid message: %r", msg)
         if func is None:
-            help_msg = group_help(msg.split(), allow_markdown=allow_markdown)
+            help_msg = cmds["help"](
+                msg.split(), allow_markdown=allow_markdown, **kwargs
+            )
         else:
             help_msg = cmd_help(func, only_schema=True, allow_markdown=allow_markdown)
 
