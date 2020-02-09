@@ -50,9 +50,21 @@ def bot_message():
     person_id = data["personId"]
     room_type = msgparse.RoomType(data["roomType"])
 
-    resp_msg = msgparse.parse_msg(msg, room_type, allow_markdown=True)
+    send_to_person_id = False
+    send_to_id = room_id
     try:
-        utils.send_message(room_id, resp_msg, markdown=True)
+        resp_msg = msgparse.parse_msg(msg, room_type, allow_markdown=True)
+    except msgparse.InvalidArgsError as e:
+        resp_msg = str(e)
+        if room_type is msgparse.RoomType.GROUP:
+            # Send error message to direct chat.
+            send_to_person_id = True
+            send_to_id = person_id
+
+    try:
+        utils.send_message(
+            send_to_id, resp_msg, is_person_id=send_to_person_id, markdown=True
+        )
     except requests.HTTPError:
         # TODO: I want to know about this!
         logger.exception("Error sending bot response message")

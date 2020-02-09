@@ -612,7 +612,7 @@ def parse_msg(msg: str, room_type: RoomType, *, allow_markdown: bool = False) ->
         if func is None:
             raise InvalidArgsError("Base command not found")
         return func(args, allow_markdown=allow_markdown)
-    except InvalidArgsError:
+    except InvalidArgsError as e:
         logger.debug("Invalid message: %r", msg)
         if func is None:
             help_msg = group_help(msg.split(), allow_markdown=allow_markdown)
@@ -620,7 +620,8 @@ def parse_msg(msg: str, room_type: RoomType, *, allow_markdown: bool = False) ->
             help_msg = cmd_help(func, only_schema=True, allow_markdown=allow_markdown)
 
         linebreak = "\n\n" if allow_markdown else "\n"
-        return linebreak.join(["Unrecognised command", help_msg])
+        resp_msg = linebreak.join(["Unrecognised command", help_msg])
+        raise InvalidArgsError(resp_msg) from e
 
 
 # ------------------------------------------------------------------------------
@@ -629,7 +630,11 @@ def parse_msg(msg: str, room_type: RoomType, *, allow_markdown: bool = False) ->
 
 
 def main(argv):
-    print(parse_msg(" ".join(argv), RoomType.GROUP))
+    try:
+        resp = parse_msg(" ".join(argv), RoomType.GROUP)
+    except InvalidArgsError as e:
+        resp = str(e)
+    print(resp)
 
 
 if __name__ == "__main__":
