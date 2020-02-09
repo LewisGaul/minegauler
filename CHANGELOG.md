@@ -14,7 +14,6 @@ All notable changes to this project will be documented in this file.
 
 ### Fixes
  - Gradual slow-down of the app over time
- - Highscore row sizing
  - Slow loading of lots of highscores
 
 
@@ -35,6 +34,12 @@ This initial release of version 4 includes:
  - Custom cell styles
  - Option to change the cell size
  - Ability to reduce the window size and use scroll
+
+
+### 4.0.4 (2020-02-09)
+ - First official release
+ - Fixed highscore row sizing
+ - Server-side bot code added
 
 
 ### 4.0.4-a2 (2020-01-26)

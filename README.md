@@ -5,6 +5,8 @@
 
 Remake of the classic Minesweeper game, written in Python.
 
+Read more about the project history on [my website](https://www.lewisgaul.co.uk/minegauler.html).
+
 
 ![img1](img/screenshots/beginner_start.png)
 ![img2](img/screenshots/beginner_win.png)
@@ -12,7 +14,24 @@ Remake of the classic Minesweeper game, written in Python.
 
 ## Try it out!
 
-### Run the code
+### Download the executable
+
+The application has been packaged with PyInstaller so that it can be played without setting up Python.
+
+Download links available here:
+ - [Linux (64 bit)](https://raw.githubusercontent.com/LewisGaul/minegauler/master/releases/minegauler-4.0.4-linux-x86_64.tar.gz)
+
+
+### Install from PyPI
+
+The Python package is also available on PyPI: https://pypi.org/project/minegauler/.
+
+ 1. Python 3.6+ required (see note below for Python 3.8+)
+ 2. Install with `pip install minegauler`
+ 3. Run with `python -m minegauler`
+
+
+### Clone the repo
 
 You will need Python 3.6+ to run the code (see note below for getting it to run on Python 3.8+).
 
@@ -39,16 +58,6 @@ However, if you want to run on Python 3.8+ you can do so!
     - Replace `PyQt5-sip==4.19.13` with `PyQt5-sip==12.7.0`
  3. Run with `python -m minegauler`
     - If this fails with `Aborted (core dumped)` on Linux, try installing the dependency with `sudo apt install libxkbcommon-x11-0`
-
-
-### Download the executable application
-
-[Download from here](https://raw.githubusercontent.com/LewisGaul/minegauler/master/releases/MineGauler1.2.2.zip) to try out my most feature-rich version without any Python requirements (for Windows and Linux).
-
-Note that I initially wrote this in Python 2 using `Tkinter` and have since attempted multiple rewrites (now using `PyQt5`). While the codebase has improved drastically, sadly some of the features I once had have not yet rematerialised. Try the link above if you're interested in playing an *extremely* feature-rich (and slightly unstable) version.
-
-Read more about the project history on [my website](https://www.lewisgaul.co.uk/minegauler.html).
-
 
 
 ## What's new/upcoming?
