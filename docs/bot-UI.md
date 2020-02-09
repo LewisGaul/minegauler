@@ -43,7 +43,7 @@ Below is a summary of query commands that are available in both the group and in
  - `stats players {all | <name> [<name> ...]} [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] [drag-select {on | off}] [per-cell {1 | 2 | 3}]`  
    Display player stats for the given players and settings. E.g. `stats players all`.
 
- - `matchups <name> [<name> ...] [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] [drag-select {on | off}] [per-cell {1 | 2 | 3}]`  
+ - `matchups <name> <name> [<name> ...] [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] [drag-select {on | off}] [per-cell {1 | 2 | 3}]`  
    Display all matchups involving the listed players. E.g. `matchups legaul tjohnes richcoop marholme`.
 
  - `best-matchups [<name> ...] [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] [drag-select {on | off}] [per-cell {1 | 2 | 3}]`  
