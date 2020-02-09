@@ -510,14 +510,31 @@ def best_matchups(args, **kwargs):
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def challenge(args, **kwargs):
+def challenge(args, username: str, **kwargs):
     parser = BotMsgParser()
     parser.add_username_arg(nargs="+")
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
-    return "Challenge {}".format(", ".join(args.username))
+
+    users_str = ", ".join(
+        f"<@personEmail:{utils.user_to_email(u)}|{u}>" for u in args.username
+    )
+    diff_str = args.difficulty + " " if args.difficulty else ""
+    opts = dict()
+    if args.drag_select:
+        opts["drag-select"] = "on" if args.drag_select else "off"
+    if args.per_cell:
+        opts["per-cell"] = args.per_cell
+    if opts:
+        opts_str = " with {}".format(formatter.format_kwargs(opts))
+    else:
+        opts_str = ""
+
+    return "{} has challenged {} to a {}game of Minegauler{}".format(
+        username, users_str, diff_str, opts_str
+    )
 
 
 @helpstring("Set your nickname")

@@ -112,6 +112,10 @@ def user_from_email(email: str) -> str:
     return email.split("@", maxsplit=1)[0]
 
 
+def user_to_email(user: str) -> str:
+    return f"{user}@cisco.com"
+
+
 def set_user_nickname(user: str, nickname: str) -> None:
     USER_NAMES[user] = nickname
     with open(USER_NAMES_FILE, "w") as f:
