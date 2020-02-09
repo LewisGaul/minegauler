@@ -27,7 +27,9 @@ def init_route_handling(app: flask.app.Flask):
         sys.exit(1)
     utils.set_bot_access_token(os.environ["BOT_ACCESS_TOKEN"])
 
-    app.add_url_rule("/bot", "bot_message", routes.bot_message, methods=["POST"])
+    app.add_url_rule(
+        "/bot/message", "bot_message", routes.bot_message, methods=["POST"]
+    )
 
     add_new_highscore_hook(_new_highscore_hook)
 
