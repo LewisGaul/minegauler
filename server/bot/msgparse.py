@@ -14,8 +14,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 from minegauler.shared import highscores as hs
 
-from . import formatter
-from .utils import USER_NAMES
+from . import formatter, utils
 
 
 logger = logging.getLogger(__name__)
@@ -237,7 +236,9 @@ class ArgParser(argparse.ArgumentParser):
 
 class BotMsgParser(ArgParser):
     def add_username_arg(self, *, nargs: Union[int, str] = 1):
-        self.add_positional_arg("username", nargs=nargs, choices=USER_NAMES.keys())
+        self.add_positional_arg(
+            "username", nargs=nargs, choices=utils.USER_NAMES.keys()
+        )
 
     def add_difficulty_arg(self):
         self.add_positional_arg(
@@ -421,7 +422,7 @@ def ranks(args, **kwargs) -> str:
         highscores = hs.filter_and_sort(
             hs.get_highscores(hs.HighscoresDatabases.REMOTE, **kwargs)
         )
-        highscores = [h for h in highscores if h.name in USER_NAMES.values()]
+        highscores = [h for h in highscores if h.name in utils.USER_NAMES.values()]
     else:
         assert False
         # assert args.rank_type == "all"
@@ -518,9 +519,9 @@ def challenge(args, **kwargs):
 @schema("set nickname <name>")
 def set_nickname(args, username: str, **kwargs):
     new = " ".join(args)
-    old = USER_NAMES[username]
-    USER_NAMES[username] = new
-    # TODO: Save to file.
+    old = utils.USER_NAMES[username]
+    logger.debug("Changing nickname of %s from %r to %r", username, old, new)
+    utils.set_user_nickname(username, new)
     return f"Nickname changed from '{old}' to '{new}'"
 
 

@@ -7,16 +7,20 @@ February 2020, Lewis Gaul
 __all__ = (
     "BOT_NAME",
     "USER_NAMES",
+    "USER_NAMES_FILE",
     "get_message",
     "send_group_message",
     "send_message",
     "send_new_best_message",
     "send_myself_message",
     "set_bot_access_token",
+    "set_user_nickname",
     "user_from_email",
 )
 
+import json
 import logging
+import pathlib
 
 import requests
 from requests_toolbelt import MultipartEncoder
@@ -27,7 +31,8 @@ from minegauler.shared import highscores as hs
 logger = logging.getLogger(__name__)
 
 
-USER_NAMES = {"legaul": "Siwel G", "fegaul": "Felix"}  # TODO
+USER_NAMES = dict()
+USER_NAMES_FILE = pathlib.Path(__file__).parent / "users.json"
 
 BOT_NAME = "minegaulerbot"
 _BOT_ACCESS_TOKEN = ""
@@ -105,6 +110,12 @@ def send_new_best_message(h: hs.HighscoreStruct) -> None:
 
 def user_from_email(email: str) -> str:
     return email.split("@", maxsplit=1)[0]
+
+
+def set_user_nickname(user: str, nickname: str) -> None:
+    USER_NAMES[user] = nickname
+    with open(USER_NAMES_FILE, "w") as f:
+        json.dump(USER_NAMES, f)
 
 
 # ------------------------------------------------------------------------------

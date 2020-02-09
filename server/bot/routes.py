@@ -12,7 +12,6 @@ import requests
 from flask import request
 
 from . import msgparse, utils
-from .utils import BOT_NAME
 
 
 logger = logging.getLogger(__name__)
@@ -28,9 +27,13 @@ def bot_message():
     data = request.get_json()["data"]
     logger.debug("POST bot message: %s", data)
     user = utils.user_from_email(data["personEmail"])
-    if user == BOT_NAME:
+    if user == utils.BOT_NAME:
         # Ignore messages sent by the bot.
         return "", 200
+    elif user not in utils.USER_NAMES:
+        # If the user is not yet tracked, add the username as the default name.
+        logger.debug("Adding new user %r", user)
+        utils.set_user_nickname(user, user)
 
     msg_id = data["id"]
     try:
@@ -41,7 +44,7 @@ def bot_message():
         raise
 
     logger.debug("Fetched message content: %r", msg_text)
-    msg = re.sub(r"@?Minegauler", "", msg_text, 1).strip().lower()
+    msg = re.sub(r"@?Minegauler", "", msg_text, 1).strip()
     logger.debug("Handling message: %r", msg)
 
     if not msg:
@@ -77,7 +80,18 @@ def bot_message():
 
 def activate_bot_msg_handling(app: flask.app.Flask) -> None:
     """Register a route to handle bot messages."""
-    app.add_url_rule("/bot/message", "bot_message", bot_message, methods=["POST"])
+
+    def bot_message_with_error_catching(*args, **kwargs):
+        try:
+            return bot_message(*args, **kwargs)
+        except Exception:
+            logger.exception("Unexpected error occurred handling a bot message")
+            _send_myself_error_msg("<uncaught> occurred")
+            raise
+
+    app.add_url_rule(
+        "/bot/message", "bot_message", bot_message_with_error_catching, methods=["POST"]
+    )
 
 
 def _send_myself_error_msg(error: str) -> None:
