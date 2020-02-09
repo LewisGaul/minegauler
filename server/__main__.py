@@ -166,7 +166,7 @@ def main(argv):
     else:
         from waitress import serve
 
-        serve(app, port=args.port)
+        serve(app, port=args.port if args.port else 80)
 
 
 main(sys.argv[1:])
