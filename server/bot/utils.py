@@ -43,6 +43,7 @@ _WEBEX_GROUP_ROOM_ID = (
 
 
 def set_bot_access_token(token: str) -> None:
+    global _BOT_ACCESS_TOKEN
     _BOT_ACCESS_TOKEN = token
 
 

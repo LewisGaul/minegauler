@@ -37,6 +37,7 @@ def bot_message():
         msg_text = utils.get_message(msg_id)
     except requests.HTTPError:
         logger.exception(f"Error getting message from {user}")
+        raise
 
     logger.debug("Fetched message content: %r", msg_text)
     if "roomId" in data:
