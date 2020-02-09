@@ -37,6 +37,7 @@ def bot_message():
         msg_text = utils.get_message(msg_id)
     except requests.HTTPError:
         logger.exception(f"Error getting message from {user}")
+        _send_myself_error_msg("getting message")
         raise
 
     logger.debug("Fetched message content: %r", msg_text)
@@ -66,12 +67,19 @@ def bot_message():
             send_to_id, resp_msg, is_person_id=send_to_person_id, markdown=True
         )
     except requests.HTTPError:
-        # TODO: I want to know about this!
         logger.exception("Error sending bot response message")
+        _send_myself_error_msg("sending bot repsonse message")
 
     return "", 200
 
 
-def handle_bot_messages(app: flask.app.Flask) -> None:
+def activate_bot_msg_handling(app: flask.app.Flask) -> None:
     """Register a route to handle bot messages."""
     app.add_url_rule("bot/message", "bot_message", bot_message, methods=["POST"])
+
+
+def _send_myself_error_msg(error: str) -> None:
+    try:
+        utils.send_myself_message(f"Error {error}, see server logs")
+    except requests.HTTPError:
+        logger.exception("Error sending myself bot message when handling error")

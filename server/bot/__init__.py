@@ -1,3 +1,9 @@
+"""
+__init__.py - Bot package
+
+February 2020, Lewis Gaul
+"""
+
 __all__ = ("init_route_handling",)
 
 import logging
@@ -7,9 +13,9 @@ import sys
 import flask
 
 from minegauler.shared import highscores as hs
-from server import add_new_highscore_hook
-from server.utils import is_highscore_new_best
 
+from .. import add_new_highscore_hook
+from ..utils import is_highscore_new_best
 from . import routes, utils
 
 
@@ -27,9 +33,7 @@ def init_route_handling(app: flask.app.Flask):
         sys.exit(1)
     utils.set_bot_access_token(os.environ["BOT_ACCESS_TOKEN"])
 
-    app.add_url_rule(
-        "/bot/message", "bot_message", routes.bot_message, methods=["POST"]
-    )
+    routes.activate_bot_msg_handling(app)
 
     add_new_highscore_hook(_new_highscore_hook)
 
