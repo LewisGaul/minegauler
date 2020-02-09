@@ -512,18 +512,24 @@ def matchups(args, username: str, allow_markdown: bool = False, **kwargs):
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
-    names = {u if u != "me" else username for u in args.username}
-    if len(names) < 2:
-        raise InvalidArgsError("Require at least 2 username args")
-    names = {utils.USER_NAMES[u] for u in names}
+    users = {u if u != "me" else username for u in args.username}
+    if len(users) < 2 or len(users) > 5:
+        raise InvalidArgsError("Require between 2 and 5 username args")
+    names = {utils.USER_NAMES[u] for u in users}
 
     times = utils.get_highscore_times(
         args.difficulty, args.drag_select, args.per_cell, names
     )
     matchups = utils.get_matchups(times)
 
+    if allow_markdown:
+        users_str = ", ".join(utils.tag_user(u) for u in users)
+    else:
+        users_str = ", ".join(users)
+    lines = [f"Matchups between {users_str}:", *formatter.format_matchups(matchups)]
     linebreak = "\n  " if allow_markdown else "\n"
-    return linebreak.join(formatter.format_matchups(matchups))
+
+    return linebreak.join(lines)
 
 
 @helpstring("Get best matchups including at least one of specified players")
@@ -532,14 +538,31 @@ def matchups(args, username: str, allow_markdown: bool = False, **kwargs):
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def best_matchups(args, **kwargs):
+def best_matchups(args, username: str, allow_markdown=False, **kwargs):
     parser = BotMsgParser()
     parser.add_username_arg(nargs="*")
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
-    return "Best matchups {}".format(", ".join(args.username))
+    users = {u if u != "me" else username for u in args.username}
+    names = {utils.USER_NAMES[u] for u in users}
+
+    times = utils.get_highscore_times(
+        args.difficulty, args.drag_select, args.per_cell, utils.USER_NAMES.values()
+    )
+    matchups = utils.get_matchups(times, include_users=names)[:10]
+
+    if allow_markdown:
+        users_str = ", ".join(utils.tag_user(u) for u in users)
+    else:
+        users_str = ", ".join(users)
+    if users_str:
+        users_str = " including " + users_str
+    lines = [f"Best matchups{users_str}:", *formatter.format_matchups(matchups)]
+    linebreak = "\n  " if allow_markdown else "\n"
+
+    return linebreak.join(lines)
 
 
 @helpstring("Challenge other players to a game")
@@ -559,7 +582,7 @@ def challenge(args, username: str, **kwargs):
     if len(names) < 1:
         raise InvalidArgsError("Need at least one other player's name")
 
-    users_str = ", ".join(f"<@personEmail:{utils.user_to_email(u)}|{u}>" for u in names)
+    users_str = ", ".join(utils.tag_user(u) for u in names)
     diff_str = args.difficulty + " " if args.difficulty else ""
     opts = dict()
     if args.drag_select:
@@ -612,7 +635,7 @@ _COMMON_COMMANDS = {
     #     "players": stats_players,
     # },
     "matchups": matchups,
-    # "best-matchups": best_matchups,
+    "best-matchups": best_matchups,
 }
 
 _GROUP_COMMANDS = {

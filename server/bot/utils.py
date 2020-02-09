@@ -122,6 +122,10 @@ def user_to_email(user: str) -> str:
     return f"{user}@cisco.com"
 
 
+def tag_user(user: str) -> str:
+    return f"<@personEmail:{user_to_email(user)}|{user}>"
+
+
 def set_user_nickname(user: str, nickname: str) -> None:
     USER_NAMES[user] = nickname
     with open(USER_NAMES_FILE, "w") as f:
@@ -172,13 +176,21 @@ def get_highscore_times(
 Matchup = collections.namedtuple("Matchup", "user1, time1, user2, time2, percent")
 
 
-def get_matchups(times: Dict[str, float]) -> List[Matchup]:
+def get_matchups(
+    times: Dict[str, float], include_users: Optional[Iterable[str]] = None
+) -> List[Matchup]:
     times = sorted(times.items(), key=lambda x: x[1], reverse=True)
     matchups = set()
     while times:
         # Avoid repeating matchups or comparing users against themselves.
         user1, time1 = times.pop()
         for user2, time2 in times:
+            if (
+                include_users
+                and user1 not in include_users
+                and user2 not in include_users
+            ):
+                continue
             assert time2 >= time1
             percent = 100 * (time2 - time1) / time1
             matchups.add(Matchup(user1, time1, user2, time2, percent))
