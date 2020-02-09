@@ -519,7 +519,7 @@ def challenge(args, username: str, **kwargs):
     args = parser.parse_args(args)
 
     users_str = ", ".join(
-        f"<@personEmail:{utils.user_to_email(u)}|{u}>" for u in args.username
+        f"<@personEmail:{utils.user_to_email(u)}|{u}>" for u in set(args.username)
     )
     diff_str = args.difficulty + " " if args.difficulty else ""
     opts = dict()
