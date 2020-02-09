@@ -60,7 +60,7 @@ def send_message(
     room_id: str, text: str, *, is_person_id=False, markdown=False
 ) -> requests.Response:
     logger.debug(
-        "Sending message to %s: %s", "person" if is_person_id else "room", text
+        "Sending message to %s:\n%s", "person" if is_person_id else "room", text
     )
     id_field = "toPersonId" if is_person_id else "roomId"
     text_field = "markdown" if markdown else "text"

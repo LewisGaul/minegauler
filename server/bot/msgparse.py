@@ -235,7 +235,7 @@ class ArgParser(argparse.ArgumentParser):
 
 
 class BotMsgParser(ArgParser):
-    def add_username_arg(self, *, nargs=1):
+    def add_username_arg(self, *, nargs: Union[int, str] = 1):
         self.add_positional_arg("username", nargs=nargs, choices=USER_NAMES.keys())
 
     def add_difficulty_arg(self):
@@ -356,7 +356,7 @@ def help_(
 
 @helpstring("Get information about the game")
 @schema("info")
-def info(args):
+def info(args, *, allow_markdown: bool = False):
     # Check no args given.
     BotMsgParser().parse_args(args)
     return GENERAL_INFO
@@ -367,7 +367,7 @@ def info(args):
     "player <name> [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def player(args):
+def player(args, *, allow_markdown: bool = False):
 
     parser = BotMsgParser()
     parser.add_difficulty_arg()
@@ -419,7 +419,7 @@ def ranks(args, *, allow_markdown: bool = False) -> str:
     "stats [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def stats(args):
+def stats(args, *, allow_markdown: bool = False):
     parser = BotMsgParser()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
@@ -434,7 +434,7 @@ def stats(args):
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def stats_players(args):
+def stats_players(args, *, allow_markdown: bool = False):
     parser = BotMsgParser()
     parser.add_username_arg(nargs="+")
     parser.add_difficulty_arg()
@@ -450,7 +450,7 @@ def stats_players(args):
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def matchups(args):
+def matchups(args, *, allow_markdown: bool = False):
     parser = BotMsgParser()
     parser.add_username_arg(nargs="+")
     parser.add_difficulty_arg()
@@ -466,7 +466,7 @@ def matchups(args):
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def best_matchups(args):
+def best_matchups(args, *, allow_markdown: bool = False):
     parser = BotMsgParser()
     parser.add_username_arg(nargs="*")
     parser.add_difficulty_arg()
@@ -482,7 +482,7 @@ def best_matchups(args):
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def challenge(args):
+def challenge(args, *, allow_markdown: bool = False):
     parser = BotMsgParser()
     parser.add_username_arg(nargs="+")
     parser.add_difficulty_arg()
@@ -494,7 +494,7 @@ def challenge(args):
 
 @helpstring("Set your nickname")
 @schema("set nickname <name>")
-def set_nickname(args):
+def set_nickname(args, *, allow_markdown: bool = False):
     nickname = " ".join(args)
     return f"Nickname set to {nickname}"
 
@@ -549,10 +549,14 @@ def parse_msg(msg: str, allow_markdown: bool = False) -> str:
     func = None
     try:
         func, args = _map_to_cmd(msg)
-        return func(args)
+        if func is None:
+            raise InvalidArgsError("Base command not found")
+        return func(args, allow_markdown=allow_markdown)
     except (SystemExit, InvalidArgsError):
-        return "Unrecognised command\n" + help_(
-            func, only_schema=True, allow_markdown=allow_markdown
+        logger.debug("Invalid message: %r", msg)
+        return "\n".join(
+            "Unrecognised command",
+            help_(func, only_schema=True, allow_markdown=allow_markdown),
         )
 
 
