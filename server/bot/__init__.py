@@ -7,9 +7,9 @@ import sys
 import flask
 
 from minegauler.shared import highscores as hs
+from server import add_new_highscore_hook
+from server.utils import is_highscore_new_best
 
-from .. import add_new_highscore_hook
-from ..utils import is_highscore_new_best
 from . import routes, utils
 
 

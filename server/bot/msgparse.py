@@ -9,12 +9,20 @@ __all__ = ("parse_msg",)
 import argparse
 import logging
 import sys
-from typing import Any, Iterable, Tuple
+from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
+
+from minegauler.shared import highscores as hs
+
+from . import formatter
+from .utils import USER_NAMES
 
 
 logger = logging.getLogger(__name__)
 
-users = ["legaul", "pasta"]
+
+# ------------------------------------------------------------------------------
+# Message parsing
+# ------------------------------------------------------------------------------
 
 
 class InvalidArgsError(Exception):
@@ -24,14 +32,14 @@ class InvalidArgsError(Exception):
 class PositionalArg:
     def __init__(
         self,
-        name,
+        name: str,
         *,
-        parse_name=False,
-        nargs=1,
-        default=None,
-        choices=None,
-        type=None,
-        validate=None,
+        parse_name: bool = False,
+        nargs: Union[int, str] = 1,
+        default: Any = None,
+        choices: Optional[Iterable[Any]] = None,
+        type: Optional[Callable] = None,
+        validate: Optional[Callable] = None,
     ):
         if (isinstance(nargs, int) and nargs < 1) and nargs not in ["?", "*", "+"]:
             raise ValueError(f"Bad nargs value {nargs!r}")
@@ -126,6 +134,9 @@ class ArgParser(argparse.ArgumentParser):
             self._name_parse_args.append(name)
             name = "--" + name.lstrip("-")
         super().add_argument(name, *args, **kwargs)
+
+    def error(self, *args, **kwargs):
+        pass
 
     def add_positional_arg(self, name: str, **kwargs) -> None:
         """
@@ -225,7 +236,7 @@ class ArgParser(argparse.ArgumentParser):
 
 class BotMsgParser(ArgParser):
     def add_username_arg(self, *, nargs=1):
-        self.add_positional_arg("username", nargs=nargs, choices=users)
+        self.add_positional_arg("username", nargs=nargs, choices=USER_NAMES.keys())
 
     def add_difficulty_arg(self):
         self.add_positional_arg(
@@ -236,21 +247,32 @@ class BotMsgParser(ArgParser):
         def convert(arg):
             try:
                 return self._convert_difficulty_arg(arg)
-            except ValueError as e:
-                if arg == "combined":
-                    return "combined"
-                elif arg == "official":
-                    return "official"
-                else:
-                    raise ValueError(f"Invalid rank type {arg!r}")
+            except InvalidArgsError:
+                raise  # TODO
+                # if arg == "combined":
+                #     return "combined"
+                # elif arg == "official":
+                #     return "official"
+                # else:
+                #     raise InvalidArgsError(f"Invalid rank type {arg!r}")
 
-        self.add_positional_arg("rank_type", nargs="?", type=convert)
+        self.add_positional_arg(
+            "rank_type", nargs="?", type=convert, default="beginner"
+        )
 
     def add_per_cell_arg(self):
         self.add_argument("per-cell", type=int, choices=[1, 2, 3])
 
     def add_drag_select_arg(self):
-        self.add_argument("drag-select", choices=["on", "off"])
+        def _arg_type(arg):
+            if arg == "on":
+                return True
+            elif arg == "off":
+                return False
+            else:
+                raise InvalidArgsError("Drag select should be one of {'on', 'off'}")
+
+        self.add_argument("drag-select", type=_arg_type)
 
     @staticmethod
     def _convert_difficulty_arg(arg):
@@ -263,7 +285,17 @@ class BotMsgParser(ArgParser):
         elif arg in ["m", "master"]:
             return "master"
         else:
-            raise ValueError(f"Invalid difficulty {arg!r}")
+            raise InvalidArgsError(f"Invalid difficulty {arg!r}")
+
+
+# ------------------------------------------------------------------------------
+# Message handling
+# ------------------------------------------------------------------------------
+
+
+GENERAL_HELP = "General help :)"
+
+GENERAL_INFO = "General info!"
 
 
 def helpstring(text):
@@ -274,123 +306,197 @@ def helpstring(text):
     return decorator
 
 
-def help_(args):
+def schema(text):
+    def decorator(func):
+        func.__schema__ = text
+        return func
+
+    return decorator
+
+
+@helpstring("Get help for a command")
+@schema("help [<command>]")
+def help_(
+    args_or_func: Union[List[str], Callable, None],
+    *,
+    only_schema: bool = False,
+    allow_markdown: bool = False,
+) -> str:
+    if hasattr(args_or_func, "__schema__") or args_or_func is None:
+        func = args_or_func
+    else:
+        func = _map_to_cmd(" ".join(args_or_func))[0]
+
+    if func is None:
+        return GENERAL_HELP
+
+    lines = []
+    if not only_schema:
+        try:
+            lines.append(func.__helpstring__)
+        except AttributeError:
+            logger.warning(
+                "No helpstring found on message handling function %r", func.__name__
+            )
     try:
-        print(_map_to_cmd(" ".join(args))[0].__helpstring__)
-    except:
-        print("Generic help")
+        schema = func.__schema__
+    except AttributeError:
+        logger.warning("No schema found on message handling function %r", func.__name__)
+    else:
+        if allow_markdown:
+            lines.append(f"`{schema}`")
+        else:
+            lines.append(schema)
+
+    if not lines:
+        return "Unexpect error: unable to get help message\n\n" + GENERAL_HELP
+
+    return "\n".join(lines)
 
 
 @helpstring("Get information about the game")
+@schema("info")
 def info(args):
-    print("INFO")
+    # Check no args given.
     BotMsgParser().parse_args(args)
+    return GENERAL_INFO
 
 
 @helpstring("Get player info")
+@schema(
+    "player <name> [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
+    "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
+)
 def player(args):
-    print("PLAYER")
 
     parser = BotMsgParser()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
-    print(args)
+    return str(args)
 
 
 @helpstring("Get rankings")
-def ranks(args):
-    print("RANKS")
-
+@schema(
+    "ranks [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
+    "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
+)
+def ranks(args, *, allow_markdown: bool = False) -> str:
     parser = BotMsgParser()
     parser.add_rank_type_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
-    print(args)
 
-    # kwargs = {k: getattr(args, k) for k in ["difficulty", "per_cell", "drag_select"]}
-    # highscores = hs.filter_and_sort(
-    #     hs.get_highscores(hs.HighscoresDatabases.REMOTE, **kwargs)
-    # )
-    # msg = "```\n{}\n```".format(format.format_highscores(highscores))
+    kwargs = {
+        k: getattr(args, k)
+        for k in ["per_cell", "drag_select"]
+        if getattr(args, k) is not None
+    }
+    if args.rank_type[0] in ["b", "i", "e", "m"]:
+        kwargs["difficulty"] = args.rank_type[0]
+        highscores = hs.filter_and_sort(
+            hs.get_highscores(hs.HighscoresDatabases.REMOTE, **kwargs)
+        )
+        highscores = [h for h in highscores if h.name in USER_NAMES.values()]
+    else:
+        assert False
+        # assert args.rank_type == "all"
 
-    return "Ranks"
+    kwargs["difficulty"] = args.rank_type
+    lines = ["Rankings for {}".format(formatter.format_kwargs(kwargs))]
+    ranks = formatter.format_highscores(highscores)
+    if allow_markdown:
+        ranks = f"```\n{ranks}\n```"
+    lines.append(ranks)
+
+    return "\n".join(lines)
 
 
 @helpstring("Get stats")
+@schema(
+    "stats [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
+    "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
+)
 def stats(args):
-    print("STATS")
     parser = BotMsgParser()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
-    print(args)
     return "Stats"
 
 
 @helpstring("Get player stats")
+@schema(
+    "stats players {all | <name> [<name> ...]} "
+    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
+    "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
+)
 def stats_players(args):
-    print("STATS PLAYERS")
     parser = BotMsgParser()
     parser.add_username_arg(nargs="+")
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
-    print(args)
     return "Player stats {}".format(", ".join(args.username))
 
 
 @helpstring("Get matchups for given players")
+@schema(
+    "matchups <name> [<name> ...] "
+    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
+    "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
+)
 def matchups(args):
-    print("MATCHUPS")
     parser = BotMsgParser()
     parser.add_username_arg(nargs="+")
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
-    print(args)
     return "Matchups {}".format(", ".join(args.username))
 
 
 @helpstring("Get the best matchups")
+@schema(
+    "best-matchups [<name> ...] "
+    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
+    "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
+)
 def best_matchups(args):
-    print("BEST-MATCHUPS")
     parser = BotMsgParser()
     parser.add_username_arg(nargs="*")
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
-    print(args)
     return "Best matchups {}".format(", ".join(args.username))
 
 
 @helpstring("Challenge other players to a game")
+@schema(
+    "challenge <name> [<name> ...] "
+    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
+    "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
+)
 def challenge(args):
-    print("CHALLENGE")
     parser = BotMsgParser()
     parser.add_username_arg(nargs="+")
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
-    print(args)
     return "Challenge {}".format(", ".join(args.username))
 
 
 @helpstring("Set your nickname")
+@schema("set nickname <name>")
 def set_nickname(args):
-    print("SET NICKNAME")
-    parser = BotMsgParser()
-    parser.add_positional_arg("nickname", validate=lambda s: len(s) < 10)
-    args = parser.parse_args(args)
-    print(args)
-    return f"Nickname set to {args.nickname}"
+    nickname = " ".join(args)
+    return f"Nickname set to {nickname}"
 
 
 # fmt: off
@@ -413,7 +519,7 @@ COMMANDS = {
 # fmt: on
 
 
-def _map_to_cmd(msg):
+def _map_to_cmd(msg: str) -> Tuple[Callable, List[str]]:
     cmds = COMMANDS
     func = None
     words = msg.split()
@@ -435,45 +541,29 @@ def _map_to_cmd(msg):
     return func, words
 
 
-def parse_msg(msg: str) -> str:
+def parse_msg(msg: str, allow_markdown: bool = False) -> str:
     msg = msg.strip()
     if msg.endswith("?"):
         msg = "help " + msg[:-1]
 
+    func = None
     try:
         func, args = _map_to_cmd(msg)
-        assert func is not None
-    except:
-        return "Invalid command"
-    else:
         return func(args)
+    except (SystemExit, InvalidArgsError):
+        return "Unrecognised command\n" + help_(
+            func, only_schema=True, allow_markdown=allow_markdown
+        )
 
 
-def main():
-    msg = input("msg: ")
-    print(parse_msg(msg))
-    print()
+# ------------------------------------------------------------------------------
+# Main
+# ------------------------------------------------------------------------------
+
+
+def main(argv):
+    print(parse_msg(" ".join(argv)))
 
 
 if __name__ == "__main__":
-
-    def test():
-        parser = ArgParser()
-        parser.add_positional_arg("foo", nargs=1)
-        parser.add_positional_arg(
-            "bar", nargs="*", parse_name=True, choices={1, 2}, type=int
-        )
-        parser.add_positional_arg("baz", nargs=1, choices={"on", "off"})
-        parser.add_argument("zip")
-        parser.add_argument("zap", nargs="*", type=float)
-        args, extra = parser.parse_known_args(sys.argv[1:])
-        print(args)
-        print(extra)
-
-    while True:
-        try:
-            main()
-        except (SystemExit, TypeError, InvalidArgsError) as e:
-            print()
-            print("Invalid command:", e)
-            print()
+    main(sys.argv[1:])

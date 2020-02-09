@@ -1,5 +1,5 @@
 """
-server.py - Server entry-point
+__main__.py - Server entry-point
 
 January 2020, Lewis Gaul
 """
@@ -13,9 +13,10 @@ import attr
 from flask import Flask, abort, jsonify, redirect, request
 
 from minegauler.shared import highscores as hs
+from server import bot
 from server.utils import is_highscore_new_best
 
-from . import bot, get_new_highscore_hooks
+from . import get_new_highscore_hooks
 
 
 logger = logging.getLogger(__name__)

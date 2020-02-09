@@ -1,13 +1,17 @@
+"""
+routes.py - Definition of bot HTTP routes
+
+February 2020, Lewis Gaul
+"""
+
 import logging
 import re
 
 import flask
+import requests
 from flask import request
 
-from minegauler.shared import highscores as hs
-from server.bot import msgparse
-
-from . import format, utils
+from . import msgparse, utils
 from .utils import BOT_NAME
 
 
@@ -40,11 +44,16 @@ def bot_message():
     if not msg:
         return "", 200
 
-    utils.send_group_message(msgparse.parse_msg(msg))
+    resp_msg = msgparse.parse_msg(msg, allow_markdown=True)
+    try:
+        utils.send_message(room_id, resp_msg, markdown=True)
+    except requests.HTTPError:
+        # TODO: I want to know about this!
+        logger.exception("Error sending bot response message")
 
     return "", 200
 
 
 def handle_bot_messages(app: flask.app.Flask) -> None:
     """Register a route to handle bot messages."""
-    app.add_url_rule(bot_message, methods=["POST"])
+    app.add_url_rule("bot/message", "bot_message", bot_message, methods=["POST"])

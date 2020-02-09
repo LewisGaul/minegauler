@@ -1,5 +1,12 @@
+"""
+utils.py - Bot utilities
+
+February 2020, Lewis Gaul
+"""
+
 __all__ = (
     "BOT_NAME",
+    "USER_NAMES",
     "get_message",
     "send_group_message",
     "send_message",
@@ -19,6 +26,8 @@ from minegauler.shared import highscores as hs
 
 logger = logging.getLogger(__name__)
 
+
+USER_NAMES = {"legaul": "Siwel G", "fegaul": "Felix"}  # TODO
 
 BOT_NAME = "minegaulerbot"
 _BOT_ACCESS_TOKEN = ""

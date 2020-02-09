@@ -4,13 +4,12 @@ import flask
 import requests
 
 import server
-
-from ..bot import routes
+from server.bot import routes
 
 
 app = flask.Flask(__name__)
 
-app.add_url_rule("/bot", "bot_message", routes.bot_message, methods=["POST"])
+app.add_url_rule("/bot/message", "bot_message", routes.bot_message, methods=["POST"])
 
 
 def send_bot_message():
@@ -70,4 +69,4 @@ def receive_bot_message(msg: str):
         app.test_client(), mock.patch("requests.get", return_value=resp)
     ) as ctx:
         tc, _ = ctx
-        return tc.post("/bot", json=post_data)
+        return tc.post("/bot/message", json=post_data)
