@@ -412,23 +412,28 @@ def ranks(args, **kwargs) -> str:
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
 
-    kwargs = {
+    opts = {
         k: getattr(args, k)
         for k in ["per_cell", "drag_select"]
         if getattr(args, k) is not None
     }
     if args.rank_type[0] in ["b", "i", "e", "m"]:
-        kwargs["difficulty"] = args.rank_type[0]
+        opts["difficulty"] = args.rank_type[0]
         highscores = hs.filter_and_sort(
-            hs.get_highscores(hs.HighscoresDatabases.REMOTE, **kwargs)
+            hs.get_highscores(hs.HighscoresDatabases.REMOTE, **opts)
         )
         highscores = [h for h in highscores if h.name in utils.USER_NAMES.values()]
     else:
         assert False
         # assert args.rank_type == "all"
 
-    kwargs["difficulty"] = args.rank_type
-    lines = ["Rankings for {}".format(formatter.format_kwargs(kwargs))]
+    opts = {"difficulty": opts["rank_type"]}
+    if args.drag_select is not None:
+        opts["drag-select"] = "on" if args.drag_select else "off"
+    if args.per_cell is not None:
+        opts["per-cell"] = args.per_cell
+
+    lines = ["Rankings for {}".format(formatter.format_kwargs(opts))]
     ranks = formatter.format_highscores(highscores)
     if allow_markdown:
         ranks = f"```\n{ranks}\n```"
