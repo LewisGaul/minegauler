@@ -344,14 +344,14 @@ def help_(
         logger.warning("No schema found on message handling function %r", func.__name__)
     else:
         if allow_markdown:
-            lines.append(f"\n`{schema}`")
+            lines.append(f"`{schema}`")
         else:
             lines.append(schema)
 
     if not lines:
-        return "Unexpect error: unable to get help message\n\n" + GENERAL_HELP
+        return "Unexpected error: unable to get help message\n\n" + GENERAL_HELP
 
-    return "\n".join(lines)
+    return "\n\n".join(lines)
 
 
 @helpstring("Get information about the game")
@@ -554,7 +554,8 @@ def parse_msg(msg: str, allow_markdown: bool = False) -> str:
         return func(args, allow_markdown=allow_markdown)
     except InvalidArgsError:
         logger.debug("Invalid message: %r", msg)
-        return "\n".join(
+        linebreak = "\n\n" if allow_markdown else "\n"
+        return linebreak.join(
             [
                 "Unrecognised command",
                 help_(func, only_schema=True, allow_markdown=allow_markdown),
