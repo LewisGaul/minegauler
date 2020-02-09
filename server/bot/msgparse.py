@@ -235,10 +235,11 @@ class ArgParser(argparse.ArgumentParser):
 
 
 class BotMsgParser(ArgParser):
-    def add_username_arg(self, *, nargs: Union[int, str] = 1):
-        self.add_positional_arg(
-            "username", nargs=nargs, choices=utils.USER_NAMES.keys()
-        )
+    def add_username_arg(self, *, nargs: Union[int, str] = 1, allow_me=True):
+        choices = list(utils.USER_NAMES)
+        if allow_me:
+            choices.append("me")
+        self.add_positional_arg("username", nargs=nargs, choices=choices)
 
     def add_difficulty_arg(self):
         self.add_positional_arg(
@@ -258,7 +259,7 @@ class BotMsgParser(ArgParser):
                 # else:
                 #     raise InvalidArgsError(f"Invalid rank type {arg!r}")
 
-        self.add_positional_arg("rank_type", nargs="?", type=convert, default="all")
+        self.add_positional_arg("rank_type", nargs="?", type=convert)
 
     def add_per_cell_arg(self):
         self.add_argument("per-cell", type=int, choices=[1, 2, 3])
@@ -293,9 +294,46 @@ class BotMsgParser(ArgParser):
 # ------------------------------------------------------------------------------
 
 
-_COMMON_HELP = "General help :)"
+_GENERAL_INFO = """\
+Welcome to the Minegauler bot!
 
-_GENERAL_INFO = "General info!"
+Download Minegauler from https://github.com/LewisGaul/minegauler.
+
+The bot provides the ability to check highscores and matchups for games of \
+Minegauler, and also gives notifications whenever anyone in the group sets a \
+new highscore.
+
+There are a few settings to filter Minegauler games with:
+ - difficulty: One of 'beginner', 'intermediate', 'expert' or 'master'.  
+   By default the combination of beginner, intermediate and expert is used, \
+   with 1000 used for any difficulties not completed.
+ - drag-select: One of 'on' or 'off'.  
+   By default no filter is applied (the best time of either mode is used).
+ - per-cell: One of 1, 2 or 3.  
+   By default no filter is applied (the best time of any mode is used).
+
+All highscores are independent of each of the above modes, and all commands \
+accept these filters to view specific times. E.g. 'ranks beginner per-cell 1'.
+
+Commands can be issued in group chat and direct chat. Most of the commands are \
+the same, however some are only available in one of the other (e.g. \
+'set nickname'). Type 'help' or '?' to check the available commands.
+
+To interact with a bot in Webex Teams group chats, the bot must be tagged. To \
+do this, type @ followed by the bot's name. The client should auto-suggest a \
+completion, at which point you'll need to press enter or tab to select the \
+completion and turn it into a tag.
+
+Some useful common commands:  
+'ranks' - display rankings  
+'matchups <name> <name> ...' - display comparison of times between users
+
+Some useful group-chat commands:  
+'challenge <name> ...' - challenge other users to a game
+
+Some useful direct-chat commands:  
+'set nickname' - set your nickname that you use in the Minegauler app
+"""
 
 
 def helpstring(text):
@@ -336,7 +374,7 @@ def cmd_help(
             lines.append(schema)
 
     if not lines:
-        return "Unexpected error: unable to get help message\n\n" + _COMMON_HELP
+        return "Unexpected error: unable to get help message\n\n"
 
     return "\n\n".join(lines)
 
@@ -352,7 +390,7 @@ def group_help(args, **kwargs):
         commands = _flatten_cmds(_GROUP_COMMANDS)
         if allow_markdown:
             commands = f"`{commands}`"
-        return linebreak.join(["Unrecognised command", _COMMON_HELP, commands])
+        raise InvalidArgsError(linebreak.join(["Unrecognised command", commands]))
     else:
         return cmd_help(func, allow_markdown=allow_markdown)
 
@@ -368,7 +406,7 @@ def direct_help(args, **kwargs):
         commands = _flatten_cmds(_DIRECT_COMMANDS)
         if allow_markdown:
             commands = f"`{commands}`"
-        return linebreak.join(["Unrecognised command", _COMMON_HELP, commands])
+        raise InvalidArgsError(linebreak.join(["Unrecognised command", commands]))
     else:
         return cmd_help(func, allow_markdown=allow_markdown)
 
@@ -410,35 +448,13 @@ def ranks(args, **kwargs) -> str:
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
 
-    opts = {
-        k: getattr(args, k)
-        for k in ["per_cell", "drag_select"]
-        if getattr(args, k) is not None
-    }
-    if args.rank_type in ["beginner", "intermediate", "expert", "master"]:
-        opts["difficulty"] = args.rank_type[0]
-        highscores = hs.filter_and_sort(
-            hs.get_highscores(hs.HighscoresDatabases.REMOTE, **opts)
-        )
-        times = {
-            h.name: h.elapsed for h in highscores if h.name in utils.USER_NAMES.values()
-        }
-    else:
-        assert args.rank_type == "all"
-        times = dict.fromkeys(utils.USER_NAMES.values(), 0)
-        for diff in ["beginner", "intermediate", "expert"]:
-            opts["difficulty"] = diff[0]
-            highscores = hs.filter_and_sort(
-                hs.get_highscores(hs.HighscoresDatabases.REMOTE, **opts)
-            )
-            highscores = {h.name: h.elapsed for h in highscores if h.name in times}
-            for name in list(times):
-                if name in highscores:
-                    times[name] += highscores[name]
-                else:
-                    times.pop(name)
+    times = utils.get_highscore_times(args.rank_type, args.drag_select, args.per_cell)
 
-    opts = {"difficulty": args.rank_type}
+    opts = dict()
+    if args.rank_type is not None:
+        opts["difficulty"] = args.rank_type
+    else:
+        opts["difficulty"] = "combined"
     if args.drag_select is not None:
         opts["drag-select"] = "on" if args.drag_select else "off"
     if args.per_cell is not None:
@@ -489,17 +505,25 @@ def stats_players(args, **kwargs):
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def matchups(args, **kwargs):
+def matchups(args, username: str, allow_markdown: bool = False, **kwargs):
     parser = BotMsgParser()
     parser.add_username_arg(nargs="+")
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
-    if len(args.username) < 2:
+    names = {u if u != "me" else username for u in args.username}
+    if len(names) < 2:
         raise InvalidArgsError("Require at least 2 username args")
+    names = {utils.USER_NAMES[u] for u in names}
 
-    return "Matchups {}".format(", ".join(args.username))
+    times = utils.get_highscore_times(
+        args.difficulty, args.drag_select, args.per_cell, names
+    )
+    matchups = utils.get_matchups(times)
+
+    linebreak = "\n  " if allow_markdown else "\n"
+    return linebreak.join(formatter.format_matchups(matchups))
 
 
 @helpstring("Get best matchups including at least one of specified players")
@@ -526,15 +550,16 @@ def best_matchups(args, **kwargs):
 )
 def challenge(args, username: str, **kwargs):
     parser = BotMsgParser()
-    parser.add_username_arg(nargs="+")
+    parser.add_username_arg(nargs="+", allow_me=False)
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
+    names = {u for u in args.username if u != username}
+    if len(names) < 1:
+        raise InvalidArgsError("Need at least one other player's name")
 
-    users_str = ", ".join(
-        f"<@personEmail:{utils.user_to_email(u)}|{u}>" for u in set(args.username)
-    )
+    users_str = ", ".join(f"<@personEmail:{utils.user_to_email(u)}|{u}>" for u in names)
     diff_str = args.difficulty + " " if args.difficulty else ""
     opts = dict()
     if args.drag_select:
@@ -582,12 +607,12 @@ _COMMON_COMMANDS = {
     "info": info,
     "player": player,
     "ranks": ranks,
-    "stats": {
-        None: stats,
-        "players": stats_players,
-    },
+    # "stats": {
+    #     None: stats,
+    #     "players": stats_players,
+    # },
     "matchups": matchups,
-    "best-matchups": best_matchups,
+    # "best-matchups": best_matchups,
 }
 
 _GROUP_COMMANDS = {
@@ -680,9 +705,7 @@ def parse_msg(
     except InvalidArgsError as e:
         logger.debug("Invalid message: %r", msg)
         if func is None:
-            resp_msg = cmds["help"](
-                msg.split(), allow_markdown=allow_markdown, **kwargs
-            )
+            return "Unrecognised command - try 'help' or 'info'"
         else:
             linebreak = "\n\n" if allow_markdown else "\n"
             resp_msg = cmd_help(func, only_schema=True, allow_markdown=allow_markdown)
@@ -698,7 +721,7 @@ def parse_msg(
 
 def main(argv):
     try:
-        resp = parse_msg(" ".join(argv), RoomType.GROUP)
+        resp = parse_msg(" ".join(argv), RoomType.GROUP, username="dummy-user")
     except InvalidArgsError as e:
         resp = str(e)
     print(resp)

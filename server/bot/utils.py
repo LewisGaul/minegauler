@@ -8,7 +8,10 @@ __all__ = (
     "BOT_NAME",
     "USER_NAMES",
     "USER_NAMES_FILE",
+    "Matchup",
+    "get_matchups",
     "get_message",
+    "get_highscore_times",
     "send_group_message",
     "send_message",
     "send_new_best_message",
@@ -18,9 +21,11 @@ __all__ = (
     "user_from_email",
 )
 
+import collections
 import json
 import logging
 import pathlib
+from typing import Dict, Iterable, List, Optional
 
 import requests
 from requests_toolbelt import MultipartEncoder
@@ -121,6 +126,64 @@ def set_user_nickname(user: str, nickname: str) -> None:
     USER_NAMES[user] = nickname
     with open(USER_NAMES_FILE, "w") as f:
         json.dump(USER_NAMES, f)
+
+
+def get_highscore_times(
+    difficulty: Optional[str],
+    drag_select: Optional[bool] = None,
+    per_cell: Optional[int] = None,
+    users: Optional[Iterable[str]] = None,
+) -> Dict[str, float]:
+    if users is None:
+        users = USER_NAMES.values()
+
+    if difficulty in ["beginner", "intermediate", "expert", "master"]:
+        highscores = hs.filter_and_sort(
+            hs.get_highscores(
+                hs.HighscoresDatabases.REMOTE,
+                difficulty=difficulty[0],
+                drag_select=drag_select,
+                per_cell=per_cell,
+            )
+        )
+        times = {h.name: h.elapsed for h in highscores if h.name in users}
+    else:
+        assert difficulty is None
+        times = dict.fromkeys(users, 0)
+        for diff in ["beginner", "intermediate", "expert"]:
+            highscores = hs.filter_and_sort(
+                hs.get_highscores(
+                    hs.HighscoresDatabases.REMOTE,
+                    difficulty=diff[0],
+                    drag_select=drag_select,
+                    per_cell=per_cell,
+                )
+            )
+            highscores = {h.name: h.elapsed for h in highscores if h.name in times}
+            for name in list(times):
+                if name in highscores:
+                    times[name] += highscores[name]
+                else:
+                    times[name] += 1000
+
+    return times
+
+
+Matchup = collections.namedtuple("Matchup", "user1, time1, user2, time2, percent")
+
+
+def get_matchups(times: Dict[str, float]) -> List[Matchup]:
+    times = sorted(times.items(), key=lambda x: x[1], reverse=True)
+    matchups = set()
+    while times:
+        # Avoid repeating matchups or comparing users against themselves.
+        user1, time1 = times.pop()
+        for user2, time2 in times:
+            assert time2 >= time1
+            percent = 100 * (time2 - time1) / time1
+            matchups.add(Matchup(user1, time1, user2, time2, percent))
+
+    return sorted(matchups, key=lambda x: x.percent)
 
 
 # ------------------------------------------------------------------------------

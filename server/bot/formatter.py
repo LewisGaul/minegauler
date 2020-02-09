@@ -4,11 +4,18 @@ formatter.py - Format bot messages
 February 2020, Lewis Gaul
 """
 
-__all__ = ("format_highscores", "format_highscore_times", "format_kwargs")
+__all__ = (
+    "format_highscores",
+    "format_highscore_times",
+    "format_kwargs",
+    "format_matchups",
+)
 
-from typing import Dict, Iterable, Mapping
+from typing import Dict, Iterable, List, Mapping
 
 from minegauler.shared import highscores as hs
+
+from .utils import Matchup
 
 
 def format_highscores(highscores: Iterable[hs.HighscoreStruct]) -> str:
@@ -24,3 +31,9 @@ def format_highscore_times(highscores: Dict[str, float]) -> str:
 
 def format_kwargs(kwargs: Mapping) -> str:
     return ", ".join(f"{k}={v}" for k, v in kwargs.items())
+
+
+def format_matchups(matchups: Iterable[Matchup]) -> List[str]:
+    return [
+        "{} ({:.2f}) vs {} ({:.2f}) - {:.2f}% difference".format(*m) for m in matchups
+    ]
