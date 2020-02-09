@@ -354,7 +354,7 @@ def group_help(args, **kwargs):
         commands = _flatten_cmds(_GROUP_COMMANDS)
         if allow_markdown:
             commands = f"`{commands}`"
-        return linebreak.join([_COMMON_HELP, commands])
+        return linebreak.join(["Unrecognised command", _COMMON_HELP, commands])
     else:
         return cmd_help(func, allow_markdown=allow_markdown)
 
@@ -370,7 +370,7 @@ def direct_help(args, **kwargs):
         commands = _flatten_cmds(_DIRECT_COMMANDS)
         if allow_markdown:
             commands = f"`{commands}`"
-        return linebreak.join([_COMMON_HELP, commands])
+        return linebreak.join(["Unrecognised command", _COMMON_HELP, commands])
     else:
         return cmd_help(func, allow_markdown=allow_markdown)
 
@@ -666,14 +666,14 @@ def parse_msg(
     except InvalidArgsError as e:
         logger.debug("Invalid message: %r", msg)
         if func is None:
-            help_msg = cmds["help"](
+            resp_msg = cmds["help"](
                 msg.split(), allow_markdown=allow_markdown, **kwargs
             )
         else:
-            help_msg = cmd_help(func, only_schema=True, allow_markdown=allow_markdown)
+            linebreak = "\n\n" if allow_markdown else "\n"
+            resp_msg = cmd_help(func, only_schema=True, allow_markdown=allow_markdown)
+            resp_msg = linebreak.join(["Unrecognised command", resp_msg])
 
-        linebreak = "\n\n" if allow_markdown else "\n"
-        resp_msg = linebreak.join(["Unrecognised command", help_msg])
         raise InvalidArgsError(resp_msg) from e
 
 

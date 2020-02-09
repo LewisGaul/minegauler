@@ -44,7 +44,7 @@ def bot_message():
         raise
 
     logger.debug("Fetched message content: %r", msg_text)
-    msg = re.sub(r"@?Minegauler", "", msg_text, 1).strip()
+    msg = re.sub(r"@?Minegauler(?: Bot)?", "", msg_text, 1).strip()
     logger.debug("Handling message: %r", msg)
 
     if not msg:
