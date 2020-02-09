@@ -258,9 +258,7 @@ class BotMsgParser(ArgParser):
                 # else:
                 #     raise InvalidArgsError(f"Invalid rank type {arg!r}")
 
-        self.add_positional_arg(
-            "rank_type", nargs="?", type=convert, default="beginner"
-        )
+        self.add_positional_arg("rank_type", nargs="?", type=convert, default="all")
 
     def add_per_cell_arg(self):
         self.add_argument("per-cell", type=int, choices=[1, 2, 3])
@@ -417,15 +415,28 @@ def ranks(args, **kwargs) -> str:
         for k in ["per_cell", "drag_select"]
         if getattr(args, k) is not None
     }
-    if args.rank_type[0] in ["b", "i", "e", "m"]:
+    if args.rank_type in ["beginner", "intermediate", "expert", "master"]:
         opts["difficulty"] = args.rank_type[0]
         highscores = hs.filter_and_sort(
             hs.get_highscores(hs.HighscoresDatabases.REMOTE, **opts)
         )
-        highscores = [h for h in highscores if h.name in utils.USER_NAMES.values()]
+        times = {
+            h.name: h.elapsed for h in highscores if h.name in utils.USER_NAMES.values()
+        }
     else:
-        assert False
-        # assert args.rank_type == "all"
+        assert args.rank_type == "all"
+        times = dict.fromkeys(utils.USER_NAMES.values(), 0)
+        for diff in ["beginner", "intermediate", "expert"]:
+            opts["difficulty"] = diff[0]
+            highscores = hs.filter_and_sort(
+                hs.get_highscores(hs.HighscoresDatabases.REMOTE, **opts)
+            )
+            highscores = {h.name: h.elapsed for h in highscores if h.name in times}
+            for name in list(times):
+                if name in highscores:
+                    times[name] += highscores[name]
+                else:
+                    times.pop(name)
 
     opts = {"difficulty": args.rank_type}
     if args.drag_select is not None:
@@ -434,7 +445,7 @@ def ranks(args, **kwargs) -> str:
         opts["per-cell"] = args.per_cell
 
     lines = ["Rankings for {}".format(formatter.format_kwargs(opts))]
-    ranks = formatter.format_highscores(highscores)
+    ranks = formatter.format_highscore_times(times)
     if allow_markdown:
         ranks = f"```\n{ranks}\n```"
     lines.append(ranks)
@@ -474,7 +485,7 @@ def stats_players(args, **kwargs):
 
 @helpstring("Get matchups for given players")
 @schema(
-    "matchups <name> [<name> ...] "
+    "matchups <name> <name> [<name> ...] "
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
@@ -485,10 +496,13 @@ def matchups(args, **kwargs):
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
+    if len(args.username) < 2:
+        raise InvalidArgsError("Require at least 2 username args")
+
     return "Matchups {}".format(", ".join(args.username))
 
 
-@helpstring("Get the best matchups")
+@helpstring("Get best matchups including at least one of specified players")
 @schema(
     "best-matchups [<name> ...] "
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "

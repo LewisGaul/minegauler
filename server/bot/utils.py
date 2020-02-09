@@ -102,9 +102,10 @@ def send_new_best_message(h: hs.HighscoreStruct) -> None:
         diff = "master"
     else:
         assert False
+    drag_select = "on" if h.drag_select else "off"
     send_group_message(
         f"New personal record of {h.elapsed:.2f} set by {h.name} on {diff}!\n"
-        f"Settings: drag-select={_strbool(h.drag_select)}, per-cell={h.per_cell}"
+        f"Settings: drag-select={drag_select}, per-cell={h.per_cell}"
     )
 
 

@@ -4,15 +4,21 @@ formatter.py - Format bot messages
 February 2020, Lewis Gaul
 """
 
-__all__ = ("format_highscores",)
+__all__ = ("format_highscores", "format_highscore_times", "format_kwargs")
 
-from typing import Iterable, Mapping
+from typing import Dict, Iterable, Mapping
 
 from minegauler.shared import highscores as hs
 
 
 def format_highscores(highscores: Iterable[hs.HighscoreStruct]) -> str:
-    lines = [f"{i+1}. {h.name:<15s}  {h.elapsed:.2f}" for i, h in enumerate(highscores)]
+    return format_highscore_times([(h.name, h.elapsed) for h in highscores])
+
+
+def format_highscore_times(highscores: Dict[str, float]) -> str:
+    lines = [
+        f"{i+1}. {h[0]:<15s}  {h[1]:.2f}" for i, h in enumerate(highscores.items())
+    ]
     return "\n".join(lines)
 
 
