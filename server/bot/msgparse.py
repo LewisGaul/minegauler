@@ -427,7 +427,7 @@ def ranks(args, **kwargs) -> str:
         assert False
         # assert args.rank_type == "all"
 
-    opts = {"difficulty": opts["rank_type"]}
+    opts = {"difficulty": args.rank_type}
     if args.drag_select is not None:
         opts["drag-select"] = "on" if args.drag_select else "off"
     if args.per_cell is not None:

@@ -12,7 +12,7 @@ from minegauler.shared import highscores as hs
 
 
 def format_highscores(highscores: Iterable[hs.HighscoreStruct]) -> str:
-    lines = [f"{i}. {h.name:<15s}  {h.elapsed:.2f}" for i, h in enumerate(highscores)]
+    lines = [f"{i+1}. {h.name:<15s}  {h.elapsed:.2f}" for i, h in enumerate(highscores)]
     return "\n".join(lines)
 
 
