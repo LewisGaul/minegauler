@@ -4,12 +4,13 @@ msgparse.py - Parse bot messages
 February 2020, Lewis Gaul
 """
 
-__all__ = ("parse_msg",)
+__all__ = ("RoomType", "parse_msg")
 
 import argparse
+import enum
 import logging
 import sys
-from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 from minegauler.shared import highscores as hs
 
@@ -293,9 +294,9 @@ class BotMsgParser(ArgParser):
 # ------------------------------------------------------------------------------
 
 
-GENERAL_HELP = "General help :)"
+_COMMON_HELP = "General help :)"
 
-GENERAL_INFO = "General info!"
+_GENERAL_INFO = "General info!"
 
 
 def helpstring(text):
@@ -314,22 +315,9 @@ def schema(text):
     return decorator
 
 
-@helpstring("Get help for a command")
-@schema("help [<command>]")
-def help_(
-    args_or_func: Union[List[str], Callable, None],
-    *,
-    only_schema: bool = False,
-    allow_markdown: bool = False,
+def cmd_help(
+    func: Callable, *, only_schema: bool = False, allow_markdown: bool = False
 ) -> str:
-    if hasattr(args_or_func, "__schema__") or args_or_func is None:
-        func = args_or_func
-    else:
-        func = _map_to_cmd(" ".join(args_or_func))[0]
-
-    if func is None:
-        return GENERAL_HELP
-
     lines = []
     if not only_schema:
         try:
@@ -349,9 +337,37 @@ def help_(
             lines.append(schema)
 
     if not lines:
-        return "Unexpected error: unable to get help message\n\n" + GENERAL_HELP
+        return "Unexpected error: unable to get help message\n\n" + _COMMON_HELP
 
     return "\n\n".join(lines)
+
+
+@helpstring("Get help for a command")
+@schema("help [<command>]")
+def group_help(args, *, allow_markdown: bool = False):
+    func, _ = _map_to_cmd(" ".join(args), _GROUP_COMMANDS)
+    if func is None:
+        linebreak = "\n\n" if allow_markdown else "\n"
+        commands = _flatten_cmds(_GROUP_COMMANDS)
+        if allow_markdown:
+            commands = f"`{commands}`"
+        return linebreak.join([_COMMON_HELP, commands])
+    else:
+        return cmd_help(func, allow_markdown=allow_markdown)
+
+
+@helpstring("Get help for a command")
+@schema("help [<command>]")
+def direct_help(args, *, allow_markdown: bool = False):
+    func, _ = _map_to_cmd(" ".join(args), _DIRECT_COMMANDS)
+    if func is None:
+        linebreak = "\n\n" if allow_markdown else "\n"
+        commands = _flatten_cmds(_DIRECT_COMMANDS)
+        if allow_markdown:
+            commands = f"`{commands}`"
+        return linebreak.join([_COMMON_HELP, commands])
+    else:
+        return cmd_help(func, allow_markdown=allow_markdown)
 
 
 @helpstring("Get information about the game")
@@ -359,7 +375,7 @@ def help_(
 def info(args, *, allow_markdown: bool = False):
     # Check no args given.
     BotMsgParser().parse_args(args)
-    return GENERAL_INFO
+    return _GENERAL_INFO
 
 
 @helpstring("Get player info")
@@ -414,9 +430,9 @@ def ranks(args, *, allow_markdown: bool = False) -> str:
     return "\n".join(lines)
 
 
-@helpstring("Get stats")
+@helpstring("Get stats for played games")
 @schema(
-    "stats [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
+    "stats [players ...] [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
 def stats(args, *, allow_markdown: bool = False):
@@ -499,19 +515,44 @@ def set_nickname(args, *, allow_markdown: bool = False):
     return f"Nickname set to {nickname}"
 
 
+CommandMapping = Dict[Optional[str], Union[Callable, "CommandMapping"]]
+
+
+class RoomType(enum.Enum):
+    GROUP = "group"
+    DIRECT = "direct"
+
+    def to_cmds(self) -> CommandMapping:
+        if self is self.GROUP:
+            return _GROUP_COMMANDS
+        else:
+            assert self is self.DIRECT
+            return _DIRECT_COMMANDS
+
+
 # fmt: off
-COMMANDS = {
-    "help": help_,
+_COMMON_COMMANDS = {
+    "help": info,
     "info": info,
     "player": player,
     "ranks": ranks,
     "stats": {
         None: stats,
-        "players": stats_players
+        "players": stats_players,
     },
     "matchups": matchups,
     "best-matchups": best_matchups,
+}
+
+_GROUP_COMMANDS = {
+    **_COMMON_COMMANDS,
+    "help": group_help,
     "challenge": challenge,
+}
+
+_DIRECT_COMMANDS = {
+    **_COMMON_COMMANDS,
+    "help": direct_help,
     "set": {
         "nickname": set_nickname,
     },
@@ -519,8 +560,7 @@ COMMANDS = {
 # fmt: on
 
 
-def _map_to_cmd(msg: str) -> Tuple[Callable, List[str]]:
-    cmds = COMMANDS
+def _map_to_cmd(msg: str, cmds: CommandMapping) -> Tuple[Callable, List[str]]:
     func = None
     words = msg.split()
 
@@ -541,26 +581,46 @@ def _map_to_cmd(msg: str) -> Tuple[Callable, List[str]]:
     return func, words
 
 
-def parse_msg(msg: str, allow_markdown: bool = False) -> str:
+def _flatten_cmds(cmds: CommandMapping, root: bool = True) -> str:
+    to_join = []
+    for k, v in cmds.items():
+        item = k
+        if isinstance(v, dict):
+            item += " " + _flatten_cmds(v, root=False)
+        if item:
+            to_join.append(item)
+    ret = " | ".join(to_join)
+    if None in cmds:
+        ret = f"[{ret}]"
+    elif len(cmds) > 1 and not root:
+        ret = f"{{{ret}}}"
+    return ret
+
+
+def parse_msg(msg: str, room_type: RoomType, *, allow_markdown: bool = False) -> str:
     msg = msg.strip()
-    if msg.endswith("?"):
+    if msg.endswith("?") and not (msg.startswith("help ") and msg.split()[1] != "?"):
+        # Change "?" at the end to be treated as help, except for the case where
+        # this is a double help intended for a subcommand, e.g.
+        # 'help matchups ?'.
         msg = "help " + msg[:-1]
 
+    cmds = room_type.to_cmds()
     func = None
     try:
-        func, args = _map_to_cmd(msg)
+        func, args = _map_to_cmd(msg, cmds)
         if func is None:
             raise InvalidArgsError("Base command not found")
         return func(args, allow_markdown=allow_markdown)
     except InvalidArgsError:
         logger.debug("Invalid message: %r", msg)
+        if func is None:
+            help_msg = group_help(msg.split(), allow_markdown=allow_markdown)
+        else:
+            help_msg = cmd_help(func, only_schema=True, allow_markdown=allow_markdown)
+
         linebreak = "\n\n" if allow_markdown else "\n"
-        return linebreak.join(
-            [
-                "Unrecognised command",
-                help_(func, only_schema=True, allow_markdown=allow_markdown),
-            ]
-        )
+        return linebreak.join(["Unrecognised command", help_msg])
 
 
 # ------------------------------------------------------------------------------
@@ -569,7 +629,7 @@ def parse_msg(msg: str, allow_markdown: bool = False) -> str:
 
 
 def main(argv):
-    print(parse_msg(" ".join(argv)))
+    print(parse_msg(" ".join(argv), RoomType.GROUP))
 
 
 if __name__ == "__main__":

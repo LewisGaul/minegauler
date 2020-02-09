@@ -40,17 +40,17 @@ def bot_message():
         raise
 
     logger.debug("Fetched message content: %r", msg_text)
-    if "roomId" in data:
-        room_id = data["roomId"]
-    else:
-        room_id = data["personId"]
     msg = re.sub(r"@?Minegauler", "", msg_text, 1).strip().lower()
     logger.debug("Handling message: %r", msg)
 
     if not msg:
         return "", 200
 
-    resp_msg = msgparse.parse_msg(msg, allow_markdown=True)
+    room_id = data["roomId"]
+    person_id = data["personId"]
+    room_type = msgparse.RoomType(data["roomType"])
+
+    resp_msg = msgparse.parse_msg(msg, room_type, allow_markdown=True)
     try:
         utils.send_message(room_id, resp_msg, markdown=True)
     except requests.HTTPError:
