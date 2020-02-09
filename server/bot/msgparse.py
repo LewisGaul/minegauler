@@ -294,6 +294,21 @@ class BotMsgParser(ArgParser):
 # ------------------------------------------------------------------------------
 
 
+CommandMapping = Dict[Optional[str], Union[Callable, "CommandMapping"]]
+
+
+class RoomType(enum.Enum):
+    GROUP = "group"
+    DIRECT = "direct"
+
+    def to_cmds(self) -> CommandMapping:
+        if self is self.GROUP:
+            return _GROUP_COMMANDS
+        else:
+            assert self is self.DIRECT
+            return _DIRECT_COMMANDS
+
+
 _GENERAL_INFO = """\
 Welcome to the Minegauler bot!
 
@@ -532,7 +547,13 @@ def stats_players(args, **kwargs):
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def matchups(args, username: str, allow_markdown: bool = False, **kwargs):
+def matchups(
+    args,
+    username: str,
+    allow_markdown: bool = False,
+    room_type=RoomType.DIRECT,
+    **kwargs,
+):
     parser = BotMsgParser()
     parser.add_username_arg(nargs="+")
     parser.add_difficulty_arg()
@@ -549,7 +570,7 @@ def matchups(args, username: str, allow_markdown: bool = False, **kwargs):
     )
     matchups = utils.get_matchups(times)
 
-    if allow_markdown:
+    if allow_markdown and room_type is RoomType.GROUP:
         users_str = ", ".join(utils.tag_user(u) for u in users)
     else:
         users_str = ", ".join(users)
@@ -571,7 +592,9 @@ def matchups(args, username: str, allow_markdown: bool = False, **kwargs):
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def best_matchups(args, username: str, allow_markdown=False, **kwargs):
+def best_matchups(
+    args, username: str, allow_markdown=False, room_type=RoomType.DIRECT, **kwargs
+):
     parser = BotMsgParser()
     parser.add_username_arg(nargs="*")
     parser.add_difficulty_arg()
@@ -586,7 +609,7 @@ def best_matchups(args, username: str, allow_markdown=False, **kwargs):
     )
     matchups = utils.get_matchups(times, include_users=names)[:10]
 
-    if allow_markdown:
+    if allow_markdown and room_type is RoomType.GROUP:
         users_str = ", ".join(utils.tag_user(u) for u in users)
     else:
         users_str = ", ".join(users)
@@ -646,21 +669,6 @@ def set_nickname(args, username: str, **kwargs):
     logger.debug("Changing nickname of %s from %r to %r", username, old, new)
     utils.set_user_nickname(username, new)
     return f"Nickname changed from '{old}' to '{new}'"
-
-
-CommandMapping = Dict[Optional[str], Union[Callable, "CommandMapping"]]
-
-
-class RoomType(enum.Enum):
-    GROUP = "group"
-    DIRECT = "direct"
-
-    def to_cmds(self) -> CommandMapping:
-        if self is self.GROUP:
-            return _GROUP_COMMANDS
-        else:
-            assert self is self.DIRECT
-            return _DIRECT_COMMANDS
 
 
 # fmt: off
@@ -763,7 +771,7 @@ def parse_msg(
         func, args = _map_to_cmd(msg, cmds)
         if func is None:
             raise InvalidArgsError("Base command not found")
-        return func(args, allow_markdown=allow_markdown, **kwargs)
+        return func(args, allow_markdown=allow_markdown, room_type=room_type, **kwargs)
     except InvalidArgsError as e:
         logger.debug("Invalid message: %r", msg)
         if func is None:
