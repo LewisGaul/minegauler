@@ -384,12 +384,16 @@ def cmd_help(
 def group_help(args, **kwargs):
     allow_markdown = kwargs.get("allow_markdown", False)
 
+    linebreak = "\n\n" if allow_markdown else "\n"
+    commands = _flatten_cmds(_GROUP_COMMANDS)
+    if allow_markdown:
+        commands = f"`{commands}`"
+
+    if not args:
+        return commands
+
     func, _ = _map_to_cmd(" ".join(args), _GROUP_COMMANDS)
     if func is None:
-        linebreak = "\n\n" if allow_markdown else "\n"
-        commands = _flatten_cmds(_GROUP_COMMANDS)
-        if allow_markdown:
-            commands = f"`{commands}`"
         raise InvalidArgsError(linebreak.join(["Unrecognised command", commands]))
     else:
         return cmd_help(func, allow_markdown=allow_markdown)
@@ -400,12 +404,16 @@ def group_help(args, **kwargs):
 def direct_help(args, **kwargs):
     allow_markdown = kwargs.get("allow_markdown", False)
 
+    linebreak = "\n\n" if allow_markdown else "\n"
+    commands = _flatten_cmds(_DIRECT_COMMANDS)
+    if allow_markdown:
+        commands = f"`{commands}`"
+
+    if not args:
+        return commands
+
     func, _ = _map_to_cmd(" ".join(args), _DIRECT_COMMANDS)
     if func is None:
-        linebreak = "\n\n" if allow_markdown else "\n"
-        commands = _flatten_cmds(_DIRECT_COMMANDS)
-        if allow_markdown:
-            commands = f"`{commands}`"
         raise InvalidArgsError(linebreak.join(["Unrecognised command", commands]))
     else:
         return cmd_help(func, allow_markdown=allow_markdown)
@@ -424,14 +432,38 @@ def info(args, **kwargs):
     "player <name> [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def player(args, **kwargs):
-
+def player(args, username: str, allow_markdown=False, **kwargs):
     parser = BotMsgParser()
+    parser.add_username_arg()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
-    return str(args)
+    if args.username == "me":
+        args.username = username
+
+    diff = args.difficulty[0] if args.difficulty else None
+    highscores = hs.get_highscores(
+        hs.HighscoresDatabases.REMOTE,
+        name=utils.USER_NAMES[args.username],
+        difficulty=diff,
+        drag_select=args.drag_select,
+        per_cell=args.per_cell,
+    )
+
+    filters_str = formatter.format_filters(
+        None, args.drag_select, args.per_cell, no_difficulty=True
+    )
+    if filters_str:
+        filters_str = " with " + filters_str
+    lines = ["Player info for {}{}:".format(args.username, filters_str)]
+    lines.extend(
+        formatter.format_player_highscores(highscores, difficulty=args.difficulty)
+    )
+
+    linebreak = "  \n" if allow_markdown else "\n"
+
+    return linebreak.join(lines)
 
 
 @helpstring("Get rankings")
@@ -450,17 +482,12 @@ def ranks(args, **kwargs) -> str:
 
     times = utils.get_highscore_times(args.rank_type, args.drag_select, args.per_cell)
 
-    opts = dict()
-    if args.rank_type is not None:
-        opts["difficulty"] = args.rank_type
-    else:
-        opts["difficulty"] = "combined"
-    if args.drag_select is not None:
-        opts["drag-select"] = "on" if args.drag_select else "off"
-    if args.per_cell is not None:
-        opts["per-cell"] = args.per_cell
-
-    lines = ["Rankings for {}".format(formatter.format_kwargs(opts))]
+    lines = []
+    lines.append(
+        "Rankings for {}".format(
+            formatter.format_filters(args.rank_type, args.drag_select, args.per_cell)
+        )
+    )
     ranks = formatter.format_highscore_times(times)
     if allow_markdown:
         ranks = f"```\n{ranks}\n```"
@@ -526,8 +553,14 @@ def matchups(args, username: str, allow_markdown: bool = False, **kwargs):
         users_str = ", ".join(utils.tag_user(u) for u in users)
     else:
         users_str = ", ".join(users)
-    lines = [f"Matchups between {users_str}:", *formatter.format_matchups(matchups)]
-    linebreak = "\n  " if allow_markdown else "\n"
+    lines = [
+        "Matchups between {} for {}:".format(
+            users_str,
+            formatter.format_filters(args.difficulty, args.drag_select, args.per_cell),
+        )
+    ]
+    lines.extend(formatter.format_matchups(matchups))
+    linebreak = "  \n" if allow_markdown else "\n"
 
     return linebreak.join(lines)
 
@@ -559,8 +592,14 @@ def best_matchups(args, username: str, allow_markdown=False, **kwargs):
         users_str = ", ".join(users)
     if users_str:
         users_str = " including " + users_str
-    lines = [f"Best matchups{users_str}:", *formatter.format_matchups(matchups)]
-    linebreak = "\n  " if allow_markdown else "\n"
+    lines = [
+        "Best matchups{} for {}:".format(
+            users_str,
+            formatter.format_filters(args.difficulty, args.drag_select, args.per_cell),
+        )
+    ]
+    lines.extend(formatter.format_matchups(matchups))
+    linebreak = "  \n" if allow_markdown else "\n"
 
     return linebreak.join(lines)
 

@@ -25,7 +25,7 @@ import collections
 import json
 import logging
 import pathlib
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import requests
 from requests_toolbelt import MultipartEncoder
@@ -137,7 +137,7 @@ def get_highscore_times(
     drag_select: Optional[bool] = None,
     per_cell: Optional[int] = None,
     users: Optional[Iterable[str]] = None,
-) -> Dict[str, float]:
+) -> List[Tuple[str, float]]:
     if users is None:
         users = USER_NAMES.values()
 
@@ -170,16 +170,16 @@ def get_highscore_times(
                 else:
                     times[name] += 1000
 
-    return times
+    return sorted(times.items(), key=lambda x: x[1])
 
 
 Matchup = collections.namedtuple("Matchup", "user1, time1, user2, time2, percent")
 
 
 def get_matchups(
-    times: Dict[str, float], include_users: Optional[Iterable[str]] = None
+    times: Iterable[Tuple[str, float]], include_users: Optional[Iterable[str]] = None
 ) -> List[Matchup]:
-    times = sorted(times.items(), key=lambda x: x[1], reverse=True)
+    times = sorted(times, key=lambda x: x[1], reverse=True)
     matchups = set()
     while times:
         # Avoid repeating matchups or comparing users against themselves.
