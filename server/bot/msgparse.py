@@ -4,7 +4,7 @@ msgparse.py - Parse bot messages
 February 2020, Lewis Gaul
 """
 
-__all__ = ("RoomType", "parse_msg")
+__all__ = ("GENERAL_INFO", "RoomType", "parse_msg")
 
 import argparse
 import enum
@@ -309,7 +309,7 @@ class RoomType(enum.Enum):
             return _DIRECT_COMMANDS
 
 
-_GENERAL_INFO = """\
+GENERAL_INFO = """\
 Welcome to the Minegauler bot!
 
 Instructions for downloading Minegauler can be found in the \
@@ -444,7 +444,7 @@ def direct_help(args, **kwargs):
 def info(args, **kwargs):
     # Check no args given.
     BotMsgParser().parse_args(args)
-    return _GENERAL_INFO
+    return GENERAL_INFO
 
 
 @helpstring("Get player info")

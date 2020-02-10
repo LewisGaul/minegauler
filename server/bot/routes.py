@@ -32,6 +32,7 @@ def bot_message():
     data = request.get_json()["data"]
     logger.debug("POST bot message: %s", data)
     user = utils.user_from_email(data["personEmail"])
+    send_welcome = False
     if user == utils.BOT_NAME:
         # Ignore messages sent by the bot.
         return "", 200
@@ -39,6 +40,7 @@ def bot_message():
         # If the user is not yet tracked, add the username as the default name.
         logger.debug("Adding new user %r", user)
         utils.set_user_nickname(user, user)
+        send_welcome = True
 
     msg_id = data["id"]
     try:
@@ -58,6 +60,15 @@ def bot_message():
     room_id = data["roomId"]
     person_id = data["personId"]
     room_type = msgparse.RoomType(data["roomType"])
+
+    if send_welcome:
+        try:
+            utils.send_message(
+                person_id, msgparse.GENERAL_INFO, is_person_id=True, markdown=True
+            )
+        except requests.HTTPError:
+            logger.exception("Error sending bot welcome message")
+            _send_myself_error_msg("sending bot welcome message")
 
     send_to_person_id = False
     send_to_id = room_id
