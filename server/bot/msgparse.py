@@ -476,7 +476,11 @@ def player(args, username: str, allow_markdown=False, **kwargs):
     )
     if filters_str:
         filters_str = " with " + filters_str
-    lines = ["Player info for {}{}:".format(args.username, filters_str)]
+    lines = [
+        "Player info for {} ({}){}:".format(
+            args.username, utils.USER_NAMES[args.username], filters_str
+        )
+    ]
     lines.extend(
         formatter.format_player_highscores(highscores, difficulty=args.difficulty)
     )
