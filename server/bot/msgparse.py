@@ -678,8 +678,7 @@ def set_nickname(args, username: str, **kwargs):
 
 # fmt: off
 _COMMON_COMMANDS = {
-    "help": info,
-    "info": info,
+    "help": None,
     "player": player,
     "ranks": ranks,
     # "stats": {
@@ -699,6 +698,7 @@ _GROUP_COMMANDS = {
 _DIRECT_COMMANDS = {
     **_COMMON_COMMANDS,
     "help": direct_help,
+    "info": info,
     "set": {
         "nickname": set_nickname,
     },
