@@ -4,6 +4,8 @@ routes.py - Definition of bot HTTP routes
 February 2020, Lewis Gaul
 """
 
+__all__ = ("activate_bot_msg_handling", "new_highscore_hook")
+
 import logging
 import re
 
@@ -11,6 +13,9 @@ import flask
 import requests
 from flask import request
 
+from minegauler.shared import highscores as hs
+
+from ..utils import is_highscore_new_best
 from . import msgparse, utils
 
 
@@ -76,6 +81,24 @@ def bot_message():
         _send_myself_error_msg("sending bot repsonse message")
 
     return "", 200
+
+
+def new_highscore_hook(highscore: hs.HighscoreStruct) -> None:
+    if highscore.name != "Siwel G":
+        try:
+            utils.send_myself_message(f"New highscore added:\n{highscore}")
+        except Exception:
+            logger.exception("Error sending webex message")
+
+    if (
+        highscore.name in utils.USER_NAMES.values()
+        and is_highscore_new_best(highscore) == "time"
+    ):
+        try:
+            utils.send_new_best_message(highscore)
+        except Exception:
+            logger.exception("Error sending webex message for new best")
+            _send_myself_error_msg()
 
 
 def activate_bot_msg_handling(app: flask.app.Flask) -> None:

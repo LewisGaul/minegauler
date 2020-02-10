@@ -13,10 +13,7 @@ import sys
 
 import flask
 
-from minegauler.shared import highscores as hs
-
 from .. import add_new_highscore_hook
-from ..utils import is_highscore_new_best
 from . import routes, utils
 
 
@@ -42,23 +39,4 @@ def init_route_handling(app: flask.app.Flask):
 
     routes.activate_bot_msg_handling(app)
 
-    add_new_highscore_hook(_new_highscore_hook)
-
-
-# ------------------------------------------------------------------------------
-# Internal
-# ------------------------------------------------------------------------------
-
-
-def _new_highscore_hook(highscore: hs.HighscoreStruct) -> None:
-    if highscore.name != "Siwel G":
-        try:
-            utils.send_myself_message(f"New highscore added:\n{highscore}")
-        except Exception:
-            logger.exception("Error sending webex message")
-
-    if is_highscore_new_best(highscore) == "time":
-        try:
-            utils.send_new_best_message(highscore)
-        except Exception:
-            logger.exception("Error sending webex message for new best")
+    add_new_highscore_hook(routes.new_highscore_hook)
