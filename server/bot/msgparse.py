@@ -780,7 +780,7 @@ def parse_msg(
     except InvalidArgsError as e:
         logger.debug("Invalid message: %r", msg)
         if func is None:
-            return "Unrecognised command - try 'help' or 'info'"
+            return "Unrecognised command - try 'help' or 'info' in direct chat"
         else:
             linebreak = "\n\n" if allow_markdown else "\n"
             resp_msg = cmd_help(func, only_schema=True, allow_markdown=allow_markdown)
