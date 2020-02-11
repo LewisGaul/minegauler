@@ -27,14 +27,16 @@ Download links available here:
 
 The Python package is also available on PyPI: https://pypi.org/project/minegauler/.
 
- 1. Python 3.6+ required (see note below for Python 3.8+)
+ 1. Python 3.6+ required
  2. Install with `pip install minegauler`
  3. Run with `python -m minegauler`
+
+See note on system dependencies below, or [get in touch](#Contact) if you have any issues.
 
 
 ### Clone the repo
 
-You will need Python 3.6+ to run the code (see note below for getting it to run on Python 3.8+).
+You will need Python 3.6+ to run the code (see note below about known system dependencies).
 
  1. Clone the repo: `git clone https://github.com/LewisGaul/minegauler`
  2. Consider setting up a [virtual environment](https://docs.python.org/3/tutorial/venv.html)
@@ -42,23 +44,12 @@ You will need Python 3.6+ to run the code (see note below for getting it to run 
  4. Run with `python -m minegauler`
 
 
-#### Python 3.8+
+#### System dependencies
 
-Annoyingly, the requirements listed in `requirements.txt` don't seem to work for Python 3.8+ due to the following dependency facts:
+Annoyingly, the latest version of PyQt5 introduced a new system dependency on Linux, and this new version is required to run on Python3.8+.
 
- - The oldest version of `PyQt5-sip` (required by `PyQt5`) supported on Python 3.8 is `4.19.17`.
- - `PyQt5` versions prior to `12.0` require a version of `PyQt5-sip` older than `4.19.17`.
-
-The reason for not updating the requirements, is that `PyQt5` version `12.0` introduced a new system dependency on Ubuntu (`libxkbcommon-x11-0`) which isn't installed when you run `pip install pyqt5`.
-
-However, if you want to run on Python 3.8+ you can do so!
-
- 1. Follow steps `1.` and `2.` above
- 2. Edit `requirements.txt`:
-    - Replace `PyQt5==5.11.3` with `PyQt5==5.14.0`
-    - Replace `PyQt5-sip==4.19.13` with `PyQt5-sip==12.7.0`
- 3. Run with `python -m minegauler`
-    - If this fails with `Aborted (core dumped)` on Linux, try installing the dependency with `sudo apt install libxkbcommon-x11-0`
+If running with `python -m minegauler` fails with `Aborted (core dumped)` on Linux, try installing the dependency with:  
+`sudo apt install libxkbcommon-x11-0`
 
 
 ## What's new/upcoming?
