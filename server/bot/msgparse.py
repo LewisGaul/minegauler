@@ -670,6 +670,10 @@ def challenge(args, username: str, **kwargs):
 @schema("set nickname <name>")
 def set_nickname(args, username: str, **kwargs):
     new = " ".join(args)
+    if len(new) > 10:
+        raise InvalidArgsError("Nickname must be no longer than 10 characters")
+    if new in utils.USER_NAMES.values():
+        raise InvalidArgsError(f"Nickname {new!r} already in use")
     old = utils.USER_NAMES[username]
     logger.debug("Changing nickname of %s from %r to %r", username, old, new)
     utils.set_user_nickname(username, new)
@@ -786,7 +790,7 @@ def parse_msg(
         else:
             linebreak = "\n\n" if allow_markdown else "\n"
             resp_msg = cmd_help(func, only_schema=True, allow_markdown=allow_markdown)
-            resp_msg = linebreak.join(["Unrecognised command", resp_msg])
+            resp_msg = linebreak.join([f"Unrecognised command: {str(e)}", resp_msg])
 
         raise InvalidArgsError(resp_msg) from e
 
