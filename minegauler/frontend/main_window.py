@@ -118,7 +118,7 @@ class _BaseMainWindow(QMainWindow):
         self._body_frame = QFrame(central_widget)
         self._body_frame.setFrameShadow(QFrame.Raised)
         self._body_frame.setFrameShape(QFrame.Box)
-        self._body_frame.setLineWidth(self.BODY_FRAME_WIDTH / 2)
+        self._body_frame.setLineWidth(self.BODY_FRAME_WIDTH // 2)
         hstretch.addWidget(self._body_frame)
         hstretch.addStretch()  # right-padding for centering
         vlayout.addLayout(hstretch)

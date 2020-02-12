@@ -103,13 +103,13 @@ def make_pixmap(img_subdir, style, bg_fname, size, fg_fname=None, propn=1):
         image = QImage(bg_path).scaled(
             size, size, transformMode=Qt.SmoothTransformation
         )
-        fg_size = propn * size
+        fg_size = int(propn * size)
         fg_path = get_path(img_subdir, fg_fname, "Standard")
         overlay = QPixmap(fg_path).scaled(
             fg_size, fg_size, transformMode=Qt.SmoothTransformation
         )
         painter = QPainter(image)
-        margin = size * (1 - propn) / 2
+        margin = int(size * (1 - propn) / 2)
         painter.drawPixmap(margin, margin, overlay)
         painter.end()
         image = QPixmap.fromImage(image)
@@ -237,7 +237,7 @@ class MinefieldWidget(QGraphicsView):
         # Return if not the left or right mouse buttons, or if the mouse wasn't
         #  moved to a different cell.
         if (
-            not event.buttons() & (Qt.LeftButton | Qt.RightButton)
+            not event.buttons() & int(Qt.LeftButton | Qt.RightButton)
             or self.await_release_all_buttons
             or coord == self.mouse_coord
         ):
@@ -275,7 +275,7 @@ class MinefieldWidget(QGraphicsView):
         coord = self._coord_from_event(event)
 
         ## Bothclick (one of the buttons still down)
-        if event.buttons() & (Qt.LeftButton | Qt.RightButton):
+        if event.buttons() & int(Qt.LeftButton | Qt.RightButton):
             logger.debug("Mouse button release on cell %s after both down", coord)
             self.first_of_both_buttons_release(coord)
 
@@ -290,7 +290,7 @@ class MinefieldWidget(QGraphicsView):
                 self.left_button_release(coord)
 
         # Reset variables if neither of the mouse buttons are down.
-        if not (event.buttons() & (Qt.LeftButton | Qt.RightButton)):
+        if not (event.buttons() & int(Qt.LeftButton | Qt.RightButton)):
             logger.debug("No mouse buttons down, reset variables")
             self.all_buttons_release()
 
