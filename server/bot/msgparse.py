@@ -315,10 +315,6 @@ Welcome to the Minegauler bot!
 Instructions for downloading Minegauler can be found in the \
 [GitHub repo](https://github.com/LewisGaul/minegauler/blob/master/README.md).
 
-For Windows users, I would recommend either `pip install minegauler` from \
-Windows command prompt, or setting up an \
-[X-server](https://sourceforge.net/projects/xming/) for running under WSL.
-
 The bot provides the ability to check highscores and matchups for games of \
 Minegauler, and also gives notifications whenever anyone in the group sets a \
 new highscore.
