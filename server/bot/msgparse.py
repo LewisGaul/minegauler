@@ -674,6 +674,8 @@ def set_nickname(args, username: str, **kwargs):
         raise InvalidArgsError("Nickname must be no longer than 10 characters")
     if new in utils.USER_NAMES.values():
         raise InvalidArgsError(f"Nickname {new!r} already in use")
+    if new in utils.USER_NAMES.keys() and new != username:
+        raise InvalidArgsError(f"Cannot set nickname to someone else's username!")
     old = utils.USER_NAMES[username]
     logger.debug("Changing nickname of %s from %r to %r", username, old, new)
     utils.set_user_nickname(username, new)
