@@ -140,6 +140,7 @@ def get_highscore_times(
 ) -> List[Tuple[str, float]]:
     if users is None:
         users = USER_NAMES.values()
+    lower_users = [u.lower() for u in users]
 
     if difficulty in ["beginner", "intermediate", "expert", "master"]:
         highscores = hs.filter_and_sort(
@@ -150,7 +151,7 @@ def get_highscore_times(
                 per_cell=per_cell,
             )
         )
-        times = {h.name: h.elapsed for h in highscores if h.name in users}
+        times = {h.name: h.elapsed for h in highscores if h.name.lower() in lower_users}
     else:
         assert difficulty is None
         times = dict.fromkeys(users, 0)
@@ -163,10 +164,14 @@ def get_highscore_times(
                     per_cell=per_cell,
                 )
             )
-            highscores = {h.name: h.elapsed for h in highscores if h.name in times}
+            highscores = {
+                h.name.lower(): h.elapsed
+                for h in highscores
+                if h.name.lower() in lower_users
+            }
             for name in list(times):
-                if name in highscores:
-                    times[name] += highscores[name]
+                if name.lower() in highscores:
+                    times[name] += highscores[name.lower()]
                 else:
                     times[name] += 1000
 
