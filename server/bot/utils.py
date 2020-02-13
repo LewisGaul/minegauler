@@ -157,23 +157,10 @@ def get_highscore_times(
         }
     else:
         assert difficulty is None
-        times = dict.fromkeys(users, 0)
-        for diff in ["beginner", "intermediate", "expert"]:
-            highscores = hs.filter_and_sort(
-                _get_highscores(
-                    difficulty=diff[0], drag_select=drag_select, per_cell=per_cell,
-                )
-            )
-            highscores = {
-                h.name.lower(): h.elapsed
-                for h in highscores
-                if h.name.lower() in lower_users
-            }
-            for name in list(times):
-                if name.lower() in highscores:
-                    times[name] += highscores[name.lower()]
-                else:
-                    times[name] += 1000
+        times = {
+            u: _get_combined_highscore(u, drag_select=drag_select, per_cell=per_cell)
+            for u in users
+        }
 
     return sorted(times.items(), key=lambda x: x[1])
 
@@ -204,17 +191,19 @@ def get_matchups(
 
 
 PlayerInfo = collections.namedtuple(
-    "PlayerInfo", "username, nickname, types_played, last_highscore"
+    "PlayerInfo", "username, nickname, combined_time, types_played, last_highscore"
 )
 
 
 def get_player_info(username: str) -> PlayerInfo:
-    highscores = _get_highscores(name=USER_NAMES[username])
+    name = USER_NAMES[username]
+    highscores = _get_highscores(name=name)
+    combined_time = _get_combined_highscore(name)
     last_highscore = max(h.timestamp for h in highscores) if highscores else None
     hs_types = len(
         {(h.difficulty.lower(), h.drag_select, h.per_cell) for h in highscores}
     )
-    return PlayerInfo(username, USER_NAMES[username], hs_types, last_highscore)
+    return PlayerInfo(username, name, combined_time, hs_types, last_highscore)
 
 
 # ------------------------------------------------------------------------------
@@ -228,6 +217,19 @@ def _strbool(b: bool) -> str:
 
 def _get_highscores(*args, **kwargs) -> Iterable[hs.HighscoreStruct]:
     return hs.get_highscores(hs.HighscoresDatabases.REMOTE, *args, **kwargs)
+
+
+def _get_combined_highscore(
+    name: str, *, per_cell: Optional[int] = None, drag_select: Optional[bool] = None
+) -> float:
+    total = 0
+    for diff in ["b", "i", "e"]:
+        all_highscores = _get_highscores(
+            name=name, drag_select=drag_select, per_cell=per_cell,
+        )
+        highscores = [h.elapsed for h in all_highscores if h.difficulty.lower() == diff]
+        total += min(highscores) if highscores else 1000
+    return total
 
 
 def _get_person_id(name_or_email: str) -> str:

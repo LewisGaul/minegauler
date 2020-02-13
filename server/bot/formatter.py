@@ -65,20 +65,25 @@ def format_player_highscores(
 
 
 def format_player_info(players: Iterable[PlayerInfo]) -> str:
+    headers = [
+        "Username",
+        "Nickname",
+        "Combined time",
+        "Types played",
+        "Last highscore",
+    ]
     data = [
         (
             p.username,
             p.nickname,
+            p.combined_time,
             f"{p.types_played:2d}/24",
             format_timestamp(p.last_highscore) if p.last_highscore else "None",
         )
-        for p in players
+        for p in sorted(players, key=lambda x: x.combined_time)
     ]
     return tabulate.tabulate(
-        data,
-        headers=["Username", "Nickname", "Types played", "Last highscore"],
-        tablefmt="presto",
-        stralign="center",
+        data, headers=headers, tablefmt="presto", stralign="center",
     )
 
 
