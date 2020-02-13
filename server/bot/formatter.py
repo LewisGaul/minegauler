@@ -26,7 +26,7 @@ def format_highscores(highscores: Iterable[hs.HighscoreStruct]) -> str:
 
 def format_highscore_times(highscores: Iterable[Tuple[str, float]]) -> str:
     lines = [
-        f"{i+1:2d}. {h[0][:10]:<10s}  {h[1]:.2f}" for i, h in enumerate(highscores)
+        f"{i+1:2d}. {h[0][:10]:<10s}  {h[1]:7.2f}" for i, h in enumerate(highscores)
     ]
     return "\n".join(lines)
 
