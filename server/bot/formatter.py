@@ -83,7 +83,12 @@ def format_player_info(players: Iterable[PlayerInfo]) -> str:
         for p in sorted(players, key=lambda x: x.combined_time)
     ]
     return tabulate.tabulate(
-        data, headers=headers, tablefmt="presto", stralign="center",
+        data,
+        headers=headers,
+        tablefmt="presto",
+        stralign="center",
+        floatfmt=".2f",
+        numalign="center",
     )
 
 
