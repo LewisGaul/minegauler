@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 
 USER_NAMES = dict()
 USER_NAMES_FILE = pathlib.Path(__file__).parent / "users.json"
+_NO_TAG_USERS = {}
 
 BOT_NAME = "minegaulerbot"
 _BOT_ACCESS_TOKEN = ""
@@ -125,7 +126,10 @@ def user_to_email(user: str) -> str:
 
 
 def tag_user(user: str) -> str:
-    return f"<@personEmail:{user_to_email(user)}|{user}>"
+    if user.strip() and user not in _NO_TAG_USERS:
+        return f"<@personEmail:{user_to_email(user)}|{user}>"
+    else:
+        return user
 
 
 def set_user_nickname(user: str, nickname: str) -> None:
