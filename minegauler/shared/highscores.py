@@ -238,7 +238,6 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     """Remote highscores database."""
 
     _USER = "admin"
-    _PASSWORD = os.environ.get("SQL_DB_PASSWORD")
     _HOST = "minegauler-highscores.cb4tvkuqujyi.eu-west-2.rds.amazonaws.com"
     _DB_NAME = "minegauler"
     _TABLE_NAME = "highscores"
@@ -268,6 +267,10 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     @property
     def conn(self) -> mysql.connector.MySQLConnection:
         return self._conn
+
+    @property
+    def _PASSWORD(self):
+        return os.environ.get("SQL_DB_PASSWORD")
 
     def get_highscores(
         self,
