@@ -235,12 +235,6 @@ class ArgParser(argparse.ArgumentParser):
 
 
 class BotMsgParser(ArgParser):
-    def add_username_arg(self, *, nargs: Union[int, str] = 1, allow_me=True):
-        choices = list(utils.USER_NAMES)
-        if allow_me:
-            choices.append("me")
-        self.add_positional_arg("username", nargs=nargs, choices=choices)
-
     def add_difficulty_arg(self):
         self.add_positional_arg(
             "difficulty", nargs="?", type=self._convert_difficulty_arg
@@ -450,7 +444,7 @@ def info(args, **kwargs):
 )
 def player(args, username: str, allow_markdown=False, **kwargs):
     parser = BotMsgParser()
-    parser.add_username_arg()
+    parser.add_positional_arg("username", choices=list(utils.USER_NAMES) + ["me"])
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
@@ -478,7 +472,7 @@ def player(args, username: str, allow_markdown=False, **kwargs):
         )
     ]
     lines.extend(
-        formatter.format_player_highscores(highscores, difficulty=args.difficulty)
+        formatter.format_player_highscores(list(highscores), difficulty=args.difficulty)
     )
 
     linebreak = "  \n" if allow_markdown else "\n"
@@ -536,14 +530,28 @@ def stats(args, **kwargs):
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
-def stats_players(args, **kwargs):
+def stats_players(args, username: str, allow_markdown=False, **kwargs):
     parser = BotMsgParser()
-    parser.add_username_arg(nargs="+")
+    parser.add_positional_arg(
+        "username", nargs="+", choices=list(utils.USER_NAMES) + ["me", "all"]
+    )
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
-    return "Player stats {}".format(", ".join(args.username))
+    if "all" in args.username:
+        if len(args.username) > 1:
+            raise InvalidArgsError("'all' should be specified without usernames")
+        users = utils.USER_NAMES.keys()
+    else:
+        users = {u if u != "me" else username for u in args.username}
+
+    player_info = [utils.get_player_info(u) for u in users]
+    lines = [formatter.format_player_info(player_info)]
+    if allow_markdown:
+        lines = ["```", *lines, "```"]
+
+    return "\n".join(lines)
 
 
 @helpstring("Get matchups for given players")
@@ -560,7 +568,9 @@ def matchups(
     **kwargs,
 ):
     parser = BotMsgParser()
-    parser.add_username_arg(nargs="+")
+    parser.add_positional_arg(
+        "username", nargs="+", choices=list(utils.USER_NAMES) + ["me"]
+    )
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
@@ -601,7 +611,9 @@ def best_matchups(
     args, username: str, allow_markdown=False, room_type=RoomType.DIRECT, **kwargs
 ):
     parser = BotMsgParser()
-    parser.add_username_arg(nargs="*")
+    parser.add_positional_arg(
+        "username", nargs="*", choices=list(utils.USER_NAMES) + ["me"]
+    )
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
@@ -640,14 +652,14 @@ def best_matchups(
 )
 def challenge(args, username: str, **kwargs):
     parser = BotMsgParser()
-    parser.add_username_arg(nargs="+", allow_me=False)
+    parser.add_positional_arg(
+        "username", nargs="+", choices=[u for u in utils.USER_NAMES if u != username]
+    )
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
-    names = {u for u in args.username if u != username}
-    if len(names) < 1:
-        raise InvalidArgsError("Need at least one other player's name")
+    names = {u for u in args.username}
 
     users_str = ", ".join(utils.tag_user(u) for u in names)
     diff_str = args.difficulty + " " if args.difficulty else ""
@@ -688,10 +700,10 @@ _COMMON_COMMANDS = {
     "help": None,
     "player": player,
     "ranks": ranks,
-    # "stats": {
-    #     None: stats,
-    #     "players": stats_players,
-    # },
+    "stats": {
+        # None: stats,
+        "players": stats_players,
+    },
     "matchups": matchups,
     "best-matchups": best_matchups,
 }

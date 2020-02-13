@@ -9,9 +9,11 @@ __all__ = (
     "USER_NAMES",
     "USER_NAMES_FILE",
     "Matchup",
+    "PlayerInfo",
     "get_matchups",
     "get_message",
     "get_highscore_times",
+    "get_player_info",
     "send_group_message",
     "send_message",
     "send_new_best_message",
@@ -144,11 +146,8 @@ def get_highscore_times(
 
     if difficulty in ["beginner", "intermediate", "expert", "master"]:
         highscores = hs.filter_and_sort(
-            hs.get_highscores(
-                hs.HighscoresDatabases.REMOTE,
-                difficulty=difficulty[0],
-                drag_select=drag_select,
-                per_cell=per_cell,
+            _get_highscores(
+                difficulty=difficulty[0], drag_select=drag_select, per_cell=per_cell,
             )
         )
         times = {
@@ -161,11 +160,8 @@ def get_highscore_times(
         times = dict.fromkeys(users, 0)
         for diff in ["beginner", "intermediate", "expert"]:
             highscores = hs.filter_and_sort(
-                hs.get_highscores(
-                    hs.HighscoresDatabases.REMOTE,
-                    difficulty=diff[0],
-                    drag_select=drag_select,
-                    per_cell=per_cell,
+                _get_highscores(
+                    difficulty=diff[0], drag_select=drag_select, per_cell=per_cell,
                 )
             )
             highscores = {
@@ -207,6 +203,20 @@ def get_matchups(
     return sorted(matchups, key=lambda x: x.percent)
 
 
+PlayerInfo = collections.namedtuple(
+    "PlayerInfo", "username, nickname, types_played, last_highscore"
+)
+
+
+def get_player_info(username: str) -> PlayerInfo:
+    highscores = _get_highscores(name=USER_NAMES[username])
+    last_highscore = max(h.timestamp for h in highscores) if highscores else None
+    hs_types = len(
+        {(h.difficulty.lower(), h.drag_select, h.per_cell) for h in highscores}
+    )
+    return PlayerInfo(username, USER_NAMES[username], hs_types, last_highscore)
+
+
 # ------------------------------------------------------------------------------
 # Internal
 # ------------------------------------------------------------------------------
@@ -214,6 +224,10 @@ def get_matchups(
 
 def _strbool(b: bool) -> str:
     return "True" if b else "False"
+
+
+def _get_highscores(*args, **kwargs) -> Iterable[hs.HighscoreStruct]:
+    return hs.get_highscores(hs.HighscoresDatabases.REMOTE, *args, **kwargs)
 
 
 def _get_person_id(name_or_email: str) -> str:

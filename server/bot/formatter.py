@@ -10,14 +10,17 @@ __all__ = (
     "format_kwargs",
     "format_matchups",
     "format_player_highscores",
+    "format_player_info",
 )
 
 import time
 from typing import Iterable, List, Mapping, Optional, Tuple
 
+import tabulate
+
 from minegauler.shared import highscores as hs
 
-from .utils import Matchup
+from .utils import Matchup, PlayerInfo
 
 
 def format_highscores(highscores: Iterable[hs.HighscoreStruct]) -> str:
@@ -59,6 +62,24 @@ def format_player_highscores(
             lines.append(line)
 
     return lines
+
+
+def format_player_info(players: Iterable[PlayerInfo]) -> str:
+    data = [
+        (
+            p.username,
+            p.nickname,
+            f"{p.types_played:2d}/24",
+            format_timestamp(p.last_highscore) if p.last_highscore else "None",
+        )
+        for p in players
+    ]
+    return tabulate.tabulate(
+        data,
+        headers=["Username", "Nickname", "Types played", "Last highscore"],
+        tablefmt="presto",
+        stralign="center",
+    )
 
 
 def format_kwargs(kwargs: Mapping) -> str:
