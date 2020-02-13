@@ -23,6 +23,9 @@ from minegauler.shared import highscores as hs
 from .utils import Matchup, PlayerInfo
 
 
+tabulate.PRESERVE_WHITESPACE = True
+
+
 def format_highscores(highscores: Iterable[hs.HighscoreStruct]) -> str:
     return format_highscore_times([(h.name, h.elapsed) for h in highscores])
 
@@ -69,13 +72,13 @@ def format_player_info(players: Iterable[PlayerInfo]) -> str:
         "Username",
         "Nickname",
         "Combined time",
-        "Types played",
+        "Modes played",
         "Last highscore",
     ]
     data = [
         (
             p.username,
-            p.nickname,
+            p.nickname[:10],
             p.combined_time,
             f"{p.types_played:2d}/24",
             format_timestamp(p.last_highscore) if p.last_highscore else "None",
@@ -87,8 +90,8 @@ def format_player_info(players: Iterable[PlayerInfo]) -> str:
         headers=headers,
         tablefmt="presto",
         stralign="center",
-        floatfmt=".2f",
         numalign="center",
+        floatfmt="7.2f",
     )
 
 

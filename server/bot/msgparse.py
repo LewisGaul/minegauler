@@ -525,19 +525,12 @@ def stats(args, **kwargs):
 
 
 @helpstring("Get player stats")
-@schema(
-    "stats players {all | <name> [<name> ...]} "
-    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
-    "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
-)
+@schema("stats players {all | <name> [<name> ...]}")
 def stats_players(args, username: str, allow_markdown=False, **kwargs):
     parser = BotMsgParser()
     parser.add_positional_arg(
         "username", nargs="+", choices=list(utils.USER_NAMES) + ["me", "all"]
     )
-    parser.add_difficulty_arg()
-    parser.add_per_cell_arg()
-    parser.add_drag_select_arg()
     args = parser.parse_args(args)
     if "all" in args.username:
         if len(args.username) > 1:
