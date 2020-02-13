@@ -166,7 +166,7 @@ class _SQLMixin:
         if drag_select is not None:
             conditions.append(f"drag_select={drag_select:d}")
         if name is not None:
-            conditions.append(f"name='{name}'")
+            conditions.append(f"LOWER(name)='{name.lower()}'")
         return "SELECT {} FROM highscores {} ORDER BY elapsed ASC".format(
             ", ".join(_highscore_fields),
             "WHERE " + " AND ".join(conditions) if conditions else "",
