@@ -6,6 +6,7 @@ February 2020, Lewis Gaul
 
 __all__ = (
     "BOT_NAME",
+    "NO_TAG_USERS",
     "USER_NAMES",
     "USER_NAMES_FILE",
     "Matchup",
@@ -40,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 USER_NAMES = dict()
 USER_NAMES_FILE = pathlib.Path(__file__).parent / "users.json"
-_NO_TAG_USERS = {}
+NO_TAG_USERS = {"_paula", "_felix", "_kunz", "esinghal"}
 
 BOT_NAME = "minegaulerbot"
 _BOT_ACCESS_TOKEN = ""

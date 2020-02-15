@@ -496,12 +496,11 @@ def ranks(args, **kwargs) -> str:
 
     times = utils.get_highscore_times(args.rank_type, args.drag_select, args.per_cell)
 
-    lines = []
-    lines.append(
+    lines = [
         "Rankings for {}".format(
             formatter.format_filters(args.rank_type, args.drag_select, args.per_cell)
         )
-    )
+    ]
     ranks = formatter.format_highscore_times(times)
     if allow_markdown:
         ranks = f"```\n{ranks}\n```"
@@ -646,7 +645,9 @@ def best_matchups(
 def challenge(args, username: str, **kwargs):
     parser = BotMsgParser()
     parser.add_positional_arg(
-        "username", nargs="+", choices=[u for u in utils.USER_NAMES if u != username]
+        "username",
+        nargs="+",
+        choices=set(utils.USER_NAMES) - {username} - utils.NO_TAG_USERS,
     )
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
