@@ -127,7 +127,7 @@ def user_to_email(user: str) -> str:
 
 
 def tag_user(user: str) -> str:
-    if user.strip() and user not in _NO_TAG_USERS:
+    if user.strip() and user not in NO_TAG_USERS:
         return f"<@personEmail:{user_to_email(user)}|{user}>"
     else:
         return user
