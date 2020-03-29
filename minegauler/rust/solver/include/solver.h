@@ -40,7 +40,7 @@ typedef enum {
     SOLVER_CELL_TWO_MINE,
     SOLVER_CELL_THREE_MINE,
     SOLVER_CELL_UNKNOWN,
-} solver_cell_contents;
+} solver_cell_contents_t;
 
 
 /*
@@ -57,9 +57,9 @@ typedef enum {
  *   cells.
  */
 typedef struct solver_board {
-    uint8_t               x_size;
-    uint8_t               y_size;
-    solver_cell_contents *cells;
+    uint8_t                 x_size;
+    uint8_t                 y_size;
+    solver_cell_contents_t *cells;
 } solver_board_t;
 
 

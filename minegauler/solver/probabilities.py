@@ -27,5 +27,18 @@ if __name__ == "__main__":
     ffi.cdef(_read_header(str(header_path)))
     lib = ffi.dlopen(str(lib_path))
     lib.hello()
-    rc = lib.calc_probs(ffi.NULL, ffi.NULL)
+
+    x, y = 3, 4
+    board_p = ffi.new("solver_board_t *")
+    cells_p = ffi.new("solver_cell_contents_t[20]")
+    board_p.x_size = x
+    board_p.y_size = y
+    board_p.cells = cells_p
+    probs_p = ffi.new("float[20]")
+    rc = lib.calc_probs(board_p, probs_p)
     print("return code:", rc)
+
+    probs = []
+    for i in range(x*y):
+        probs.append(probs_p[i])
+    print("Probs:", probs)

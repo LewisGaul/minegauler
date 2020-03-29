@@ -20,21 +20,26 @@ pub unsafe extern "C" fn calc_probs(
     c_board: *const bindings::solver_board_t,
     c_probs: *mut f32,
 ) -> bindings::retcode {
-    // Check args
-    // if c_board.is_null() || c_probs.is_null() {
-    //     return bindings::RC_INVALID_ARG;
-    // }
+    // Check args are non-null, and just hope the pointers are otherwise valid!
+    if c_board.is_null() || c_probs.is_null() {
+        eprintln!("Invalid NULL pointer passed in");
+        return bindings::RC_INVALID_ARG;
+    }
 
-    // We know the pointers are non-null, we just hope they are otherwise valid!
-    let board = c_board; //.read();
+    let board = c_board.read();
+    if board.x_size <= 0 || board.y_size <= 0 || board.cells.is_null() {
+        eprintln!("Invalid board arg");
+        return bindings::RC_INVALID_ARG;
+    }
+
+    // println!("Board: {} x {}", board.x_size, board.y_size);
     let probs: Vec<f32> = calc_probs_impl(board);
 
-    print!("Probs: ");
-    for p in probs {
-        print!("{} ", p);
-        // ptr::write(c_probs, p);
+    // println!("Probs: ");
+    for (i, p) in probs.iter().enumerate() {
+        // println!("{}- {}", i+1, p);
+        ptr::write(c_probs.add(i), *p);
     }
-    println!();
 
     bindings::RC_SUCCESS
 }
@@ -42,7 +47,7 @@ pub unsafe extern "C" fn calc_probs(
 // ----------------
 // Rust implementation
 
-fn calc_probs_impl(board: *const bindings::solver_board_t) -> Vec<f32> {
+fn calc_probs_impl(board: bindings::solver_board_t) -> Vec<f32> {
     vec![3.1, 4.5]
 }
 
