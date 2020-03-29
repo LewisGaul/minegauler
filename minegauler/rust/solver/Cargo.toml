@@ -1,0 +1,11 @@
+[package]
+name = "minegauler-solver"
+version = "0.1.0"
+authors = ["Lewis Gaul <lewis.gaul@gmail.com>"]
+
+[lib]
+name = "solver"
+crate-type = ["cdylib"]
+
+[dependencies]
+

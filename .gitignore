@@ -5,6 +5,7 @@ build/
 dist/
 *.egg-info/
 *.spec
+**/target/
 
 # Test-generated
 coverage/
