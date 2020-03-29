@@ -9,3 +9,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 
+[build-dependencies]
+bindgen = "0.53.2"
