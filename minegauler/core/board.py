@@ -42,7 +42,10 @@ class Board(utils.Grid):
     def __str__(self):
         return super().__str__(mapping={CellNum(0): "."})
 
-    def __setitem__(self, key, value):
+    def __getitem__(self, key) -> CellContentsType:
+        return super().__getitem__(key)
+
+    def __setitem__(self, key, value: CellContentsType):
         if not isinstance(value, CellContentsType):
             raise TypeError("Board can only contain CellContentsType instances")
         else:

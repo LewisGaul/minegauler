@@ -64,12 +64,6 @@ typedef struct solver_board {
 
 
 /*
- * @@@
- */
-void hello(void);
-
-
-/*
  * Function to calculate probabilities of a given board.
  *
  * Argument: board
@@ -77,8 +71,8 @@ void hello(void);
  *
  * Argument: probs
  *   INOUT - An array to fill in with the probabilities for each cell.
- *           The memory must be allocated by the caller, and the array must be
- *           of length corresponding to the number of cells.
+ *           The memory must be allocated (and is owned) by the caller, with the
+             array being of a length corresponding to the number of cells.
  *
  * Return:
  *   Return code.

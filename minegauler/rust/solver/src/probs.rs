@@ -10,11 +10,7 @@ use std::ptr;
 // ----------------
 // Exposed C API
 
-#[no_mangle]
-pub unsafe extern "C" fn hello() {
-    println!("Hello, world!");
-}
-
+/// See solver.h for the C API being implemented.
 #[no_mangle]
 pub unsafe extern "C" fn calc_probs(
     c_board: *const bindings::solver_board_t,
@@ -47,8 +43,38 @@ pub unsafe extern "C" fn calc_probs(
 // ----------------
 // Rust implementation
 
+/// Rust implementation of `calc_probs()`.
 fn calc_probs_impl(board: bindings::solver_board_t) -> Vec<f32> {
+    print_board(board);
     vec![3.1, 4.5]
+}
+
+// ----------------
+// Helpers
+
+fn print_board(board: bindings::solver_board_t) {
+    for i in 0..board.x_size {
+        for j in 0..board.y_size {
+            let offset = (i + board.x_size * j) as usize;
+            // print!("{} ", offset);
+            let val: bindings::solver_cell_contents_t;
+            unsafe {
+                val = board.cells.add(offset).read();
+            }
+            if val == 0 {
+                print!(". ");
+            } else if val >= 1 && val <= 8 {
+                print!("{} ", val);
+            } else if val == bindings::SOLVER_CELL_ONE_MINE {
+                print!("M ");
+            } else if val == bindings::SOLVER_CELL_UNKNOWN {
+                print!("# ");
+            } else {
+                print!("@ ");
+            }
+        }
+        println!();
+    }
 }
 
 // ----------------
