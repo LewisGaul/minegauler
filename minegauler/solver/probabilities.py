@@ -47,8 +47,7 @@ class SolverFFI(cffi.FFI):
         if rc != self.lib.RC_SUCCESS:
             raise RuntimeError(f"Return code: {rc}")
 
-        probs = [probs_p[i] for i in range(num_cells)]
-        print("Probs:", probs)
+        return Grid.from_flat_array([probs_p[i] for i in range(num_cells)], x, y)
 
     def _board_into_cells_array(self, board: Board, cells) -> None:
         number_names = {1: "one", 2: "two", 3: "three"}
@@ -60,13 +59,16 @@ class SolverFFI(cffi.FFI):
                 enum_name = "SOLVER_CELL_{}_MINE".format(number_names[val.num].upper())
                 cells[i] = getattr(self.lib, enum_name)
             elif isinstance(val, CellUnclicked):
-                cells[i] = self.lib.SOLVER_CELL_UNKNOWN
+                cells[i] = self.lib.SOLVER_CELL_UNCLICKED
             else:
                 raise ValueError(f"Unsupported board cell contents: {val}")
 
 
-board = Board(5, 5)
+board = Board(6, 4)
 board[(0, 0)] = CellMine(1)
 board[(2, 2)] = CellNum(1)
 board[(2, 3)] = CellNum(2)
-SolverFFI().calc_probs(board)
+print(board)
+print()
+probs = SolverFFI().calc_probs(board)
+print("Probs:", probs, sep="\n")

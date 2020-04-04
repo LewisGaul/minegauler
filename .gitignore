@@ -5,7 +5,8 @@ build/
 dist/
 *.egg-info/
 *.spec
-**/target/
+target/
+Cargo.lock
 
 # Test-generated
 coverage/

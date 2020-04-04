@@ -23,7 +23,7 @@
  * Item: SOLVER_CELL_[NUMBER]_MINE
  *   Cell displaying a number of mines.
  *
- * Item: SOLVER_CELL_UNKNOWN
+ * Item: SOLVER_CELL_UNCLICKED
  *   Unknown cell contents (unclicked).
  */
 typedef enum {
@@ -39,7 +39,7 @@ typedef enum {
     SOLVER_CELL_ONE_MINE,
     SOLVER_CELL_TWO_MINE,
     SOLVER_CELL_THREE_MINE,
-    SOLVER_CELL_UNKNOWN,
+    SOLVER_CELL_UNCLICKED,
 } solver_cell_contents_t;
 
 
@@ -72,7 +72,7 @@ typedef struct solver_board {
  * Argument: probs
  *   INOUT - An array to fill in with the probabilities for each cell.
  *           The memory must be allocated (and is owned) by the caller, with the
-             array being of a length corresponding to the number of cells.
+ *           array being of a length corresponding to the number of cells.
  *
  * Return:
  *   Return code.

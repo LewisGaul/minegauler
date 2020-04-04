@@ -5,6 +5,9 @@
  */
 
 use bindings;
+use utils::{Board, BoardProbs, CellContents};
+
+use std::convert::TryFrom;
 use std::ptr;
 
 // ----------------
@@ -18,21 +21,29 @@ pub unsafe extern "C" fn calc_probs(
 ) -> bindings::retcode {
     // Check args are non-null, and just hope the pointers are otherwise valid!
     if c_board.is_null() || c_probs.is_null() {
-        eprintln!("Invalid NULL pointer passed in");
+        eprintln!("ERROR: Invalid NULL pointer passed in");
         return bindings::RC_INVALID_ARG;
     }
 
-    let board = c_board.read();
-    if board.x_size <= 0 || board.y_size <= 0 || board.cells.is_null() {
-        eprintln!("Invalid board arg");
+    // Convert C board struct to Rust struct.
+    let c_board: bindings::solver_board_t = c_board.read();
+    if c_board.cells.is_null() {
+        eprintln!("ERROR: Invalid board arg");
         return bindings::RC_INVALID_ARG;
     }
 
+    let board = match Board::try_from(c_board) {
+        Ok(b) => b,
+        Err(_) => {
+            eprintln!("ERROR: Invalid board arg");
+            return bindings::RC_INVALID_ARG;
+        }
+    };
     // println!("Board: {} x {}", board.x_size, board.y_size);
-    let probs: Vec<f32> = calc_probs_impl(board);
+    let probs = board.calc_probs();
 
     // println!("Probs: ");
-    for (i, p) in probs.iter().enumerate() {
+    for (i, p) in probs.cells().iter().enumerate() {
         // println!("{}- {}", i+1, p);
         ptr::write(c_probs.add(i), *p);
     }
@@ -43,37 +54,52 @@ pub unsafe extern "C" fn calc_probs(
 // ----------------
 // Rust implementation
 
-/// Rust implementation of `calc_probs()`.
-fn calc_probs_impl(board: bindings::solver_board_t) -> Vec<f32> {
-    print_board(board);
-    vec![3.1, 4.5]
+impl Board {
+    /// Rust implementation of `calc_probs()` API.
+    fn calc_probs(&self) -> BoardProbs {
+        println!("{}", self);
+        let mut probs_board = BoardProbs::new(self.x_size(), self.y_size());
+        let cells = probs_board.cells_mut();
+        cells[3] = 0.2;
+        cells[4] = 0.7;
+        cells[8] = 0.1;
+        probs_board
+    }
 }
 
 // ----------------
 // Helpers
 
-fn print_board(board: bindings::solver_board_t) {
-    for i in 0..board.x_size {
-        for j in 0..board.y_size {
-            let offset = (i + board.x_size * j) as usize;
-            // print!("{} ", offset);
-            let val: bindings::solver_cell_contents_t;
-            unsafe {
-                val = board.cells.add(offset).read();
+impl TryFrom<bindings::solver_cell_contents_t> for CellContents {
+    type Error = ();
+
+    fn try_from(c_contents: bindings::solver_cell_contents_t) -> Result<Self, Self::Error> {
+        use bindings::*;
+        match c_contents {
+            SOLVER_CELL_UNCLICKED => Ok(Self::Unclicked),
+            0..=SOLVER_CELL_EIGHT => Ok(Self::Num(c_contents)),
+            SOLVER_CELL_ONE_MINE | SOLVER_CELL_TWO_MINE | SOLVER_CELL_THREE_MINE => {
+                Ok(Self::Mine(c_contents - SOLVER_CELL_ONE_MINE + 1))
             }
-            if val == 0 {
-                print!(". ");
-            } else if val >= 1 && val <= 8 {
-                print!("{} ", val);
-            } else if val == bindings::SOLVER_CELL_ONE_MINE {
-                print!("M ");
-            } else if val == bindings::SOLVER_CELL_UNKNOWN {
-                print!("# ");
-            } else {
-                print!("@ ");
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<bindings::solver_board_t> for Board {
+    type Error = ();
+
+    fn try_from(c_board: bindings::solver_board_t) -> Result<Self, Self::Error> {
+        let mut board = Self::new(c_board.x_size as u32, c_board.y_size as u32);
+        let cells = board.cells_mut();
+        unsafe {
+            for i in 0..(c_board.x_size * c_board.y_size) as usize {
+                let c_contents = c_board.cells.add(i).read();
+                let contents = CellContents::try_from(c_contents)?;
+                cells[i] = contents;
             }
         }
-        println!();
+        Ok(board)
     }
 }
 

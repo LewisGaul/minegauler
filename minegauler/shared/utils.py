@@ -119,6 +119,29 @@ class Grid(list):
             raise TypeError("Grid keys should be tuple coordinates of the form (0, 1)")
 
     @classmethod
+    def from_flat_array(cls, array, x_size, y_size):
+        """
+        Create an instance using a flat array.
+
+        Arguments:
+        array ([object, ...])
+            The array to use in creating the grid instance. Must have a length
+            matching the given dimenions.
+        x_size (int > 0)
+            The number of columns.
+        y_size (int > 0)
+            The number of rows.
+
+        Return: Grid
+            The resulting grid.
+        """
+        grid = cls(x_size, y_size)
+        for i, val in enumerate(array):
+            x, y = i % x_size, i // x_size
+            grid[(x, y)] = val
+        return grid
+
+    @classmethod
     def from_2d_array(cls, array):
         """
         Create an instance using a 2-dimensional array.
