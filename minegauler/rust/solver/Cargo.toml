@@ -11,3 +11,6 @@ crate-type = ["cdylib"]
 
 [build-dependencies]
 bindgen = "0.53.2"
+
+[dev-dependencies]
+cool_asserts = "1.0.2"

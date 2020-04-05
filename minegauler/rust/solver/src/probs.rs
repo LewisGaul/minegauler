@@ -43,30 +43,13 @@ pub unsafe extern "C" fn calc_probs(
     let probs: BoardProbs = board.calc_probs();
 
     // println!("Probs: ");
-    for i in 0..probs.num_cells() as usize {
-        let p: &f32 = probs.index_to_coord(i).and_then(|r| probs.cell(r)).unwrap();
+    for (i, (_, p)) in probs.iter_cells().iter().enumerate() {
         // println!("{}- {}", i+1, p);
-        ptr::write(c_probs.add(i), *p);
+        ptr::write(c_probs.add(i), **p);
     }
 
     bindings::RC_SUCCESS
 }
-
-// -----------------------------------------------------------------------------
-// Rust implementation
-
-//impl Board {
-//    /// Rust implementation of `calc_probs()` API.
-//    fn calc_probs(&self) -> BoardProbs {
-//        println!("{}", self);
-//        let mut probs_board = BoardProbs::new(self.x_size(), self.y_size());
-//        let cells = probs_board.cells_mut();
-//        cells[3] = 0.2;
-//        cells[4] = 0.7;
-//        cells[8] = 0.1;
-//        probs_board
-//    }
-//}
 
 // -----------------------------------------------------------------------------
 // Helpers
@@ -96,7 +79,7 @@ impl TryFrom<bindings::solver_board_t> for Board {
             for i in 0..(c_board.x_size * c_board.y_size) as usize {
                 let c_contents = c_board.cells.add(i).read();
                 let contents = CellContents::try_from(c_contents)?;
-                board.set_cell(board.index_to_coord(i).unwrap(), contents);
+                board.set_cell(board.coord_from_index(i), contents);
             }
         }
         Ok(board)
