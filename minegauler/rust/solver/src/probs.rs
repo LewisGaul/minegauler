@@ -10,7 +10,7 @@ use utils::{Board, BoardProbs, CellContents};
 use std::convert::TryFrom;
 use std::ptr;
 
-// ----------------
+// -----------------------------------------------------------------------------
 // Exposed C API
 
 /// See solver.h for the C API being implemented.
@@ -40,10 +40,11 @@ pub unsafe extern "C" fn calc_probs(
         }
     };
     // println!("Board: {} x {}", board.x_size, board.y_size);
-    let probs = board.calc_probs();
+    let probs: BoardProbs = board.calc_probs();
 
     // println!("Probs: ");
-    for (i, p) in probs.cells().iter().enumerate() {
+    for i in 0..probs.num_cells() as usize {
+        let p: &f32 = probs.index_to_coord(i).and_then(|r| probs.cell(r)).unwrap();
         // println!("{}- {}", i+1, p);
         ptr::write(c_probs.add(i), *p);
     }
@@ -51,23 +52,23 @@ pub unsafe extern "C" fn calc_probs(
     bindings::RC_SUCCESS
 }
 
-// ----------------
+// -----------------------------------------------------------------------------
 // Rust implementation
 
-impl Board {
-    /// Rust implementation of `calc_probs()` API.
-    fn calc_probs(&self) -> BoardProbs {
-        println!("{}", self);
-        let mut probs_board = BoardProbs::new(self.x_size(), self.y_size());
-        let cells = probs_board.cells_mut();
-        cells[3] = 0.2;
-        cells[4] = 0.7;
-        cells[8] = 0.1;
-        probs_board
-    }
-}
+//impl Board {
+//    /// Rust implementation of `calc_probs()` API.
+//    fn calc_probs(&self) -> BoardProbs {
+//        println!("{}", self);
+//        let mut probs_board = BoardProbs::new(self.x_size(), self.y_size());
+//        let cells = probs_board.cells_mut();
+//        cells[3] = 0.2;
+//        cells[4] = 0.7;
+//        cells[8] = 0.1;
+//        probs_board
+//    }
+//}
 
-// ----------------
+// -----------------------------------------------------------------------------
 // Helpers
 
 impl TryFrom<bindings::solver_cell_contents_t> for CellContents {
@@ -91,19 +92,18 @@ impl TryFrom<bindings::solver_board_t> for Board {
 
     fn try_from(c_board: bindings::solver_board_t) -> Result<Self, Self::Error> {
         let mut board = Self::new(c_board.x_size as u32, c_board.y_size as u32);
-        let cells = board.cells_mut();
         unsafe {
             for i in 0..(c_board.x_size * c_board.y_size) as usize {
                 let c_contents = c_board.cells.add(i).read();
                 let contents = CellContents::try_from(c_contents)?;
-                cells[i] = contents;
+                board.set_cell(board.index_to_coord(i).unwrap(), contents);
             }
         }
         Ok(board)
     }
 }
 
-// ----------------
+// -----------------------------------------------------------------------------
 // Tests
 
 #[cfg(test)]
