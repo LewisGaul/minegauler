@@ -43,9 +43,9 @@ pub unsafe extern "C" fn calc_probs(
     let probs: BoardProbs = board.calc_probs();
 
     // println!("Probs: ");
-    for (i, (_, p)) in probs.iter_cells().iter().enumerate() {
+    for (i, (_, p)) in probs.iter_cells().enumerate() {
         // println!("{}- {}", i+1, p);
-        ptr::write(c_probs.add(i), **p);
+        ptr::write(c_probs.add(i), *p);
     }
 
     bindings::RC_SUCCESS
@@ -96,7 +96,7 @@ mod test {
     #[test]
     fn calc_probs_invalid_args() {
         unsafe {
-            let rc = calc_probs(ptr::null(), ptr::null_mut());
+            let rc = super::calc_probs(ptr::null(), ptr::null_mut());
             assert_eq!(rc, bindings::RC_INVALID_ARG);
         }
     }

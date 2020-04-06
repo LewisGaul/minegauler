@@ -4,8 +4,9 @@ use std::cmp::min;
 use std::collections::HashSet;
 use std::default::Default;
 use std::fmt;
+use std::vec;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub enum CellContents {
     Unclicked,
     Num(u32),
@@ -24,8 +25,21 @@ pub struct Grid<T: Clone + Default> {
     cells: Vec<T>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
 pub struct Coord(pub u32, pub u32);
+
+impl fmt::Display for Coord {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "({}, {})", self.0, self.1)
+    }
+}
+
+#[cfg(test)]
+impl fmt::Debug for Coord {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Coord({}, {})", self.0, self.1)
+    }
+}
 
 /// Grid implementation
 ///
@@ -55,7 +69,7 @@ impl<T: Clone + Default> Grid<T> {
         self.x_size * self.y_size
     }
 
-    pub fn cell(&self, coord: &Coord) -> &T {
+    pub fn cell(&self, coord: Coord) -> &T {
         self.check_coord(&coord);
         &self.cells[self.coord_to_index(&coord)]
     }
@@ -70,15 +84,15 @@ impl<T: Clone + Default> Grid<T> {
         vec
     }
 
-    pub fn iter_cells(&self) -> Vec<(Coord, &T)> {
+    pub fn iter_cells(&self) -> vec::IntoIter<(Coord, &T)> {
         let mut vec = Vec::new();
         for y in 0..self.y_size {
             for x in 0..self.x_size {
                 let coord = Coord(x, y);
-                vec.push((coord, self.cell(&coord)));
+                vec.push((coord, self.cell(coord)));
             }
         }
-        vec
+        vec.into_iter()
     }
 
     pub fn has_coord(&self, coord: &Coord) -> bool {
@@ -109,18 +123,18 @@ impl<T: Clone + Default> Grid<T> {
     }
 
     /// Get a list of the coordinates of neighbouring cells.
-    pub fn get_neighbours(&self, coord: &Coord) -> HashSet<Coord> {
-        self.check_coord(coord);
+    pub fn get_neighbours(&self, coord: Coord) -> HashSet<Coord> {
+        self.check_coord(&coord);
         let Coord(x, y) = coord;
-        let x_min = if *x >= 1 { x - 1 } else { 0 };
+        let x_min = if x >= 1 { x - 1 } else { 0 };
         let x_max = min(self.x_size - 1, x + 1);
-        let y_min = if *y >= 1 { y - 1 } else { 0 };
+        let y_min = if y >= 1 { y - 1 } else { 0 };
         let y_max = min(self.y_size - 1, y + 1);
 
         let mut nbrs = HashSet::new();
         for j in y_min..=y_max {
             for i in x_min..=x_max {
-                if (*x, *y) != (i, j) {
+                if (x, y) != (i, j) {
                     nbrs.insert(Coord(i, j));
                 }
             }
@@ -138,7 +152,7 @@ impl fmt::Display for Board {
         // write!() macro is expecting.
         for j in 0..self.y_size {
             for i in 0..self.x_size {
-                let cell = &self.cell(&Coord(i, j));
+                let cell = &self.cell(Coord(i, j));
                 let ch: String; // Character representation
                 match cell {
                     CellContents::Unclicked => ch = format!("#"),
@@ -203,11 +217,11 @@ mod test {
         fn get_neighbours() {
             let grid = Grid::<u32>::new(5, 3);
             assert_eq!(
-                grid.get_neighbours(&Coord(0, 0)),
+                grid.get_neighbours(Coord(0, 0)),
                 HashSet::from_iter(vec![Coord(1, 0), Coord(0, 1), Coord(1, 1)])
             );
             assert_eq!(
-                grid.get_neighbours(&Coord(2, 1)),
+                grid.get_neighbours(Coord(2, 1)),
                 HashSet::from_iter(vec![
                     Coord(1, 0),
                     Coord(1, 1),
@@ -220,7 +234,7 @@ mod test {
                 ])
             );
             assert_eq!(
-                grid.get_neighbours(&Coord(4, 1)),
+                grid.get_neighbours(Coord(4, 1)),
                 HashSet::from_iter(vec![
                     Coord(3, 0),
                     Coord(3, 1),
