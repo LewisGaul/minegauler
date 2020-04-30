@@ -1,7 +1,9 @@
 # Design
 
+This document serves as a high-level design of the Minegauler project as a whole and a place to reason with available options.
 
-### Core Minesweeper Classes
+
+## Core
 
  - `Minefield`  
    Primarily contains the placement of mines in a grid of given dimensions.
@@ -93,3 +95,33 @@ track arbitrary highscore data, or the frontend should be responsible for
 handling highscores. Currently the frontend is made responsible, meaning the
 core has no interaction with highscores (all logic is in the `highscores`
 module anyway).
+
+
+## Solver
+
+The computationally intensive logic of the solver is compiled to a C library to be called from Python.
+
+
+### Probability Calculator
+
+The probability calculator takes in a minesweeper board in an intermediate state and returns a grid of probabilities for the unclicked cells of the board. The probability calculation we're interested in is the probability of each unclicked cell containing *at least one* mine. A similar method can be used for similar calculations, however, such as finding the expected number of mines in each of the cells.
+
+The algorithm for calculating the probabilities has many steps, with some of them being quite slow to compute. See [Minesweeper Probabilities](./Minesweeper%20Probabilities.pdf) for more details of the calculations.
+
+ 1. Find the equivalence groups of cells next to revealed numbers (this is optional, it would be just as valid to treat each cell as its own 'group' - grouping equivalent cells together is just a relatively simple way to optimise later steps). The unclicked cells with no neighbouring revealed numbers can be treated as a single equivalence group.
+ 2. Find all possible configurations of mines in the equivalence groups.
+ 3. For each configuration, calculate its relative probability (this will require calculation of the number of ways to arrange mines within the equivalence groups).
+ 4. Divide the relative probabilities by the sum of all relative probabilities to obtain the actual probabilities of each configuration occurring.
+ 5. Given a configuration (a fixed number mines in each group), for each group calculate the probability of a single cell within the group containing at least one mine. Sum up these probabilities for each configuration, weighting by the probability of the configurations occurring.
+
+A brief discussion of the complexity of these steps is given below - for an implementation-level design see [Solver Design](./solver-design.md).
+
+
+#### Step 1 - Finding equivalance groups
+
+This step is fairly straightforward and quick, just loop over the cells and characterise them by the number cells they're adjacent to.
+
+
+#### Step 2 - Finding mine configurations
+
+This is by far the most complex step, both computationally and in terms of the algorithm.
