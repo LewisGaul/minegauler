@@ -20,6 +20,7 @@ GameFlagMode (Enum)
 
 import enum
 import functools
+from typing import Type
 
 
 # ------------------------------------------------------------------------------
@@ -107,7 +108,7 @@ class CellMineType(_NumericCellContentsMixin, CellContentsType):
             raise ValueError("Mine-type cell contents must represent one or more mines")
 
     @staticmethod
-    def get_class_from_char(char):
+    def get_class_from_char(char) -> Type["CellMineType"]:
         """
         Get the class of mine-like cell contents using the character
         representation.

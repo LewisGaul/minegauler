@@ -52,7 +52,7 @@ fn find_numbers(board: &Board) -> Vec<Number> {
         let mines: u32 = all_nbrs
             .iter()
             .filter_map(|c| {
-                if let CellContents::Mine(n) = *board.cell(*c) {
+                if let &CellContents::Mine(n) = board.cell(*c) {
                     Some(n)
                 } else {
                     None

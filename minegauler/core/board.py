@@ -22,8 +22,10 @@ from ..typing import Coord_T
 
 class Board(utils.Grid):
     """
-    Representation of a minesweeper board. To be filled with instances of
-    CellContentsType.
+    Representation of a minesweeper board.
+
+    Cells accessed by coordinate indexing, e.g. board[(x, y)], where (0, 0) is
+    the top-left corner. May only contain instances of CellContentsType.
     """
 
     def __init__(self, x_size: int, y_size: int):
@@ -37,7 +39,7 @@ class Board(utils.Grid):
         super().__init__(x_size, y_size, fill=CellUnclicked())
 
     def __repr__(self):
-        return f"<{self.x_size}x{self.y_size} board>"
+        return f"<{self.x_size} x {self.y_size} board>"
 
     def __str__(self):
         return super().__str__(mapping={CellNum(0): "."})
@@ -52,7 +54,7 @@ class Board(utils.Grid):
             super().__setitem__(key, value)
 
     @classmethod
-    def from_2d_array(cls, array):
+    def from_2d_array(cls, array: Iterable[Iterable]) -> "Board":
         """
         Create a minesweeper board from a 2-dimensional array of string
         representations for cell contents.
@@ -68,19 +70,33 @@ class Board(utils.Grid):
         ValueError
             - Invalid string representation of cell contents.
         """
+        try:
+            return super().from_2d_array(array)
+        except TypeError:
+            pass
         grid = utils.Grid.from_2d_array(array)
         board = cls(grid.x_size, grid.y_size)
         for c in grid.all_coords:
-            if type(grid[c]) is int:
-                board[c] = CellNum(grid[c])
-            elif type(grid[c]) is str and len(grid[c]) == 2:
-                char, num = grid[c]
+            cell = grid[c]
+            if type(cell) is int:
+                board[c] = CellNum(cell)
+            elif cell == CellUnclicked.char:
+                pass
+            elif type(cell) is str and 1 <= len(cell) <= 2:
+                if len(cell) == 1:
+                    char, num = cell, 1
+                else:
+                    char, num = cell
                 board[c] = CellMineType.get_class_from_char(char)(int(num))
-            elif grid[c] != CellUnclicked.char:
+            else:
                 raise ValueError(
-                    f"Unknown cell contents representation in cell {c}: " f"{grid[c]}"
+                    f"Unknown cell contents representation in cell {c}: {cell}"
                 )
         return board
+
+    @classmethod
+    def from_str(cls, board: str) -> "Board":
+        return cls.from_2d_array(map(lambda s: s.split, board.splitlines()))
 
     def reset(self):
         """Reset the board to the initial state."""

@@ -144,6 +144,7 @@ impl<T: Clone + Default> Grid<T> {
 }
 
 pub type Board = Grid<CellContents>;
+
 pub type BoardProbs = Grid<f32>;
 
 impl fmt::Display for Board {

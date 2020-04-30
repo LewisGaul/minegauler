@@ -76,7 +76,7 @@ impl TryFrom<bindings::solver_board_t> for Board {
     fn try_from(c_board: bindings::solver_board_t) -> Result<Self, Self::Error> {
         let mut board = Self::new(c_board.x_size as u32, c_board.y_size as u32);
         unsafe {
-            for i in 0..(c_board.x_size * c_board.y_size) as usize {
+            for i in 0..board.num_cells() as usize {
                 let c_contents = c_board.cells.add(i).read();
                 let contents = CellContents::try_from(c_contents)?;
                 board.set_cell(board.coord_from_index(i), contents);
