@@ -425,6 +425,25 @@ class MinegaulerGUI(
         # - Probabilities (F5)
         # - Auto flag (Ctrl+F)
         # - Auto click (Ctrl+Enter)
+        def solve():
+            import sys
+            import time as tm
+            from ..solver.logic import Solver
+
+            start = tm.time()
+            s = Solver(self._ctrlr.board, self._ctrlr.get_game_info().mines)
+            try:
+                configs = s.find_configs()
+                end = tm.time()
+            except Exception as e:
+                print(self._ctrlr.board)
+                raise
+            else:
+                print("\n".join(map(str, configs)))
+                print("Found {} configs in {:.2f}s".format(len(configs), end - start))
+
+        solver_act = self._game_menu.addAction("Solver", solve)
+        solver_act.setShortcut("F5")
 
         # Highscores (F6)
         highscores_act = self._game_menu.addAction(
