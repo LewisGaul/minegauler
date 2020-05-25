@@ -6,13 +6,17 @@
 Contains class for minesweeper fields, which has a size attribute. The following
 are equivalent: beginner/b/1/(8,8), intermediate/i/2/(16,16), expert/e/3/(16,30).
 It has functions to create (manually and randomly) the grid of mines, and to
-play the game by entering coordinates in the shell."""
+play the game by entering coordinates in the shell.
+"""
 
-import numpy as np
 import re
 import time as tm
 
+import numpy as np
+
+
 default_mines = {(8,8):10, (16,16):40, (16,30):99, (30,16):99}
+
 
 class Minefield(object):
     def __init__(self, shape=(16,30), mines_per_cell=1):
@@ -102,7 +106,7 @@ class Minefield(object):
         
     def final_grid(self):
         final_grid = -9 * self.mines_grid
-        for coord in np.transpose(np.nonzero(-(self.mines_grid>0))):
+        for coord in np.transpose(np.nonzero(~(self.mines_grid>0))):
             entry = 0
             for k in self.neighbours(tuple(coord)):
                 if self.mines_grid[k] > 0:

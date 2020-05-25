@@ -28,17 +28,20 @@ Add overlap layout option.
 -Sort option for numbers to display distance TO a mine.
 Add option for wrap-around detection.
 Add detection of 2.5.
-Add third dimension."""
+Add third dimension.
+"""
 
-import numpy as np
+import os.path
+import threading
 import time as tm
 from Tkinter import *
+
+import numpy as np
+# This has to be imported after Tkinter to overwrite its 'Image' class ;)
 from PIL import Image
-import threading
-import os.path
 
 
-directory = r'C:\Users\User\Skydrive\Documents\Python\minesweeper'
+directory = os.path.dirname(__file__)
 default_settings = {'per_cell': 1, 'first_success': False, 'mines': 10, 'detection': 1, 'shape': (8, 8), 'difficulty': 'b', 'lives': 1, 'drag_click': 'off', 'button_size': 16, 'distance_to': False}
 settings_order = ['difficulty', 'per_cell', 'detection', 'drag_click', 'lives']
 highscore_order = ['Name', 'type', '3bv', 'other', 'Date']
@@ -68,6 +71,7 @@ colours = dict([(1,'blue'),
 cellfont = ('Times', 9, 'bold')
 mineflags = ["F", "B", "C", "D", "E", "G", "H", "J", "K", "M"]
 minesymbols = ['*', ':', '%', '#', '&', '$']
+
 
 class Minefield(object):
     def __init__(self, shape=(16,30), per_cell=1, detection=1, distance_to=False, create='auto'):
@@ -331,7 +335,7 @@ class Minefield(object):
 class Game(Minefield):
     def __init__(self, play=True):
         try:
-            with open(directory + r'\Settings.txt', 'r') as f:
+            with open(os.path.join(directory, 'Settings.txt'), 'r') as f:
                 settings = eval(f.read())
         except:
             settings = default_settings
@@ -351,7 +355,7 @@ class Game(Minefield):
         self.highscores = dict()
         try:
             for d in ['Beginner', 'Intermediate', 'Expert']:
-                with open(directory + '\\' + d + r'\highscores6.txt', 'r') as f:
+                with open(os.path.join(directory, d, 'highscores6.txt'), 'r') as f:
                     self.highscores.update(eval(f.read()))
         except:
             pass #Will be created when needed.
@@ -542,11 +546,11 @@ class Game(Minefield):
                 Label(window, text=name, font=('times', 9, 'bold')).grid(row=row, column=1)
                 self.focus = window
                 #Do not overwrite the main file until data is stored in other file.
-                with open(directory + '\\' + dict(difficulties_list)[self.difficulty] + r'\highscores6.txt', 'r') as f:
+                with open(os.path.join(directory, dict(difficulties_list)[self.difficulty], 'highscores6.txt'), 'r') as f:
                     old_highscores = f.read()
-                with open(directory + '\\' + dict(difficulties_list)[self.difficulty] + r'\highscorescopy.txt', 'w') as f:
+                with open(os.path.join(directory, dict(difficulties_list)[self.difficulty], 'highscorescopy.txt'), 'w') as f:
                     f.write(old_highscores)
-                with open(directory + '\\' + dict(difficulties_list)[self.difficulty] + r'\highscores6.txt', 'w') as f:
+                with open(os.path.join(directory, dict(difficulties_list)[self.difficulty], 'highscores6.txt'), 'w') as f:
                     f.write(str(dict([(k, v) for (k, v) in self.highscores.items() if k[0] == self.difficulty])))
             row = 3
             for d in highscores:
@@ -1040,7 +1044,7 @@ class Game(Minefield):
                         b['relief'] = 'raised'
                         im_size = self.button_size/2
                         for i in ['mine', 'redmine', 'bluemine']:
-                            im_path = directory + '\\Images\\' + i
+                            im_path = os.path.join(directory, 'Images', i)
                             if not os.path.isfile(im_path + str(im_size) + '.ppm'):
                                 #Image() is from PIL, used to convert/resize the image.
                                 im = Image.open(im_path + '.png')
@@ -1059,16 +1063,16 @@ class Game(Minefield):
                                     buttontexts[b1].set("X")
                                 elif self.grid[c] >= -1 and self.final_grid[c] < -7:
                                     buttontexts[b1].set(minesymbols[-self.final_grid[c]/9 - 1])
-                                    b1.image = PhotoImage(file=directory + '\\Images\\mine' + str(im_size) + '.ppm')
+                                    b1.image = PhotoImage(file=os.path.join(directory, 'Images', 'mine' + str(im_size) + '.ppm'))
                                     b1['image'] = b1.image
-                            b.image = PhotoImage(file=directory + '\\Images\\redmine' + str(im_size) + '.ppm')
+                            b.image = PhotoImage(file=os.path.join(directory, 'Images', 'redmine' + str(im_size) + '.ppm'))
                             b['image'] = b.image
                             b['bg'] = '#%02x%02x%02x'%(255,50,50)
                             return
                         else:
                             self.grid[coord] = self.final_grid[coord]
                             buttontexts[b].set(minesymbols[-self.final_grid[coord]/9-1])
-                            b.image = PhotoImage(file=directory + '\\Images\\bluemine' + str(im_size) + '.ppm')
+                            b.image = PhotoImage(file=os.path.join(directory, '..', 'Images', 'bluemine' + str(im_size) + '.ppm'))
                             b['image'] = b.image
                             b['bg'] = '#%02x%02x%02x'%(120,120,255)
                             mines_var.set("%03d" % (self.mines_grid.sum() + np.where(self.grid<-1, self.grid, 0).sum()/9))
@@ -1274,7 +1278,7 @@ class Game(Minefield):
         settings = dict()
         for s in default_settings:
             settings[s] = getattr(self, s)
-        with open(directory + r'\Settings.txt', 'w') as f:
+        with open(os.path.join(directory, 'Settings.txt'), 'w') as f:
             f.write(str(settings))
 
         tm.sleep(0.2)
@@ -1322,16 +1326,19 @@ def prettify_grid(array, do_print=False):
         else:
             return ret
 
+
 class PlayThread(threading.Thread):
     def __init__(self, threadID, minefield, runargs):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.runargs = runargs
         self.minefield = minefield
+
     def run(self):
         print "Thread {} for playing the game is running.".format(self.threadID)
         self.minefield.play(*self.runargs)
         print "Thread {} ended.".format(self.threadID)
+
 
 class DispThread(threading.Thread):
     #Not used.
@@ -1340,10 +1347,12 @@ class DispThread(threading.Thread):
         self.threadID = threadID
         self.runargs = runargs
         self.minefield = minefield
+
     def run(self):
         print "Thread {} for displaying grids is running.".format(self.threadID)
         self.minefield.display_grid(*self.runargs)
         print "Thread {} ended.".format(self.threadID)
+
 
 class TimerThread(threading.Thread):
     def __init__(self, threadID, game, timervar):
@@ -1351,6 +1360,7 @@ class TimerThread(threading.Thread):
         self.threadID = threadID
         self.game = game
         self.timervar = timervar
+
     def run(self):
         print "Thread %d for the timer is running." % self.threadID
         self.game.keeptimer = True
@@ -1374,5 +1384,3 @@ if __name__ == '__main__':
     g = Game('i')
     #g.thread_play()
     #display_grid(Minefield(per_cell=3).mines_grid, 1)
-
-

@@ -19,26 +19,38 @@ Add 'overlap' layout option.
 -Add option for wrap-around detection.
 Add detection of 2.5.
 Fix occasional crash on create new game.
--Fix 'RunTimeError maximum recursion depth exceeded' error in FirstAuto.
+-Fix 'RuntimeError maximum recursion depth exceeded' error in FirstAuto.
 Add third dimension.
 Sort opening game on custom and saving number of mines.
 Collect more information in highscores/collect statistics."""
 
-import numpy as np
-import time as tm
-from Tkinter import *
-from PIL import Image
-import threading
-from glob import glob
 import os
 import sys
+import threading
+import time as tm
+from glob import glob
+from Tkinter import *
+
+import numpy as np
+from PIL import Image
 
 
 directory = sys.path[0]
-#Where images and files are stored.
-root_directory = r'C:\Users\User\SkyDrive\Documents\Python\minesweeper'
-default_settings = {'per_cell': 1, 'first_success': False, 'mines': 10, 'detection': 1, 'shape': (8, 8), 'difficulty': 'b', 'lives': 1, 'drag_click': 'off', 'button_size': 16, 'distance_to': False}
-#Used as the key in the dictionary entry for highscores.
+# Where images and files are stored.
+root_directory = os.path.dirname(__file__)
+default_settings = {
+    'per_cell': 1,
+    'first_success': False,
+    'mines': 10,
+    'detection': 1,
+    'shape': (8, 8),
+    'difficulty': 'b',
+    'lives': 1,
+    'drag_click': 'off',
+    'button_size': 16,
+    'distance_to': False,
+}
+# Used as the key in the dictionary entry for highscores.
 settings_order = ['difficulty', 'per_cell', 'detection', 'drag_click', 'lives']
 highscore_headings = ['Name', 'type', '3bv', 'other', 'Date']
 detection_options = dict([(str(i), i) for i in [0.5, 1, 1.5, 1.8, 2, 2.2, 2.5, 2.8, 3]])
@@ -72,9 +84,10 @@ bg_colours = dict([('',   (240, 240, 237)),
                  ('red',  (255, 0, 0)),
                  ('blue', (128, 128, 255))])
 cellfont = ('Tahoma', 9, 'bold')
-#Shouldn't be needed anymore.
+# Shouldn't be needed anymore.
 mineflags = ["F", "B", "C", "D", "E", "G", "H", "J", "K", "M"]
 minesymbols = ['*', ':', '%', '#', '&', '$']
+
 
 class Minefield(object):
     def __init__(self, shape='b', per_cell=1, detection=1, distance_to=False, create='auto'):
@@ -1450,7 +1463,21 @@ class TimerThread(threading.Thread):
 
 
 #My record of 68.7 seconds (142 3bv). Mine coordinates are below.
-example = [(0, 0), (0, 11), (0, 12), (0, 14), (1, 3), (2, 3), (2, 4), (2, 8), (3, 2), (3, 3), (3, 5), (3, 15), (4, 5), (4, 7), (4, 9), (4, 11), (5, 2), (5, 6), (6, 10), (7, 8), (8, 3), (8, 10), (9, 2), (9, 12), (10, 4), (10, 7), (10, 13), (11, 2), (11, 4), (11, 7), (11, 8), (11, 9), (11, 13), (12, 9), (13, 3), (13, 7), (13, 10), (13, 15), (14, 3), (15, 7), (15, 10), (16, 0), (16, 2), (16, 9), (16, 11), (16, 13), (17, 0), (17, 7), (17, 9), (18, 1), (18, 5), (18, 9), (18, 10), (18, 13), (19, 10), (19, 15), (20, 3), (20, 6), (20, 7), (20, 15), (21, 3), (21, 5), (22, 2), (22, 6), (22, 8), (22, 12), (22, 13), (22, 14), (22, 15), (23, 0), (23, 1), (23, 8), (23, 9), (23, 12), (23, 14), (24, 3), (24, 4), (24, 10), (24, 11), (25, 0), (25, 1), (25, 3), (25, 7), (26, 8), (26, 9), (26, 11), (26, 12), (27, 9), (27, 14), (27, 15), (28, 8), (28, 9), (28, 10), (28, 11), (28, 14), (29, 6), (29, 7), (29, 10), (29, 14)]
+example = [
+    (0, 0), (0, 11), (0, 12), (0, 14), (1, 3), (2, 3), (2, 4), (2, 8), (3, 2),
+    (3, 3), (3, 5), (3, 15), (4, 5), (4, 7), (4, 9), (4, 11), (5, 2), (5, 6),
+    (6, 10), (7, 8), (8, 3), (8, 10), (9, 2), (9, 12), (10, 4), (10, 7),
+    (10, 13), (11, 2), (11, 4), (11, 7), (11, 8), (11, 9), (11, 13), (12, 9),
+    (13, 3), (13, 7), (13, 10), (13, 15), (14, 3), (15, 7), (15, 10), (16, 0),
+    (16, 2), (16, 9), (16, 11), (16, 13), (17, 0), (17, 7), (17, 9), (18, 1),
+    (18, 5), (18, 9), (18, 10), (18, 13), (19, 10), (19, 15), (20, 3), (20, 6),
+    (20, 7), (20, 15), (21, 3), (21, 5), (22, 2), (22, 6), (22, 8), (22, 12),
+    (22, 13), (22, 14), (22, 15), (23, 0), (23, 1), (23, 8), (23, 9), (23, 12),
+    (23, 14), (24, 3), (24, 4), (24, 10), (24, 11), (25, 0), (25, 1), (25, 3),
+    (25, 7), (26, 8), (26, 9), (26, 11), (26, 12), (27, 9), (27, 14), (27, 15),
+    (28, 8), (28, 9), (28, 10), (28, 11), (28, 14), (29, 6), (29, 7), (29, 10),
+    (29, 14)
+]
 
 
 

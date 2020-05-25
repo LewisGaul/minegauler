@@ -10,12 +10,16 @@ and to play the game (again using Tkinter). There are also options to have a
 maximum number of mines per cell greater than 1 and to have the numbers display
 the number of mines in cells adjacent by more than one cell. Function _3bv() finds
 the 3bv of the grid.
-New:
-The use of Tkinter and general improvements."""
 
-import numpy as np
+New:
+The use of Tkinter and general improvements.
+"""
+
 import time as tm
 from Tkinter import *
+
+import numpy as np
+
 
 default_mines = {(8,8):10, (16,16):40, (16,30):99, (30,16):99}
 colours = dict([(1,'blue'), (2,'#%02x%02x%02x'%(0,150,0)), (3,'red'),
@@ -25,6 +29,7 @@ colours = dict([(1,'blue'), (2,'#%02x%02x%02x'%(0,150,0)), (3,'red'),
                 (10,'#%02x%02x%02x'%(200,0,200)), (11,'#%02x%02x%02x'%(255,128,0))])
 cellfont = ('Times', 9, 'bold')
 minesymbols = ["F", "B", "C", "D", "E", "G", "H", "J", "K", "M"]
+
 
 class Minefield(object):
     def __init__(self, shape=(16,30), mines_per_cell=1, detection=1):
@@ -215,7 +220,7 @@ class Minefield(object):
         if self.mines_grid.size == 1:
             return
         self.final_grid = -9 * self.mines_grid
-        for coord in np.transpose(np.nonzero(-(self.mines_grid>0))):
+        for coord in np.transpose(np.nonzero(~(self.mines_grid>0))):
             entry = 0
             for k in self.neighbours(tuple(coord), self.detection):
                 if self.mines_grid[k] > 0:

@@ -27,14 +27,18 @@ Add zoom (Game menu).
 -Add option to double click and drag to click multiple cells.
 Check replay(/new) action.
 Improve display_grid (integrate).
-Add third dimension(!)."""
+Add third dimension(!).
+"""
 
-import numpy as np
+import os.path
+import threading
 import time as tm
 from Tkinter import *
-import threading
 
-directory = r'C:\Users\User\Skydrive\Documents\Python\minesweeper'
+import numpy as np
+
+
+directory = os.path.dirname(__file__)
 default_settings = {'per_cell': 1, 'first_success': False, 'mines': 10, 'detection': 1, 'shape': (8, 8), 'difficulty': 'b', 'lives': 1, 'drag_click': 'off'}
 settings_order = ['difficulty', 'type', 'per_cell', 'detection', 'drag_click', 'lives']
 highscore_order = ['Name', 'type', '3bv', 'other', 'Date']
@@ -237,7 +241,7 @@ class Minefield(object):
         if self.mines_grid.size == 1:
             return
         self.final_grid = -9 * self.mines_grid
-        for coord in np.transpose(np.nonzero(-(self.mines_grid>0))):
+        for coord in np.transpose(np.nonzero(~(self.mines_grid>0))):
             entry = 0
             for k in self.get_neighbours(tuple(coord), self.detection):
                 if self.mines_grid[k] > 0:
@@ -292,7 +296,7 @@ class Minefield(object):
 class Game(Minefield):
     def __init__(self, play=True):
         try:
-            with open(directory + r'\Settings.txt', 'r') as f:
+            with open(os.path.join(directory, 'Settings.txt'), 'r') as f:
                 settings = eval(f.read())
         except:
             settings = default_settings
@@ -311,7 +315,7 @@ class Game(Minefield):
         self.highscores = dict()
         try:
             for d in ['Beginner', 'Intermediate', 'Expert']:
-                with open(directory + '\\' + d + r'\highscores.txt', 'r') as f:
+                with open(os.path.join(directory, d, 'highscores.txt'), 'r') as f:
                     self.highscores.update(eval(f.read()))
         except:
             pass #Will be created when needed.
@@ -502,11 +506,11 @@ class Game(Minefield):
                 if settings[1] == 'Time':
                     set_highscore(htype='3bv/s', entry=self.highscores[settings][index])
                 #Do not overwrite the main file until data is stored in other file.
-                with open(directory + '\\' + dict(difficulties_list)[self.difficulty] + r'\highscores.txt', 'r') as f:
+                with open(os.path.join(directory, dict(difficulties_list)[self.difficulty], 'highscores.txt'), 'r') as f:
                     old_highscores = f.read()
-                with open(directory + '\\' + dict(difficulties_list)[self.difficulty] + r'\highscorescopy.txt', 'w') as f:
+                with open(os.path.join(directory, dict(difficulties_list)[self.difficulty], 'highscorescopy.txt'), 'w') as f:
                     f.write(old_highscores)
-                with open(directory + '\\' + dict(difficulties_list)[self.difficulty] + r'\highscores.txt', 'w') as f:
+                with open(os.path.join(directory, dict(difficulties_list)[self.difficulty], 'highscores.txt'), 'w') as f:
                     f.write(str(dict([(k, v) for (k, v) in self.highscores.items() if k[0] == self.difficulty])))
             row = 3
             for d in highscores:
@@ -1207,7 +1211,7 @@ class Game(Minefield):
         settings = dict()
         for s in default_settings:
             settings[s] = getattr(self, s)
-        with open(directory + r'\Settings.txt', 'w') as f:
+        with open(os.path.join(directory, 'Settings.txt'), 'w') as f:
             f.write(str(settings))
 
         tm.sleep(0.2)
@@ -1255,16 +1259,19 @@ def prettify_grid(array, do_print=False):
         else:
             return ret
 
+
 class PlayThread(threading.Thread):
     def __init__(self, threadID, minefield, runargs):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.runargs = runargs
         self.minefield = minefield
+
     def run(self):
         print "Thread {} for playing the game is running.".format(self.threadID)
         self.minefield.play(*self.runargs)
         print "Thread {} ended.".format(self.threadID)
+
 
 class DispThread(threading.Thread):
     #Not used.
@@ -1273,10 +1280,12 @@ class DispThread(threading.Thread):
         self.threadID = threadID
         self.runargs = runargs
         self.minefield = minefield
+
     def run(self):
         print "Thread {} for displaying grids is running.".format(self.threadID)
         self.minefield.display_grid(*self.runargs)
         print "Thread {} ended.".format(self.threadID)
+
 
 class TimerThread(threading.Thread):
     def __init__(self, threadID, game, timervar):
@@ -1284,6 +1293,7 @@ class TimerThread(threading.Thread):
         self.threadID = threadID
         self.game = game
         self.timervar = timervar
+
     def run(self):
         print "Thread %d for the timer is running." % self.threadID
         self.game.keeptimer = True
@@ -1304,5 +1314,3 @@ if __name__ == '__main__':
     g = Game('i')
     #g.thread_play()
     #display_grid(Minefield(per_cell=3).mines_grid, 1)
-
-

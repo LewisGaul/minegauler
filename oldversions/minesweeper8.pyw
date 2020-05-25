@@ -37,19 +37,22 @@ Fix occasional crash on create new game.
 Fix 'RunTimeError maximum recursion depth exceeded' error in FirstAuto.
 Add third dimension.
 Sort opening game on custom and saving number of mines.
-Collect more information in highscores/collect statistics."""
+Collect more information in highscores/collect statistics.
+"""
 
-import numpy as np
-import time as tm
-from Tkinter import *
-from PIL import Image
-import threading
-from glob import glob
 import os
 import sys
+import threading
+import time as tm
+from glob import glob
+from Tkinter import *
+
+import numpy as np
+# This has to be imported after Tkinter to overwrite its 'Image' class ;)
+from PIL import Image
 
 
-directory = sys.path[0]
+directory = os.path.dirname(__file__)
 default_settings = {'per_cell': 1, 'first_success': False, 'mines': 10, 'detection': 1, 'shape': (8, 8), 'difficulty': 'b', 'lives': 1, 'drag_click': 'off', 'button_size': 16, 'distance_to': False}
 settings_order = ['difficulty', 'per_cell', 'detection', 'drag_click', 'lives']
 highscore_headings = ['Name', 'type', '3bv', 'other', 'Date']
@@ -83,6 +86,7 @@ bg_colours = dict([('',   (240, 240, 237)),
 cellfont = ('Times', 9, 'bold')
 mineflags = ["F", "B", "C", "D", "E", "G", "H", "J", "K", "M"]
 minesymbols = ['*', ':', '%', '#', '&', '$']
+
 
 class Minefield(object):
     def __init__(self, shape=(16,30), per_cell=1, detection=1, distance_to=False, create='auto'):
@@ -356,7 +360,7 @@ class Minefield(object):
 class Game(Minefield):
     def __init__(self, play=True):
         try:
-            with open(directory + r'\Settings.txt', 'r') as f:
+            with open(os.path.join(directory, 'Settings.txt'), 'r') as f:
                 settings = eval(f.read())
         except:
             settings = default_settings
@@ -377,7 +381,7 @@ class Game(Minefield):
         self.highscores = dict()
         try:
             for d in ['Beginner', 'Intermediate', 'Expert']:
-                with open(directory + '\\' + d + r'\highscores6.txt', 'r') as f:
+                with open(os.path.join(directory, d, 'highscores6.txt'), 'r') as f:
                     self.highscores.update(eval(f.read()))
         except:
             pass #Will be created when needed.
@@ -410,25 +414,25 @@ class Game(Minefield):
 
         def get_images():
             im_size = self.button_size - 6
-            im_path = directory + '\\Images\\Mines\\'
+            im_path = os.path.join(directory, 'Images', 'Mines')
             #Image() is from PIL, used to convert/resize/recolour the image.
-            for n in [i for i in range(1, 11) if not os.path.isfile(im_path + str(i) + 'mine' + str(im_size) + '.ppm')]:
+            for n in [i for i in range(1, 11) if not os.path.isfile(os.path.join(im_path, str(i) + 'mine' + str(im_size) + '.ppm'))]:
                 for colour in bg_colours:
-                    im = Image.open(im_path + str(n) + 'mine.png')
+                    im = Image.open(os.path.join(im_path, str(n) + 'mine.png'))
                     data = np.array(im)
                     data[(data == (255, 255, 255, 0)).all(axis=-1)] = tuple(list(bg_colours[colour]) + [0])
                     im = Image.fromarray(data, mode='RGBA').convert('RGB')
                     im = im.resize(tuple([im_size]*2), Image.ANTIALIAS)
-                    im.save(im_path + colour + str(n) + 'mine' + str(im_size) + '.ppm')
+                    im.save(os.path.join(im_path, colour + str(n) + 'mine' + str(im_size) + '.ppm'))
                     im.close()
-            im_path = directory + '\\Images\\Flags\\'
-            for n in [i for i in range(1, 3) if not os.path.isfile(im_path + str(i) + 'flag' + str(im_size) + '.ppm')]:
-                im = Image.open(im_path + str(n) + 'flag.png')
+            im_path = os.path.join(directory, 'Images', 'Flags')
+            for n in [i for i in range(1, 3) if not os.path.isfile(os.path.join(im_path, str(i) + 'flag' + str(im_size) + '.ppm'))]:
+                im = Image.open(os.path.join(im_path, str(n) + 'flag.png'))
                 data = np.array(im)
                 data[(data == (255, 255, 255, 0)).all(axis=-1)] = tuple(list(bg_colours['']) + [0])
                 im = Image.fromarray(data, mode='RGBA').convert('RGB')
                 im = im.resize(tuple([im_size]*2), Image.ANTIALIAS)
-                im.save(im_path + '%sflag%02d'%(n, im_size) + '.ppm')
+                im.save(os.path.join(im_path, '%sflag%02d'%(n, im_size) + '.ppm'))
                 im.close()
         get_images()
 
@@ -595,11 +599,11 @@ class Game(Minefield):
                 Label(window, text=name, font=('times', 9, 'bold')).grid(row=row, column=1)
                 self.focus = window
                 #Do not overwrite the main file until data is stored in other file.
-                with open(directory + '\\' + dict(difficulties_list)[self.difficulty] + r'\highscores6.txt', 'r') as f:
+                with open(os.path.join(directory, dict(difficulties_list)[self.difficulty], 'highscores6.txt'), 'r') as f:
                     old_highscores = f.read()
-                with open(directory + '\\' + dict(difficulties_list)[self.difficulty] + r'\highscorescopy.txt', 'w') as f:
+                with open(os.path.join(directory, dict(difficulties_list)[self.difficulty], 'highscorescopy.txt'), 'w') as f:
                     f.write(old_highscores)
-                with open(directory + '\\' + dict(difficulties_list)[self.difficulty] + r'\highscores6.txt', 'w') as f:
+                with open(os.path.join(directory, dict(difficulties_list)[self.difficulty], 'highscores6.txt'), 'w') as f:
                     f.write(str(dict([(k, v) for (k, v) in self.highscores.items() if k[0] == self.difficulty])))
                 for w in window.children.values():
                     w.destroy()
@@ -800,18 +804,18 @@ class Game(Minefield):
                         f.children.values()[0]['font'] = self.cellfont
                     get_images()
                     #This could be written better!
-                    im_path = directory + '\\Images\\Mines\\'
+                    im_path = os.path.join(directory, 'Images', 'Mines')
                     im_size = self.button_size - 6
-                    mine_image = PhotoImage(name='1mine%02d'%im_size, file=im_path + '1mine%02d'%im_size + '.ppm')
+                    mine_image = PhotoImage(name='1mine%02d'%im_size, file=os.path.join(im_path, '1mine%02d'%im_size + '.ppm'))
                     for b in [b1 for b1 in self.buttons.values() if b1['image'] and 'mine' in b1.image.name]:
                         im_name = '{}{:02d}'.format(b.image.name[:-2], im_size)
                         if im_name[:-2] == '1mine':
                             b['image'] = b.image = mine_image
                         else:
-                            b['image'] = b.image = PhotoImage(name=im_name, file=im_path + im_name + '.ppm')
+                            b['image'] = b.image = PhotoImage(name=im_name, file=os.path.join(im_path, im_name + '.ppm'))
                     for n in self.flag_images:
                         im_name = '%sflag%02d' % (n, im_size)
-                        self.flag_images[n] = PhotoImage(name=im_name, file=directory + '\\Images\\Flags\\' + im_name + '.ppm')
+                        self.flag_images[n] = PhotoImage(name=im_name, file=os.join(directory, 'Images', 'Flags', im_name + '.ppm'))
                     for b in [b1 for b1 in self.buttons.values() if b1['image'] and 'flag' in b1.image.name]:
                         im_name = '{}{:02d}'.format(b.image.name[:-2], im_size)
                         b['image'] = b.image = self.flag_images[int(im_name[0])]
@@ -896,16 +900,16 @@ class Game(Minefield):
         root.resizable(False, False)
 
         im_size = self.button_size - 6
-        self.mine_image = PhotoImage(name='1mine', file=directory + '\\Images\\Mines\\1mine' + str(im_size) + '.ppm')
+        self.mine_image = PhotoImage(name='1mine', file=os.path.join(directory, 'Images', 'Mines', '1mine' + str(im_size) + '.ppm'))
         self.flag_images = dict()
         for n in range(1, 3):
             im_name = '%sflag%02d' % (n, im_size)
-            self.flag_images[n] = PhotoImage(name=im_name, file=directory + '\\Images\\Flags\\' + im_name + '.ppm')
+            self.flag_images[n] = PhotoImage(name=im_name, file=os.path.join(directory, 'Images', 'Flags', im_name + '.ppm'))
 
         self.face_images = dict()
-        for path in glob(directory + '\\Images\\Faces\\*.ppm'):
-            im_name = path.split('\\')[-1][:-4]
-            self.face_images[im_name] = PhotoImage(name=im_name, file=directory + '\\Images\\Faces\\' + im_name + '.ppm')
+        for path in glob(os.path.join(directory, 'Images', 'Faces', '*.ppm')):
+            im_name = os.path.basename(path)[:-4]
+            self.face_images[im_name] = PhotoImage(name=im_name, file=os.path.join(directory, 'Images', 'Faces', im_name + '.ppm'))
 
         menubar = Menu(root)
         root.config(menu=menubar)
@@ -1008,7 +1012,7 @@ class Game(Minefield):
         help_menu = Menu(menubar)
         menubar.add_cascade(label='Help', menu=help_menu)
         help_menu.add_command(label='Basic rules', command=None, state='disabled')
-        help_menu.add_command(label='Additional features', command=lambda: os.startfile(directory + '\\Features.txt'))
+        help_menu.add_command(label='Additional features', command=lambda: os.startfile(os.path.join(directory, 'Features.txt')))
         help_menu.add_separator()
         help_menu.add_command(label='About', command=None, state='disabled')
 
@@ -1137,7 +1141,7 @@ class Game(Minefield):
                     else:
                         lives_remaining_var.set(lives_remaining_var.get()-1)
                         b['relief'] = 'raised'
-                        im_path = directory + '\\Images\\Mines\\'
+                        im_path = os.path.join(directory, 'Images', 'Mines')
                         im_size = self.button_size - 6
                         #If there are no lives left (game is lost).
                         if lives_remaining_var.get() == 0:
@@ -1149,9 +1153,9 @@ class Game(Minefield):
                             face_button['image'] = self.face_images['lost1face']
                             n = -self.final_grid[coord]/9
                             im_name = 'red%smine%02d' % (n, im_size)
-                            b['image'] = b.image = PhotoImage(name=im_name, file=im_path + im_name + '.ppm')
+                            b['image'] = b.image = PhotoImage(name=im_name, file=os.path.join(im_path, im_name + '.ppm'))
                             b['bg'] = '#%02x%02x%02x' % bg_colours['red']
-                            mine_image = PhotoImage(name='1mine%02d'%im_size, file=im_path + '1mine%s'%im_size + '.ppm')
+                            mine_image = PhotoImage(name='1mine%02d'%im_size, file=os.path.join(im_path, '1mine%s'%im_size + '.ppm'))
                             for c in self.buttons:
                                 b1 = self.buttons[c]
                                 if (self.grid[c] < -1 and self.grid[c] != self.final_grid[c]):
@@ -1164,7 +1168,7 @@ class Game(Minefield):
                                             b1['image'] = b1.image = mine_image
                                         else:
                                             im_name = '%smine%s' % (n, im_size)
-                                            b1['image'] = b1.image = PhotoImage(name=im_name, file=im_path + im_name + '.ppm')
+                                            b1['image'] = b1.image = PhotoImage(name=im_name, file=os.path.join(im_path, im_name + '.ppm'))
                             return
                         else:
                             self.grid[coord] = self.final_grid[coord]
@@ -1391,7 +1395,7 @@ class Game(Minefield):
         settings = dict()
         for s in default_settings:
             settings[s] = getattr(self, s)
-        with open(directory + r'\Settings.txt', 'w') as f:
+        with open(os.path.join(directory, 'Settings.txt'), 'w') as f:
             f.write(str(settings))
 
         tm.sleep(1)
@@ -1420,7 +1424,6 @@ def display_grid(array, mines=False):
     return
 
 
-
 def prettify_grid(array, do_print=False):
         replacements = [('-18','@'), ('-27','%'), ('-36','&'), ('-45','$'), ('-9','#'), ('\n  ',' '),
                         ('0','.'), ('-1','='), ('-8','X'), ('   ',' '), ('  ',' '), ('[ ','[')]
@@ -1432,16 +1435,19 @@ def prettify_grid(array, do_print=False):
         else:
             return ret
 
+
 class PlayThread(threading.Thread):
     def __init__(self, threadID, minefield, runargs):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.runargs = runargs
         self.minefield = minefield
+
     def run(self):
         print "Thread {} for playing the game is running.".format(self.threadID)
         self.minefield.play(*self.runargs)
         print "Thread {} ended.".format(self.threadID)
+
 
 class DispThread(threading.Thread):
     #Not used.
@@ -1450,10 +1456,12 @@ class DispThread(threading.Thread):
         self.threadID = threadID
         self.runargs = runargs
         self.minefield = minefield
+
     def run(self):
         print "Thread {} for displaying grids is running.".format(self.threadID)
         self.minefield.display_grid(*self.runargs)
         print "Thread {} ended.".format(self.threadID)
+
 
 class TimerThread(threading.Thread):
     def __init__(self, threadID, game, timervar):
@@ -1461,6 +1469,7 @@ class TimerThread(threading.Thread):
         self.threadID = threadID
         self.game = game
         self.timervar = timervar
+
     def run(self):
         print "Thread %d for the timer is running." % self.threadID
         self.game.keeptimer = True
@@ -1484,5 +1493,3 @@ if __name__ == '__main__':
     g = Game()
     #g.thread_play()
     #display_grid(Minefield(per_cell=3).mines_grid, 1)
-
-

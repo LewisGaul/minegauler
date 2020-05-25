@@ -1,9 +1,11 @@
 """Used to update the highscores from direc."""
 
+import os.path
 import time as tm
 
-directory1 = r'C:\Users\User\Skydrive\Documents\Python\minesweeper'
-directory2 = r'C:\Users\Guest\Saved Games\minesweeper'
+
+directory1 = os.path.dirname(__file__)
+directory2 = raw_input("Enter directory to fetch highscores from: ")
 def update_highscores():
     highscores1 = dict()
     highscores2 = dict()
@@ -25,5 +27,5 @@ def update_highscores():
 trial = ('b', 1, 1, 'off', 1)
 h = dict()
 for d in ['Beginner', 'Intermediate', 'Expert']:
-    with open(directory1 + '\\' + d + r'\highscores6.txt', 'r') as f:
+    with open(os.path.join(directory1, d, 'highscores6.txt'), 'r') as f:
         h.update(eval(f.read()))
