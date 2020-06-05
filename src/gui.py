@@ -54,7 +54,7 @@ class BasicGui(tk.Tk, object):
             self.title('MineGauler')
         else:
             self.title('MineGauler' + VERSION)
-        # self.iconbitmap(default=join(direcs['images'], 'icon.ico'))
+        self.iconbitmap(default=join(direcs['images'], 'icon.ico'))
         self.protocol('WM_DELETE_WINDOW', self.close_root)
         # Set default to be that menus cannot be 'torn off'.
         self.option_add('*tearOff', False)

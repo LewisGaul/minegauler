@@ -1,0 +1,17 @@
+1.1.3
+- Added option to save boards, and automatic save of highscores.
+- Added auto flag.
+
+1.1.2
+- Retrieve highscores from friends' games or from your old versions.
+
+1.1.1
+- Fixed bug in probability calculation with few mines left.
+- Added show probabilities before game is started.
+- Fixed bug in opening game on small custom boards.
+- Fixed bug in saving highscore with more than one life.
+
+1.1.0
+- Probabilities integrated into the game.
+- Improved reliability of highscores.
+- Added text windows for help menu.

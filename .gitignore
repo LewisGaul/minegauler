@@ -2,14 +2,15 @@
 ## Project specific
 ####################
 
-0.0/
-1.0/
-1.1/
-images/
+#0.0/
+#1.0/
+#1.1/
+#images/
+images/**/*.ppm
 Latex/
-src2/
-data/
-boards/saved
+#src2/
+#data/
+#boards/saved
 settings.cfg
 *.xlsx
 *.ods

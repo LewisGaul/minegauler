@@ -1,0 +1,15 @@
+Game menu:
+Current info - If you lose a game, use to see your predicted score.
+Statistics - Not yet written.
+Beginner/Intermediate/Expert - Preset size and number of mines.
+Custom - Choose dimensions of board and number of mines (recommended number given).
+Zoom - Set the size of the cells (in pixels). This is saved in your highscores, for 'official' times only use default.
+Reset to default - Reset all settings.
+
+Options menu:
+FirstAuto - The first click will always give an opening, at least on preset difficulties (will attempt to find one on custom boards too). For 'official' times this should be turned off (also saved in highscores).
+Lives - Enter the number of lives you want. Only games with 3 lives or less initially will save highscores and are kept separate.
+Max mines per cell - 'Many' gives a max of 10, which is effectively the same as having max of 3 or 4 etc.
+Detection strength - Try these out by clicking with the left and right mouse buttons both at once and dragging during a game. They are essentially distances that the numbers detect.
+Drag and select - Select if you want to be able to hold down the left mouse button to select cells (separate highscores).
+Distance to - Not complete, but the numbers are given by n = [distance to closest mine] - [number of mines this distance away]. Very tricky, not yet saving highscores.
