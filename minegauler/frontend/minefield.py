@@ -26,16 +26,7 @@ from PyQt5.QtWidgets import (
 )
 
 from ..core import api
-from ..types import (
-    CellFlag,
-    CellHitMine,
-    CellImageType,
-    CellMine,
-    CellMineType,
-    CellNum,
-    CellUnclicked,
-    CellWrongFlag,
-)
+from ..types import CellContents, CellImageType
 from ..typing import Coord_T
 from . import state
 from .utils import IMG_DIR
@@ -64,27 +55,27 @@ def init_or_update_cell_images(cell_images, size, styles, required=CellImageType
         cell_images["btn_down"] = make_pixmap(
             "buttons", btn_style, "btn_down.png", size
         )
-        cell_images[CellUnclicked()] = cell_images["btn_up"]
-        cell_images[CellNum(0)] = cell_images["btn_down"]
+        cell_images[CellContents.Unclicked] = cell_images["btn_up"]
+        cell_images[CellContents.Num(0)] = cell_images["btn_down"]
 
     if required & (CellImageType.BUTTONS | CellImageType.NUMBERS):
         for i in range(1, 19):
-            cell_images[CellNum(i)] = make_pixmap(
+            cell_images[CellContents.Num(i)] = make_pixmap(
                 "numbers", btn_style, "btn_down.png", size, "num%d.png" % i, 7 / 8
             )
 
     if required & (CellImageType.BUTTONS | CellImageType.MARKERS):
         for i in range(1, 4):
-            cell_images[CellFlag(i)] = make_pixmap(
+            cell_images[CellContents.Flag(i)] = make_pixmap(
                 "markers", btn_style, "btn_up.png", size, "flag%d.png" % i, 5 / 8
             )
-            cell_images[CellWrongFlag(i)] = make_pixmap(
+            cell_images[CellContents.WrongFlag(i)] = make_pixmap(
                 "markers", btn_style, "btn_up.png", size, "cross%d.png" % i, 5 / 8
             )
-            cell_images[CellMine(i)] = make_pixmap(
+            cell_images[CellContents.Mine(i)] = make_pixmap(
                 "markers", btn_style, "btn_down.png", size, "mine%d.png" % i, 7 / 8
             )
-            cell_images[CellHitMine(i)] = make_pixmap(
+            cell_images[CellContents.HitMine(i)] = make_pixmap(
                 "markers", btn_style, "btn_down_hit.png", size, "mine%d.png" % i, 7 / 8
             )
 
@@ -348,7 +339,7 @@ class MinefieldWidget(QGraphicsView):
         functions as appropriate.
         """
         self._ctrlr.flag_cell(coord)
-        if self._board[coord] == CellUnclicked():
+        if self._board[coord] == CellContents.Unclicked:
             self.unflag_on_right_drag = True
         else:
             self.unflag_on_right_drag = False
@@ -368,7 +359,7 @@ class MinefieldWidget(QGraphicsView):
         Both left and right mouse buttons were pressed. Change display and call
         callback functions as appropriate.
         """
-        if not isinstance(self._board[coord], CellMineType):
+        if not self._board[coord].is_mine_type():
             for c in self._board.get_nbrs(coord, include_origin=True):
                 self._sink_unclicked_cell(c)
         if self._state.drag_select:
@@ -429,7 +420,7 @@ class MinefieldWidget(QGraphicsView):
         """
         if self._state.game_status.finished():
             return
-        if self._board[coord] == CellUnclicked():
+        if self._board[coord] == CellContents.Unclicked:
             self.set_cell_image(coord, "btn_down")
             self.sunken_cells.add(coord)
         if self.sunken_cells:
@@ -441,7 +432,7 @@ class MinefieldWidget(QGraphicsView):
         """
         while self.sunken_cells:
             coord = self.sunken_cells.pop()
-            if self._board[coord] == CellUnclicked():
+            if self._board[coord] == CellContents.Unclicked:
                 self.set_cell_image(coord, "btn_up")
 
     def reset(self) -> None:
@@ -451,7 +442,7 @@ class MinefieldWidget(QGraphicsView):
         self.both_mouse_buttons_pressed = False
         self.await_release_all_buttons = True
         for c in self._board.all_coords:
-            self.set_cell_image(c, CellUnclicked())
+            self.set_cell_image(c, CellContents.Unclicked)
 
     def set_cell_image(self, coord: Coord_T, state) -> None:
         """
@@ -480,7 +471,7 @@ class MinefieldWidget(QGraphicsView):
         logger.info("Resizing minefield to %sx%s", x_size, y_size)
         self._update_size()
         for c in [(i, j) for i in range(self.x_size) for j in range(self.y_size)]:
-            self.set_cell_image(c, CellUnclicked())
+            self.set_cell_image(c, CellContents.Unclicked)
 
     def update_style(self, img_type: CellImageType, style: str) -> None:
         """Update the cell images."""

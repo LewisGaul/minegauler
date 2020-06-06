@@ -12,7 +12,7 @@ import pytest
 from minegauler.core.board import Board, Minefield
 from minegauler.core.engine import GameController
 from minegauler.shared.utils import GameOptsStruct
-from minegauler.types import *
+from minegauler.types import CellContents, GameState
 
 
 logger = logging.getLogger(__name__)
@@ -125,7 +125,7 @@ class TestController:
 
         # Flag a cell.
         ctrlr.flag_cell(coord)
-        assert ctrlr._game.board[coord] == CellFlag(1)
+        assert ctrlr._game.board[coord] is CellContents.Flag(1)
         assert not ctrlr._game.mf
         assert ctrlr._game.state == GameState.READY
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines - 1
@@ -137,7 +137,7 @@ class TestController:
 
         # Select a flagged cell.
         ctrlr.select_cell(coord)
-        assert ctrlr._game.board[coord] == CellFlag(1)
+        assert ctrlr._game.board[coord] is CellContents.Flag(1)
         assert ctrlr._game.state == GameState.READY
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines - 1
         # frontend1.assert_not_called()  # TODO
@@ -145,7 +145,7 @@ class TestController:
 
         # Flag a cell that is already flagged (multiple mines per cell).
         ctrlr.flag_cell(coord)
-        assert ctrlr._game.board[coord] == CellFlag(2)
+        assert ctrlr._game.board[coord] is CellContents.Flag(2)
         assert ctrlr._game.state == GameState.READY
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines - 2
         # self.check_and_reset_callback(
@@ -156,7 +156,7 @@ class TestController:
 
         # Flag a cell that is at max flags to reset it.
         ctrlr.flag_cell(coord)
-        assert ctrlr._game.board[coord] == CellUnclicked()
+        assert ctrlr._game.board[coord] is CellContents.Unclicked
         assert not ctrlr._game.mf
         assert ctrlr._game.state == GameState.READY
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines
@@ -170,7 +170,7 @@ class TestController:
         ctrlr.flag_cell(coord)
         frontend1.reset_mock()
         ctrlr.remove_cell_flags(coord)
-        assert ctrlr._game.board[coord] == CellUnclicked()
+        assert ctrlr._game.board[coord] is CellContents.Unclicked
         assert ctrlr._game.state == GameState.READY
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines
         # self.check_and_reset_callback(
@@ -181,7 +181,9 @@ class TestController:
 
         # Select a cell to start the game.
         ctrlr.select_cell(coord)
-        assert isinstance(ctrlr._game.board[coord], (CellHitMine, CellNum))
+        assert isinstance(
+            ctrlr._game.board[coord], (CellContents.HitMine, CellContents.Num)
+        )
         assert ctrlr._game.mf
         assert ctrlr._game.state in {GameState.ACTIVE, GameState.LOST}
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines
@@ -334,7 +336,7 @@ class TestController:
             ]
         )
         # self.check_and_reset_callback(
-        #     frontend1, cell_updates={c: CellNum(1) for c in [(0, 3), (1, 3)]}
+        #     frontend1, cell_updates={c: CellContents.Num(1) for c in [(0, 3), (1, 3)]}
         # )
 
         # Successful chording triggering opening.
@@ -394,16 +396,16 @@ class TestController:
         coord = (1, 5)
         ctrlr.select_cell(coord)
         assert ctrlr._game.state == GameState.ACTIVE
-        assert ctrlr._game.board[coord] == CellNum(0)
+        assert ctrlr._game.board[coord] is CellContents.Num(0)
         for c in ctrlr._game.board.get_nbrs(coord):
-            assert type(ctrlr._game.board[c]) == CellNum
+            assert type(ctrlr._game.board[c]) is CellContents.Num
 
         # Check first success is ignored when using created minefield.
         ctrlr = self.create_controller()
         coord = (3, 0)
         ctrlr.select_cell(coord)
         assert ctrlr._game.state == GameState.LOST
-        assert ctrlr._game.board[coord] == CellHitMine(2)
+        assert ctrlr._game.board[coord] is CellContents.HitMine(2)
 
         # Test first success on a high density board - no room for opening.
         opts = GameOptsStruct(
@@ -412,7 +414,7 @@ class TestController:
         ctrlr = GameController(opts)
         coord = (1, 2)
         ctrlr.select_cell(coord)
-        assert ctrlr._game.board[coord] == CellNum(8)
+        assert ctrlr._game.board[coord] is CellContents.Num(8)
 
         # Test first success turned off - should hit a mine with high density.
         opts.first_success = False
@@ -423,8 +425,8 @@ class TestController:
             ctrlr.select_cell(coord)
             attempts += 1
             if attempts >= 10:
-                assert ctrlr._game.board[coord] == CellHitMine(1)
-            elif ctrlr._game.board[coord] == CellHitMine(1):
+                assert ctrlr._game.board[coord] is CellContents.HitMine(1)
+            elif ctrlr._game.board[coord] is CellContents.HitMine(1):
                 passed = True
 
     def test_losing(self, frontend1):
@@ -447,10 +449,10 @@ class TestController:
         # self.check_and_reset_callback(
         #     frontend1,
         #     cell_updates={
-        #         (2, 0): CellMine(1),
-        #         (3, 0): CellHitMine(2),
-        #         (3, 1): CellMine(1),
-        #         (1, 4): CellMine(1),
+        #         (2, 0): CellContents.Mine(1),
+        #         (3, 0): CellContents.HitMine(2),
+        #         (3, 1): CellContents.Mine(1),
+        #         (1, 4): CellContents.Mine(1),
         #     },
         #     game_state=GameState.LOST,
         #     lives_remaining=0,
@@ -515,7 +517,7 @@ class TestController:
         assert ctrlr._game.board == ctrlr._game.mf.completed_board
         # self.check_and_reset_callback(
         #     frontend1,
-        #     cell_updates={(0, 0): CellNum(1), (1, 0): CellFlag(1)},
+        #     cell_updates={(0, 0): CellContents.Num(1), (1, 0): CellContents.Flag(1)},
         #     game_state=GameState.WON,
         #     mines_remaining=0,
         #     lives_remaining=ctrlr._game.lives_remaining,
@@ -576,7 +578,7 @@ class TestController:
         assert ctrlr._game.board == Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
         # self.check_and_reset_callback(
         #     frontend1,
-        #     cell_updates={c: CellUnclicked() for c in {(0, 0), (1, 0)}},
+        #     cell_updates={c: CellContents.Unclicked for c in {(0, 0), (1, 0)}},
         #     mines_remaining=ctrlr.opts.mines,
         # )
 
@@ -611,7 +613,7 @@ class TestController:
         # self.check_and_reset_callback(
         #     frontend1,
         #     cell_updates={
-        #         c: CellUnclicked()
+        #         c: CellContents.Unclicked
         #         for c in ctrlr._game.board.all_coords
         #         if self.mf.cell_contains_mine(c)
         #     },
@@ -646,7 +648,7 @@ class TestController:
         assert ctrlr._game.mf == self.mf
         # self.check_and_reset_callback(
         #     frontend1,
-        #     cell_updates={c: CellUnclicked() for c in {(0, 0), (1, 0)}},
+        #     cell_updates={c: CellContents.Unclicked for c in {(0, 0), (1, 0)}},
         #     mines_remaining=ctrlr.opts.mines,
         # )
 
@@ -657,7 +659,7 @@ class TestController:
         opened_cells = {
             c
             for c in ctrlr._game.mf.all_coords
-            if ctrlr._game.board[c] != CellUnclicked()
+            if ctrlr._game.board[c] != CellContents.Unclicked
         }
         ctrlr.restart_game()
         assert ctrlr._game.state == GameState.READY
@@ -666,7 +668,7 @@ class TestController:
         assert ctrlr._game.mf == self.mf
         # self.check_and_reset_callback(
         #     frontend1,
-        #     cell_updates={c: CellUnclicked() for c in opened_cells},
+        #     cell_updates={c: CellContents.Unclicked for c in opened_cells},
         #     game_state=GameState.READY,
         # )
 
@@ -732,7 +734,7 @@ class TestController:
         )
         # self.check_and_reset_callback(
         #     frontend1,
-        #     cell_updates={(2, 0): CellHitMine(1)},
+        #     cell_updates={(2, 0): CellContents.HitMine(1)},
         #     game_state=GameState.ACTIVE,
         #     lives_remaining=ctrlr._game.lives_remaining,
         #     mines_remaining=ctrlr._game.mines_remaining,
@@ -757,7 +759,7 @@ class TestController:
         )
         # self.check_and_reset_callback(
         #     frontend1,
-        #     cell_updates={(3, 0): CellHitMine(2)},
+        #     cell_updates={(3, 0): CellContents.HitMine(2)},
         #     game_state=ctrlr._game.state,
         #     lives_remaining=ctrlr._game.lives_remaining,
         #     mines_remaining=ctrlr._game.mines_remaining,
@@ -782,7 +784,7 @@ class TestController:
         )
         # self.check_and_reset_callback(
         #     frontend1,
-        #     cell_updates={(3, 1): CellHitMine(1), (1, 4): CellMine(1)},
+        #     cell_updates={(3, 1): CellContents.HitMine(1), (1, 4): CellContents.Mine(1)},
         #     game_state=GameState.LOST,
         #     lives_remaining=0,
         #     mines_remaining=ctrlr._game.mines_remaining,

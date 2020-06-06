@@ -7,7 +7,7 @@ August 2019, Lewis Gaul
 from unittest.mock import Mock
 
 from minegauler.core.game import Game, _ignore_if, _ignore_if_not
-from minegauler.types import *
+from minegauler.types import CellContents, GameState
 
 
 def test_ignore_if_decorators():
@@ -20,7 +20,7 @@ def test_ignore_if_decorators():
 
     # First test 'ignore if'.
     # Test with one ignored cell state (flagged).
-    decorated_mock = _ignore_if(cell_state=CellFlag)(mock_func)
+    decorated_mock = _ignore_if(cell_state=CellContents.Flag)(mock_func)
     decorated_mock(game, (0, 0))  # unclicked
     mock_func.assert_called_once()
     mock_func.reset_mock()
@@ -30,7 +30,9 @@ def test_ignore_if_decorators():
     mock_func.assert_not_called()
 
     # Test with multiple ignored cell states.
-    decorated_mock = _ignore_if(cell_state=(CellFlag, CellUnclicked))(mock_func)
+    decorated_mock = _ignore_if(cell_state=(CellContents.Flag, CellContents.Unclicked))(
+        mock_func
+    )
     decorated_mock(game, (0, 0))  # flagged
     mock_func.assert_not_called()
 

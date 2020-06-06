@@ -16,14 +16,14 @@ import random as rnd
 from typing import Any, Collection, Dict, Iterable, List, Optional, Union
 
 from ..shared import utils
-from ..types import CellContentsType, CellFlag, CellMineType, CellNum, CellUnclicked
+from ..types import CellContents
 from ..typing import Coord_T
 
 
 class Board(utils.Grid):
     """
     Representation of a minesweeper board. To be filled with instances of
-    CellContentsType.
+    CellContents.
     """
 
     def __init__(self, x_size: int, y_size: int):
@@ -34,17 +34,17 @@ class Board(utils.Grid):
         y_size (int > 0)
             The number of rows.
         """
-        super().__init__(x_size, y_size, fill=CellUnclicked())
+        super().__init__(x_size, y_size, fill=CellContents.Unclicked)
 
     def __repr__(self):
         return f"<{self.x_size}x{self.y_size} board>"
 
     def __str__(self):
-        return super().__str__(mapping={CellNum(0): "."})
+        return super().__str__(mapping={CellContents.Num(0): "."})
 
     def __setitem__(self, key, value):
-        if not isinstance(value, CellContentsType):
-            raise TypeError("Board can only contain CellContentsType instances")
+        if not isinstance(value, CellContents):
+            raise TypeError("Board can only contain CellContents instances")
         else:
             super().__setitem__(key, value)
 
@@ -69,20 +69,20 @@ class Board(utils.Grid):
         board = cls(grid.x_size, grid.y_size)
         for c in grid.all_coords:
             if type(grid[c]) is int:
-                board[c] = CellNum(grid[c])
+                board[c] = CellContents.Num(grid[c])
             elif type(grid[c]) is str and len(grid[c]) == 2:
                 char, num = grid[c]
-                board[c] = CellMineType.get_class_from_char(char)(int(num))
-            elif grid[c] != CellUnclicked.char:
+                board[c] = CellContents.from_char(char)(int(num))
+            elif grid[c] != CellContents.Unclicked.char:
                 raise ValueError(
-                    f"Unknown cell contents representation in cell {c}: " f"{grid[c]}"
+                    f"Unknown cell contents representation in cell {c}: {grid[c]}"
                 )
         return board
 
     def reset(self):
         """Reset the board to the initial state."""
         for c in self.all_coords:
-            self[c] = CellUnclicked()
+            self[c] = CellContents.Unclicked
 
 
 class Minefield(utils.Grid):
@@ -294,11 +294,11 @@ class Minefield(utils.Grid):
         seen upon game completion.
         """
         completed_board = Board(self.x_size, self.y_size)
-        completed_board.fill(CellNum(0))
+        completed_board.fill(CellContents.Num(0))
         for c in self.all_coords:
             mines = self[c]
             if mines > 0:
-                completed_board[c] = CellFlag(mines)
+                completed_board[c] = CellContents.Flag(mines)
                 for nbr in self.get_nbrs(c):
                     # For neighbouring cells that don't contain mines, increment
                     #  their number.
@@ -316,7 +316,7 @@ class Minefield(utils.Grid):
         """
         openings = []
         blanks_to_check = {
-            c for c in self.all_coords if self.completed_board[c] == CellNum(0)
+            c for c in self.all_coords if self.completed_board[c] is CellContents.Num(0)
         }
         while blanks_to_check:
             orig_coord = blanks_to_check.pop()
@@ -328,7 +328,9 @@ class Minefield(utils.Grid):
                 coord = check.pop()
                 nbrs = set(self.get_nbrs(coord))
                 check |= {
-                    c for c in nbrs - opening if self.completed_board[c] == CellNum(0)
+                    c
+                    for c in nbrs - opening
+                    if self.completed_board[c] is CellContents.Num(0)
                 }
                 opening |= nbrs
             openings.append(sorted(opening))
