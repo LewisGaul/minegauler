@@ -1,10 +1,7 @@
 """
-board_test.py - Test the board module
+Test the board module.
 
 October 2018, Lewis Gaul
-
-Uses pytest - simply run 'python -m pytest [-k board_test]' from the
-root directory.
 """
 
 from typing import List

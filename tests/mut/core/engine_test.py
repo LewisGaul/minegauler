@@ -1,10 +1,7 @@
 """
-engine_test.py - Test the game engine module
+Test the game engine module.
 
 October 2018, Lewis Gaul
-
-Uses pytest - simply run 'python -m pytest [-k engine_test]' from
-the root directory.
 """
 
 import logging

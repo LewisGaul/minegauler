@@ -1,10 +1,7 @@
 """
-game.py - Test the game module
+Test the game module.
 
 August 2019, Lewis Gaul
-
-Uses pytest - simply run 'python -m pytest tests/ [-k game_test]' from
-the root directory.
 """
 
 from unittest.mock import Mock

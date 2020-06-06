@@ -1,10 +1,7 @@
 """
-integration_test.py - Integration test, aiming for all mainline code
+Integration test, aiming to cover all mainline code.
 
 December 2019, Lewis Gaul
-
-Uses pytest - simply run 'python -m pytest tests/ [-k integration_test]' from
-the root directory.
 """
 
 import logging
