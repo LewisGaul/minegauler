@@ -1,10 +1,7 @@
 """
-minefield_test.py - Test the minefield widget module
+Test the minefield widget module.
 
 December 2018, Lewis Gaul
-
-Uses pytest - simply run 'python -m pytest [-k minefield_test]' from
-the root directory.
 """
 
 import functools

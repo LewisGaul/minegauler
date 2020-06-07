@@ -47,7 +47,7 @@ from .. import ROOT_DIR, shared
 from ..core import api
 from ..shared.highscores import HighscoreSettingsStruct, HighscoreStruct
 from ..shared.utils import GUIOptsStruct, get_difficulty
-from ..types import CellContentsType, CellImageType, GameState, UIMode
+from ..types import CellContents, CellImageType, GameState, UIMode
 from ..typing import Coord_T
 from . import highscores, minefield, panel, state, utils
 from .utils import FILES_DIR
@@ -243,7 +243,7 @@ class MinegaulerGUI(
         self._state.mines = mines
         self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
-    def update_cells(self, cell_updates: Mapping[Coord_T, CellContentsType]) -> None:
+    def update_cells(self, cell_updates: Mapping[Coord_T, CellContents]) -> None:
         """
         Called to indicate some cells have changed state.
 

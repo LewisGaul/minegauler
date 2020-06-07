@@ -24,7 +24,7 @@ import attr
 
 from ..core import board as brd
 from ..shared import utils
-from ..types import CellContentsType, GameState, UIMode
+from ..types import CellContents, GameState, UIMode
 from ..typing import Coord_T
 
 
@@ -98,7 +98,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
+    def update_cells(self, cell_updates: Dict[Coord_T, CellContents]) -> None:
         """
         Called when one or more cells were updated.
 
@@ -256,7 +256,7 @@ class Caller(AbstractListener):
         """
         self._logger.debug(f"Calling set_mines() with {mines}")
 
-    def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
+    def update_cells(self, cell_updates: Dict[Coord_T, CellContents]) -> None:
         """
         Called when one or more cells were updated.
 

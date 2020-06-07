@@ -235,12 +235,6 @@ class ArgParser(argparse.ArgumentParser):
 
 
 class BotMsgParser(ArgParser):
-    def add_username_arg(self, *, nargs: Union[int, str] = 1, allow_me=True):
-        choices = list(utils.USER_NAMES)
-        if allow_me:
-            choices.append("me")
-        self.add_positional_arg("username", nargs=nargs, choices=choices)
-
     def add_difficulty_arg(self):
         self.add_positional_arg(
             "difficulty", nargs="?", type=self._convert_difficulty_arg
@@ -314,10 +308,6 @@ Welcome to the Minegauler bot!
 
 Instructions for downloading Minegauler can be found in the \
 [GitHub repo](https://github.com/LewisGaul/minegauler/blob/master/README.md).
-
-For Windows users, I would recommend either `pip install minegauler` from \
-Windows command prompt, or setting up an \
-[X-server](https://sourceforge.net/projects/xming/) for running under WSL.
 
 The bot provides the ability to check highscores and matchups for games of \
 Minegauler, and also gives notifications whenever anyone in the group sets a \
@@ -454,7 +444,7 @@ def info(args, **kwargs):
 )
 def player(args, username: str, allow_markdown=False, **kwargs):
     parser = BotMsgParser()
-    parser.add_username_arg()
+    parser.add_positional_arg("username", choices=list(utils.USER_NAMES) + ["me"])
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
@@ -482,7 +472,7 @@ def player(args, username: str, allow_markdown=False, **kwargs):
         )
     ]
     lines.extend(
-        formatter.format_player_highscores(highscores, difficulty=args.difficulty)
+        formatter.format_player_highscores(list(highscores), difficulty=args.difficulty)
     )
 
     linebreak = "  \n" if allow_markdown else "\n"
@@ -506,12 +496,11 @@ def ranks(args, **kwargs) -> str:
 
     times = utils.get_highscore_times(args.rank_type, args.drag_select, args.per_cell)
 
-    lines = []
-    lines.append(
+    lines = [
         "Rankings for {}".format(
             formatter.format_filters(args.rank_type, args.drag_select, args.per_cell)
         )
-    )
+    ]
     ranks = formatter.format_highscore_times(times)
     if allow_markdown:
         ranks = f"```\n{ranks}\n```"
@@ -535,19 +524,26 @@ def stats(args, **kwargs):
 
 
 @helpstring("Get player stats")
-@schema(
-    "stats players {all | <name> [<name> ...]} "
-    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
-    "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
-)
-def stats_players(args, **kwargs):
+@schema("stats players {all | <name> [<name> ...]}")
+def stats_players(args, username: str, allow_markdown=False, **kwargs):
     parser = BotMsgParser()
-    parser.add_username_arg(nargs="+")
-    parser.add_difficulty_arg()
-    parser.add_per_cell_arg()
-    parser.add_drag_select_arg()
+    parser.add_positional_arg(
+        "username", nargs="+", choices=list(utils.USER_NAMES) + ["me", "all"]
+    )
     args = parser.parse_args(args)
-    return "Player stats {}".format(", ".join(args.username))
+    if "all" in args.username:
+        if len(args.username) > 1:
+            raise InvalidArgsError("'all' should be specified without usernames")
+        users = utils.USER_NAMES.keys()
+    else:
+        users = {u if u != "me" else username for u in args.username}
+
+    player_info = [utils.get_player_info(u) for u in users]
+    lines = [formatter.format_player_info(player_info)]
+    if allow_markdown:
+        lines = ["```", *lines, "```"]
+
+    return "\n".join(lines)
 
 
 @helpstring("Get matchups for given players")
@@ -564,7 +560,9 @@ def matchups(
     **kwargs,
 ):
     parser = BotMsgParser()
-    parser.add_username_arg(nargs="+")
+    parser.add_positional_arg(
+        "username", nargs="+", choices=list(utils.USER_NAMES) + ["me"]
+    )
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
@@ -605,7 +603,9 @@ def best_matchups(
     args, username: str, allow_markdown=False, room_type=RoomType.DIRECT, **kwargs
 ):
     parser = BotMsgParser()
-    parser.add_username_arg(nargs="*")
+    parser.add_positional_arg(
+        "username", nargs="*", choices=list(utils.USER_NAMES) + ["me"]
+    )
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
@@ -644,14 +644,16 @@ def best_matchups(
 )
 def challenge(args, username: str, **kwargs):
     parser = BotMsgParser()
-    parser.add_username_arg(nargs="+", allow_me=False)
+    parser.add_positional_arg(
+        "username",
+        nargs="+",
+        choices=set(utils.USER_NAMES) - {username} - utils.NO_TAG_USERS,
+    )
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
-    names = {u for u in args.username if u != username}
-    if len(names) < 1:
-        raise InvalidArgsError("Need at least one other player's name")
+    names = {u for u in args.username}
 
     users_str = ", ".join(utils.tag_user(u) for u in names)
     diff_str = args.difficulty + " " if args.difficulty else ""
@@ -674,6 +676,13 @@ def challenge(args, username: str, **kwargs):
 @schema("set nickname <name>")
 def set_nickname(args, username: str, **kwargs):
     new = " ".join(args)
+    if len(new) > 10:
+        raise InvalidArgsError("Nickname must be no longer than 10 characters")
+    for other in utils.USER_NAMES.values():
+        if new.lower() == other.lower():
+            raise InvalidArgsError(f"Nickname {other!r} already in use")
+    if new.lower() in utils.USER_NAMES.keys() and new != username:
+        raise InvalidArgsError(f"Cannot set nickname to someone else's username!")
     old = utils.USER_NAMES[username]
     logger.debug("Changing nickname of %s from %r to %r", username, old, new)
     utils.set_user_nickname(username, new)
@@ -685,10 +694,10 @@ _COMMON_COMMANDS = {
     "help": None,
     "player": player,
     "ranks": ranks,
-    # "stats": {
-    #     None: stats,
-    #     "players": stats_players,
-    # },
+    "stats": {
+        # None: stats,
+        "players": stats_players,
+    },
     "matchups": matchups,
     "best-matchups": best_matchups,
 }
@@ -790,7 +799,7 @@ def parse_msg(
         else:
             linebreak = "\n\n" if allow_markdown else "\n"
             resp_msg = cmd_help(func, only_schema=True, allow_markdown=allow_markdown)
-            resp_msg = linebreak.join(["Unrecognised command", resp_msg])
+            resp_msg = linebreak.join([f"Unrecognised command: {str(e)}", resp_msg])
 
         raise InvalidArgsError(resp_msg) from e
 

@@ -2,20 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-
-## Planned
-
-### Additions
- - Ability to pause a game
- - Option of having multiple lives
- - Probabilities
- - New 'split cell' mode
-
-
-### Fixes
- - Gradual slow-down of the app over time
- - Slow loading of lots of highscores
-
+See the [issues page](https://github.com/LewisGaul/minegauler/issues) for upcoming features or pending fixes.
 
 ## 4.0
 
@@ -34,6 +21,10 @@ This initial release of version 4 includes:
  - Custom cell styles
  - Option to change the cell size
  - Ability to reduce the window size and use scroll
+
+
+### 4.0.5-a0 (2020-06-07)
+ - Project meta updates
 
 
 ### 4.0.4 (2020-02-09)

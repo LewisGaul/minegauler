@@ -22,12 +22,23 @@ jobs:
     - name: Run tests
       env:
         DISPLAY: ":0"
-      run: python -m pytest tests/ --cov --cov-report xml --cov-report term
+      run: python -m pytest tests/mut/ --cov --cov-report xml --cov-report term
+
+    - name: Create custom reports
+      run: python -m coverage xml --omit "tests/**" -o coverage-no-tests.xml
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        file: ./coverage.xml
+        file: ./coverage-no-tests.xml
         flags: mut
         fail_ci_if_error: true
+
+    - name: Upload coverage to Codecov (include test coverage)
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage.xml
+        flags: mut_with_tests
+        fail_ci_if_error: false

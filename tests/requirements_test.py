@@ -1,39 +1,36 @@
 """
-requirements_test.py - Test the requirements
+Test the package requirements are installed.
 
 October 2018, Lewis Gaul
-
-Uses pytest - simply run 'python -m pytest tests/ [-k requirements_test]' from
-the root directory.
 """
 
-import functools
 import pathlib
-from typing import Callable
+from typing import List
 
 import pkg_resources
-import pytest
+from pip import __version__ as pip_version_str
 
 
-@pytest.fixture()
-def get_pip_reqs():
-    from pip import __version__ as pip_version
-    assert float(pip_version[:2]) >= 19
+pip_version = float(".".join(pip_version_str.split(".")[:2]))
+
+
+def parse_requirements(path) -> List[str]:
+    assert pip_version >= 19
     from pip._internal.req import parse_requirements
 
-    if int(pip_version[:2]) < 20:
+    try:
         from pip._internal.download import PipSession
-    else:
+    except ImportError:
         from pip._internal.network.session import PipSession
 
-    return functools.partial(parse_requirements, session=PipSession)
+    reqs = parse_requirements(str(path), session=PipSession())
+    try:
+        return [r.requirement for r in reqs]
+    except AttributeError:
+        return [str(r.req) for r in reqs]
 
 
-class TestRequirements:
-    def test_requirements(self, get_pip_reqs: Callable):
-        """
-        Recursively confirm that requirements are available.
-        """
-        reqs_path = pathlib.Path(__file__).parents[1] / "requirements.txt"
-        reqs = [str(r.req) for r in get_pip_reqs(str(reqs_path))]
-        pkg_resources.require(reqs)
+def test_requirements():
+    """Check requirements are available."""
+    reqs_path = pathlib.Path(__file__).parents[1] / "requirements.txt"
+    pkg_resources.require(parse_requirements(reqs_path))

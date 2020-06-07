@@ -1,10 +1,7 @@
 """
-board_test.py - Test the board module
+Test the board module.
 
 October 2018, Lewis Gaul
-
-Uses pytest - simply run 'python -m pytest [-k board_test]' from the
-root directory.
 """
 
 from typing import List
@@ -13,7 +10,7 @@ import pytest
 
 from minegauler.core.board import Board, Minefield
 from minegauler.shared.utils import Grid
-from minegauler.types import *
+from minegauler.types import CellContents
 from minegauler.typing import Coord_T
 
 
@@ -187,16 +184,20 @@ class TestMinefield:
         # Check opening coords and completed board are sane.
         opening_coords = [c for grp in mf.openings for c in grp]
         assert all(
-            [opening_coords.count(c) == 1 for c in mf.all_coords if mf[c] == CellNum(0)]
+            [
+                opening_coords.count(c) == 1
+                for c in mf.all_coords
+                if mf[c] == CellContents.Num(0)
+            ]
         )
         for c in mf.all_coords:
             if c in mf.mine_coords:
                 assert mf[c] > 0
-                assert type(mf.completed_board[c]) is CellFlag
+                assert type(mf.completed_board[c]) is CellContents.Flag
                 assert c not in opening_coords
             else:
                 assert mf[c] == 0
-                assert type(mf.completed_board[c]) is CellNum
+                assert type(mf.completed_board[c]) is CellContents.Num
                 if mf.completed_board[c] == 0:
                     assert c in opening_coords
 

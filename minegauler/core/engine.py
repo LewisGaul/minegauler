@@ -19,15 +19,7 @@ from typing import Dict, Optional
 import attr
 
 from ..shared import utils
-from ..types import (
-    CellContentsType,
-    CellFlag,
-    CellMine,
-    CellNum,
-    CellUnclicked,
-    GameState,
-    UIMode,
-)
+from ..types import CellContents, GameState, UIMode
 from ..typing import Coord_T
 from . import api
 from . import board as brd
@@ -59,7 +51,7 @@ class _SharedInfo:
     Information to pass to frontends.
     
     Elements:
-    cell_updates ({(int, int): CellContentsType, ...})
+    cell_updates ({(int, int): CellContents, ...})
         Dictionary of updates to cells, mapping the coordinate to the new
         contents of the cell.
     game_state (GameState)
@@ -74,7 +66,7 @@ class _SharedInfo:
         The time elapsed if the game has ended, otherwise None.
     """
 
-    cell_updates: Dict[Coord_T, CellContentsType] = attr.Factory(dict)
+    cell_updates: Dict[Coord_T, CellContents] = attr.Factory(dict)
     game_state: GameState = GameState.READY
     mines_remaining: int = 0
     lives_remaining: int = 0
@@ -207,7 +199,7 @@ class GameController(api.AbstractController):
 
         self._drag_select = False
         self._name = ""
-        self._game: game.Game
+        self._game: game.Game = None  # Populated in new_game()
         self._last_update: _SharedInfo = _SharedInfo()
         self._notif.update_game_state(GameState.READY)
         self._notif.set_mines(self._opts.mines)
@@ -285,9 +277,9 @@ class GameController(api.AbstractController):
         super().flag_cell(coord)
 
         cell_state = self._game.board[coord]
-        if cell_state is CellUnclicked():
+        if cell_state is CellContents.Unclicked:
             self._game.set_cell_flags(coord, 1)
-        elif isinstance(cell_state, CellFlag):
+        elif isinstance(cell_state, CellContents.Flag):
             if cell_state.num == self._opts.per_cell:
                 if flag_only:
                     return
@@ -410,7 +402,7 @@ class GameController(api.AbstractController):
         self._notif.set_mines(self._opts.mines)
         self._notif.reset()
 
-    def _send_updates(self, cells_updated: Dict[Coord_T, CellContentsType]) -> None:
+    def _send_updates(self, cells_updated: Dict[Coord_T, CellContents]) -> None:
         """Send updates to registered listeners."""
         end_game_info = None
         if (
@@ -490,9 +482,9 @@ class CreateController(api.AbstractController):
     def select_cell(self, coord: Coord_T) -> None:
         super().select_cell(coord)
         cell = self._board[coord]
-        if cell is CellUnclicked():
-            self._board[coord] = CellNum(0)
-        elif isinstance(cell, CellNum):
+        if cell is CellContents.Unclicked:
+            self._board[coord] = CellContents.Num(0)
+        elif isinstance(cell, CellContents.Num):
             self._board[coord] += 1
         else:
             return
@@ -502,20 +494,20 @@ class CreateController(api.AbstractController):
         super().flag_cell(coord)
         cell = self._board[coord]
 
-        if cell is CellUnclicked():
-            self._board[coord] = CellMine(1)
+        if cell is CellContents.Unclicked:
+            self._board[coord] = CellContents.Mine(1)
             self._flags += 1
-        elif isinstance(cell, CellMine):
+        elif isinstance(cell, CellContents.Mine):
             if cell.num == self._opts.per_cell:
                 if flag_only:
                     return
-                self._board[coord] = CellUnclicked()
+                self._board[coord] = CellContents.Unclicked
                 self._flags -= self._opts.per_cell
             else:
                 self._board[coord] += 1
                 self._flags += 1
-        elif isinstance(cell, CellNum):
-            self.board[coord] = CellUnclicked()
+        elif isinstance(cell, CellContents.Num):
+            self.board[coord] = CellContents.Unclicked
         else:
             return
         self._notif.update_cells({coord: self._board[coord]})
@@ -527,9 +519,9 @@ class CreateController(api.AbstractController):
     def remove_cell_flags(self, coord: Coord_T) -> None:
         super().remove_cell_flags(coord)
         cell = self._board[coord]
-        if not isinstance(cell, CellMine):
+        if not isinstance(cell, CellContents.Mine):
             return
-        self._board[coord] = CellUnclicked()
+        self._board[coord] = CellContents.Unclicked
         self._flags -= cell.num
         self._notif.update_cells({coord: self._board[coord]})
         self._notif.update_mines_remaining(self._flags)
@@ -575,7 +567,7 @@ class CreateController(api.AbstractController):
         super().save_current_minefield(file)
         mines_grid = utils.Grid(self._opts.x_size, self._opts.y_size)
         for c in self._board.all_coords:
-            if type(self._board[c]) is CellMine:
+            if type(self._board[c]) is CellContents.Mine:
                 mines_grid[c] = self._board[c].num
         mf = brd.Minefield.from_grid(mines_grid, per_cell=self._opts.per_cell)
         _save_minefield(mf, file)

@@ -1,10 +1,7 @@
 """
-main_window_test.py - Test the main window of the GUI
+Test the main window of the GUI.
 
 December 2018, Lewis Gaul
-
-Uses pytest - simply run 'python -m pytest tests/ [-k main_window_test]' from
-the root directory.
 """
 
 from unittest import mock
@@ -19,7 +16,7 @@ from minegauler.frontend.main_window import MinegaulerGUI
 from minegauler.types import GameState
 
 from ..utils import make_true_mock
-from . import utils
+from .utils import maybe_stop_for_interaction
 
 
 _MockPanelWidget = make_true_mock(panel.PanelWidget)
@@ -83,7 +80,7 @@ class TestMinegaulerGUI:
         self._minefield_class_mock.assert_called_once()
         assert type(gui._name_entry_widget) is main_window._NameEntryBar
         gui.show()
-        utils.maybe_stop_for_interaction(qtbot)
+        maybe_stop_for_interaction(qtbot)
 
     def test_listener_methods(self, qtbot: QtBot, gui: MinegaulerGUI):
         """Test the AbstractListener methods."""

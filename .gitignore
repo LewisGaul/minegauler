@@ -5,11 +5,13 @@ build/
 dist/
 *.egg-info/
 *.spec
+target/
+Cargo.lock
 
 # Test-generated
 coverage/
 .coverage
-coverage.xml
+coverage*.xml
 *,cover
 htmlcov/
 .pytest*

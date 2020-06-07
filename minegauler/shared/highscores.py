@@ -166,7 +166,7 @@ class _SQLMixin:
         if drag_select is not None:
             conditions.append(f"drag_select={drag_select:d}")
         if name is not None:
-            conditions.append(f"name='{name}'")
+            conditions.append(f"LOWER(name)='{name.lower()}'")
         return "SELECT {} FROM highscores {} ORDER BY elapsed ASC".format(
             ", ".join(_highscore_fields),
             "WHERE " + " AND ".join(conditions) if conditions else "",
@@ -238,7 +238,6 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     """Remote highscores database."""
 
     _USER = "admin"
-    _PASSWORD = os.environ.get("SQL_DB_PASSWORD")
     _HOST = "minegauler-highscores.cb4tvkuqujyi.eu-west-2.rds.amazonaws.com"
     _DB_NAME = "minegauler"
     _TABLE_NAME = "highscores"
@@ -268,6 +267,10 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     @property
     def conn(self) -> mysql.connector.MySQLConnection:
         return self._conn
+
+    @property
+    def _PASSWORD(self):
+        return os.environ.get("SQL_DB_PASSWORD")
 
     def get_highscores(
         self,
@@ -392,7 +395,7 @@ def filter_and_sort(
                 and utils.is_flagging_threshold(hs.flagging)
             ):
                 all_pass = False
-        if "name" in filters and filters["name"] != hs.name:
+        if "name" in filters and filters["name"].lower() != hs.name.lower():
             all_pass = False
         if all_pass:
             # All filters satisfied.

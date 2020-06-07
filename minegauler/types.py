@@ -1,25 +1,23 @@
 """
-types.py - Type definitions
+Project types.
 
 June 2018, Lewis Gaul
 
 Exports:
-CellContentsType (class)
+
+CellContents (class)
     Base class for cell contents types.
-CellMineType (class)
-    Base class for cell contents of a mine type.
-CellUnclicked, CellNum, CellMine, CellHitMine, CellFlag, CellwrongFlag (class)
-    CellContentsType implementations.
 
 GameState (Enum)
     The possible states of a game.
-
-GameFlagMode (Enum)
-    The possible flagging modes for a game.
 """
+
+__all__ = ("CellContents", "CellImageType", "FaceState", "GameState", "UIMode")
 
 import enum
 import functools
+
+from .typing import CellContentsItem
 
 
 # ------------------------------------------------------------------------------
@@ -55,14 +53,23 @@ class _NumericCellContentsMixin:
             return self.__class__(self.num - obj)
 
 
-class CellContentsType:
+class CellContents:
     """Abstract base class for contents of a minesweeper board cell."""
 
     char: str
 
+    Unclicked = NotImplemented
+    Num = NotImplemented
+    Mine = NotImplemented
+    HitMine = NotImplemented
+    Flag = NotImplemented
+    WrongFlag = NotImplemented
+
+    items = NotImplemented
+
     @functools.lru_cache(maxsize=None)
     def __new__(cls, *args):
-        if cls == CellContentsType:
+        if cls is CellContents:
             raise TypeError("Base class should not be instantiated")
         return super().__new__(cls)
 
@@ -72,14 +79,29 @@ class CellContentsType:
     def __repr__(self):
         return self.char
 
+    def is_mine_type(self) -> bool:
+        return False  # Overridden by subclasses as required
 
-class CellUnclicked(CellContentsType):
+    @staticmethod
+    def from_char(char: str) -> CellContentsItem:
+        return NotImplemented  # Implemented below, after subclasses
+
+    def is_type(self, item) -> bool:
+        if item in [self.Unclicked]:
+            return self is item
+        elif item in self.items:
+            return type(self) is item
+        else:
+            raise ValueError(f"Unrecognised type {item!r}")
+
+
+class _CellUnclicked(CellContents):
     """Unclicked cell on a minesweeper board."""
 
     char = "#"
 
 
-class CellNum(_NumericCellContentsMixin, CellContentsType):
+class _CellNum(_NumericCellContentsMixin, CellContents):
     """Number shown in a cell on a minesweeper board."""
 
     char = ""
@@ -90,11 +112,11 @@ class CellNum(_NumericCellContentsMixin, CellContentsType):
             raise ValueError("Cell value cannot be negative")
 
 
-class CellMineType(_NumericCellContentsMixin, CellContentsType):
+class _CellMineType(_NumericCellContentsMixin, CellContents):
     """Abstract base class for the number of a mine type in a cell."""
 
     def __new__(cls, num=1):
-        if cls == CellMineType:
+        if cls is _CellMineType:
             raise TypeError(
                 f"{type(cls)} should be used as a base class and not "
                 "instantiated directly"
@@ -106,46 +128,75 @@ class CellMineType(_NumericCellContentsMixin, CellContentsType):
         if num < 1:
             raise ValueError("Mine-type cell contents must represent one or more mines")
 
-    @staticmethod
-    def get_class_from_char(char):
-        """
-        Get the class of mine-like cell contents using the character
-        representation.
-
-        Arguments:
-        char (str, length 1)
-            The character representation of a cell contents type.
-
-        Return:
-            The cell contents class.
-        """
-        for cls in [CellMine, CellHitMine, CellFlag, CellWrongFlag]:
-            if cls.char == char:
-                return cls
+    def is_mine_type(self) -> bool:
+        return True
 
 
-class CellMine(CellMineType):
+class _CellMine(_CellMineType):
     """Number of mines in a cell shown on a minesweeper board."""
 
     char = "M"
 
 
-class CellHitMine(CellMineType):
+class _CellHitMine(_CellMineType):
     """Number of hit mines in a cell shown on a minesweeper board."""
 
     char = "!"
 
 
-class CellFlag(CellMineType):
+class _CellFlag(_CellMineType):
     """Number of flags in a cell shown on a minesweeper board."""
 
     char = "F"
 
 
-class CellWrongFlag(CellFlag):
+class _CellWrongFlag(_CellFlag):
     """Number of incorrect flags in a cell shown on a minesweeper board."""
 
     char = "X"
+
+
+# Make the base class act like an ADT, serving as the only external API.
+CellContents.Unclicked = _CellUnclicked()
+CellContents.Num = _CellNum
+CellContents.Mine = _CellMine
+CellContents.HitMine = _CellHitMine
+CellContents.Flag = _CellFlag
+CellContents.WrongFlag = _CellWrongFlag
+
+CellContents.items = [
+    CellContents.Unclicked,
+    CellContents.Num,
+    CellContents.Mine,
+    CellContents.HitMine,
+    CellContents.Flag,
+    CellContents.WrongFlag,
+]
+
+
+def _from_char(char: str):
+    """
+    Get the class of mine-like cell contents using the character
+    representation.
+
+    :param char:
+        The character representation of a cell contents type.
+    :return:
+        The cell contents enum item.
+    """
+    for item in [
+        CellContents.Unclicked,
+        CellContents.Num,
+        CellContents.Mine,
+        CellContents.HitMine,
+        CellContents.Flag,
+        CellContents.WrongFlag,
+    ]:
+        if item.char == char:
+            return item
+
+
+CellContents.from_char = _from_char
 
 
 # ------------------------------------------------------------------------------
