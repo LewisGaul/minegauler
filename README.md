@@ -1,7 +1,7 @@
 [![Build badge](https://img.shields.io/github/workflow/status/LewisGaul/minegauler/Workflow%20for%20testing/dev)](https://github.com/LewisGaul/minegauler/actions?query=workflow%3A%22Workflow+for+testing%22+branch%3Adev)
 [![Codecov badge](https://img.shields.io/codecov/c/github/LewisGaul/minegauler/dev?flag=mut)](https://codecov.io/gh/LewisGaul/minegauler/)
-[![PyPI](https://img.shields.io/pypi/v/minegauler.svg)](https://pypi.python.org/pypi/minegauler/)
-[![Downloads](https://img.shields.io/github/downloads/LewisGaul/minegauler/total)](https://github.com/LewisGaul/minegauler/releases/)
+[![PyPI badge](https://img.shields.io/pypi/v/minegauler.svg)](https://pypi.python.org/pypi/minegauler/)
+[![Downloads badge](https://img.shields.io/github/downloads/LewisGaul/minegauler/total)](https://github.com/LewisGaul/minegauler/releases/)
 [![Code style badge](https://img.shields.io/badge/code%20style-black-000000.svg)](https://black.readthedocs.io/en/stable/)
 
 # Minegauler v4.0.5-a0
