@@ -6,8 +6,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Currently only works on Linux (x-server stuff)
-        os: [ubuntu-latest]  # TODO: [ubuntu-latest, windows-latest, macOS-latest]
+        # TODO: Currently not working on Windows (X-server stuff)
+        os: [ubuntu-latest, macOS-latest]
         python-version: ["3.6", "3.7", "3.8"]
     steps:
       - uses: actions/checkout@master
@@ -20,12 +20,29 @@ jobs:
       - name: Install Python requirements
         run: pip install pytest pytest-qt -r requirements.txt
 
-      - name: Set up X-server
+      - name: Set up X-server (Linux)
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get install -y xvfb libxkbcommon-x11-0
           Xvfb :0 &
+      - name: Set up X-server (MacOS)
+        if: matrix.os == 'macOS-latest'
+        run: |
+          brew cask install xquartz
+          chmod go-w /Users/runner/ || chmod go-w /opt/* || true
+          /usr/X11/bin/Xquartz :0 &
 
-      - name: Run tests
+      - name: Run requirements test
+        run: python -m pytest tests/requirements_test.py
+
+      - name: Run MUT
         env:
           DISPLAY: ":0"
-        run: python -m pytest tests/
+        run: python -m pytest tests/mut/
+
+      - name: Run IT
+        # TODO: Currently hangs on Windows and MacOS
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          DISPLAY: ":0"
+        run: python -m pytest tests/it/
