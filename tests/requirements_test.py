@@ -27,7 +27,7 @@ def parse_requirements(path) -> List[str]:
     try:
         return [r.requirement for r in reqs]
     except AttributeError:
-        return [r.req for r in reqs]
+        return [str(r.req) for r in reqs]
 
 
 def test_requirements():
