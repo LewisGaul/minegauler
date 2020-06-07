@@ -23,8 +23,8 @@ This initial release of version 4 includes:
  - Ability to reduce the window size and use scroll
 
 
-### 4.0.5-a0 (2020-0?-??)
- - ???
+### 4.0.5-a0 (2020-06-07)
+ - Project meta updates
 
 
 ### 4.0.4 (2020-02-09)
