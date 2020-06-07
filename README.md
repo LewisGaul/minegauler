@@ -1,4 +1,4 @@
-[![Build badge](https://img.shields.io/github/workflow/status/LewisGaul/minegauler/Workflow%20for%20Codecov/dev)](https://github.com/LewisGaul/minegauler/actions?query=workflow%3A%22Workflow+for+Codecov%22+branch%3Adev)
+[![Build badge](https://img.shields.io/github/workflow/status/LewisGaul/minegauler/Workflow%20for%20testing/dev)](https://github.com/LewisGaul/minegauler/actions?query=workflow%3A%22Workflow+for+testing%22+branch%3Adev)
 [![Codecov badge](https://img.shields.io/codecov/c/github/LewisGaul/minegauler/dev?flag=mut)](https://codecov.io/gh/LewisGaul/minegauler/)
 [![Code style badge](https://img.shields.io/badge/code%20style-black-000000.svg)](https://black.readthedocs.io/en/stable/)
 
