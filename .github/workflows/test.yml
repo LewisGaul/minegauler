@@ -6,7 +6,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        # Currently only works on Linux (x-server stuff)
+        os: [ubuntu-latest]  # TODO: [ubuntu-latest, windows-latest, macOS-latest]
         python-version: ["3.6", "3.7", "3.8"]
     steps:
       - uses: actions/checkout@master
