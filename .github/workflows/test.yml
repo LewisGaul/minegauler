@@ -40,8 +40,6 @@ jobs:
         run: python -m pytest tests/mut/
 
       - name: Run IT
-        # TODO: Currently hangs on Windows and MacOS
-        if: matrix.os == 'ubuntu-latest'
         env:
           DISPLAY: ":0"
         run: python -m pytest tests/it/
