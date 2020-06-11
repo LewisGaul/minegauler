@@ -198,7 +198,8 @@ class Game:
         else:
             if x_size is None or y_size is None or mines is None:
                 raise ValueError(
-                    "x_size, y_size and mines must be integers if a minefield is not provided"
+                    "x_size, y_size and mines must be integers if a minefield "
+                    "is not provided"
                 )
             Minefield.check_enough_space(
                 x_size=x_size, y_size=y_size, mines=mines, per_cell=per_cell
@@ -272,25 +273,32 @@ class Game:
             return math.inf
         return self.mf.bbbv * self.get_prop_complete() / self.get_elapsed()
 
+    @_check_game_started
     def get_elapsed(self) -> float:
         """
         Get the elapsed game time.
-
-        Returns zero if the game has not been started.
 
         :return:
             The elapsed time, in seconds.
         """
         if self.end_time:
             return self.end_time - self.start_time
-        elif self.start_time:
-            return tm.time() - self.start_time
         else:
-            return 0
+            return tm.time() - self.start_time
 
+    @_check_game_started
     def get_flag_proportion(self) -> float:
+        """
+        Get the proportion of the mines that have been flagged.
+
+        :return:
+            The flagging proportion.
+        """
         if self.mines == 0:
-            return 0
+            if self._num_flags > 0:
+                return math.inf
+            else:
+                return 0
         return self._num_flags / self.mines
 
     def _create_minefield(self, coord: Coord_T) -> None:
