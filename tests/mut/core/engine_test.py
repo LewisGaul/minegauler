@@ -52,8 +52,9 @@ class TestController:
 
     # --------------------------------------------------------------------------
     # Test cases
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def test_create(self):
+        """Test basic creation of a controller."""
         # Normal create of a controller.
         ctrlr = GameController(self.opts)
         assert ctrlr._opts == self.opts
@@ -65,63 +66,26 @@ class TestController:
         with pytest.raises(ValueError):
             GameController("INVALID")
 
-    @pytest.mark.skip("API has changed - needs updating")
-    def test_register_callbacks(self, frontend1, frontend2):
-        # Register two valid callback functions.
+    def test_register_listeners(self, frontend1, frontend2):
+        """Test registering listeners."""
+        # Register two listeners.
         ctrlr = self.create_controller()
-        ctrlr.register_callback(lambda x: None)
-        ctrlr.register_callback(lambda x, y=None: None)
-        assert len(ctrlr._registered_callbacks) == 2
-
-        # Register an invalid callback - not callable.
-        ctrlr = self.create_controller()
-        ctrlr.register_callback("NOT CALLABLE")
-        # @@@LG Check an error is logged.
-        assert len(ctrlr._registered_callbacks) == 0
-
-        # Register an invalid callback - doesn't take a positional argument.
-        ctrlr = self.create_controller()
-        ctrlr.register_callback(lambda: None)
-        # @@@LG Check an error is logged.
-        assert len(ctrlr._registered_callbacks) == 0
-
-        # Register an invalid callback - expects too many positional arguments.
-        ctrlr = self.create_controller()
-        ctrlr.register_callback(lambda x, y: None)
-        # @@@LG Check an error is logged.
-        assert len(ctrlr._registered_callbacks) == 0
-
-        # Register a callback that can't be inspected.
-        ctrlr = self.create_controller()
-        ctrlr.register_callback(min)
-        # @@@LG Check a warning is logged.
-        assert len(ctrlr._registered_callbacks) == 1
+        ctrlr.register_listener(frontend1)
+        ctrlr.register_listener(frontend2)
 
         # Check callbacks are called.
-        ctrlr = self.create_controller()
-        ctrlr._next_update = "dummy"
-        ctrlr._registered_callbacks = [frontend1, frontend2]
-        ctrlr._send_callback_updates()
-        for cb in ctrlr._registered_callbacks:
-            cb.assert_called_once()
-            cb.reset_mock()
-
-        # Check an error is logged when a callback raises an error.
-        frontend1.side_effect = Exception
-        ctrlr._next_update = "dummy"
-        ctrlr._send_callback_updates()
-        # @@@LG Check error is logged.
-        for cb in ctrlr._registered_callbacks:
-            cb.assert_called_once()
-            cb.reset_mock()
+        ctrlr._game.state = GameState.ACTIVE
+        ctrlr._send_updates(dict())
+        for listener in [frontend1, frontend2]:
+            listener.update_game_state.assert_called_once()
 
     def test_cell_interaction(self, frontend1):
+        """Test various basic cell interaction."""
         coord = (2, 2)
 
         # Setup.
         opts = GameOptsStruct(per_cell=2, first_success=False)
-        ctrlr = self.create_controller(opts=opts, set_mf=False, cb=frontend1)
-        frontend1.assert_not_called()
+        ctrlr = self.create_controller(opts=opts, set_mf=False, listener=frontend1)
 
         # Flag a cell.
         ctrlr.flag_cell(coord)
@@ -129,30 +93,18 @@ class TestController:
         assert not ctrlr._game.mf
         assert ctrlr._game.state is GameState.READY
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines - 1
-        # self.check_and_reset_callback(
-        #     frontend1,
-        #     cell_updates=self.get_cell_states([coord], ctrlr),
-        #     mines_remaining=ctrlr._game.mines_remaining,
-        # )
 
         # Select a flagged cell.
         ctrlr.select_cell(coord)
         assert ctrlr._game.board[coord] is CellContents.Flag(1)
         assert ctrlr._game.state is GameState.READY
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines - 1
-        # frontend1.assert_not_called()  # TODO
-        frontend1.reset_mock()  # TODO
 
         # Flag a cell that is already flagged (multiple mines per cell).
         ctrlr.flag_cell(coord)
         assert ctrlr._game.board[coord] is CellContents.Flag(2)
         assert ctrlr._game.state is GameState.READY
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines - 2
-        # self.check_and_reset_callback(
-        #     frontend1,
-        #     cell_updates=self.get_cell_states([coord], ctrlr),
-        #     mines_remaining=ctrlr._game.mines_remaining,
-        # )
 
         # Flag a cell that is at max flags to reset it.
         ctrlr.flag_cell(coord)
@@ -160,11 +112,6 @@ class TestController:
         assert not ctrlr._game.mf
         assert ctrlr._game.state is GameState.READY
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines
-        # self.check_and_reset_callback(
-        #     frontend1,
-        #     cell_updates=self.get_cell_states([coord], ctrlr),
-        #     mines_remaining=ctrlr._game.mines_remaining,
-        # )
 
         # Remove cell flags.
         ctrlr.flag_cell(coord)
@@ -173,11 +120,6 @@ class TestController:
         assert ctrlr._game.board[coord] is CellContents.Unclicked
         assert ctrlr._game.state is GameState.READY
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines
-        # self.check_and_reset_callback(
-        #     frontend1,
-        #     cell_updates=self.get_cell_states([coord], ctrlr),
-        #     mines_remaining=ctrlr._game.mines_remaining,
-        # )
 
         # Select a cell to start the game.
         ctrlr.select_cell(coord)
@@ -187,15 +129,14 @@ class TestController:
         assert ctrlr._game.mf
         assert ctrlr._game.state in {GameState.ACTIVE, GameState.LOST}
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines
-        # self.check_and_reset_callback(frontend1, game_state=ctrlr._game.state)
 
         # Select an already-selected cell.
         revealed = ctrlr._game.board[coord]
         ctrlr.select_cell(coord)
         assert ctrlr._game.board[coord] == revealed
-        # frontend1.assert_not_called()  # TODO
 
-    def test_select_opening(self, frontend1):
+    def test_select_opening(self):
+        """Test clicking and revealing an opening."""
         exp_board = Board.from_2d_array(
             [
                 # fmt: off
@@ -208,10 +149,9 @@ class TestController:
             ]
         )
         # Select a cell to trigger the opening.
-        ctrlr = self.create_controller(cb=frontend1)
+        ctrlr = self.create_controller()
         ctrlr.select_cell((0, 0))
         assert ctrlr._game.board == exp_board
-        # self.check_and_reset_callback(frontend1, game_state=GameState.ACTIVE)
 
         # Select the edge of an opening.
         ctrlr = self.create_controller()
@@ -294,18 +234,17 @@ class TestController:
             ]
         )
 
-    def test_chording(self, frontend1):
+    def test_chording(self):
+        """Test chording in various situations."""
         # Use the same controller throughout the test.
+        ctrlr = self.create_controller()
 
         # No-op chording - game not started.
-        ctrlr = self.create_controller(cb=frontend1)
         ctrlr.chord_on_cell((0, 0))
         assert ctrlr._game.state is GameState.READY
-        # frontend1.assert_not_called()  # TODO
 
         # No-op chording - no flags.
         ctrlr.select_cell((0, 4))
-        frontend1.reset_mock()
         ctrlr.chord_on_cell((0, 4))
         assert ctrlr._game.board == Board.from_2d_array(
             [
@@ -318,11 +257,9 @@ class TestController:
                 # fmt: on
             ]
         )
-        # frontend1.assert_not_called()  # TODO
 
         # Basic successful chording.
         ctrlr.flag_cell((1, 4))
-        frontend1.reset_mock()
         ctrlr.chord_on_cell((0, 4))
         assert ctrlr._game.board == Board.from_2d_array(
             [
@@ -335,9 +272,6 @@ class TestController:
                 # fmt: on
             ]
         )
-        # self.check_and_reset_callback(
-        #     frontend1, cell_updates={c: CellContents.Num(1) for c in [(0, 3), (1, 3)]}
-        # )
 
         # Successful chording triggering opening.
         ctrlr.chord_on_cell((1, 3))
@@ -352,29 +286,23 @@ class TestController:
                 # fmt: on
             ]
         )
-        # self.check_and_reset_callback(frontend1)
 
         # No-op - repeated chording.
         prev_board = ctrlr._game.board
         ctrlr.chord_on_cell((1, 3))
         assert ctrlr._game.board == prev_board
-        # frontend1.assert_not_called()  # TODO
 
         # No-op - chording on flagged cell.
         ctrlr.chord_on_cell((1, 4))
         assert ctrlr._game.board == prev_board
-        # frontend1.assert_not_called()  # TODO
 
         # No-op - wrong number of flags.
         ctrlr.flag_cell((3, 0))
         ctrlr.flag_cell((3, 0))
-        frontend1.reset_mock()
         ctrlr.chord_on_cell((2, 1))
-        # frontend1.assert_not_called()  # TODO
 
         # Incorrect flags cause hitting a mine.
         ctrlr.flag_cell((3, 2))
-        frontend1.reset_mock()
         ctrlr.chord_on_cell((2, 2))
         assert ctrlr._game.board == Board.from_2d_array(
             [
@@ -387,9 +315,9 @@ class TestController:
                 # fmt: on
             ]
         )
-        # self.check_and_reset_callback(frontend1, game_state=GameState.LOST)
 
     def test_first_success(self):
+        """Test success on first click toggle option."""
         # First click should hit an opening with first_success set.
         opts = GameOptsStruct(first_success=True)
         ctrlr = GameController(opts)
@@ -424,14 +352,16 @@ class TestController:
             ctrlr = GameController(opts)
             ctrlr.select_cell(coord)
             attempts += 1
-            if attempts >= 10:
+            try:
                 assert ctrlr._game.board[coord] is CellContents.HitMine(1)
-            elif ctrlr._game.board[coord] is CellContents.HitMine(1):
                 passed = True
+            except AssertionError:
+                if attempts >= 10:
+                    raise
 
     def test_losing(self, frontend1):
         # Lose straight away.
-        ctrlr = self.create_controller(cb=frontend1)
+        ctrlr = self.create_controller(listener=frontend1)
         ctrlr.select_cell((3, 0))
         assert ctrlr._game.state is GameState.LOST
         assert ctrlr._game.end_time is not None
@@ -460,7 +390,7 @@ class TestController:
         # )
 
         # Lose after game has been started with incorrect flag.
-        ctrlr = self.create_controller(cb=frontend1)
+        ctrlr = self.create_controller(listener=frontend1)
         ctrlr.select_cell((1, 0))
         ctrlr.flag_cell((1, 1))
         frontend1.reset_mock()
@@ -509,7 +439,7 @@ class TestController:
     def test_winning(self, frontend1):
         # Test winning in one click.
         opts = GameOptsStruct(x_size=2, y_size=1, mines=1, first_success=True)
-        ctrlr = self.create_controller(opts=opts, set_mf=False, cb=frontend1)
+        ctrlr = self.create_controller(opts=opts, set_mf=False, listener=frontend1)
         ctrlr.select_cell((0, 0))
         assert ctrlr._game.state is GameState.WON
         assert ctrlr._game.end_time is not None
@@ -558,7 +488,7 @@ class TestController:
 
     def test_new_game(self, frontend1):
         # Only require a single controller when able to create new games.
-        ctrlr = self.create_controller(cb=frontend1)
+        ctrlr = self.create_controller(listener=frontend1)
 
         # Start a new game before doing anything else with minefield.
         ctrlr.new_game()
@@ -621,7 +551,7 @@ class TestController:
 
     def test_restart_game(self, frontend1):
         # Only require a single controller.
-        ctrlr = self.create_controller(set_mf=False, cb=frontend1)
+        ctrlr = self.create_controller(set_mf=False, listener=frontend1)
 
         # Replay before doing anything else, without minefield.
         ctrlr.restart_game()
@@ -713,7 +643,7 @@ class TestController:
     def test_lives(self, frontend1):
         opts = self.opts.copy()
         opts.lives = 3
-        ctrlr = self.create_controller(opts=opts, cb=frontend1)
+        ctrlr = self.create_controller(opts=opts, listener=frontend1)
 
         # Lose first life on single mine.
         ctrlr.select_cell((2, 0))
@@ -794,10 +724,10 @@ class TestController:
     # Helper methods
     # --------------------------------------------------------------------------
     @classmethod
-    def create_controller(cls, *, opts=None, set_mf=True, cb=None):
+    def create_controller(cls, *, opts=None, set_mf=True, listener=None):
         """
         Convenience method for creating a controller instance. Uses the test
-        class options and minefield by default, and registers a callback if one
+        class options and minefield by default, and registers a listener if one
         is given.
 
         Arguments:
@@ -805,17 +735,16 @@ class TestController:
             Optionally override the default options.
         set_mf=True
             Whether to set the minefield or leave it not being created.
-        cb=None
-            Optionally specify a callback to register.
+        listener=None
+            Optionally specify a listener to register.
         """
         if opts is None:
             opts = cls.opts
         ctrlr = GameController(opts)
         if set_mf:
             ctrlr._game.mf = cls.mf
-        if cb:
-            ctrlr._registered_callbacks = [cb]
-
+        if listener:
+            ctrlr.register_listener(listener)
         return ctrlr
 
     @staticmethod
