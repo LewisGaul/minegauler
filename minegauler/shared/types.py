@@ -12,14 +12,17 @@ __all__ = (
     "Difficulty",
     "FaceState",
     "GameState",
+    "PathLike",
     "UIMode",
 )
 
 import enum
 import functools
+import os
 from typing import Tuple, Type, Union
 
 
+PathLike = Union[str, bytes, os.PathLike]
 Coord_T = Tuple[int, int]
 CellContentsItem = Union[Type["CellContents"], "CellContents"]
 

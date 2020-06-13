@@ -1,12 +1,10 @@
 """
-main_window.py - Base GUI application implementation
+Base GUI application implementation.
 
 April 2018, Lewis Gaul
 
 Exports:
-BaseMainWindow
-    Main window class.
-    
+
 MinegaulerGUI
     Minegauler main window class.
 """
@@ -18,7 +16,7 @@ import os
 import textwrap
 import time as tm
 import traceback
-from typing import Callable, Dict, Mapping, Optional, Type
+from typing import Callable, Dict, Mapping, Optional
 
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QFocusEvent, QFont, QIcon, QKeyEvent
@@ -47,11 +45,12 @@ from .. import ROOT_DIR, shared
 from ..core import api
 from ..shared.highscores import HighscoreSettingsStruct, HighscoreStruct
 from ..shared.types import (
-    CellContents,
+    CellContentsItem,
     CellImageType,
     Coord_T,
     Difficulty,
     GameState,
+    PathLike,
     UIMode,
 )
 from ..shared.utils import GUIOptsStruct
@@ -95,7 +94,7 @@ class _BaseMainWindow(QMainWindow):
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowMaximizeButtonHint)
         self._setup_ui()
         # Keep track of all non-modal subwindows that are open.
-        self._open_subwindows: Dict[Type[QWidget], QWidget] = {}
+        self._open_subwindows: Dict[str, QWidget] = {}
 
     # --------------------------------------------------------------------------
     # UI setup
@@ -233,10 +232,11 @@ class MinegaulerGUI(
         :param y_size:
             The number of rows.
         """
+        # Game state needs updating first for state changes to be applied.
+        self.update_game_state(GameState.READY)
         self._state.x_size = x_size
         self._state.y_size = y_size
         self._mf_widget.reshape(x_size, y_size)
-        # self._update_size()
         self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
     def set_mines(self, mines: int) -> None:
@@ -249,7 +249,7 @@ class MinegaulerGUI(
         self._state.mines = mines
         self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
-    def update_cells(self, cell_updates: Mapping[Coord_T, CellContents]) -> None:
+    def update_cells(self, cell_updates: Mapping[Coord_T, CellContentsItem]) -> None:
         """
         Called to indicate some cells have changed state.
 
@@ -281,9 +281,9 @@ class MinegaulerGUI(
         """
         self._panel_widget.set_mines_counter(mines_remaining)
 
-    def switch_mode(self, mode: UIMode) -> None:
+    def ui_mode_changed(self, mode: UIMode) -> None:
         """
-        Called to indicate the game mode has change.
+        Called to indicate the UI mode has changed.
 
         :param mode:
             The mode to change to.
@@ -625,6 +625,7 @@ class MinegaulerGUI(
         try:
             self._ctrlr.load_minefield(file)
         except Exception:
+            # TODO: Pop up error message.
             logger.exception("Error occurred trying to load minefield from file")
 
     def _open_current_info_modal(self) -> None:
@@ -646,14 +647,14 @@ class MinegaulerGUI(
         """Open the popup to set the button size."""
         _ButtonSizeModal(self, self._state.btn_size, self.set_button_size).show()
 
-    def _open_text_popup(self, title: str, file: os.PathLike):
+    def _open_text_popup(self, title: str, file: PathLike):
         """Open a text popup window."""
         if title in self._open_subwindows:
             try:
                 self._open_subwindows[title].close()
                 # self._open_subwindows[title].setFocus()  # TODO: doesn't work!
                 # return
-            except:
+            except Exception:
                 self._open_subwindows.pop(title)
         win = _TextPopup(self, title, file)
         win.show()

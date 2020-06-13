@@ -264,7 +264,12 @@ class Game:
     def get_prop_complete(self) -> float:
         """Calculate the progress of solving the board using 3bv."""
         rem_3bv = self.get_rem_3bv()
-        return (self.mf.bbbv - rem_3bv) / self.mf.bbbv
+        try:
+            return (self.mf.bbbv - rem_3bv) / self.mf.bbbv
+        except ZeroDivisionError:
+            # This can only occur for created boards with no safe cells,
+            # which can technically never be completed.
+            return 0
 
     @_check_game_started
     def get_3bvps(self) -> float:

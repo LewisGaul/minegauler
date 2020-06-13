@@ -3,10 +3,11 @@ __init__.py - Available imports from the package
 
 December 2018, Lewis Gaul
 """
+
 import signal
 import sys
 
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, pyqtRemoveInputHook
 from PyQt5.QtWidgets import QApplication
 
 from . import state
@@ -23,6 +24,7 @@ _timer = None
 def init_app() -> None:
     global _app
     _app = QApplication(sys.argv)
+    pyqtRemoveInputHook()
 
 
 def run_app(gui: MinegaulerGUI) -> int:

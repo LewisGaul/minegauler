@@ -142,6 +142,7 @@ class PanelWidget(QWidget):
             self.timer.stop()
             self.set_face(state)
         else:
+            self.timer.reset()
             self.set_face(state)
 
 

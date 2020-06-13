@@ -14,14 +14,20 @@ __all__ = (
 
 import abc
 import logging
-import os
 from typing import Callable, Dict, Iterable, List, Optional
 
 import attr
 
 from ..core import board as brd
 from ..shared import utils
-from ..shared.types import CellContents, Coord_T, Difficulty, GameState, UIMode
+from ..shared.types import (
+    CellContents,
+    Coord_T,
+    Difficulty,
+    GameState,
+    PathLike,
+    UIMode,
+)
 
 
 @attr.attrs(auto_attribs=True, kw_only=True)
@@ -113,7 +119,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def switch_mode(self, mode: UIMode) -> None:
+    def ui_mode_changed(self, mode: UIMode) -> None:
         """
         Called to indicate the game mode has changed.
 
@@ -260,14 +266,14 @@ class Caller(AbstractListener):
         """
         self._logger.debug(f"Calling update_mines_remaining() with {mines_remaining}")
 
-    def switch_mode(self, mode: UIMode) -> None:
+    def ui_mode_changed(self, mode: UIMode) -> None:
         """
-        Called to indicate the game mode has change.
+        Called to indicate the UI mode has changed.
 
         :param mode:
             The mode to change to.
         """
-        self._logger.debug(f"Calling switch_mode() with {mode}")
+        self._logger.debug(f"Calling ui_mode_changed() with {mode}")
 
     def handle_exception(self, method: str, exc: Exception) -> None:
         """
@@ -403,7 +409,7 @@ class AbstractController(metaclass=abc.ABCMeta):
         self._logger.debug("Setting per cell to %s", value)
 
     @abc.abstractmethod
-    def save_current_minefield(self, file: os.PathLike) -> None:
+    def save_current_minefield(self, file: PathLike) -> None:
         """
         Save the current minefield to file.
 
@@ -414,7 +420,7 @@ class AbstractController(metaclass=abc.ABCMeta):
         self._logger.debug("Saving current minefield to file: %s", file)
 
     @abc.abstractmethod
-    def load_minefield(self, file: os.PathLike) -> None:
+    def load_minefield(self, file: PathLike) -> None:
         """
         Load a minefield from file.
 
