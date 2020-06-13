@@ -143,10 +143,10 @@ class TestMinefield:
 
     def test_create_extremes(self):
         """Check creation in various extremes."""
-        # Check creation with only 1 mine.
+        # Check creation with only no mines.
         mf = Minefield(10, 10, mines=0)
         self.check_mf_created(mf)
-        assert mf.bbbv == 0
+        assert mf.bbbv == 1
         assert len(mf.openings) == 1
 
         # Check creation of a tiny minefield.
@@ -214,8 +214,9 @@ class TestMinefield:
         """
         assert mf.mine_coords is not None
         assert len(mf.mine_coords) == mf.nr_mines
-        max_mines_in_cell = max(mf.mine_coords.count(c) for c in mf.mine_coords)
-        assert max_mines_in_cell <= mf.per_cell
+        if mf.nr_mines > 0:
+            max_mines_in_cell = max(mf.mine_coords.count(c) for c in mf.mine_coords)
+            assert max_mines_in_cell <= mf.per_cell
         assert len(set(mf.mine_coords)) < len(mf.all_coords)  # safe cell exists
         assert mf.bbbv is not None and 1 <= mf.bbbv <= len(mf.all_coords)
         assert mf.completed_board is not None
