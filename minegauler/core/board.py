@@ -16,8 +16,7 @@ import random as rnd
 from typing import Any, Collection, Dict, Iterable, List, Optional, Union
 
 from ..shared import utils
-from ..types import CellContents
-from ..typing import Coord_T
+from ..shared.types import CellContents, Coord_T
 
 
 class Board(utils.Grid):

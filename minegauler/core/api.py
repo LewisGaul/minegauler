@@ -21,8 +21,7 @@ import attr
 
 from ..core import board as brd
 from ..shared import utils
-from ..types import CellContents, Difficulty, GameState, UIMode
-from ..typing import Coord_T
+from ..shared.types import CellContents, Coord_T, Difficulty, GameState, UIMode
 
 
 @attr.attrs(auto_attribs=True, kw_only=True)

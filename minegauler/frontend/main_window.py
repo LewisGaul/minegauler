@@ -47,8 +47,14 @@ from .. import ROOT_DIR, shared
 from ..core import api
 from ..shared.highscores import HighscoreSettingsStruct, HighscoreStruct
 from ..shared.utils import GUIOptsStruct
-from ..types import CellContents, CellImageType, Difficulty, GameState, UIMode
-from ..typing import Coord_T
+from ..shared.types import (
+    CellContents,
+    CellImageType,
+    Coord_T,
+    Difficulty,
+    GameState,
+    UIMode,
+)
 from . import highscores, minefield, panel, state, utils
 from .utils import FILES_DIR
 

@@ -26,10 +26,11 @@ import attr
 import mysql.connector
 import requests
 
+from minegauler.shared.types import Difficulty
+
 from .. import ROOT_DIR
-from ..types import Difficulty
-from ..utils import StructConstructorMixin
 from . import utils
+from .utils import StructConstructorMixin
 
 
 logger = logging.getLogger(__name__)

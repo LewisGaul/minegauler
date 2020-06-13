@@ -16,9 +16,13 @@ import math
 import time as tm
 from typing import Callable, Dict, Iterable, Optional, Union
 
-from ..shared import utils
-from ..types import CellContents, Difficulty, GameState
-from ..typing import CellContentsItem, Coord_T
+from ..shared.types import (
+    CellContents,
+    CellContentsItem,
+    Coord_T,
+    Difficulty,
+    GameState,
+)
 from .board import Board, Minefield
 
 

@@ -11,8 +11,8 @@ import pytest
 
 from minegauler.core.board import Board, Minefield
 from minegauler.core.engine import GameController
+from minegauler.shared.types import CellContents, GameState
 from minegauler.shared.utils import GameOptsStruct
-from minegauler.types import CellContents, GameState
 
 
 logger = logging.getLogger(__name__)

@@ -19,8 +19,7 @@ from typing import Dict, Optional
 import attr
 
 from ..shared import utils
-from ..types import CellContents, Difficulty, GameState, UIMode
-from ..typing import Coord_T
+from ..shared.types import CellContents, Coord_T, Difficulty, GameState, UIMode
 from . import api
 from . import board as brd
 from . import game

@@ -10,9 +10,8 @@ from typing import List
 import pytest
 
 from minegauler.core.board import Board, Minefield
+from minegauler.shared.types import CellContents, Coord_T
 from minegauler.shared.utils import Grid
-from minegauler.types import CellContents
-from minegauler.typing import Coord_T
 
 
 class TestMinefield:

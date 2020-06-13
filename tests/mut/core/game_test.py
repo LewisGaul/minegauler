@@ -14,7 +14,7 @@ from pytest import approx
 
 from minegauler.core.board import Board, Minefield
 from minegauler.core.game import Game, GameNotStartedError, _ignore_if, _ignore_if_not
-from minegauler.types import CellContents, GameState
+from minegauler.shared.types import CellContents, Difficulty, GameState
 
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class TestGame:
         assert game.start_time is None
         assert game.end_time is None
         assert game.board == Board(x_size=4, y_size=5)
-        assert game.difficulty == "C"
+        assert game.difficulty is Difficulty.CUSTOM
 
     def test_require_started(self):
         """Test trying to call methods that require a started game."""

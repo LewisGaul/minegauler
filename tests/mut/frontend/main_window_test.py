@@ -13,7 +13,7 @@ from minegauler import shared
 from minegauler.core import api
 from minegauler.frontend import main_window, minefield, panel, state
 from minegauler.frontend.main_window import MinegaulerGUI
-from minegauler.types import GameState
+from minegauler.shared.types import Difficulty, GameState
 
 from ..utils import make_true_mock
 from .utils import maybe_stop_for_interaction
@@ -124,7 +124,7 @@ class TestMinegaulerGUI:
             x_size=8,
             y_size=8,
             mines=10,
-            difficulty="B",
+            difficulty=Difficulty.BEGINNER,
             per_cell=2,
             minefield_known=False,
             started_info=api.GameInfo.StartedInfo(
@@ -141,7 +141,7 @@ class TestMinegaulerGUI:
         gui._state.drag_select = False
         gui._state.name = "NAME"
         exp_highscore = shared.highscores.HighscoreStruct(
-            "B", 2, False, "NAME", 1234, 99.01, 123, 123 / 99.01, 0.4
+            Difficulty.BEGINNER, 2, False, "NAME", 1234, 99.01, 123, 123 / 99.01, 0.4
         )
         with mock.patch.object(gui, "open_highscores_window") as mock_open:
             gui.update_game_state(GameState.WON)

@@ -26,8 +26,7 @@ from PyQt5.QtWidgets import (
 )
 
 from ..core import api
-from ..types import CellContents, CellImageType
-from ..typing import Coord_T
+from ..shared.types import CellContents, CellImageType, Coord_T
 from . import state
 from .utils import IMG_DIR
 

@@ -18,7 +18,7 @@ from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QColor, QFont, QPalette, QPixmap
 from PyQt5.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QWidget
 
-from ..types import FaceState, GameState
+from ..shared.types import FaceState, GameState
 from . import state
 from .utils import IMG_DIR
 

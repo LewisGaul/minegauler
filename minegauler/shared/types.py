@@ -6,7 +6,9 @@ June 2018, Lewis Gaul
 
 __all__ = (
     "CellContents",
+    "CellContentsItem",
     "CellImageType",
+    "Coord_T",
     "Difficulty",
     "FaceState",
     "GameState",
@@ -15,9 +17,11 @@ __all__ = (
 
 import enum
 import functools
-from typing import Tuple
+from typing import Tuple, Type, Union
 
-from .typing import CellContentsItem
+
+Coord_T = Tuple[int, int]
+CellContentsItem = Union[Type["CellContents"], "CellContents"]
 
 
 # ------------------------------------------------------------------------------
