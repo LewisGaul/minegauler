@@ -46,7 +46,6 @@ from PyQt5.QtWidgets import (
 from .. import ROOT_DIR, shared
 from ..core import api
 from ..shared.highscores import HighscoreSettingsStruct, HighscoreStruct
-from ..shared.utils import GUIOptsStruct
 from ..shared.types import (
     CellContents,
     CellImageType,
@@ -55,6 +54,7 @@ from ..shared.types import (
     GameState,
     UIMode,
 )
+from ..shared.utils import GUIOptsStruct
 from . import highscores, minefield, panel, state, utils
 from .utils import FILES_DIR
 
@@ -409,7 +409,7 @@ class MinegaulerGUI(
         diff_group = QActionGroup(self)
         diff_group.setExclusive(True)
         for diff in Difficulty:
-            diff_act = QAction(diff.name.lower(), diff_group, checkable=True)
+            diff_act = QAction(diff.name.capitalize(), diff_group, checkable=True)
             self._diff_menu_actions[diff] = diff_act
             self._game_menu.addAction(diff_act)
             diff_act.id = diff
