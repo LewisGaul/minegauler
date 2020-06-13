@@ -174,7 +174,6 @@ class MinefieldWidget(QGraphicsView):
 
     def mousePressEvent(self, event: QMouseEvent):
         """Handle mouse press events."""
-
         # Ignore any clicks which aren't the left or right mouse buttons.
         if event.button() not in [Qt.LeftButton, Qt.RightButton]:
             return
@@ -205,19 +204,16 @@ class MinefieldWidget(QGraphicsView):
 
     def mouseDoubleClickEvent(self, event: QMouseEvent):
         """Handle double clicks."""
+        self.mouse_coord = coord = self._coord_from_event(event)
 
-        coord = self._coord_from_event(event)
-
-        # Redirect double right-clicks to be two normal clicks.
-        if event.button() == Qt.RightButton:
-            return self.mousePressEvent(event)
-        elif event.button() == Qt.LeftButton and not self.both_mouse_buttons_pressed:
+        if event.button() == Qt.LeftButton and not self.both_mouse_buttons_pressed:
             self.was_double_left_click = True
             self.left_button_double_down(coord)
+        else:
+            return self.mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent):
         """Handle mouse move events."""
-
         if self._ignore_clicks:
             return
 
@@ -253,7 +249,6 @@ class MinefieldWidget(QGraphicsView):
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         """Handle mouse release events."""
-
         if self.await_release_all_buttons and not event.buttons():
             self.await_release_all_buttons = False
             return
@@ -302,7 +297,11 @@ class MinefieldWidget(QGraphicsView):
         Left button was double clicked. Call callback to remove any flags that
         were on the cell.
         """
-        self._ctrlr.remove_cell_flags(coord)
+        if type(self._board[coord]) is CellContents.Flag:
+            self._ctrlr.remove_cell_flags(coord)
+        else:
+            self.was_double_left_click = False
+            self.left_button_down(coord)
 
     def left_button_move(self, coord: Coord_T) -> None:
         """
@@ -319,7 +318,7 @@ class MinefieldWidget(QGraphicsView):
         Left mouse button moved after a double click.
         """
         if self._state.drag_select:
-            self.left_button_double_down(coord)
+            self._ctrlr.remove_cell_flags(coord)
 
     def left_button_release(self, coord: Coord_T) -> None:
         """
@@ -346,7 +345,7 @@ class MinefieldWidget(QGraphicsView):
         """
         Right mouse button was moved. Change display as appropriate.
         """
-        if coord is not None and self._state.drag_select:
+        if self._state.drag_select and coord is not None:
             if self.unflag_on_right_drag:
                 self._ctrlr.remove_cell_flags(coord)
             else:
