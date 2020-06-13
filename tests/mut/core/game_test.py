@@ -71,6 +71,13 @@ class TestGame:
         started_game.end_time = started_game.start_time + 1.234
         assert started_game.get_elapsed() == approx(1.234)
 
+    def test_get_3bvps(self, started_game):
+        """Test the method to get the 3bv/s."""
+        started_game.state = GameState.WON
+        started_game.start_time = time.time() - 10
+        started_game.end_time = started_game.start_time + 1.234
+        assert started_game.get_3bvps() == approx(started_game.mf.bbbv / 1.234)
+
     def test_get_flag_proportion(self):
         """Test the method to get the proportion of flagging."""
         game = Game(x_size=4, y_size=5, mines=10, per_cell=10)
