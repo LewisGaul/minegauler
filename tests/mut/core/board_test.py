@@ -144,9 +144,9 @@ class TestMinefield:
     def test_create_extremes(self):
         """Check creation in various extremes."""
         # Check creation with only 1 mine.
-        mf = Minefield(10, 10, mines=1, per_cell=self.per_cell)
+        mf = Minefield(10, 10, mines=0)
         self.check_mf_created(mf)
-        assert mf.bbbv <= 4
+        assert mf.bbbv == 0
         assert len(mf.openings) == 1
 
         # Check creation of a tiny minefield.

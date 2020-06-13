@@ -130,7 +130,7 @@ def _check_game_started(method: Callable) -> Callable:
     @functools.wraps(method)
     def wrapped(self: "Game", *args, **kwargs):
         if self.state is GameState.READY:
-            raise GameNotStartedError("Minefield not yet created")
+            raise GameNotStartedError("Minefield may not yet be created")
         assert self.mf is not None
         assert self.start_time is not None
         return method(self, *args, **kwargs)
@@ -225,22 +225,25 @@ class Game:
     def difficulty(self) -> str:
         return utils.get_difficulty(self.x_size, self.y_size, self.mines)
 
-    @_check_game_started
     def get_rem_3bv(self) -> int:
         """
         Calculate the minimum remaining number of clicks needed to solve.
         """
-        if self.state == GameState.WON:
+        if self.state is GameState.READY:
+            if not self.mf:
+                raise GameNotStartedError("Minefield not yet created")
+            return self.mf.bbbv
+        elif self.state is GameState.WON:
             return 0
         else:
-            lost_mf = Minefield.from_grid(self.mf, per_cell=self.per_cell)
+            partial_mf = Minefield.from_grid(self.mf, per_cell=self.per_cell)
             # Replace any openings already found with normal clicks (ones).
             for c in self.board.all_coords:
                 if type(self.board[c]) is CellContents.Num:
-                    lost_mf.completed_board[c] = CellContents.Num(1)
+                    partial_mf.completed_board[c] = CellContents.Num(1)
             # Find the openings which remain.
-            lost_mf.openings = lost_mf._find_openings()
-            rem_opening_coords = {c for opening in lost_mf.openings for c in opening}
+            partial_mf.openings = partial_mf._find_openings()
+            rem_opening_coords = {c for opening in partial_mf.openings for c in opening}
             # Count the number of essential clicks that have already been
             # done by counting clicked cells minus the ones at the edge of
             # an undiscovered opening.
@@ -252,14 +255,12 @@ class Game:
                 }
                 - rem_opening_coords
             )
-            return lost_mf._calc_3bv() - completed_3bv
+            return partial_mf._calc_3bv() - completed_3bv
 
-    @_check_game_started
     def get_prop_complete(self) -> float:
-        """
-        Calculate the progress of solving the board using 3bv.
-        """
-        return (self.mf.bbbv - self.get_rem_3bv()) / self.mf.bbbv
+        """Calculate the progress of solving the board using 3bv."""
+        rem_3bv = self.get_rem_3bv()
+        return (self.mf.bbbv - rem_3bv) / self.mf.bbbv
 
     @_check_game_started
     def get_3bvps(self) -> float:
@@ -286,7 +287,6 @@ class Game:
         else:
             return tm.time() - self.start_time
 
-    @_check_game_started
     def get_flag_proportion(self) -> float:
         """
         Get the proportion of the mines that have been flagged.
@@ -460,7 +460,7 @@ class Game:
         before calling this method.
         """
         just_started = False
-        if self.state == GameState.READY:
+        if self.state is GameState.READY:
             if not self.mf:
                 self._create_minefield(coord)
             self.state = GameState.ACTIVE

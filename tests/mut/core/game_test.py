@@ -4,6 +4,7 @@ Test the game module.
 August 2019, Lewis Gaul
 """
 
+import logging
 import math
 import time
 from unittest import mock
@@ -16,9 +17,7 @@ from minegauler.core.game import Game, GameNotStartedError, _ignore_if, _ignore_
 from minegauler.types import CellContents, GameState
 
 
-@pytest.fixture
-def new_game() -> Game:
-    return Game(x_size=4, y_size=5, mines=6)
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -46,63 +45,168 @@ class TestGame:
         assert game.board == Board(x_size=4, y_size=5)
         assert game.difficulty == "C"
 
-    def test_require_started(self, new_game):
+    def test_require_started(self):
         """Test trying to call methods that require a started game."""
+        game = Game(x_size=4, y_size=5, mines=6)
         with pytest.raises(GameNotStartedError):
-            new_game.get_elapsed()
+            game.get_elapsed()
         with pytest.raises(GameNotStartedError):
-            new_game.get_flag_proportion()
+            game.get_3bvps()
         with pytest.raises(GameNotStartedError):
-            new_game.get_rem_3bv()
+            game.get_rem_3bv()
         with pytest.raises(GameNotStartedError):
-            new_game.get_prop_complete()
+            game.get_prop_complete()
+
+        game.mf = Minefield(game.x_size, game.y_size, mines=game.mines)
         with pytest.raises(GameNotStartedError):
-            new_game.get_3bvps()
+            game.get_elapsed()
+        with pytest.raises(GameNotStartedError):
+            game.get_3bvps()
 
     def test_get_elapsed(self, started_game):
         """Test the method to get the elapsed game time."""
         started_game.start_time = time.time() - 10
-        assert started_game.get_elapsed() == approx(10)
+        assert started_game.get_elapsed() == approx(10, abs=1e-3)
 
         started_game.end_time = started_game.start_time + 1.234
         assert started_game.get_elapsed() == approx(1.234)
 
     def test_get_flag_proportion(self):
         """Test the method to get the proportion of flagging."""
-        empty_game = Game(minefield=Minefield(x_size=4, y_size=5, mines=0))
-        empty_game.state = GameState.ACTIVE
-        empty_game.start_time = time.time()
-        normal_game = Game(
-            minefield=Minefield(x_size=4, y_size=5, mines=10, per_cell=10)
-        )
-        normal_game.state = GameState.ACTIVE
-        normal_game.start_time = time.time()
-
-        # Zero mines, no flags.
-        assert empty_game.get_flag_proportion() == 0
-
-        # Zero mines, one flag.
-        empty_game.set_cell_flags((0, 0), 1)
-        assert empty_game.get_flag_proportion() == math.inf
+        game = Game(x_size=4, y_size=5, mines=10, per_cell=10)
 
         # 10 mines, no flags.
-        assert normal_game.get_flag_proportion() == 0
+        assert game.get_flag_proportion() == 0
 
         # 10 mines, 7 flags.
-        normal_game.set_cell_flags((0, 0), 7)
-        assert normal_game.get_flag_proportion() == approx(0.7)
+        game.set_cell_flags((0, 0), 7)
+        assert game.get_flag_proportion() == approx(0.7)
 
         # 10 mines, 17 flags.
-        normal_game.set_cell_flags((1, 1), 10)
-        assert normal_game.get_flag_proportion() == approx(1.7)
-
-    def test_get_rem_3bv(self):
-        """Test the method to get the remaining 3bv of a game."""
-        # TODO
+        game.set_cell_flags((1, 1), 10)
+        assert game.get_flag_proportion() == approx(1.7)
 
     def test_get_prop_complete(self):
         """Test the method to get the proportion a game is complete."""
-        # TODO
+        mf = Minefield.from_2d_array(
+            [
+                # fmt: off
+                [0, 0, 1, 1],
+                [0, 0, 1, 1],
+                [1, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                # fmt: on
+            ],
+        )
+        game = Game(minefield=mf)
+        assert game.mf.bbbv == 3
+
+        # Not started game.
+        assert game.get_rem_3bv() == 3
+        assert game.get_prop_complete() == 0
+
+        # Clicks that don't reduce remaining clicks.
+        #   # 2 @ @
+        #   # 5 @ @
+        #   @ @ @ #
+        #   2 # # #
+        #   # # # #
+        game.select_cell((1, 0))
+        game.select_cell((1, 1))
+        game.select_cell((0, 3))
+        logger.debug("Board state:\n%s", game.board)
+        assert game.get_rem_3bv() == 3
+        assert game.get_prop_complete() == 0
+
+        # Click an opening.
+        #   . 2 @ @
+        #   2 5 @ @
+        #   @ @ @ #
+        #   2 # # #
+        #   # # # #
+        game.select_cell((0, 0))
+        logger.debug("Board state:\n%s", game.board)
+        assert game.get_rem_3bv() == 2
+        assert game.get_prop_complete() == approx(1 / 3)
+
+        # Click an opening that has a wrong flag in it, stopping propagation.
+        #   . 2 @ @
+        #   2 5 @ @
+        #   @ @ @ #
+        #   2 3 # #
+        #   . F # #
+        game.set_cell_flags((1, 4), 1)
+        game.select_cell((0, 4))
+        logger.debug("Board state:\n%s", game.board)
+        assert game.get_rem_3bv() == 2
+        assert game.get_prop_complete() == approx(1 / 3)
+
+        # Click an opening with a wrong flag at the edge.
+        #   . 2 @ @
+        #   2 5 @ @
+        #   @ @ @ #
+        #   2 3 F 1
+        #   . . . .
+        game.set_cell_flags((1, 4), 0)
+        game.set_cell_flags((2, 3), 1)
+        game.select_cell((1, 4))
+        logger.debug("Board state:\n%s", game.board)
+        assert game.get_rem_3bv() == 2
+        assert game.get_prop_complete() == approx(1 / 3)
+
+        # Finish previously blocked opening.
+        #   . 2 @ @
+        #   2 5 @ @
+        #   @ @ @ #
+        #   2 3 2 1
+        #   . . . .
+        game.set_cell_flags((2, 3), 0)
+        game.chord_on_cell((1, 4))
+        logger.debug("Board state:\n%s", game.board)
+        assert game.get_rem_3bv() == 1
+        assert game.get_prop_complete() == approx(2 / 3)
+
+        # Finish the game.
+        #   . 2 @ @
+        #   2 5 @ @
+        #   @ @ @ 3
+        #   2 3 2 1
+        #   . . . .
+        game.select_cell((3, 2))
+        logger.debug("Board state:\n%s", game.board)
+        assert game.get_rem_3bv() == 0
+        assert game.get_prop_complete() == 1
+
+    def test_empty_minefield(self):
+        """Test game methods with an empty minefield."""
+        game = Game(
+            minefield=Minefield(x_size=4, y_size=5, mines=0), first_success=False
+        )
+        assert game.mf.bbbv == 1
+
+        # Zero mines, no flags.
+        assert game.get_flag_proportion() == 0
+        # Zero mines, one flag.
+        game.set_cell_flags((0, 0), 1)
+        assert game.get_flag_proportion() == math.inf
+
+        game.set_cell_flags((0, 0), 0)
+        game.select_cell((0, 0))
+        assert game.state is GameState.WON
+        assert game.get_elapsed() == 0
+        assert game.get_3bvps() == math.inf
+        assert game.get_flag_proportion() == 0
+
+    def test_full_minefield(self):
+        """Test game methods with an almost full minefield."""
+        game = Game(x_size=4, y_size=5, mines=19, first_success=True)
+        game.select_cell((0, 0))
+        assert game.mf.bbbv == 1
+        assert game.state is GameState.WON
+        assert game.get_elapsed() == 0
+        assert game.get_3bvps() == math.inf
+        assert game.get_flag_proportion() == 0
 
 
 class TestIgnoreIfDecorators:
