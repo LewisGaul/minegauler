@@ -12,6 +12,7 @@ from typing import Dict, Optional
 import attr
 
 from .. import shared, types, utils
+from ..types import Difficulty
 
 
 logger = logging.getLogger(__name__)
@@ -111,8 +112,8 @@ class State:
         self._update_game_state("mines", value)
 
     @property
-    def difficulty(self) -> str:
-        return shared.get_difficulty(self.x_size, self.y_size, self.mines)
+    def difficulty(self) -> Difficulty:
+        return Difficulty.from_board_values(self.x_size, self.y_size, self.mines)
 
     @property
     def pending_mines(self):

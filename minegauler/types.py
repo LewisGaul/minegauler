@@ -1,21 +1,21 @@
 """
-Project types.
+Types used throughout the project.
 
 June 2018, Lewis Gaul
-
-Exports:
-
-CellContents (class)
-    Base class for cell contents types.
-
-GameState (Enum)
-    The possible states of a game.
 """
 
-__all__ = ("CellContents", "CellImageType", "FaceState", "GameState", "UIMode")
+__all__ = (
+    "CellContents",
+    "CellImageType",
+    "Difficulty",
+    "FaceState",
+    "GameState",
+    "UIMode",
+)
 
 import enum
 import functools
+from typing import Tuple
 
 from .typing import CellContentsItem
 
@@ -204,10 +204,55 @@ CellContents.from_char = _from_char
 # ------------------------------------------------------------------------------
 
 
+class Difficulty(str, enum.Enum):
+    """Enum of difficulty settings."""
+
+    BEGINNER = "b"
+    INTERMEDIATE = "i"
+    EXPERT = "e"
+    MASTER = "m"
+    LUDICROUS = "l"
+    CUSTOM = "c"
+
+    @classmethod
+    def from_board_values(cls, x_size: int, y_size: int, mines: int) -> "Difficulty":
+        """Get the difficulty based on the board dimensions and mines."""
+        if x_size == 8 and y_size == 8 and mines == 10:
+            return cls.BEGINNER
+        elif x_size == 16 and y_size == 16 and mines == 40:
+            return cls.INTERMEDIATE
+        elif x_size == 30 and y_size == 16 and mines == 99:
+            return cls.EXPERT
+        elif x_size == 30 and y_size == 30 and mines == 200:
+            return cls.MASTER
+        elif x_size == 50 and y_size == 50 and mines == 625:
+            return cls.LUDICROUS
+        else:
+            return cls.CUSTOM
+
+    def get_board_values(self) -> Tuple[int, int, int]:
+        """
+        Get the board dimensions and number of mines for the difficulty.
+
+        :return:
+            A tuple containing (x_size, y_size, mines).
+        """
+        if self is self.BEGINNER:
+            return 8, 8, 10
+        elif self is self.INTERMEDIATE:
+            return 16, 16, 40
+        elif self is self.EXPERT:
+            return 30, 16, 99
+        elif self is self.MASTER:
+            return 30, 30, 200
+        elif self is self.LUDICROUS:
+            return 50, 50, 625
+        else:
+            raise ValueError("Custom difficulty has no corresponding board values")
+
+
 class GameState(str, enum.Enum):
-    """
-    Enum representing the state of a game.
-    """
+    """Enum representing the state of a game."""
 
     READY = "READY"
     ACTIVE = "ACTIVE"
@@ -227,6 +272,8 @@ class GameState(str, enum.Enum):
 
 
 class FaceState(enum.Enum):
+    """Enum of the 'new game' button face states."""
+
     READY = "ready"
     ACTIVE = "active"
     WON = "won"
@@ -234,6 +281,8 @@ class FaceState(enum.Enum):
 
 
 class CellImageType(enum.Flag):
+    """Enum of cell image types."""
+
     BUTTONS = enum.auto()
     NUMBERS = enum.auto()
     MARKERS = enum.auto()
@@ -241,5 +290,7 @@ class CellImageType(enum.Flag):
 
 
 class UIMode(enum.Enum):
+    """Enum of UI modes."""
+
     GAME = enum.auto()
     CREATE = enum.auto()

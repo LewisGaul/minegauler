@@ -27,6 +27,7 @@ import mysql.connector
 import requests
 
 from .. import ROOT_DIR
+from ..types import Difficulty
 from ..utils import StructConstructorMixin
 from . import utils
 
@@ -40,7 +41,7 @@ _REMOTE_POST_URL = "http://minegauler.lewisgaul.co.uk/api/v1/highscore"
 class HighscoreSettingsStruct(StructConstructorMixin):
     """A set of highscore settings."""
 
-    difficulty: str
+    difficulty: Difficulty
     per_cell: int
     drag_select: bool
 
@@ -89,7 +90,7 @@ class AbstractHighscoresDB(abc.ABC):
     def get_highscores(
         self,
         *,
-        difficulty: Optional[str] = None,
+        difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
         drag_select: Optional[bool] = None,
         name: Optional[str] = None,
@@ -152,7 +153,7 @@ class _SQLMixin:
     def _get_select_highscores_sql(
         self,
         *,
-        difficulty: Optional[str] = None,
+        difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
         drag_select: Optional[bool] = None,
         name: Optional[str] = None,
@@ -160,7 +161,7 @@ class _SQLMixin:
         """Get the SQL command to get/select highscores from a DB."""
         conditions = []
         if difficulty is not None:
-            conditions.append(f"difficulty='{difficulty}'")
+            conditions.append(f"difficulty='{difficulty.value}'")
         if per_cell is not None:
             conditions.append(f"per_cell={per_cell}")
         if drag_select is not None:
@@ -202,7 +203,7 @@ class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     def get_highscores(
         self,
         *,
-        difficulty: Optional[str] = None,
+        difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
         drag_select: Optional[bool] = None,
         name: Optional[str] = None,

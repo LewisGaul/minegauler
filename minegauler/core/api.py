@@ -21,7 +21,7 @@ import attr
 
 from ..core import board as brd
 from ..shared import utils
-from ..types import CellContents, GameState, UIMode
+from ..types import CellContents, Difficulty, GameState, UIMode
 from ..typing import Coord_T
 
 
@@ -43,7 +43,7 @@ class GameInfo:
     x_size: int
     y_size: int
     mines: int
-    difficulty: str
+    difficulty: Difficulty
     per_cell: int
 
     minefield_known: bool

@@ -19,7 +19,7 @@ from typing import Dict, Optional
 import attr
 
 from ..shared import utils
-from ..types import CellContents, GameState, UIMode
+from ..types import CellContents, Difficulty, GameState, UIMode
 from ..typing import Coord_T
 from . import api
 from . import board as brd
@@ -446,10 +446,11 @@ class CreateController(api.AbstractController):
             x_size=self._opts.x_size,
             y_size=self._opts.y_size,
             mines=self._flags,
-            difficulty=utils.get_difficulty(
+            difficulty=Difficulty.from_board_values(
                 self._opts.x_size, self._opts.x_size, self._flags
             ),
             per_cell=self._opts.per_cell,
+            minefield_known=True,
         )
 
     def new_game(self) -> None:

@@ -17,7 +17,7 @@ import time as tm
 from typing import Callable, Dict, Iterable, Optional, Union
 
 from ..shared import utils
-from ..types import CellContents, GameState
+from ..types import CellContents, Difficulty, GameState
 from ..typing import CellContentsItem, Coord_T
 from .board import Board, Minefield
 
@@ -222,8 +222,8 @@ class Game:
         self._num_flags: int = 0
 
     @property
-    def difficulty(self) -> str:
-        return utils.get_difficulty(self.x_size, self.y_size, self.mines)
+    def difficulty(self) -> Difficulty:
+        return Difficulty.from_board_values(self.x_size, self.y_size, self.mines)
 
     def get_rem_3bv(self) -> int:
         """

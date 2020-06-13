@@ -1,5 +1,5 @@
 """
-utils.py - General utilities
+General utilities classes/functions.
 
 March 2018, Lewis Gaul
 """
@@ -9,7 +9,6 @@ __all__ = (
     "GameOptsStruct",
     "Grid",
     "GUIOptsStruct",
-    "get_difficulty",
     "is_flagging_threshold",
     "read_settings_from_file",
     "write_settings_to_file",
@@ -230,20 +229,6 @@ class AllOptsStruct(GameOptsStruct, GUIOptsStruct):
             getattr(CellImageType, k): v for k, v in dict_["styles"].items()
         }
         return cls(**dict_)
-
-
-def get_difficulty(x_size: int, y_size: int, mines: int) -> str:
-    """Get the difficulty code based on the board dimensions and mines."""
-    if x_size == 8 and y_size == 8 and mines == 10:
-        return "B"
-    elif x_size == 16 and y_size == 16 and mines == 40:
-        return "I"
-    elif x_size == 30 and y_size == 16 and mines == 99:
-        return "E"
-    elif x_size == 30 and y_size == 30 and mines == 200:
-        return "M"
-    else:
-        return "C"
 
 
 def is_flagging_threshold(proportion: float) -> bool:

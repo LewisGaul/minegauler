@@ -46,8 +46,8 @@ from PyQt5.QtWidgets import (
 from .. import ROOT_DIR, shared
 from ..core import api
 from ..shared.highscores import HighscoreSettingsStruct, HighscoreStruct
-from ..shared.utils import GUIOptsStruct, get_difficulty
-from ..types import CellContents, CellImageType, GameState, UIMode
+from ..shared.utils import GUIOptsStruct
+from ..types import CellContents, CellImageType, Difficulty, GameState, UIMode
 from ..typing import Coord_T
 from . import highscores, minefield, panel, state, utils
 from .utils import FILES_DIR
@@ -189,7 +189,7 @@ class MinegaulerGUI(
         self._state: state.State = initial_state.deepcopy()
 
         self._create_menu_action: QAction
-        self._diff_menu_actions: Dict[str, QAction] = dict()
+        self._diff_menu_actions: Dict[Difficulty, QAction] = dict()
         self._populate_menubars()
         self._menubar.setFixedHeight(self._menubar.sizeHint().height())
         self._panel_widget = panel.PanelWidget(self, self._state)
@@ -402,19 +402,17 @@ class MinegaulerGUI(
         # - Custom (c)
         diff_group = QActionGroup(self)
         diff_group.setExclusive(True)
-        for diff in ["Beginner", "Intermediate", "Expert", "Master", "Custom"]:
-            diff_act = QAction(diff, diff_group, checkable=True)
-            self._diff_menu_actions[diff[0]] = diff_act
+        for diff in Difficulty:
+            diff_act = QAction(diff.name.lower(), diff_group, checkable=True)
+            self._diff_menu_actions[diff] = diff_act
             self._game_menu.addAction(diff_act)
-            diff_act.id = diff[0]
-            if diff_act.id == get_difficulty(
-                self._state.x_size, self._state.y_size, self._state.mines
-            ):
+            diff_act.id = diff
+            if diff is self._state.difficulty:
                 diff_act.setChecked(True)
             diff_act.triggered.connect(
                 lambda _: self._change_difficulty(diff_group.checkedAction().id)
             )
-            diff_act.setShortcut(diff[0])
+            diff_act.setShortcut(diff.value)
 
         self._game_menu.addSeparator()
 
@@ -522,31 +520,23 @@ class MinegaulerGUI(
         )
         about_act.setShortcut("F1")
 
-    def _change_difficulty(self, id_: str) -> None:
+    def _change_difficulty(self, diff: Difficulty) -> None:
         """
         Change the difficulty via the core controller.
 
-        :param id_:
-            The difficulty ('b', 'i', 'e', 'm' or 'c').
+        :param diff:
+            The difficulty.
         """
-        id_ = id_.upper()
-        if id_ == "B":
-            x, y, m = 8, 8, 10
-        elif id_ == "I":
-            x, y, m = 16, 16, 40
-        elif id_ == "E":
-            x, y, m = 30, 16, 99
-        elif id_ == "M":
-            x, y, m = 30, 30, 200
-        elif id_ == "C":
+        if diff is Difficulty.CUSTOM:
+            # Undo changing the menu radiobutton because the board hasn't been
+            # changed yet.
             self._diff_menu_actions[self._state.difficulty].setChecked(True)
             logger.info("Opening popup window for selecting custom board")
             self._open_custom_board_modal()
             return
         else:
-            raise ValueError(f"Unrecognised difficulty '{id_}'")
-
-        self._ctrlr.resize_board(x_size=x, y_size=y, mines=m)
+            x, y, m = diff.get_board_values()
+            self._ctrlr.resize_board(x_size=x, y_size=y, mines=m)
 
     def _set_name(self, name: str) -> None:
         self._state.name = name
@@ -563,7 +553,7 @@ class MinegaulerGUI(
         # Store the highscore if the game was won.
         if (
             info.game_state is GameState.WON
-            and info.difficulty != "C"
+            and info.difficulty is not Difficulty.CUSTOM
             and not info.minefield_known
         ):
             assert info.started_info.prop_complete == 1
@@ -681,15 +671,13 @@ class MinegaulerGUI(
             Optionally specify the key to sort the highscores by. Defaults to
             the previous sort key.
         """
-        if self._state.difficulty == "C":
+        if self._state.difficulty is Difficulty.CUSTOM:
             return
         if self._open_subwindows.get("highscores"):
             self._open_subwindows.get("highscores").close()
         if not settings:
             settings = HighscoreSettingsStruct(
-                difficulty=get_difficulty(
-                    self._state.x_size, self._state.y_size, self._state.mines
-                ),
+                difficulty=self._state.difficulty,
                 per_cell=self._state.per_cell,
                 drag_select=self._state.drag_select,
             )
@@ -730,11 +718,12 @@ class _CurrentInfoModal(QDialog):
             Drag-select: {self._state.drag_select}
             """
         )
-        if info.finished_info:
+        if info.game_state.finished():
+            assert info.started_info is not None
+            fin_info = info.started_info
             start_time = tm.strftime(
-                "%Y-%m-%d %H:%M:%S", tm.localtime(info.finished_info.start_time)
+                "%Y-%m-%d %H:%M:%S", tm.localtime(fin_info.start_time)
             )
-            fin_info = info.finished_info
             state = info.game_state.name.capitalize()
             info_text += textwrap.dedent(
                 f"""\
@@ -755,10 +744,8 @@ class _CurrentInfoModal(QDialog):
                     """
                 )
                 if fin_info.prop_complete > 0:
-                    info_text += textwrap.dedent(
-                        f"""\
-                        Predicted completion time: {fin_info.elapsed / fin_info.prop_complete:.2f} seconds
-                        """
+                    info_text += "Predicted completion time: {:.2f} seconds".format(
+                        fin_info.elapsed / fin_info.prop_complete
                     )
         base_layout.addWidget(QLabel(info_text, self))
         ok_btn = QPushButton("Ok", self)
