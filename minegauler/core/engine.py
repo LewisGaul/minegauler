@@ -70,7 +70,6 @@ class _SharedInfo:
     game_state: GameState = GameState.READY
     mines_remaining: int = 0
     lives_remaining: int = 0
-    end_game_info: Optional[api.EndedGameInfo] = None
 
 
 class BaseController(api.AbstractSwitchingController):
@@ -210,15 +209,18 @@ class GameController(api.AbstractController):
         return self._game.board
 
     def get_game_info(self) -> api.GameInfo:
+        """Get info about the current game."""
         ret = api.GameInfo(
             game_state=self._game.state,
             x_size=self._game.x_size,
             y_size=self._game.y_size,
             mines=self._game.mines,
+            difficulty=self._game.difficulty,
             per_cell=self._game.per_cell,
+            minefield_known=self._game.minefield_known,
         )
-        if self._game.state.finished():
-            ret.finished_info = api.GameInfo.FinishedInfo(
+        if self._game.state.started():
+            ret.started_info = api.GameInfo.StartedInfo(
                 start_time=self._game.start_time,
                 elapsed=self._game.get_elapsed(),
                 bbbv=self._game.mf.bbbv,
@@ -401,27 +403,11 @@ class GameController(api.AbstractController):
 
     def _send_updates(self, cells_updated: Dict[Coord_T, CellContents]) -> None:
         """Send updates to registered listeners."""
-        end_game_info = None
-        if (
-            self._game.state.finished()
-            and self._game.state is not self._last_update.game_state
-        ):
-            end_game_info = api.EndedGameInfo(
-                game_state=self._game.state,
-                difficulty=self._game.difficulty,
-                per_cell=self._game.per_cell,
-                start_time=self._game.start_time,
-                elapsed=self._game.get_elapsed(),
-                bbbv=self._game.mf.bbbv,
-                flagging=self._game.get_flag_proportion(),
-                minefield_known=self._game.minefield_known,
-            )
         update = _SharedInfo(
             cell_updates=cells_updated,
             mines_remaining=self._game.mines_remaining,
             lives_remaining=self._game.lives_remaining,
             game_state=self._game.state,
-            end_game_info=end_game_info,
         )
 
         # Send updates to registered frontends.
@@ -433,8 +419,6 @@ class GameController(api.AbstractController):
         #     self._notif.update_lives_remaining(update.lives_remaining)
         if update.game_state is not self._last_update.game_state:
             self._notif.update_game_state(update.game_state)
-        if update.end_game_info is not None:
-            self._notif.handle_finished_game(update.end_game_info)
 
         self._last_update = update
 
@@ -462,6 +446,9 @@ class CreateController(api.AbstractController):
             x_size=self._opts.x_size,
             y_size=self._opts.y_size,
             mines=self._flags,
+            difficulty=utils.get_difficulty(
+                self._opts.x_size, self._opts.x_size, self._flags
+            ),
             per_cell=self._opts.per_cell,
         )
 

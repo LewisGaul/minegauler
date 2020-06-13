@@ -457,16 +457,16 @@ class TestController:
         assert ctrlr._game.state is GameState.WON
 
     def test_new_game(self):
-        # Only require a single controller when able to create new games.
-        ctrlr = self.create_controller()
-
+        """Test starting new games."""
         # Start a new game before doing anything else with minefield.
+        ctrlr = self.create_controller()
         ctrlr.new_game()
         assert ctrlr._game.state is GameState.READY
         assert ctrlr._game.board == Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
         assert not ctrlr._game.mf
 
         # Start a new game that isn't started but has flags.
+        ctrlr = self.create_controller()
         ctrlr.flag_cell((0, 0))
         ctrlr.flag_cell((1, 0))
         ctrlr.flag_cell((1, 0))
@@ -477,6 +477,7 @@ class TestController:
         assert ctrlr._game.board == Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
 
         # Start a new game mid-game.
+        ctrlr = self.create_controller()
         ctrlr.select_cell((0, 0))
         ctrlr.select_cell((0, 1))
         assert ctrlr._game.state is GameState.ACTIVE
@@ -490,6 +491,7 @@ class TestController:
         assert ctrlr._game.board == Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
 
         # Start a new game on lost game.
+        ctrlr = self.create_controller()
         ctrlr._game.mf = self.mf
         ctrlr.select_cell((3, 0))
         assert ctrlr._game.state is GameState.LOST

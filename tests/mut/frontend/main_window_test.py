@@ -119,26 +119,39 @@ class TestMinegaulerGUI:
         assert gui._state.highscores_state.current_highscore is None
         gui._panel_widget.update_game_state.assert_called_once_with(GameState.READY)
 
-        # update_mines_remaining()
-        gui.update_mines_remaining(56)
-        gui._panel_widget.set_mines_counter.assert_called_once_with(56)
-
-        # handle_finished_game()
-        info = api.EndedGameInfo(
-            GameState.WON, "M", 2, 1234.5678, 99.01, 123, 0.4, False
+        gui._ctrlr.get_game_info.return_value = api.GameInfo(
+            game_state=GameState.WON,
+            x_size=8,
+            y_size=8,
+            mines=10,
+            difficulty="B",
+            per_cell=2,
+            minefield_known=False,
+            started_info=api.GameInfo.StartedInfo(
+                start_time=1234,
+                elapsed=99.01,
+                bbbv=123,
+                rem_bbbv=0,
+                bbbvps=123 / 99.01,
+                prop_complete=1,
+                prop_flagging=0.4,
+            ),
         )
         shared.highscores.is_highscore_new_best.return_value = "3bv/s"
         gui._state.drag_select = False
         gui._state.name = "NAME"
         exp_highscore = shared.highscores.HighscoreStruct(
-            "M", 2, False, "NAME", 1234, 99.01, 123, 123 / 99.01, 0.4
+            "B", 2, False, "NAME", 1234, 99.01, 123, 123 / 99.01, 0.4
         )
         with mock.patch.object(gui, "open_highscores_window") as mock_open:
-            gui.handle_finished_game(info)
-            gui._panel_widget.timer.stop.assert_called_once()
+            gui.update_game_state(GameState.WON)
             gui._panel_widget.timer.set_time.assert_called_once_with(100)
             shared.highscores.insert_highscore.assert_called_once_with(exp_highscore)
             mock_open.assert_called_once_with(mock.ANY, "3bv/s")
+
+        # update_mines_remaining()
+        gui.update_mines_remaining(56)
+        gui._panel_widget.set_mines_counter.assert_called_once_with(56)
 
         # handle_exception()
         with pytest.raises(RuntimeError):

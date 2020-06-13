@@ -1,10 +1,7 @@
 """
-api.py - API on to the core, providing all information needed by frontends
+API on to the core, providing all information needed by frontends.
 
 September 2019, Lewis Gaul
-
-Exports:
-TODO
 """
 
 __all__ = (
@@ -12,7 +9,7 @@ __all__ = (
     "AbstractListener",
     "AbstractSwitchingController",
     "Caller",
-    "EndedGameInfo",
+    "GameInfo",
 )
 
 import abc
@@ -28,12 +25,12 @@ from ..types import CellContents, GameState, UIMode
 from ..typing import Coord_T
 
 
-@attr.attrs(auto_attribs=True)
+@attr.attrs(auto_attribs=True, kw_only=True)
 class GameInfo:
     """General information about a game."""
 
-    @attr.attrs(auto_attribs=True)
-    class FinishedInfo:
+    @attr.attrs(auto_attribs=True, kw_only=True)
+    class StartedInfo:
         start_time: float
         elapsed: float
         bbbv: int
@@ -46,22 +43,11 @@ class GameInfo:
     x_size: int
     y_size: int
     mines: int
-    per_cell: int
-    finished_info: Optional[FinishedInfo] = None
-
-
-@attr.attrs(auto_attribs=True)
-class EndedGameInfo:
-    """Information about a finished game."""
-
-    game_state: GameState
     difficulty: str
     per_cell: int
-    start_time: float
-    elapsed: float
-    bbbv: int
-    flagging: float
+
     minefield_known: bool
+    started_info: Optional[StartedInfo] = None
 
 
 class AbstractListener(metaclass=abc.ABCMeta):
@@ -128,19 +114,9 @@ class AbstractListener(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def handle_finished_game(self, info: EndedGameInfo) -> None:
-        """
-        Called once when a game ends.
-
-        :param info:
-            A store of end-game information.
-        """
-        return NotImplemented
-
-    @abc.abstractmethod
     def switch_mode(self, mode: UIMode) -> None:
         """
-        Called to indicate the game mode has change.
+        Called to indicate the game mode has changed.
 
         :param mode:
             The mode to change to.
@@ -284,15 +260,6 @@ class Caller(AbstractListener):
             The new number of mines remaining.
         """
         self._logger.debug(f"Calling update_mines_remaining() with {mines_remaining}")
-
-    def handle_finished_game(self, info: EndedGameInfo) -> None:
-        """
-        Called once when a game ends.
-
-        :param info:
-            A store of end-game information.
-        """
-        self._logger.debug(f"Calling handle_finished_game() with {info}")
 
     def switch_mode(self, mode: UIMode) -> None:
         """

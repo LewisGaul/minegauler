@@ -261,9 +261,10 @@ class MinegaulerGUI(
             The new game state.
         """
         self._state.game_status = game_state
-        if game_state is GameState.READY:
-            self._state.highscores_state.current_highscore = None
+        self._state.highscores_state.current_highscore = None
         self._panel_widget.update_game_state(game_state)
+        if game_state.finished():
+            self._handle_finished_game()
 
     def update_mines_remaining(self, mines_remaining: int) -> None:
         """
@@ -273,49 +274,6 @@ class MinegaulerGUI(
             The remaining number of mines.
         """
         self._panel_widget.set_mines_counter(mines_remaining)
-
-    def handle_finished_game(self, info: api.EndedGameInfo) -> None:
-        """
-        Called once when a game ends.
-
-        :param info:
-            A store of end-game information.
-        """
-        self._panel_widget.timer.stop()
-        self._panel_widget.timer.set_time(int(info.elapsed + 1))
-        # Store the highscore if the game was won.
-        if (
-            info.game_state is GameState.WON
-            and info.difficulty != "C"
-            and not info.minefield_known
-        ):
-            highscore = HighscoreStruct(
-                difficulty=info.difficulty,
-                per_cell=info.per_cell,
-                timestamp=int(info.start_time),
-                elapsed=info.elapsed,
-                bbbv=info.bbbv,
-                bbbvps=info.bbbv / info.elapsed,
-                drag_select=self._state.drag_select,
-                name=self._state.name,
-                flagging=info.flagging,
-            )
-            try:
-                shared.highscores.insert_highscore(highscore)
-            except Exception:
-                logger.exception("Error inserting highscore")
-            self._state.highscores_state.current_highscore = highscore
-            # Check whether to pop up the highscores window.
-            # TODO: This is too slow...
-            try:
-                new_best = shared.highscores.is_highscore_new_best(
-                    highscore, shared.highscores.get_highscores(settings=highscore)
-                )
-            except Exception:
-                logger.exception("Error getting highscores")
-            else:
-                if new_best:
-                    self.open_highscores_window(highscore, new_best)
 
     def switch_mode(self, mode: UIMode) -> None:
         """
@@ -593,6 +551,49 @@ class MinegaulerGUI(
     def _set_name(self, name: str) -> None:
         self._state.name = name
         self._state.highscores_state.name_hint = name
+
+    def _handle_finished_game(self) -> None:
+        """Called once when a game ends."""
+        info: api.GameInfo = self._ctrlr.get_game_info()
+        assert info.game_state.finished()
+        assert info.started_info is not None
+
+        self._panel_widget.timer.set_time(int(info.started_info.elapsed + 1))
+
+        # Store the highscore if the game was won.
+        if (
+            info.game_state is GameState.WON
+            and info.difficulty != "C"
+            and not info.minefield_known
+        ):
+            assert info.started_info.prop_complete == 1
+            highscore = HighscoreStruct(
+                difficulty=info.difficulty,
+                per_cell=info.per_cell,
+                timestamp=int(info.started_info.start_time),
+                elapsed=info.started_info.elapsed,
+                bbbv=info.started_info.bbbv,
+                bbbvps=info.started_info.bbbvps,
+                drag_select=self._state.drag_select,
+                name=self._state.name,
+                flagging=info.started_info.prop_flagging,
+            )
+            try:
+                shared.highscores.insert_highscore(highscore)
+            except Exception:
+                logger.exception("Error inserting highscore")
+            self._state.highscores_state.current_highscore = highscore
+            # Check whether to pop up the highscores window.
+            # TODO: This is too slow...
+            try:
+                new_best = shared.highscores.is_highscore_new_best(
+                    highscore, shared.highscores.get_highscores(settings=highscore)
+                )
+            except Exception:
+                logger.exception("Error getting highscores")
+            else:
+                if new_best:
+                    self.open_highscores_window(highscore, new_best)
 
     def _open_save_board_modal(self) -> None:
         if not (
