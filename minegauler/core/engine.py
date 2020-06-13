@@ -196,9 +196,6 @@ class GameController(api.AbstractController):
             game from.
         """
         super().__init__(opts, notif=notif)
-
-        self._drag_select = False
-        self._name = ""
         self._game: game.Game = None  # Populated in new_game()
         self._last_update: _SharedInfo = _SharedInfo()
         self._notif.update_game_state(GameState.READY)

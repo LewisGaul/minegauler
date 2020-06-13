@@ -153,7 +153,6 @@ class MinefieldWidget(QGraphicsView):
 
     @property
     def _board(self):
-        # TODO: I don't like this.
         return self._ctrlr.board
 
     @property
@@ -339,7 +338,7 @@ class MinefieldWidget(QGraphicsView):
         functions as appropriate.
         """
         self._ctrlr.flag_cell(coord)
-        if self._board[coord] == CellContents.Unclicked:
+        if self._board[coord] is CellContents.Unclicked:
             self.unflag_on_right_drag = True
         else:
             self.unflag_on_right_drag = False
@@ -420,7 +419,7 @@ class MinefieldWidget(QGraphicsView):
         """
         if self._state.game_status.finished():
             return
-        if self._board[coord] == CellContents.Unclicked:
+        if self._board[coord] is CellContents.Unclicked:
             self.set_cell_image(coord, "btn_down")
             self.sunken_cells.add(coord)
         if self.sunken_cells:
@@ -432,7 +431,7 @@ class MinefieldWidget(QGraphicsView):
         """
         while self.sunken_cells:
             coord = self.sunken_cells.pop()
-            if self._board[coord] == CellContents.Unclicked:
+            if self._board[coord] is CellContents.Unclicked:
                 self.set_cell_image(coord, "btn_up")
 
     def reset(self) -> None:
