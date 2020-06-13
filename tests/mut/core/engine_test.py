@@ -55,16 +55,11 @@ class TestController:
     # --------------------------------------------------------------------------
     def test_create(self):
         """Test basic creation of a controller."""
-        # Normal create of a controller.
         ctrlr = GameController(self.opts)
         assert ctrlr._opts == self.opts
         assert ctrlr._game.state is GameState.READY
         assert ctrlr._game.mf is None
         assert ctrlr._game.board == Board(self.opts.x_size, self.opts.y_size)
-
-        # Try creating a controller with invalid options.
-        with pytest.raises(ValueError):
-            GameController("INVALID")
 
     def test_register_listeners(self, frontend1, frontend2):
         """Test registering listeners."""
@@ -79,13 +74,13 @@ class TestController:
         for listener in [frontend1, frontend2]:
             listener.update_game_state.assert_called_once()
 
-    def test_cell_interaction(self, frontend1):
+    def test_cell_interaction(self):
         """Test various basic cell interaction."""
         coord = (2, 2)
 
         # Setup.
         opts = GameOptsStruct(per_cell=2, first_success=False)
-        ctrlr = self.create_controller(opts=opts, set_mf=False, listener=frontend1)
+        ctrlr = self.create_controller(opts=opts, set_mf=False)
 
         # Flag a cell.
         ctrlr.flag_cell(coord)
@@ -115,7 +110,6 @@ class TestController:
 
         # Remove cell flags.
         ctrlr.flag_cell(coord)
-        frontend1.reset_mock()
         ctrlr.remove_cell_flags(coord)
         assert ctrlr._game.board[coord] is CellContents.Unclicked
         assert ctrlr._game.state is GameState.READY
@@ -359,9 +353,9 @@ class TestController:
                 if attempts >= 10:
                     raise
 
-    def test_losing(self, frontend1):
+    def test_losing(self):
         # Lose straight away.
-        ctrlr = self.create_controller(listener=frontend1)
+        ctrlr = self.create_controller()
         ctrlr.select_cell((3, 0))
         assert ctrlr._game.state is GameState.LOST
         assert ctrlr._game.end_time is not None
@@ -378,10 +372,9 @@ class TestController:
         )
 
         # Lose after game has been started with incorrect flag.
-        ctrlr = self.create_controller(listener=frontend1)
+        ctrlr = self.create_controller()
         ctrlr.select_cell((1, 0))
         ctrlr.flag_cell((1, 1))
-        frontend1.reset_mock()
         ctrlr.select_cell((2, 0))
         assert ctrlr._game.state is GameState.LOST
         assert ctrlr._game.board == Board.from_2d_array(
@@ -422,10 +415,10 @@ class TestController:
             ]
         )
 
-    def test_winning(self, frontend1):
+    def test_winning(self):
         # Test winning in one click.
         opts = GameOptsStruct(x_size=2, y_size=1, mines=1, first_success=True)
-        ctrlr = self.create_controller(opts=opts, set_mf=False, listener=frontend1)
+        ctrlr = self.create_controller(opts=opts, set_mf=False)
         ctrlr.select_cell((0, 0))
         assert ctrlr._game.state is GameState.WON
         assert ctrlr._game.end_time is not None
@@ -463,9 +456,9 @@ class TestController:
             ctrlr.remove_cell_flags(c)
         assert ctrlr._game.state is GameState.WON
 
-    def test_new_game(self, frontend1):
+    def test_new_game(self):
         # Only require a single controller when able to create new games.
-        ctrlr = self.create_controller(listener=frontend1)
+        ctrlr = self.create_controller()
 
         # Start a new game before doing anything else with minefield.
         ctrlr.new_game()
@@ -478,7 +471,6 @@ class TestController:
         ctrlr.flag_cell((1, 0))
         ctrlr.flag_cell((1, 0))
         assert ctrlr._game.board != Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
-        frontend1.reset_mock()
         ctrlr.new_game()
         assert ctrlr._game.state is GameState.READY
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines
@@ -490,7 +482,6 @@ class TestController:
         assert ctrlr._game.state is GameState.ACTIVE
         assert ctrlr._game.mf
         assert ctrlr._game.board != Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
-        frontend1.reset_mock()
         ctrlr.new_game()
         assert ctrlr._game.state is GameState.READY
         assert not ctrlr._game.mf
@@ -504,7 +495,6 @@ class TestController:
         assert ctrlr._game.state is GameState.LOST
         assert ctrlr._game.mf
         assert ctrlr._game.board != Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
-        frontend1.reset_mock()
         ctrlr.new_game()
         assert ctrlr._game.state is GameState.READY
         assert not ctrlr._game.mf
@@ -512,9 +502,9 @@ class TestController:
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines
         assert ctrlr._game.board == Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
 
-    def test_restart_game(self, frontend1):
+    def test_restart_game(self):
         # Only require a single controller.
-        ctrlr = self.create_controller(set_mf=False, listener=frontend1)
+        ctrlr = self.create_controller(set_mf=False)
 
         # Replay before doing anything else, without minefield.
         ctrlr.restart_game()
@@ -533,7 +523,6 @@ class TestController:
         ctrlr.flag_cell((0, 0))
         ctrlr.flag_cell((1, 0))
         ctrlr.flag_cell((1, 0))
-        frontend1.reset_mock()
         ctrlr.restart_game()
         assert ctrlr._game.state is GameState.READY
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines
@@ -543,12 +532,6 @@ class TestController:
         # Restart game mid-game.
         ctrlr.select_cell((0, 0))
         assert ctrlr._game.state is GameState.ACTIVE
-        frontend1.reset_mock()
-        opened_cells = {
-            c
-            for c in ctrlr._game.mf.all_coords
-            if ctrlr._game.board[c] != CellContents.Unclicked
-        }
         ctrlr.restart_game()
         assert ctrlr._game.state is GameState.READY
         assert ctrlr._game.start_time is None
@@ -558,7 +541,6 @@ class TestController:
         # Restart finished game (lost game).
         ctrlr.select_cell((3, 0))
         assert ctrlr._game.state is GameState.LOST
-        frontend1.reset_mock()
         ctrlr.restart_game()
         assert ctrlr._game.state is GameState.READY
         assert ctrlr._game.start_time is ctrlr._game.end_time is None
@@ -592,10 +574,10 @@ class TestController:
         assert not ctrlr._game.mf
         assert ctrlr._game.board == Board(opts.x_size, opts.y_size)
 
-    def test_lives(self, frontend1):
+    def test_lives(self):
         opts = self.opts.copy()
         opts.lives = 3
-        ctrlr = self.create_controller(opts=opts, listener=frontend1)
+        ctrlr = self.create_controller(opts=opts)
 
         # Lose first life on single mine.
         ctrlr.select_cell((2, 0))
