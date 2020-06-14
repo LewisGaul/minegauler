@@ -590,15 +590,16 @@ class TestGameController:
         assert ctrlr._game.mf == self.mf
 
     def test_resize_board(self):
+        """Test resizing the board in various situations."""
         # Setup, including start a game.
-        opts = self.opts.copy()
-        ctrlr = self.create_controller(opts=opts)
+        ctrlr = self.create_controller()
         ctrlr.select_cell((0, 0))
         ctrlr.flag_cell((2, 0))
         assert ctrlr._game.state is not GameState.READY
-        assert ctrlr._game.mines_remaining == opts.mines - 1
+        assert ctrlr._game.mines_remaining == self.opts.mines - 1
 
         # Normal resize.
+        opts = ctrlr._opts.copy()
         opts.x_size, opts.y_size, opts.mines = 10, 2, 3
         ctrlr.resize_board(x_size=opts.x_size, y_size=opts.y_size, mines=opts.mines)
         assert ctrlr._opts == opts
