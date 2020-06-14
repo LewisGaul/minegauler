@@ -22,7 +22,6 @@ import attr
 
 from ..shared.types import (
     CellContents,
-    CellContents_T,
     Coord_T,
     Difficulty,
     GameState,
@@ -33,7 +32,6 @@ from ..shared.utils import GameOptsStruct, Grid
 from . import api
 from . import board as brd
 from . import game
-from .api import AbstractListener
 
 
 logger = logging.getLogger(__name__)
@@ -45,12 +43,13 @@ def _save_minefield(mf: brd.Minefield, file: PathLike) -> None:
 
     :param mf:
         The minefield to save.
+    :param file:
+        The path of the file to save at.
+    :raises OSError:
+        If saving to file fails.
     """
     if os.path.isfile(file):
         logger.warning("Overwriting file at %s", file)
-    elif os.path.isdir(file):
-        logger.error("Unable to save minefield - directory exists at %s", file)
-        return
     with open(file, "w") as f:
         json.dump(mf.to_json(), f)
 
@@ -61,20 +60,20 @@ class _SharedInfo:
     Information to pass to frontends.
     
     Elements:
-    cell_updates ({(int, int): CellContents, ...})
+    cell_updates
         Dictionary of updates to cells, mapping the coordinate to the new
         contents of the cell.
-    game_state (GameState)
+    game_state
         The state of the game.
-    mines_remaining (int)
+    mines_remaining
         The number of mines remaining to be found, given by
         [total mines] - [number of flags].
         Can be negative if there are too many flags.
-    lives_remaining (int)
+    lives_remaining
         The number of lives remaining.
     """
 
-    cell_updates: Dict[Coord_T, CellContents_T] = attr.Factory(dict)
+    cell_updates: Optional[Dict[Coord_T, CellContents]] = None
     game_state: GameState = GameState.READY
     mines_remaining: int = 0
     lives_remaining: int = 0
@@ -178,7 +177,7 @@ class GameController(_AbstractSubController):
     """
 
     def __init__(
-        self, opts: GameOptsStruct, *, notif: AbstractListener,
+        self, opts: GameOptsStruct, *, notif: api.AbstractListener,
     ):
         """
         :param opts:
@@ -363,11 +362,14 @@ class GameController(_AbstractSubController):
         :param file:
             The location of the file to save to. Should have the extension
             ".mgb".
+        :raises RuntimeError:
+            If the game is not finished.
+        :raises OSError:
+            If saving to file fails.
         """
         super().save_current_minefield(file)
-        if self._game.mf is None:
-            logger.warning("Unable to save current minefield - doesn't exist")
-            return
+        if not self._game.state.finished():
+            raise RuntimeError("Can only save minefields when the game is completed")
         _save_minefield(self._game.mf, file)
 
     def load_minefield(self, file: PathLike) -> None:
@@ -408,7 +410,7 @@ class GameController(_AbstractSubController):
         self._send_updates()
 
     def _send_updates(
-        self, cells_updated: Optional[Dict[Coord_T, CellContents_T]] = None
+        self, cells_updated: Optional[Dict[Coord_T, CellContents]] = None
     ) -> None:
         """Send updates to registered listeners."""
         update = _SharedInfo(
@@ -434,7 +436,7 @@ class GameController(_AbstractSubController):
 class CreateController(_AbstractSubController):
     """A controller for creating boards."""
 
-    def __init__(self, opts: GameOptsStruct, *, notif: AbstractListener):
+    def __init__(self, opts: GameOptsStruct, *, notif: api.AbstractListener):
         super().__init__(opts)
         # Use a reference to the given opts rather than a copy.
         self._opts = opts
@@ -555,6 +557,8 @@ class CreateController(_AbstractSubController):
         :param file:
             The location of the file to save to. Should have the extension
             ".mgb".
+        :raises OSError:
+            If saving to file fails.
         """
         super().save_current_minefield(file)
         mines_grid = Grid(self._opts.x_size, self._opts.y_size)

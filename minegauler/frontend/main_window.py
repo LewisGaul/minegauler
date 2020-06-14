@@ -594,6 +594,7 @@ class MinegaulerGUI(
         if not (
             self._state.game_status.finished() or self._state.ui_mode is UIMode.CREATE
         ):
+            # TODO: The menubar option should be disabled.
             return
         file, _ = QFileDialog.getSaveFileName(
             self,
@@ -610,6 +611,7 @@ class MinegaulerGUI(
             self._ctrlr.save_current_minefield(file)
         except Exception:
             logger.exception("Error occurred trying to save minefield to file")
+            # TODO: Pop up an error message.
 
     def _open_load_board_modal(self) -> None:
         file, _ = QFileDialog.getOpenFileName(
@@ -954,13 +956,3 @@ class _TextPopup(QWidget):
         self._ok_button.setMaximumWidth(50)
         self._ok_button.clicked.connect(self.close)
         lyt.addWidget(self._ok_button)
-
-
-if __name__ == "__main__":
-    from PyQt5.QtWidgets import QApplication
-    import sys
-
-    app = QApplication(sys.argv)
-    widget = _CustomBoardModal(None, 10, 20, 30, lambda x, y, z: print(x, y, z))
-    widget.show()
-    app.exec()

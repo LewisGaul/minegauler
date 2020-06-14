@@ -2,6 +2,8 @@
 Test the game engine module.
 
 October 2018, Lewis Gaul
+
+The game and board modules are treated as trusted.
 """
 
 import logging
@@ -16,16 +18,6 @@ from minegauler.shared.utils import GameOptsStruct
 
 
 logger = logging.getLogger(__name__)
-
-
-@pytest.fixture()
-def frontend1():
-    return mock.Mock()
-
-
-@pytest.fixture()
-def frontend2():
-    return mock.Mock()
 
 
 class TestGameController:
@@ -54,7 +46,7 @@ class TestGameController:
     # --------------------------------------------------------------------------
     # Test cases
     # --------------------------------------------------------------------------
-    def test_create(self):
+    def test_create_controller(self):
         """Test basic creation of a controller."""
         ctrlr = GameController(self.opts, notif=mock.Mock())
         assert ctrlr._opts == self.opts
@@ -647,19 +639,3 @@ class TestGameController:
         if set_mf:
             ctrlr._game.mf = cls.mf
         return ctrlr
-
-    @staticmethod
-    def check_and_reset_callback(cb, **kwargs):
-        """
-        Assert that a callback was called exactly once, and with information
-        matching whatever is passed in to this method.
-        """
-        cb.assert_called_once()
-        passed_info = cb.call_args[0][0]
-        for key, value in kwargs.items():
-            if key == "cell_updates":
-                logger.warning("Skipping check on cell updates")
-                continue
-            assert getattr(passed_info, key) == value
-
-        cb.reset_mock()

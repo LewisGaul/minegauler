@@ -93,7 +93,7 @@ class CellContents:
     def from_char(char: str) -> CellContents_T:
         return NotImplemented  # Implemented below, after subclasses
 
-    def is_type(self, item) -> bool:
+    def is_type(self, item: CellContents_T) -> bool:
         if item in [self.Unclicked]:
             return self is item
         elif item in self.items:

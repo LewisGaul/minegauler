@@ -41,14 +41,14 @@ class Board(utils.Grid):
     def __str__(self):
         return super().__str__(mapping={CellContents.Num(0): "."})
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: Coord_T, value: CellContents):
         if not isinstance(value, CellContents):
             raise TypeError("Board can only contain CellContents instances")
         else:
             super().__setitem__(key, value)
 
     @classmethod
-    def from_2d_array(cls, array):
+    def from_2d_array(cls, array: List[List[Union[str, int]]]) -> "Board":
         """
         Create a minesweeper board from a 2-dimensional array of string
         representations for cell contents.
@@ -338,6 +338,7 @@ class Minefield(utils.Grid):
 
     def _calc_3bv(self) -> int:
         """Calculate the 3bv of the board."""
+        assert self.openings is not None
         clicks = len(self.openings)
         exposed = len({c for opening in self.openings for c in opening})
         clicks += self.x_size * self.y_size - len(set(self.mine_coords)) - exposed
