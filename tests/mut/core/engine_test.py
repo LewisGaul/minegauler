@@ -12,8 +12,9 @@ from unittest import mock
 from minegauler.core import api
 from minegauler.core.board import Board, Minefield
 from minegauler.core.engine import GameController
+from minegauler.core.game import Game
 from minegauler.shared.types import CellContents, GameState
-from minegauler.shared.utils import GameOptsStruct
+from minegauler.shared.utils import GameOptsStruct, Grid
 
 
 logger = logging.getLogger(__name__)
@@ -525,6 +526,23 @@ class TestGameController:
         assert ctrlr._game.mines_remaining == ctrlr._opts.mines
         assert ctrlr._game.board == Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
 
+        # Start a new game when the number of mines is too high.
+        ctrlr = self.create_controller()
+        ctrlr._game = Game(
+            minefield=Minefield.from_grid(
+                Grid(self.opts.x_size, self.opts.y_size, fill=2), per_cell=3
+            )
+        )
+        assert ctrlr._game.mines == self.opts.x_size * self.opts.y_size * 2
+        ctrlr._opts.mines = ctrlr._game.mines
+        ctrlr.new_game()
+        assert ctrlr._game.state is GameState.READY
+        assert (
+            ctrlr._opts.mines
+            == ctrlr._game.mines
+            == self.opts.x_size * self.opts.y_size - 1
+        )
+
     def test_restart_game(self):
         # Only require a single controller.
         ctrlr = self.create_controller(set_mf=False)
@@ -666,16 +684,13 @@ class TestGameController:
         class options and minefield by default, and registers a listener if one
         is given.
 
-        Arguments:
-        opts=None
+        :param opts:
             Optionally override the default options.
-        set_mf=True
+        :param set_mf:
             Whether to set the minefield or leave it not being created.
-        listener=None
-            Optionally specify a listener to register.
         """
         if opts is None:
-            opts = cls.opts
+            opts = cls.opts.copy()
         ctrlr = GameController(opts, notif=mock.Mock())
         if set_mf:
             ctrlr._game.mf = cls.mf
