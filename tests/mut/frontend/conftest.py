@@ -13,8 +13,8 @@ from minegauler.shared import utils
 
 
 @pytest.fixture
-def ctrlr() -> api.AbstractSwitchingController:
-    ret = mock.Mock(spec=api.AbstractSwitchingController)
+def ctrlr() -> api.AbstractController:
+    ret = mock.Mock(spec=api.AbstractController)
     ret._opts = utils.GameOptsStruct()
     ret.board = board.Board(ret._opts.x_size, ret._opts.y_size)
     return ret

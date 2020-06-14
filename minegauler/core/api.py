@@ -7,8 +7,6 @@ September 2019, Lewis Gaul
 __all__ = (
     "AbstractController",
     "AbstractListener",
-    "AbstractSwitchingController",
-    "Caller",
     "GameInfo",
 )
 
@@ -19,7 +17,6 @@ from typing import Callable, Dict, Iterable, List, Optional
 import attr
 
 from ..core import board as brd
-from ..shared import utils
 from ..shared.types import (
     CellContents,
     Coord_T,
@@ -28,6 +25,7 @@ from ..shared.types import (
     PathLike,
     UIMode,
 )
+from ..shared.utils import GameOptsStruct
 
 
 @attr.attrs(auto_attribs=True, kw_only=True)
@@ -143,10 +141,8 @@ class AbstractListener(metaclass=abc.ABCMeta):
         return NotImplemented
 
 
-class Caller(AbstractListener):
-    """
-    Pass on calls to registered listeners.
-    """
+class _Notifier(AbstractListener):
+    """Pass on calls to registered listeners."""
 
     _count: int = 0
 
@@ -158,7 +154,9 @@ class Caller(AbstractListener):
         """
         self._listeners: List[AbstractListener] = list(listeners) if listeners else []
         self._id: int = self._count
-        self._logger = logging.getLogger(f"{__name__}.{type(self).__name__}{self._id}")
+        self._logger = logging.getLogger(
+            f"{__name__}.{self.__class__.__name__}[{self._id}]"
+        )
 
         self.__class__._count += 1
 
@@ -284,16 +282,17 @@ class Caller(AbstractListener):
 
 class AbstractController(metaclass=abc.ABCMeta):
     """
-    Abstract controller base class. Listeners can be registered for receiving
-    updates.
+    Abstract controller base class.
+
+    Listeners can be registered for receiving updates.
     """
 
-    def __init__(self, opts: utils.GameOptsStruct, *, notif: Optional[Caller] = None):
-        self._opts = utils.GameOptsStruct.from_structs(opts)
+    def __init__(self, opts: GameOptsStruct):
+        self._opts = GameOptsStruct.from_structs(opts)
         # The registered functions to be called with updates.
-        self._notif: Caller = notif if notif else Caller()
+        self._notif = _Notifier()
         self._logger = logging.getLogger(
-            ".".join([type(self).__module__, type(self).__name__])
+            ".".join([self.__class__.__module__, self.__class__.__name__])
         )
 
     def register_listener(self, listener: AbstractListener) -> None:
@@ -327,6 +326,9 @@ class AbstractController(metaclass=abc.ABCMeta):
         )
         self._notif.unregister_listener(listener)
 
+    # --------------------------------------------------------------------------
+    # Getters
+    # --------------------------------------------------------------------------
     @property
     @abc.abstractmethod
     def board(self) -> brd.Board:
@@ -337,7 +339,7 @@ class AbstractController(metaclass=abc.ABCMeta):
         """Get information about the current game."""
         return NotImplemented
 
-    def get_game_options(self) -> utils.GameOptsStruct:
+    def get_game_options(self) -> GameOptsStruct:
         return self._opts
 
     # --------------------------------------------------------------------------
@@ -429,10 +431,6 @@ class AbstractController(metaclass=abc.ABCMeta):
             ".mgb".
         """
         self._logger.debug("Loading minefield from file: %s", file)
-
-
-class AbstractSwitchingController(AbstractController):
-    """An abstract base class for controllers that support switching mode."""
 
     @abc.abstractmethod
     def switch_mode(self, mode: UIMode) -> None:

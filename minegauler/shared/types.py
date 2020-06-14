@@ -6,7 +6,7 @@ June 2018, Lewis Gaul
 
 __all__ = (
     "CellContents",
-    "CellContentsItem",
+    "CellContents_T",
     "CellImageType",
     "Coord_T",
     "Difficulty",
@@ -24,7 +24,7 @@ from typing import Tuple, Type, Union
 
 PathLike = Union[str, bytes, os.PathLike]
 Coord_T = Tuple[int, int]
-CellContentsItem = Union[Type["CellContents"], "CellContents"]
+CellContents_T = Union[Type["CellContents"], "CellContents"]
 
 
 # ------------------------------------------------------------------------------
@@ -90,7 +90,7 @@ class CellContents:
         return False  # Overridden by subclasses as required
 
     @staticmethod
-    def from_char(char: str) -> CellContentsItem:
+    def from_char(char: str) -> CellContents_T:
         return NotImplemented  # Implemented below, after subclasses
 
     def is_type(self, item) -> bool:

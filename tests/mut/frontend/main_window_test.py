@@ -53,9 +53,7 @@ class TestMinegaulerGUI:
         mock.patch.stopall()
 
     @pytest.fixture
-    def gui(
-        self, qtbot: QtBot, ctrlr: api.AbstractSwitchingController
-    ) -> MinegaulerGUI:
+    def gui(self, qtbot: QtBot, ctrlr: api.AbstractController) -> MinegaulerGUI:
         gui = MinegaulerGUI(ctrlr, self.initial_state)
         qtbot.addWidget(gui)
         self._reset_gui_mocks(gui)
@@ -64,7 +62,7 @@ class TestMinegaulerGUI:
     # --------------------------------------------------------------------------
     # Testcases
     # --------------------------------------------------------------------------
-    def test_create(self, qtbot: QtBot, ctrlr: api.AbstractSwitchingController):
+    def test_create(self, qtbot: QtBot, ctrlr: api.AbstractController):
         """Test basic creation of the window."""
         gui = MinegaulerGUI(ctrlr, self.initial_state)
         qtbot.addWidget(gui)

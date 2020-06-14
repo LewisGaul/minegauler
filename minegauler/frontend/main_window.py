@@ -45,7 +45,7 @@ from .. import ROOT_DIR, shared
 from ..core import api
 from ..shared.highscores import HighscoreSettingsStruct, HighscoreStruct
 from ..shared.types import (
-    CellContentsItem,
+    CellContents_T,
     CellImageType,
     Coord_T,
     Difficulty,
@@ -180,9 +180,7 @@ class MinegaulerGUI(
 ):
     """The main Minegauler GUI window."""
 
-    def __init__(
-        self, ctrlr: api.AbstractSwitchingController, initial_state: state.State
-    ):
+    def __init__(self, ctrlr: api.AbstractController, initial_state: state.State):
         """
         :param ctrlr:
             The core controller.
@@ -190,7 +188,7 @@ class MinegaulerGUI(
             Initial application state.
         """
         super().__init__(None, "Minegauler")
-        self._ctrlr: api.AbstractSwitchingController = ctrlr
+        self._ctrlr: api.AbstractController = ctrlr
         self._state: state.State = initial_state.deepcopy()
 
         self._create_menu_action: QAction
@@ -220,6 +218,7 @@ class MinegaulerGUI(
 
         This is distinct from a factory reset (settings are not changed).
         """
+        self._state.game_status = GameState.READY
         self._panel_widget.reset()
         self._mf_widget.reset()
 
@@ -249,7 +248,7 @@ class MinegaulerGUI(
         self._state.mines = mines
         self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
-    def update_cells(self, cell_updates: Mapping[Coord_T, CellContentsItem]) -> None:
+    def update_cells(self, cell_updates: Mapping[Coord_T, CellContents_T]) -> None:
         """
         Called to indicate some cells have changed state.
 

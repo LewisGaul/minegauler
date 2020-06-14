@@ -28,7 +28,8 @@ def frontend2():
     return mock.Mock()
 
 
-class TestController:
+class TestGameController:
+    """Test the game controller class."""
 
     mf = Minefield.from_2d_array(
         [
@@ -55,24 +56,11 @@ class TestController:
     # --------------------------------------------------------------------------
     def test_create(self):
         """Test basic creation of a controller."""
-        ctrlr = GameController(self.opts)
+        ctrlr = GameController(self.opts, notif=mock.Mock())
         assert ctrlr._opts == self.opts
         assert ctrlr._game.state is GameState.READY
         assert ctrlr._game.mf is None
         assert ctrlr._game.board == Board(self.opts.x_size, self.opts.y_size)
-
-    def test_register_listeners(self, frontend1, frontend2):
-        """Test registering listeners."""
-        # Register two listeners.
-        ctrlr = self.create_controller()
-        ctrlr.register_listener(frontend1)
-        ctrlr.register_listener(frontend2)
-
-        # Check callbacks are called.
-        ctrlr._game.state = GameState.ACTIVE
-        ctrlr._send_updates(dict())
-        for listener in [frontend1, frontend2]:
-            listener.update_game_state.assert_called_once()
 
     def test_cell_interaction(self):
         """Test various basic cell interaction."""
@@ -314,7 +302,7 @@ class TestController:
         """Test success on first click toggle option."""
         # First click should hit an opening with first_success set.
         opts = GameOptsStruct(first_success=True)
-        ctrlr = GameController(opts)
+        ctrlr = GameController(opts, notif=mock.Mock())
         coord = (1, 5)
         ctrlr.select_cell(coord)
         assert ctrlr._game.state is GameState.ACTIVE
@@ -333,7 +321,7 @@ class TestController:
         opts = GameOptsStruct(
             x_size=4, y_size=4, mines=15, per_cell=1, first_success=True
         )
-        ctrlr = GameController(opts)
+        ctrlr = GameController(opts, notif=mock.Mock())
         coord = (1, 2)
         ctrlr.select_cell(coord)
         assert ctrlr._game.board[coord] is CellContents.Num(8)
@@ -343,7 +331,7 @@ class TestController:
         passed = False
         attempts = 0
         while not passed:
-            ctrlr = GameController(opts)
+            ctrlr = GameController(opts, notif=mock.Mock())
             ctrlr.select_cell(coord)
             attempts += 1
             try:
@@ -639,7 +627,7 @@ class TestController:
     # Helper methods
     # --------------------------------------------------------------------------
     @classmethod
-    def create_controller(cls, *, opts=None, set_mf=True, listener=None):
+    def create_controller(cls, *, opts=None, set_mf=True):
         """
         Convenience method for creating a controller instance. Uses the test
         class options and minefield by default, and registers a listener if one
@@ -655,11 +643,9 @@ class TestController:
         """
         if opts is None:
             opts = cls.opts
-        ctrlr = GameController(opts)
+        ctrlr = GameController(opts, notif=mock.Mock())
         if set_mf:
             ctrlr._game.mf = cls.mf
-        if listener:
-            ctrlr.register_listener(listener)
         return ctrlr
 
     @staticmethod

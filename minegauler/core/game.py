@@ -16,13 +16,7 @@ import math
 import time as tm
 from typing import Callable, Dict, Iterable, Optional, Union
 
-from ..shared.types import (
-    CellContents,
-    CellContentsItem,
-    Coord_T,
-    Difficulty,
-    GameState,
-)
+from ..shared.types import CellContents, CellContents_T, Coord_T, Difficulty, GameState
 from .board import Board, Minefield
 
 
@@ -93,7 +87,7 @@ def _ignore_decorator_helper(conditions_sense, game_state, cell_state) -> Callab
 def _ignore_if(
     *,
     game_state: Optional[Union[GameState, Iterable[GameState]]] = None,
-    cell_state: Optional[Union[CellContentsItem, Iterable[CellContentsItem]]] = None,
+    cell_state: Optional[Union[CellContents_T, Iterable[CellContents_T]]] = None,
 ) -> Callable:
     """
     Return a decorator which prevents a method from running if any of the given
@@ -112,7 +106,7 @@ def _ignore_if(
 def _ignore_if_not(
     *,
     game_state: Optional[Union[GameState, Iterable[GameState]]] = None,
-    cell_state: Optional[Union[CellContentsItem, Iterable[CellContentsItem]]] = None,
+    cell_state: Optional[Union[CellContents_T, Iterable[CellContents_T]]] = None,
 ) -> Callable:
     """
     Return a decorator which prevents a method from running if any of the given
