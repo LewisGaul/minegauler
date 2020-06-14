@@ -9,8 +9,7 @@ The game and board modules are treated as trusted.
 import logging
 from unittest import mock
 
-import pytest
-
+from minegauler.core import api
 from minegauler.core.board import Board, Minefield
 from minegauler.core.engine import GameController
 from minegauler.shared.types import CellContents, GameState
@@ -53,6 +52,48 @@ class TestGameController:
         assert ctrlr._game.state is GameState.READY
         assert ctrlr._game.mf is None
         assert ctrlr._game.board == Board(self.opts.x_size, self.opts.y_size)
+
+    def test_getters(self):
+        """Test the getter methods."""
+        ctrlr = self.create_controller()
+
+        # Board is a proxy to the game's board.
+        assert ctrlr.board == ctrlr._game.board
+
+        # Unstarted game info.
+        exp_game_info = api.GameInfo(
+            game_state=GameState.READY,
+            x_size=self.opts.x_size,
+            y_size=self.opts.y_size,
+            mines=self.opts.mines,
+            difficulty=ctrlr._game.difficulty,
+            per_cell=self.opts.per_cell,
+            minefield_known=False,
+        )
+        assert ctrlr.get_game_info() == exp_game_info
+
+        # Started game info.
+        with mock.patch.object(ctrlr._game, "get_elapsed", return_value=5):
+            ctrlr.select_cell((0, 0))
+            exp_game_info = api.GameInfo(
+                game_state=GameState.ACTIVE,
+                x_size=self.opts.x_size,
+                y_size=self.opts.y_size,
+                mines=self.opts.mines,
+                difficulty=ctrlr._game.difficulty,
+                per_cell=self.opts.per_cell,
+                minefield_known=False,
+                started_info=api.GameInfo.StartedInfo(
+                    start_time=ctrlr._game.start_time,
+                    elapsed=5,
+                    bbbv=self.mf.bbbv,
+                    rem_bbbv=ctrlr._game.get_rem_3bv(),
+                    bbbvps=ctrlr._game.get_3bvps(),
+                    prop_complete=ctrlr._game.get_prop_complete(),
+                    prop_flagging=0,
+                ),
+            )
+            assert ctrlr.get_game_info() == exp_game_info
 
     def test_cell_interaction(self):
         """Test various basic cell interaction."""
