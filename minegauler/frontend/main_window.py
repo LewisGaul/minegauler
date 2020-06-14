@@ -232,7 +232,8 @@ class MinegaulerGUI(
             The number of rows.
         """
         # Game state needs updating first for state changes to be applied.
-        self.update_game_state(GameState.READY)
+        if self._state.game_status is not GameState.READY:
+            self.reset()
         self._state.x_size = x_size
         self._state.y_size = y_size
         self._mf_widget.reshape(x_size, y_size)

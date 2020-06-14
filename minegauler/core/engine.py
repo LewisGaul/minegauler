@@ -140,17 +140,12 @@ class BaseController(api.AbstractController):
         self._active_ctrlr.remove_cell_flags(coord)
 
     def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
-        self._opts.x_size = x_size
-        self._opts.y_size = y_size
-        self._opts.mines = mines
         self._active_ctrlr.resize_board(x_size=x_size, y_size=y_size, mines=mines)
 
     def set_first_success(self, value: bool) -> None:
-        self._opts.first_success = value
         self._active_ctrlr.set_first_success(value)
 
     def set_per_cell(self, value: int) -> None:
-        self._opts.per_cell = value
         self._active_ctrlr.set_per_cell(value)
 
     def save_current_minefield(self, file: PathLike) -> None:
