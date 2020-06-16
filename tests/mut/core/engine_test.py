@@ -746,6 +746,35 @@ class TestGameController:
         with pytest.raises(ValueError):
             ctrlr.set_per_cell(0)
 
+    @mock.patch("builtins.open")
+    def test_save_minefield(self, mock_open):
+        """Test the method to save the current minefield."""
+        ctrlr = self.create_controller()
+
+        # Game must be completed.
+        with pytest.raises(RuntimeError):
+            ctrlr.save_current_minefield("file")
+
+        # Success case.
+        ctrlr._game.state = GameState.WON
+        ctrlr.save_current_minefield("file")
+        mock_open.assert_called_once_with("file", "w")
+
+    @mock.patch("builtins.open")
+    def test_load_minefield(self, mock_open):
+        """Test the method to load a minefield from file."""
+        ctrlr = self.create_controller()
+        mf = Minefield(11, 12, mines=10)
+
+        with mock.patch("json.load", return_value=mf.to_json()):
+            ctrlr.load_minefield("file")
+        mock_open.assert_called_once_with("file")
+        assert ctrlr._opts.x_size == 11
+        assert ctrlr._opts.y_size == 12
+        assert ctrlr._opts.mines == 10
+        assert ctrlr._game.mf == mf
+        assert ctrlr._game.minefield_known is True
+
     # --------------------------------------------------------------------------
     # Helper methods
     # --------------------------------------------------------------------------
