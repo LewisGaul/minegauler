@@ -9,9 +9,11 @@ The game and board modules are treated as trusted.
 import logging
 from unittest import mock
 
+import pytest
+
 from minegauler.core import api
 from minegauler.core.board import Board, Minefield
-from minegauler.core.engine import GameController
+from minegauler.core.engine import _GameController
 from minegauler.core.game import Game
 from minegauler.shared.types import CellContents, GameState
 from minegauler.shared.utils import GameOptsStruct, Grid
@@ -48,7 +50,7 @@ class TestGameController:
     # --------------------------------------------------------------------------
     def test_create_controller(self):
         """Test basic creation of a controller."""
-        ctrlr = GameController(self.opts, notif=mock.Mock())
+        ctrlr = _GameController(self.opts, notif=mock.Mock())
         assert ctrlr._opts == self.opts
         assert ctrlr._game.state is GameState.READY
         assert ctrlr._game.mf is None
@@ -336,7 +338,7 @@ class TestGameController:
         """Test success on first click toggle option."""
         # First click should hit an opening with first_success set.
         opts = GameOptsStruct(first_success=True)
-        ctrlr = GameController(opts, notif=mock.Mock())
+        ctrlr = _GameController(opts, notif=mock.Mock())
         coord = (1, 5)
         ctrlr.select_cell(coord)
         assert ctrlr._game.state is GameState.ACTIVE
@@ -355,7 +357,7 @@ class TestGameController:
         opts = GameOptsStruct(
             x_size=4, y_size=4, mines=15, per_cell=1, first_success=True
         )
-        ctrlr = GameController(opts, notif=mock.Mock())
+        ctrlr = _GameController(opts, notif=mock.Mock())
         coord = (1, 2)
         ctrlr.select_cell(coord)
         assert ctrlr._game.board[coord] is CellContents.Num(8)
@@ -365,7 +367,7 @@ class TestGameController:
         passed = False
         attempts = 0
         while not passed:
-            ctrlr = GameController(opts, notif=mock.Mock())
+            ctrlr = _GameController(opts, notif=mock.Mock())
             ctrlr.select_cell(coord)
             attempts += 1
             try:
@@ -675,15 +677,83 @@ class TestGameController:
             ]
         )
 
+    def test_set_first_success(self):
+        """Test the method to set the 'first success' option."""
+        opts = self.opts.copy()
+        opts.first_success = False
+        ctrlr = self.create_controller(opts)
+        assert ctrlr._opts is opts
+        assert ctrlr._game.first_success is False
+
+        # Normal toggle.
+        ctrlr.set_first_success(True)
+        assert ctrlr._opts.first_success is True
+        assert ctrlr._game.first_success is True
+
+        # No op.
+        ctrlr.set_first_success(True)
+        assert ctrlr._opts.first_success is True
+        assert ctrlr._game.first_success is True
+
+        # During game.
+        ctrlr.select_cell((0, 0))
+        ctrlr.set_first_success(False)
+        assert ctrlr._opts.first_success is False
+        assert ctrlr._game.first_success is True
+
+        # New games pick up the change.
+        ctrlr.new_game()
+        assert ctrlr._opts.first_success is False
+        assert ctrlr._game.first_success is False
+
+    def test_set_per_cell(self):
+        """Test the method to set the 'per cell' option."""
+        opts = self.opts.copy()
+        opts.per_cell = 1
+        ctrlr = self.create_controller(opts, set_mf=False)
+        assert ctrlr._opts is opts
+        assert ctrlr._game.per_cell == 1
+
+        # Normal toggle.
+        ctrlr.set_per_cell(2)
+        assert ctrlr._opts.per_cell == 2
+        assert ctrlr._game.per_cell == 2
+
+        # No op.
+        ctrlr.set_per_cell(2)
+        assert ctrlr._opts.per_cell == 2
+        assert ctrlr._game.per_cell == 2
+
+        # During game.
+        ctrlr.select_cell((0, 0))
+        ctrlr.set_per_cell(3)
+        assert ctrlr._opts.per_cell == 3
+        assert ctrlr._game.per_cell == 2
+
+        # New games pick up the change.
+        ctrlr.new_game()
+        assert ctrlr._opts.per_cell == 3
+        assert ctrlr._game.per_cell == 3
+
+        # Known minefield.
+        ctrlr.select_cell((0, 0))
+        ctrlr.restart_game()
+        ctrlr.set_per_cell(4)
+        assert ctrlr._opts.per_cell == 4
+        assert ctrlr._game.per_cell == 3
+
+        # Invalid value.
+        with pytest.raises(ValueError):
+            ctrlr.set_per_cell(0)
+
     # --------------------------------------------------------------------------
     # Helper methods
     # --------------------------------------------------------------------------
     @classmethod
-    def create_controller(cls, *, opts=None, set_mf=True):
+    def create_controller(cls, opts=None, *, set_mf=True):
         """
         Convenience method for creating a controller instance. Uses the test
-        class options and minefield by default, and registers a listener if one
-        is given.
+        class options and minefield by default.
 
         :param opts:
             Optionally override the default options.
@@ -692,7 +762,7 @@ class TestGameController:
         """
         if opts is None:
             opts = cls.opts.copy()
-        ctrlr = GameController(opts, notif=mock.Mock())
+        ctrlr = _GameController(opts, notif=mock.Mock())
         if set_mf:
             ctrlr._game.mf = cls.mf
         return ctrlr

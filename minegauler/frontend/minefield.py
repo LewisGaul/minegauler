@@ -496,12 +496,12 @@ class MinefieldWidget(QGraphicsView):
 
 
 if __name__ == "__main__":
-    from minegauler.core import GameController
+    from minegauler.core import _GameController
     from minegauler.shared.utils import GameOptsStruct
 
     _app = QApplication(sys.argv)
     x, y = 6, 4
-    ctrlr = GameController(GameOptsStruct(x_size=x, y_size=y))
+    ctrlr = _GameController(GameOptsStruct(x_size=x, y_size=y))
     state_ = state.State()
     state_.x_size = x
     state_.y_size = y
