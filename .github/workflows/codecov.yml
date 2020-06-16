@@ -1,5 +1,12 @@
 name: Workflow for Codecov
-on: [push]
+on:
+  push:
+    paths:
+      - 'minegauler/**'
+      - 'tests/**'
+      - '.github/**'
+env:
+  DISPLAY: ":0"
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -20,8 +27,6 @@ jobs:
         Xvfb :0 &
 
     - name: Run tests
-      env:
-        DISPLAY: ":0"
       run: python -m pytest tests/mut/ --cov --cov-report xml --cov-report term
 
     - name: Create custom reports
