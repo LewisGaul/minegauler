@@ -5,6 +5,7 @@ on:
       - 'minegauler/**'
       - 'tests/**'
       - '.github/**'
+  pull_request:
 env:
   DISPLAY: ":0"
 jobs:
