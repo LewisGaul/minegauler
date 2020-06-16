@@ -1,5 +1,11 @@
-name: Workflow for testing
-on: [push]
+name: Workflow for full test matrix
+on:
+  push:
+    branches: [master, dev]
+  pull_request:
+    branches: [master, dev]
+env:
+  DISPLAY: ":0"
 jobs:
   test:
     runs-on: ${{ matrix.os }}
@@ -35,11 +41,7 @@ jobs:
         run: python -m pytest tests/requirements_test.py
 
       - name: Run MUT
-        env:
-          DISPLAY: ":0"
         run: python -m pytest tests/mut/
 
       - name: Run IT
-        env:
-          DISPLAY: ":0"
         run: python -m pytest tests/it/
