@@ -13,9 +13,9 @@ import pytest
 
 from minegauler.core import api
 from minegauler.core.board import Board, Minefield
-from minegauler.core.engine import _GameController
+from minegauler.core.engine import BaseController, _CreateController, _GameController
 from minegauler.core.game import Game
-from minegauler.shared.types import CellContents, GameState
+from minegauler.shared.types import CellContents, GameState, UIMode
 from minegauler.shared.utils import GameOptsStruct, Grid
 
 
@@ -23,7 +23,12 @@ logger = logging.getLogger(__name__)
 
 
 class TestGameController:
-    """Test the game controller class."""
+    """
+    Test the game controller class.
+
+    No checks are performed on the notifications that should be sent to
+    registered listeners, as this is left to CUT/IT.
+    """
 
     mf = Minefield.from_2d_array(
         [
@@ -51,7 +56,7 @@ class TestGameController:
     def test_create_controller(self):
         """Test basic creation of a controller."""
         ctrlr = _GameController(self.opts, notif=mock.Mock())
-        assert ctrlr._opts == self.opts
+        assert ctrlr._opts is self.opts
         assert ctrlr._game.state is GameState.READY
         assert ctrlr._game.mf is None
         assert ctrlr._game.board == Board(self.opts.x_size, self.opts.y_size)
@@ -795,3 +800,130 @@ class TestGameController:
         if set_mf:
             ctrlr._game.mf = cls.mf
         return ctrlr
+
+
+class TestBaseController:
+    """
+    Test the base controller class.
+
+    The responsibility of this controller is to pass calls on to the
+    appropriate sub-controller, and provide the ability to switch between
+    sub-controllers. These tests check this functionality using mocked
+    sub-controllers.
+    """
+
+    opts = GameOptsStruct()
+
+    @pytest.fixture
+    def game_ctrlr(self) -> _GameController:
+        """Patch the _GameController class and return a fixed instance."""
+        ctrlr = mock.Mock(spec=_GameController)
+        with mock.patch("minegauler.core.engine._GameController", return_value=ctrlr):
+            yield ctrlr
+
+    @pytest.fixture
+    def create_ctrlr(self) -> _CreateController:
+        """Patch the _CreateController class and return a fixed instance."""
+        ctrlr = mock.Mock(spec=_CreateController)
+        with mock.patch("minegauler.core.engine._CreateController", return_value=ctrlr):
+            yield ctrlr
+
+    # --------------------------------------------------------------------------
+    # Test cases
+    # --------------------------------------------------------------------------
+    def test_create_controller(self, game_ctrlr):
+        """Test basic creation of a controller."""
+        ctrlr = BaseController(self.opts)
+        assert ctrlr._opts == self.opts
+        assert ctrlr._opts is not self.opts
+        assert ctrlr._mode is UIMode.GAME
+        assert ctrlr._active_ctrlr is game_ctrlr
+
+    def test_delegated(self, game_ctrlr):
+        """Test methods/properties that are delegated to the active ctrlr."""
+        ctrlr = BaseController(self.opts)
+        assert ctrlr.board is game_ctrlr.board
+        assert ctrlr.get_game_info() is game_ctrlr.get_game_info()
+
+        ctrlr.new_game()
+        game_ctrlr.new_game.assert_called_once_with()
+        game_ctrlr.reset_mock()
+
+        ctrlr.restart_game()
+        game_ctrlr.restart_game.assert_called_once_with()
+        game_ctrlr.reset_mock()
+
+        ctrlr.select_cell((0, 1))
+        game_ctrlr.select_cell.assert_called_once_with((0, 1))
+        game_ctrlr.reset_mock()
+
+        ctrlr.flag_cell((0, 1))
+        game_ctrlr.flag_cell.assert_called_once_with((0, 1), flag_only=False)
+        game_ctrlr.reset_mock()
+
+        ctrlr.chord_on_cell((0, 1))
+        game_ctrlr.chord_on_cell.assert_called_once_with((0, 1))
+        game_ctrlr.reset_mock()
+
+        ctrlr.remove_cell_flags((0, 1))
+        game_ctrlr.remove_cell_flags.assert_called_once_with((0, 1))
+        game_ctrlr.reset_mock()
+
+        ctrlr.resize_board(2, 3, 4)
+        game_ctrlr.resize_board.assert_called_once_with(2, 3, 4)
+        game_ctrlr.reset_mock()
+
+        ctrlr.set_first_success(True)
+        game_ctrlr.set_first_success.assert_called_once_with(True)
+        game_ctrlr.reset_mock()
+
+        ctrlr.set_per_cell(2)
+        game_ctrlr.set_per_cell.assert_called_once_with(2)
+        game_ctrlr.reset_mock()
+
+        ctrlr.save_current_minefield("file")
+        game_ctrlr.save_current_minefield.assert_called_once_with("file")
+        game_ctrlr.reset_mock()
+
+    def test_switch_mode(self, game_ctrlr, create_ctrlr):
+        """Test switching sub-controller via UI mode."""
+        ctrlr = BaseController(self.opts)
+        assert ctrlr._active_ctrlr is game_ctrlr
+
+        # No op.
+        ctrlr.switch_mode(UIMode.GAME)
+        assert ctrlr._mode is UIMode.GAME
+        assert ctrlr._active_ctrlr is game_ctrlr
+
+        # Switch.
+        ctrlr.switch_mode(UIMode.CREATE)
+        assert ctrlr._mode is UIMode.CREATE
+        assert ctrlr._active_ctrlr is create_ctrlr
+
+        # Switch back.
+        ctrlr.switch_mode(UIMode.GAME)
+        assert ctrlr._mode is UIMode.GAME
+        assert ctrlr._active_ctrlr is game_ctrlr
+
+        # Invalid mode.
+        with pytest.raises(ValueError):
+            ctrlr.switch_mode(None)
+
+    def test_load_minefield(self, game_ctrlr, create_ctrlr):
+        """Test the method to load a minefield."""
+        ctrlr = BaseController(self.opts)
+        assert ctrlr._active_ctrlr is game_ctrlr
+
+        # Delegated in game mode.
+        ctrlr.load_minefield("file")
+        game_ctrlr.load_minefield.assert_called_once_with("file")
+        game_ctrlr.reset_mock()
+
+        # In create mode, the mode is switched first.
+        ctrlr.switch_mode(UIMode.CREATE)
+        assert ctrlr._active_ctrlr is create_ctrlr
+        ctrlr.load_minefield("file")
+        assert ctrlr._mode is UIMode.GAME
+        assert ctrlr._active_ctrlr is game_ctrlr
+        game_ctrlr.load_minefield.assert_called_once_with("file")
+        game_ctrlr.reset_mock()

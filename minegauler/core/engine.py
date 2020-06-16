@@ -139,7 +139,7 @@ class BaseController(api.AbstractController):
         self._active_ctrlr.remove_cell_flags(coord)
 
     def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
-        self._active_ctrlr.resize_board(x_size=x_size, y_size=y_size, mines=mines)
+        self._active_ctrlr.resize_board(x_size, y_size, mines)
 
     def set_first_success(self, value: bool) -> None:
         self._active_ctrlr.set_first_success(value)
