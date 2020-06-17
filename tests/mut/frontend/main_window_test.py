@@ -124,6 +124,7 @@ class TestMinegaulerGUI:
             mines=10,
             difficulty=Difficulty.BEGINNER,
             per_cell=2,
+            first_success=True,
             minefield_known=False,
             started_info=api.GameInfo.StartedInfo(
                 start_time=1234,

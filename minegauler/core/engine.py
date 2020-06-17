@@ -208,6 +208,7 @@ class _GameController(_AbstractSubController):
             mines=self._game.mines,
             difficulty=self._game.difficulty,
             per_cell=self._game.per_cell,
+            first_success=self._game.first_success,
             minefield_known=self._game.minefield_known,
         )
         if self._game.state.started():
@@ -456,6 +457,7 @@ class _CreateController(_AbstractSubController):
                 self._opts.x_size, self._opts.x_size, self._flags
             ),
             per_cell=self._opts.per_cell,
+            first_success=self._opts.first_success,
             minefield_known=True,
         )
 

@@ -48,6 +48,7 @@ class GameInfo:
     mines: int
     difficulty: Difficulty
     per_cell: int
+    first_success: bool
 
     minefield_known: bool
     started_info: Optional[StartedInfo] = None

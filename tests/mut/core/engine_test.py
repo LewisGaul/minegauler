@@ -76,6 +76,7 @@ class TestGameController:
             mines=self.opts.mines,
             difficulty=ctrlr._game.difficulty,
             per_cell=self.opts.per_cell,
+            first_success=self.opts.first_success,
             minefield_known=False,
         )
         assert ctrlr.get_game_info() == exp_game_info
@@ -90,6 +91,7 @@ class TestGameController:
                 mines=self.opts.mines,
                 difficulty=ctrlr._game.difficulty,
                 per_cell=self.opts.per_cell,
+                first_success=self.opts.first_success,
                 minefield_known=False,
                 started_info=api.GameInfo.StartedInfo(
                     start_time=ctrlr._game.start_time,
@@ -838,6 +840,7 @@ class TestCreateController:
             mines=0,
             difficulty=Difficulty.CUSTOM,
             per_cell=opts.per_cell,
+            first_success=opts.first_success,
             minefield_known=True,
         )
         assert ctrlr.get_game_info() == exp_game_info
@@ -852,6 +855,7 @@ class TestCreateController:
             mines=10,
             difficulty=Difficulty.BEGINNER,
             per_cell=opts.per_cell,
+            first_success=opts.first_success,
             minefield_known=True,
         )
         assert ctrlr.get_game_info() == exp_game_info
@@ -993,7 +997,7 @@ class TestCreateController:
 
         # Toggle back.
         ctrlr.set_first_success(False)
-        assert ctrlr.get_game_info().first_success is True
+        assert ctrlr.get_game_info().first_success is False
 
     def test_set_per_cell(self):
         """Test the method to set the 'per cell' option."""
