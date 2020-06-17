@@ -6,7 +6,7 @@ See the [issues page](https://github.com/LewisGaul/minegauler/issues) for upcomi
 
 ## 4.0
 
-This initial release of version 4 includes:
+The current release of version 4.0 includes:
  - Basic functional game
  - Ability to specify custom board size/number of mines
  - Ability to replay a game
@@ -21,6 +21,12 @@ This initial release of version 4 includes:
  - Custom cell styles
  - Option to change the cell size
  - Ability to reduce the window size and use scroll
+
+
+### 4.0.5-a1 (2020-06-17)
+ - Fix double left-clicks not registering as two clicks
+ - Add 'ludicrous' board difficulty
+ - Improved test coverage
 
 
 ### 4.0.5-a0 (2020-06-07)
