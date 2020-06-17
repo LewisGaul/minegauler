@@ -518,6 +518,7 @@ class _CreateController(_AbstractSubController):
         self._notif.update_mines_remaining(self._flags)
 
     def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
+        """Resize the board. The number of mines is ignored."""
         super().resize_board(x_size=x_size, y_size=y_size, mines=mines)
         if x_size == self._opts.x_size and y_size == self._opts.y_size:
             logger.info(
@@ -540,7 +541,6 @@ class _CreateController(_AbstractSubController):
 
     def set_first_success(self, value: bool) -> None:
         super().set_first_success(value)
-        # Store the value so it can be retrieved from the next controller.
         self._opts.first_success = value
 
     def set_per_cell(self, value: int) -> None:
