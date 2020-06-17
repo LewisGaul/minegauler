@@ -214,12 +214,21 @@ CellContents.from_char = _from_char
 class Difficulty(str, enum.Enum):
     """Enum of difficulty settings."""
 
-    BEGINNER = "b"
-    INTERMEDIATE = "i"
-    EXPERT = "e"
-    MASTER = "m"
-    LUDICROUS = "l"
-    CUSTOM = "c"
+    BEGINNER = "B"
+    INTERMEDIATE = "I"
+    EXPERT = "E"
+    MASTER = "M"
+    LUDICROUS = "L"
+    CUSTOM = "C"
+
+    @classmethod
+    def from_str(cls, value: Union[str, "Difficulty"]) -> "Difficulty":
+        """Create an instance from a string representation."""
+        if value.upper() in [x.name for x in cls]:
+            value = value[0].upper()
+        elif value.upper() in [x.value for x in cls]:
+            value = value.upper()
+        return cls(value)
 
     @classmethod
     def from_board_values(cls, x_size: int, y_size: int, mines: int) -> "Difficulty":

@@ -1,5 +1,5 @@
 """
-highscores.py - Highscores handling
+Highscores handling.
 
 December 2019, Felix Gaul
 """
@@ -26,9 +26,8 @@ import attr
 import mysql.connector
 import requests
 
-from minegauler.shared.types import Difficulty
-
 from .. import ROOT_DIR
+from ..shared.types import Difficulty
 from . import utils
 from .utils import StructConstructorMixin
 
@@ -42,7 +41,7 @@ _REMOTE_POST_URL = "http://minegauler.lewisgaul.co.uk/api/v1/highscore"
 class HighscoreSettingsStruct(StructConstructorMixin):
     """A set of highscore settings."""
 
-    difficulty: Difficulty
+    difficulty: Difficulty = attr.attrib(converter=Difficulty.from_str)
     per_cell: int
     drag_select: bool
 
@@ -51,7 +50,7 @@ class HighscoreSettingsStruct(StructConstructorMixin):
 
     @classmethod
     def get_default(cls) -> "HighscoreSettingsStruct":
-        return cls("B", 1, False)
+        return cls(Difficulty.BEGINNER, 1, False)
 
 
 @attr.attrs(auto_attribs=True)
@@ -85,7 +84,7 @@ class AbstractHighscoresDB(abc.ABC):
     @abc.abstractmethod
     def conn(self):
         """The active database connection."""
-        return None
+        return NotImplemented
 
     @abc.abstractmethod
     def get_highscores(
@@ -174,10 +173,10 @@ class _SQLMixin:
             "WHERE " + " AND ".join(conditions) if conditions else "",
         )
 
-    def _get_insert_highscore_sql(self, format="%s") -> str:
+    def _get_insert_highscore_sql(self, fmt="%s") -> str:
         """Get the SQL command to insert a highscore into a DB."""
         return "INSERT INTO highscores ({}) " "VALUES ({})".format(
-            ", ".join(_highscore_fields), ", ".join(format for _ in _highscore_fields)
+            ", ".join(_highscore_fields), ", ".join(fmt for _ in _highscore_fields)
         )
 
 
@@ -225,7 +224,7 @@ class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     def insert_highscore(self, highscore: HighscoreStruct) -> None:
         super().insert_highscore(highscore)
         self.execute(
-            self._get_insert_highscore_sql(format="?"),
+            self._get_insert_highscore_sql(fmt="?"),
             attr.astuple(highscore),
             commit=True,
         )
@@ -277,7 +276,7 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     def get_highscores(
         self,
         *,
-        difficulty: Optional[str] = None,
+        difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
         drag_select: Optional[bool] = None,
         name: Optional[str] = None,
@@ -325,7 +324,7 @@ def get_highscores(
     database=HighscoresDatabases.LOCAL,
     *,
     settings: Optional[HighscoreSettingsStruct] = None,
-    difficulty: Optional[str] = None,
+    difficulty: Optional[Difficulty] = None,
     per_cell: Optional[int] = None,
     drag_select: Optional[bool] = None,
     name: Optional[str] = None,
