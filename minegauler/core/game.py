@@ -16,9 +16,7 @@ import math
 import time as tm
 from typing import Callable, Dict, Iterable, Optional, Union
 
-from ..shared import utils
-from ..types import CellContents, GameState
-from ..typing import CellContentsItem, Coord_T
+from ..shared.types import CellContents, CellContents_T, Coord_T, Difficulty, GameState
 from .board import Board, Minefield
 
 
@@ -89,7 +87,7 @@ def _ignore_decorator_helper(conditions_sense, game_state, cell_state) -> Callab
 def _ignore_if(
     *,
     game_state: Optional[Union[GameState, Iterable[GameState]]] = None,
-    cell_state: Optional[Union[CellContentsItem, Iterable[CellContentsItem]]] = None,
+    cell_state: Optional[Union[CellContents_T, Iterable[CellContents_T]]] = None,
 ) -> Callable:
     """
     Return a decorator which prevents a method from running if any of the given
@@ -108,7 +106,7 @@ def _ignore_if(
 def _ignore_if_not(
     *,
     game_state: Optional[Union[GameState, Iterable[GameState]]] = None,
-    cell_state: Optional[Union[CellContentsItem, Iterable[CellContentsItem]]] = None,
+    cell_state: Optional[Union[CellContents_T, Iterable[CellContents_T]]] = None,
 ) -> Callable:
     """
     Return a decorator which prevents a method from running if any of the given
@@ -130,7 +128,7 @@ def _check_game_started(method: Callable) -> Callable:
     @functools.wraps(method)
     def wrapped(self: "Game", *args, **kwargs):
         if self.state is GameState.READY:
-            raise GameNotStartedError("Minefield not yet created")
+            raise GameNotStartedError("Minefield may not yet be created")
         assert self.mf is not None
         assert self.start_time is not None
         return method(self, *args, **kwargs)
@@ -198,7 +196,8 @@ class Game:
         else:
             if x_size is None or y_size is None or mines is None:
                 raise ValueError(
-                    "x_size, y_size and mines must be integers if a minefield is not provided"
+                    "x_size, y_size and mines must be integers if a minefield "
+                    "is not provided"
                 )
             Minefield.check_enough_space(
                 x_size=x_size, y_size=y_size, mines=mines, per_cell=per_cell
@@ -221,25 +220,28 @@ class Game:
         self._num_flags: int = 0
 
     @property
-    def difficulty(self) -> str:
-        return utils.get_difficulty(self.x_size, self.y_size, self.mines)
+    def difficulty(self) -> Difficulty:
+        return Difficulty.from_board_values(self.x_size, self.y_size, self.mines)
 
-    @_check_game_started
     def get_rem_3bv(self) -> int:
         """
         Calculate the minimum remaining number of clicks needed to solve.
         """
-        if self.state == GameState.WON:
+        if self.state is GameState.READY:
+            if not self.mf:
+                raise GameNotStartedError("Minefield not yet created")
+            return self.mf.bbbv
+        elif self.state is GameState.WON:
             return 0
         else:
-            lost_mf = Minefield.from_grid(self.mf, per_cell=self.per_cell)
+            partial_mf = Minefield.from_grid(self.mf, per_cell=self.per_cell)
             # Replace any openings already found with normal clicks (ones).
             for c in self.board.all_coords:
                 if type(self.board[c]) is CellContents.Num:
-                    lost_mf.completed_board[c] = CellContents.Num(1)
+                    partial_mf.completed_board[c] = CellContents.Num(1)
             # Find the openings which remain.
-            lost_mf.openings = lost_mf._find_openings()
-            rem_opening_coords = {c for opening in lost_mf.openings for c in opening}
+            partial_mf.openings = partial_mf._find_openings()
+            rem_opening_coords = {c for opening in partial_mf.openings for c in opening}
             # Count the number of essential clicks that have already been
             # done by counting clicked cells minus the ones at the edge of
             # an undiscovered opening.
@@ -251,14 +253,17 @@ class Game:
                 }
                 - rem_opening_coords
             )
-            return lost_mf._calc_3bv() - completed_3bv
+            return partial_mf._calc_3bv() - completed_3bv
 
-    @_check_game_started
     def get_prop_complete(self) -> float:
-        """
-        Calculate the progress of solving the board using 3bv.
-        """
-        return (self.mf.bbbv - self.get_rem_3bv()) / self.mf.bbbv
+        """Calculate the progress of solving the board using 3bv."""
+        rem_3bv = self.get_rem_3bv()
+        try:
+            return (self.mf.bbbv - rem_3bv) / self.mf.bbbv
+        except ZeroDivisionError:
+            # This can only occur for created boards with no safe cells,
+            # which can technically never be completed.
+            return 0
 
     @_check_game_started
     def get_3bvps(self) -> float:
@@ -272,25 +277,31 @@ class Game:
             return math.inf
         return self.mf.bbbv * self.get_prop_complete() / self.get_elapsed()
 
+    @_check_game_started
     def get_elapsed(self) -> float:
         """
         Get the elapsed game time.
-
-        Returns zero if the game has not been started.
 
         :return:
             The elapsed time, in seconds.
         """
         if self.end_time:
             return self.end_time - self.start_time
-        elif self.start_time:
-            return tm.time() - self.start_time
         else:
-            return 0
+            return tm.time() - self.start_time
 
     def get_flag_proportion(self) -> float:
+        """
+        Get the proportion of the mines that have been flagged.
+
+        :return:
+            The flagging proportion.
+        """
         if self.mines == 0:
-            return 0
+            if self._num_flags > 0:
+                return math.inf
+            else:
+                return 0
         return self._num_flags / self.mines
 
     def _create_minefield(self, coord: Coord_T) -> None:
@@ -452,7 +463,7 @@ class Game:
         before calling this method.
         """
         just_started = False
-        if self.state == GameState.READY:
+        if self.state is GameState.READY:
             if not self.mf:
                 self._create_minefield(coord)
             self.state = GameState.ACTIVE

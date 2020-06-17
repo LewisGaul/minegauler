@@ -26,8 +26,7 @@ from PyQt5.QtWidgets import (
 )
 
 from ..core import api
-from ..types import CellContents, CellImageType
-from ..typing import Coord_T
+from ..shared.types import CellContents, CellImageType, Coord_T
 from . import state
 from .utils import IMG_DIR
 
@@ -153,7 +152,6 @@ class MinefieldWidget(QGraphicsView):
 
     @property
     def _board(self):
-        # TODO: I don't like this.
         return self._ctrlr.board
 
     @property
@@ -176,7 +174,6 @@ class MinefieldWidget(QGraphicsView):
 
     def mousePressEvent(self, event: QMouseEvent):
         """Handle mouse press events."""
-
         # Ignore any clicks which aren't the left or right mouse buttons.
         if event.button() not in [Qt.LeftButton, Qt.RightButton]:
             return
@@ -207,19 +204,16 @@ class MinefieldWidget(QGraphicsView):
 
     def mouseDoubleClickEvent(self, event: QMouseEvent):
         """Handle double clicks."""
+        self.mouse_coord = coord = self._coord_from_event(event)
 
-        coord = self._coord_from_event(event)
-
-        # Redirect double right-clicks to be two normal clicks.
-        if event.button() == Qt.RightButton:
-            return self.mousePressEvent(event)
-        elif event.button() == Qt.LeftButton and not self.both_mouse_buttons_pressed:
+        if event.button() == Qt.LeftButton and not self.both_mouse_buttons_pressed:
             self.was_double_left_click = True
             self.left_button_double_down(coord)
+        else:
+            return self.mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent):
         """Handle mouse move events."""
-
         if self._ignore_clicks:
             return
 
@@ -255,7 +249,6 @@ class MinefieldWidget(QGraphicsView):
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         """Handle mouse release events."""
-
         if self.await_release_all_buttons and not event.buttons():
             self.await_release_all_buttons = False
             return
@@ -304,7 +297,11 @@ class MinefieldWidget(QGraphicsView):
         Left button was double clicked. Call callback to remove any flags that
         were on the cell.
         """
-        self._ctrlr.remove_cell_flags(coord)
+        if type(self._board[coord]) is CellContents.Flag:
+            self._ctrlr.remove_cell_flags(coord)
+        else:
+            self.was_double_left_click = False
+            self.left_button_down(coord)
 
     def left_button_move(self, coord: Coord_T) -> None:
         """
@@ -321,7 +318,7 @@ class MinefieldWidget(QGraphicsView):
         Left mouse button moved after a double click.
         """
         if self._state.drag_select:
-            self.left_button_double_down(coord)
+            self._ctrlr.remove_cell_flags(coord)
 
     def left_button_release(self, coord: Coord_T) -> None:
         """
@@ -339,7 +336,7 @@ class MinefieldWidget(QGraphicsView):
         functions as appropriate.
         """
         self._ctrlr.flag_cell(coord)
-        if self._board[coord] == CellContents.Unclicked:
+        if self._board[coord] is CellContents.Unclicked:
             self.unflag_on_right_drag = True
         else:
             self.unflag_on_right_drag = False
@@ -348,7 +345,7 @@ class MinefieldWidget(QGraphicsView):
         """
         Right mouse button was moved. Change display as appropriate.
         """
-        if coord is not None and self._state.drag_select:
+        if self._state.drag_select and coord is not None:
             if self.unflag_on_right_drag:
                 self._ctrlr.remove_cell_flags(coord)
             else:
@@ -420,7 +417,7 @@ class MinefieldWidget(QGraphicsView):
         """
         if self._state.game_status.finished():
             return
-        if self._board[coord] == CellContents.Unclicked:
+        if self._board[coord] is CellContents.Unclicked:
             self.set_cell_image(coord, "btn_down")
             self.sunken_cells.add(coord)
         if self.sunken_cells:
@@ -432,7 +429,7 @@ class MinefieldWidget(QGraphicsView):
         """
         while self.sunken_cells:
             coord = self.sunken_cells.pop()
-            if self._board[coord] == CellContents.Unclicked:
+            if self._board[coord] is CellContents.Unclicked:
                 self.set_cell_image(coord, "btn_up")
 
     def reset(self) -> None:
@@ -499,12 +496,12 @@ class MinefieldWidget(QGraphicsView):
 
 
 if __name__ == "__main__":
-    from minegauler.core import GameController
+    from minegauler.core import _GameController
     from minegauler.shared.utils import GameOptsStruct
 
     _app = QApplication(sys.argv)
     x, y = 6, 4
-    ctrlr = GameController(GameOptsStruct(x_size=x, y_size=y))
+    ctrlr = _GameController(GameOptsStruct(x_size=x, y_size=y))
     state_ = state.State()
     state_.x_size = x
     state_.y_size = y

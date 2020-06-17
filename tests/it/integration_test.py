@@ -94,5 +94,6 @@ class TestMain:
             wait = float(os.environ["TEST_IT_EVENT_WAIT"])
         else:
             wait = 0
-        while QApplication.hasPendingEvents() or time.time() - start_time < wait:
+        QApplication.processEvents()
+        while time.time() < start_time + wait:
             QApplication.processEvents()

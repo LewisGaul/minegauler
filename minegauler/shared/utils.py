@@ -1,15 +1,15 @@
 """
-utils.py - General utilities
+General utility classes/functions.
 
 March 2018, Lewis Gaul
 """
 
 __all__ = (
     "AllOptsStruct",
+    "GUIOptsStruct",
     "GameOptsStruct",
     "Grid",
-    "GUIOptsStruct",
-    "get_difficulty",
+    "StructConstructorMixin",
     "is_flagging_threshold",
     "read_settings_from_file",
     "write_settings_to_file",
@@ -22,9 +22,7 @@ from typing import Any, Dict, Iterable, List
 import attr
 
 from .. import SETTINGS_FILE
-from ..types import CellImageType
-from ..typing import Coord_T
-from ..utils import StructConstructorMixin
+from .types import CellImageType, Coord_T
 
 
 logger = logging.getLogger(__name__)
@@ -183,6 +181,42 @@ class Grid(list):
         return 0 <= x < self.x_size and 0 <= y < self.y_size
 
 
+class StructConstructorMixin:
+    """
+    A mixin class adding methods for ways to create instances.
+    """
+
+    @classmethod
+    def from_structs(cls, *structs):
+        """
+        Create an instance using namespace(s) containing the required fields.
+
+        Later arguments take precedence.
+        """
+        dict_ = {}
+        for struct in structs:
+            dict_.update(attr.asdict(struct))
+        return cls.from_dict(dict_)
+
+    @classmethod
+    def from_dict(cls, dict_: Dict[str, Any]):
+        """
+        Create an instance from a dictionary.
+
+        Ignores extra attributes.
+        """
+        args = {a: v for a, v in dict_.items() if a in attr.fields_dict(cls)}
+        return cls(**args)
+
+    def copy(self):
+        """
+        Create and return a copy of the instance.
+
+        This is a shallow copy.
+        """
+        return self.from_structs(self)
+
+
 @attr.attrs(auto_attribs=True)
 class GameOptsStruct(StructConstructorMixin):
     """
@@ -230,20 +264,6 @@ class AllOptsStruct(GameOptsStruct, GUIOptsStruct):
             getattr(CellImageType, k): v for k, v in dict_["styles"].items()
         }
         return cls(**dict_)
-
-
-def get_difficulty(x_size: int, y_size: int, mines: int) -> str:
-    """Get the difficulty code based on the board dimensions and mines."""
-    if x_size == 8 and y_size == 8 and mines == 10:
-        return "B"
-    elif x_size == 16 and y_size == 16 and mines == 40:
-        return "I"
-    elif x_size == 30 and y_size == 16 and mines == 99:
-        return "E"
-    elif x_size == 30 and y_size == 30 and mines == 200:
-        return "M"
-    else:
-        return "C"
 
 
 def is_flagging_threshold(proportion: float) -> bool:

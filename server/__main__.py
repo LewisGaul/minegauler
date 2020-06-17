@@ -13,6 +13,7 @@ import attr
 from flask import Flask, abort, jsonify, redirect, request
 
 from minegauler.shared import highscores as hs
+from minegauler.shared.types import Difficulty
 from server import bot
 from server.utils import is_highscore_new_best
 
@@ -68,6 +69,8 @@ def api_v1_highscores():
     """Provide a REST API to get highscores from the DB."""
     logger.debug("GET highscores with args: %s", dict(request.args))
     difficulty = request.args.get("difficulty")
+    if difficulty:
+        difficulty = Difficulty.from_str(difficulty)
     per_cell = request.args.get("per_cell")
     if per_cell:
         per_cell = int(per_cell)
@@ -98,6 +101,7 @@ def api_v1_highscores_ranks():
     drag_select = request.args.get("drag_select")
     if not difficulty or not per_cell or not drag_select:
         abort(404)
+    difficulty = Difficulty.from_str(difficulty)
     per_cell = int(per_cell)
     drag_select = bool(int(drag_select))
     return jsonify(

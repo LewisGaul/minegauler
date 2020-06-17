@@ -4,26 +4,28 @@ Test the board module.
 October 2018, Lewis Gaul
 """
 
+import json
 from typing import List
 
 import pytest
 
 from minegauler.core.board import Board, Minefield
+from minegauler.shared.types import CellContents, Coord_T
 from minegauler.shared.utils import Grid
-from minegauler.types import CellContents
-from minegauler.typing import Coord_T
 
 
 class TestMinefield:
+    """Test the Minefield class."""
+
     x, y = 4, 3
     mines = 5
     per_cell = 2
 
     # --------------------------------------------------------------------------
     # Test cases
-    #  -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def test_create_basic(self):
-        # Check basic creation.
+        """Check basic creation."""
         mf = Minefield(self.x, self.y, mines=self.mines, per_cell=self.per_cell)
         assert (mf.x_size, mf.y_size) == (self.x, self.y)
         assert len(mf.all_coords) == self.x * self.y
@@ -46,13 +48,19 @@ class TestMinefield:
             assert False, "Expected opening due to safe coords"
 
     def test_from_mines_list(self):
-        # Check creation from a list of mine coords.
+        """Check creation from a list of mine coords."""
         mine_coords = [(0, 0), (0, 1), (0, 1), (2, 2)]
         mf = Minefield(self.x, self.y, mines=mine_coords, per_cell=2)
         self.check_mf_created(mf)
         assert mf.per_cell == 2
         exp_completed_board = Board.from_2d_array(
-            [["F1", 3, 0, 0], ["F2", 4, 1, 1], [2, 3, "F1", 1]]
+            [
+                # fmt: off
+                ["F1", 3,  0,   0],
+                ["F2", 4,  1,   1],
+                [ 2,   3, "F1", 1],
+                # fmt: on
+            ]
         )
         exp_openings = [[(1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)]]
         exp_3bv = 4
@@ -79,7 +87,34 @@ class TestMinefield:
         exp_3bv = 3
         self.check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board)
 
+    def test_to_from_json(self):
+        """Check JSON methods."""
+        obj = dict(
+            x_size=self.x, y_size=self.y, mine_coords=[[0, 0], [2, 2]], per_cell=2
+        )
+        mf = Minefield.from_json(obj)
+        self.check_mf_created(mf)
+        assert mf.per_cell == 2
+        exp_completed_board = Board.from_2d_array(
+            [
+                # fmt: off
+                ["F1", 1,  0,   0],
+                [ 1,   2,  1,   1],
+                [ 0,   1, "F1", 1],
+                # fmt: on
+            ]
+        )
+        exp_openings = [
+            [(1, 0), (1, 1), (2, 0), (2, 1), (3, 0), (3, 1)],
+            [(0, 1), (0, 2), (1, 1), (1, 2)],
+        ]
+        exp_3bv = 3
+        self.check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board)
+
+        assert json.dumps(mf.to_json()) == json.dumps(obj)
+
     def test_from_array(self):
+        """Check creation from array or grid."""
         array = [[0, 0, 1, 2], [0, 0, 0, 1], [0, 1, 0, 0]]
         grid = Grid.from_2d_array(array)
         exp_mine_coords = [(1, 2), (2, 0), (3, 0), (3, 0), (3, 1)]
@@ -106,10 +141,11 @@ class TestMinefield:
         self.check_mf_correct(mf, exp_3bv, exp_openings, exp_completed_board)
 
     def test_create_extremes(self):
-        # Check creation with only 1 mine.
-        mf = Minefield(10, 10, mines=1, per_cell=self.per_cell)
+        """Check creation in various extremes."""
+        # Check creation with only no mines.
+        mf = Minefield(10, 10, mines=0)
         self.check_mf_created(mf)
-        assert mf.bbbv <= 4
+        assert mf.bbbv == 1
         assert len(mf.openings) == 1
 
         # Check creation of a tiny minefield.
@@ -141,6 +177,7 @@ class TestMinefield:
             assert False, "Expected to find a safe cell"
 
     def test_create_errors(self):
+        """Check various creation errors."""
         # Check error when too many mines.
         with pytest.raises(ValueError):
             Minefield(self.x, self.y, mines=self.x * self.y, per_cell=1)
@@ -159,6 +196,7 @@ class TestMinefield:
             Minefield(self.x, self.y, mines=mine_coords, per_cell=1)
 
     def test_stringify(self):
+        """Get coverage of stringify methods."""
         mf = Minefield(self.x, self.y, mines=self.mines, per_cell=self.per_cell)
         repr(mf)
         str(mf)
@@ -175,8 +213,9 @@ class TestMinefield:
         """
         assert mf.mine_coords is not None
         assert len(mf.mine_coords) == mf.nr_mines
-        max_mines_in_cell = max(mf.mine_coords.count(c) for c in mf.mine_coords)
-        assert max_mines_in_cell <= mf.per_cell
+        if mf.nr_mines > 0:
+            max_mines_in_cell = max(mf.mine_coords.count(c) for c in mf.mine_coords)
+            assert max_mines_in_cell <= mf.per_cell
         assert len(set(mf.mine_coords)) < len(mf.all_coords)  # safe cell exists
         assert mf.bbbv is not None and 1 <= mf.bbbv <= len(mf.all_coords)
         assert mf.completed_board is not None

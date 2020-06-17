@@ -18,7 +18,7 @@ from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QColor, QFont, QPalette, QPixmap
 from PyQt5.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QWidget
 
-from ..types import FaceState, GameState
+from ..shared.types import FaceState, GameState
 from . import state
 from .utils import IMG_DIR
 
@@ -142,6 +142,7 @@ class PanelWidget(QWidget):
             self.timer.stop()
             self.set_face(state)
         else:
+            self.timer.reset()
             self.set_face(state)
 
 
