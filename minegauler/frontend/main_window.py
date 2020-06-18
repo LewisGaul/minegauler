@@ -11,8 +11,10 @@ MinegaulerGUI
 
 __all__ = ("MinegaulerGUI",)
 
+import glob
 import logging
 import os
+import pathlib
 import textwrap
 import time as tm
 import traceback
@@ -33,6 +35,7 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QMenu,
     QMenuBar,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QSlider,
@@ -61,6 +64,18 @@ from .utils import FILES_DIR
 logger = logging.getLogger(__name__)
 
 BOARD_DIR = ROOT_DIR / "boards"
+
+
+def _msg_popup(parent: QWidget, icon: QMessageBox.Icon, title: str, msg: str) -> None:
+    """Open a modal popup with a simple message."""
+    logger.debug(
+        "Opening popup with message: %s", msg if len(msg) <= 50 else msg[:47] + "..."
+    )
+    popup = QMessageBox(parent)
+    popup.setIcon(icon)
+    popup.setWindowTitle(title)
+    popup.setText(msg)
+    popup.exec_()
 
 
 class _BaseMainWindow(QMainWindow):
@@ -344,7 +359,6 @@ class MinegaulerGUI(
 
     def _populate_menubars(self) -> None:
         """Fill in the menubars."""
-
         # ----------
         # Game menu
         # ----------
@@ -517,6 +531,10 @@ class MinegaulerGUI(
             lambda: self._open_text_popup("Tips", FILES_DIR / "tips.txt")
         )
 
+        retrieve_act = QAction("Retrieve highscores", self)
+        retrieve_act.triggered.connect(self._open_retrieve_highscores_modal)
+        self._help_menu.addAction(retrieve_act)
+
         self._help_menu.addSeparator()
 
         about_act = QAction("About", self)
@@ -661,6 +679,61 @@ class MinegaulerGUI(
         win = _TextPopup(self, title, file)
         win.show()
         self._open_subwindows[title] = win
+
+    def _open_retrieve_highscores_modal(self):
+        """Open a window to select a highscores file to read in."""
+        logger.debug("Opening window to retrieve highscores")
+        direc = QFileDialog.getExistingDirectory(
+            parent=self,
+            caption="Retrieve highscores",
+            directory=str(pathlib.Path.home()),
+        )
+        logger.debug("Selected directory: %s", direc)
+        if not direc:
+            return  # cancelled
+
+        files_dir = pathlib.Path(direc) / "files"
+        if not files_dir.exists():
+            _msg_popup(
+                self,
+                QMessageBox.Warning,
+                "File not found",
+                "Couldn't find folder expected to contain highscores.",
+            )
+            return
+        # try:
+        #     info_path = files_dir.glob('info.*')[0]
+        #     with open(info_path, 'r') as f:
+        #         info = json.load(f)
+        #     version = info['version']
+        #     in_exe = info['frozen'] if 'frozen' in info else True
+        # except:
+        #     _info_popup(self, "Unknown version, try running the old game first. "
+        #              + "Contact minegauler@gmail.com if problems persist.")
+        #     return
+        # if LooseVersion(version) < '1.1.2':
+        #     _info_popup(self, "Cannot retrieve highscores from versions older than 1.1.2 - "
+        #              + "contact minegauler@gmail.com to have old highscores updated.")
+        #     return
+        try:
+            logger.info("Fetching highscores from %s", files_dir)
+            # added = include_old_hscores(direc, version, in_exe)
+            added = 0
+            _msg_popup(
+                self,
+                QMessageBox.Information,
+                "Highscores retrieved",
+                f"Number of highscores added: {added}",
+            )
+            # save_all_highscores()
+        except FileNotFoundError:
+            _msg_popup(
+                self,
+                QMessageBox.Warning,
+                "Cannot find highscores files. "
+                + "Contact minegauler@gmail.com if you expected this game "
+                + "to have highscores.",
+            )
 
     def get_gui_opts(self) -> GUIOptsStruct:
         return GUIOptsStruct.from_structs(self._state, self._state.pending_game_state)
