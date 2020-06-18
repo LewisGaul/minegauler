@@ -13,6 +13,7 @@ import sys
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 from minegauler.shared import highscores as hs
+from minegauler.shared.types import Difficulty
 
 from . import formatter, utils
 
@@ -236,14 +237,12 @@ class ArgParser(argparse.ArgumentParser):
 
 class BotMsgParser(ArgParser):
     def add_difficulty_arg(self):
-        self.add_positional_arg(
-            "difficulty", nargs="?", type=self._convert_difficulty_arg
-        )
+        self.add_positional_arg("difficulty", nargs="?", type=Difficulty.from_str)
 
     def add_rank_type_arg(self):
-        def convert(arg):
+        def convert(arg) -> str:
             try:
-                return self._convert_difficulty_arg(arg)
+                return Difficulty.from_str(arg).value.lower()
             except InvalidArgsError:
                 raise  # TODO
                 # if arg == "combined":
@@ -268,19 +267,6 @@ class BotMsgParser(ArgParser):
                 raise InvalidArgsError("Drag select should be one of {'on', 'off'}")
 
         self.add_argument("drag-select", type=_arg_type)
-
-    @staticmethod
-    def _convert_difficulty_arg(arg):
-        if arg in ["b", "beginner"]:
-            return "beginner"
-        elif arg in ["i", "intermediate"]:
-            return "intermediate"
-        elif arg in ["e", "expert"]:
-            return "expert"
-        elif arg in ["m", "master"]:
-            return "master"
-        else:
-            raise InvalidArgsError(f"Invalid difficulty {arg!r}")
 
 
 # ------------------------------------------------------------------------------
@@ -452,11 +438,10 @@ def player(args, username: str, allow_markdown=False, **kwargs):
     if args.username == "me":
         args.username = username
 
-    diff = args.difficulty[0] if args.difficulty else None
     highscores = hs.get_highscores(
         hs.HighscoresDatabases.REMOTE,
         name=utils.USER_NAMES[args.username],
-        difficulty=diff,
+        difficulty=args.difficulty,
         drag_select=args.drag_select,
         per_cell=args.per_cell,
     )
@@ -494,7 +479,8 @@ def ranks(args, **kwargs) -> str:
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
 
-    times = utils.get_highscore_times(args.rank_type, args.drag_select, args.per_cell)
+    diff = Difficulty.from_str(args.rank_type) if args.rank_type else None
+    times = utils.get_highscore_times(diff, args.drag_select, args.per_cell)
 
     lines = [
         "Rankings for {}".format(
