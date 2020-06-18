@@ -242,7 +242,7 @@ class BotMsgParser(ArgParser):
     def add_rank_type_arg(self):
         def convert(arg) -> str:
             try:
-                return Difficulty.from_str(arg).value.lower()
+                return Difficulty.from_str(arg).name.lower()
             except InvalidArgsError:
                 raise  # TODO
                 # if arg == "combined":
