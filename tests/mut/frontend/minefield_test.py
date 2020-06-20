@@ -14,7 +14,7 @@ from pytestqt.qtbot import QtBot
 
 from minegauler.core import api
 from minegauler.frontend import state
-from minegauler.frontend.minefield import MinefieldWidget
+from minegauler.frontend.minefield import _RAISED_CELL, _SUNKEN_CELL, MinefieldWidget
 
 from . import utils
 
@@ -266,10 +266,10 @@ class TestMinefieldWidget:
         self._mouse_down_pos = pos
 
     def assert_cell_sank(self, coord):
-        self._mf_widget.set_cell_image.assert_any_call(coord, "btn_down")
+        self._mf_widget.set_cell_image.assert_any_call(coord, _SUNKEN_CELL)
 
     def assert_cell_rose(self, coord):
-        self._mf_widget.set_cell_image.assert_any_call(coord, "btn_up")
+        self._mf_widget.set_cell_image.assert_any_call(coord, _RAISED_CELL)
 
     def assert_num_cells_changed(self, num):
         """

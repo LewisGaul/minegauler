@@ -44,7 +44,7 @@ class TestMinegaulerGUI:
             side_effect=_MockMinefieldWidget,
         ).start()
         mock.patch("minegauler.frontend.panel._CounterWidget").start()
-        mock.patch("minegauler.frontend.minefield.init_or_update_cell_images").start()
+        mock.patch("minegauler.frontend.minefield._update_cell_images").start()
         mock.patch("minegauler.shared.highscores.insert_highscore").start()
         mock.patch("minegauler.shared.highscores.is_highscore_new_best").start()
 
