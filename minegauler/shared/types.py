@@ -1,7 +1,37 @@
+# June 2018, Lewis Gaul
+
 """
 Types used throughout the project.
 
-June 2018, Lewis Gaul
+Exports
+-------
+.. class:: CellContents
+    An ADT-like class providing cell contents types.
+
+.. class:: CellContents_T
+    A type alias for a `CellContents` ADT type.
+
+.. class:: CellImageType
+    An enum of cell image types.
+
+.. class:: Coord_T
+    A type alias for a coordinate.
+
+.. class:: Difficulty
+    An enum of board difficulties.
+
+.. class:: FaceState
+    An enum of possible face states.
+
+.. class:: GameState
+    An enum of states a game can be in.
+
+.. class:: PathLike
+    A more permissive version of the `os.PathLike` type alias.
+
+.. class:: UIMode
+    An enum of supported UI modes.
+
 """
 
 __all__ = (

@@ -1,7 +1,8 @@
-"""
-__main__.py - Entry point for the application.
+# December 2018, Lewis Gaul
 
-December 2018, Lewis Gaul
+"""
+Entry point for the application.
+
 """
 
 # Workaround to get the mysql libcrypto and libssl libs loaded.

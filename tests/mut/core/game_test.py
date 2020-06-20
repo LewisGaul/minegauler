@@ -1,7 +1,8 @@
+# August 2019, Lewis Gaul
+
 """
 Test the game module.
 
-August 2019, Lewis Gaul
 """
 
 import logging

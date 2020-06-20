@@ -1,7 +1,8 @@
+# October 2018, Lewis Gaul
+
 """
 Test the board module.
 
-October 2018, Lewis Gaul
 """
 
 import json

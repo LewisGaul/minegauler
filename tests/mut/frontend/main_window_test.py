@@ -1,7 +1,8 @@
-"""
-Test the main window of the GUI.
+# December 2018, Lewis Gaul
 
-December 2018, Lewis Gaul
+"""
+Tests for the main window of the GUI.
+
 """
 
 from unittest import mock

@@ -1,7 +1,34 @@
-"""
-General utility classes/functions.
+# March 2018, Lewis Gaul
 
-March 2018, Lewis Gaul
+"""
+General utilities.
+
+Exports
+-------
+.. class:: AllOptsStruct
+    A structure class containing all persisted options.
+
+.. class:: GUIOptsStruct
+    A structure class containing persisted GUI options.
+
+.. class:: GameOptsStruct
+    A structure class containing persisted game options.
+
+.. class:: Grid
+    Representation of a 2D array.
+
+.. class:: StructConstructorMixin
+    A mixin for structure classes.
+
+.. function:: is_flagging_threshold
+    Check whether flagging threshold is met.
+
+.. function:: read_settings_from_file
+    Read persisted settings.
+
+.. function:: write_settings_to_file
+    Persist settings to file.
+
 """
 
 __all__ = (

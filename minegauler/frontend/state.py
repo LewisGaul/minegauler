@@ -1,7 +1,19 @@
-"""
-state.py - State shared by any of the frontend modules
+# December 2019, Lewis Gaul
 
-December 2019, Lewis Gaul
+"""
+State shared by the frontend.
+
+Exports
+-------
+.. class:: State
+    A collection of all frontend state.
+
+.. class:: PerGameState
+    State corresponding to a single game.
+
+.. class:: HighscoreWindowState
+    State for the highscores window.
+
 """
 
 __all__ = ("HighscoreWindowState", "PerGameState", "State")

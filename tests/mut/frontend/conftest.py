@@ -1,7 +1,8 @@
-"""
-conftest.py - Pytest conf file
+# December 2018, Lewis Gaul
 
-December 2018, Lewis Gaul
+"""
+Pytest conftest file.
+
 """
 
 from unittest import mock

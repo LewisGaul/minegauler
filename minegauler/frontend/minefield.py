@@ -4,7 +4,7 @@
 Minefield widgets.
 
 Exports
---------
+-------
 .. class:: MinefieldWidget
     The minefield widget class.
 

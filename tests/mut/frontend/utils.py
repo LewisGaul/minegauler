@@ -1,7 +1,8 @@
-"""
-utils.py - Frontend test utils
+# December 2019, Lewis Gaul
 
-December 2019, Lewis Gaul
+"""
+Frontend test utils.
+
 """
 
 import os

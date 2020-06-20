@@ -1,7 +1,12 @@
+# July 2018, Lewis Gaul
 """
-highscores.py - Highscores window implementation
+Highscores window implementation.
 
-July 2018, Lewis Gaul
+Exports
+-------
+.. class:: HighscoresWindow
+    Widget for displaying highscores.
+
 """
 
 __all__ = ("HighscoresWindow",)

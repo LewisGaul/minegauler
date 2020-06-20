@@ -1,7 +1,8 @@
+# December 2019, Felix Gaul
+
 """
 Highscores handling.
 
-December 2019, Felix Gaul
 """
 
 __all__ = (

@@ -1,7 +1,8 @@
-"""
-Test the minefield widget module.
+# December 2018, Lewis Gaul
 
-December 2018, Lewis Gaul
+"""
+Tests for the minefield widget module.
+
 """
 
 import functools

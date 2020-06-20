@@ -1,12 +1,13 @@
+# April 2018, Lewis Gaul
+
 """
 Base GUI application implementation.
 
-April 2018, Lewis Gaul
+Exports
+-------
+.. class:: MinegaulerGUI
+    Main window widget.
 
-Exports:
-
-MinegaulerGUI
-    Minegauler main window class.
 """
 
 __all__ = ("MinegaulerGUI",)

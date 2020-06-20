@@ -1,11 +1,13 @@
+# March 2018, Lewis Gaul
+
 """
-game.py - Game logic
+Game logic.
 
-March 2018, Lewis Gaul
-
-Exports:
-Game (class)
+Exports
+-------
+.. class:: Game
     Representation of a minesweeper game.
+
 """
 
 __all__ = ("Game", "GameNotStartedError")

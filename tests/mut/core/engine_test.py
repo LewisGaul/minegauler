@@ -1,9 +1,10 @@
+# October 2018, Lewis Gaul
+
 """
 Test the game engine module.
 
-October 2018, Lewis Gaul
-
 The game and board modules are treated as trusted.
+
 """
 
 import logging
