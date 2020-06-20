@@ -49,7 +49,7 @@ class TestMinefieldWidget:
     def mf_widget(self, qtbot: QtBot, ctrlr: api.AbstractController):
         widget = MinefieldWidget(None, ctrlr, self.state)
         qtbot.addWidget(widget)
-        widget.set_cell_image = Mock(wraps=widget.set_cell_image)
+        widget._set_cell_image = Mock(wraps=widget._set_cell_image)
         widget.at_risk_signal.connect(self.at_risk_signal_cb)
         widget.no_risk_signal.connect(self.no_risk_signal_cb)
 
@@ -267,22 +267,22 @@ class TestMinefieldWidget:
         self._mouse_down_pos = pos
 
     def assert_cell_sank(self, coord):
-        self._mf_widget.set_cell_image.assert_any_call(coord, _SUNKEN_CELL)
+        self._mf_widget._set_cell_image.assert_any_call(coord, _SUNKEN_CELL)
 
     def assert_cell_rose(self, coord):
-        self._mf_widget.set_cell_image.assert_any_call(coord, _RAISED_CELL)
+        self._mf_widget._set_cell_image.assert_any_call(coord, _RAISED_CELL)
 
     def assert_num_cells_changed(self, num):
         """
         Assert on the number of cells that had their image changed.
         """
-        assert self._mf_widget.set_cell_image.call_count == num
+        assert self._mf_widget._set_cell_image.call_count == num
 
     def assert_cells_unchanged(self):
-        self._mf_widget.set_cell_image.assert_not_called()
+        self._mf_widget._set_cell_image.assert_not_called()
 
     def reset_mocks(self):
-        self._mf_widget.set_cell_image.reset_mock()
+        self._mf_widget._set_cell_image.reset_mock()
         self._mf_widget._ctrlr.reset_mock()
         self.at_risk_signal_cb.reset_mock()
         self.no_risk_signal_cb.reset_mock()

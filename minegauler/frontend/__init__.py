@@ -9,7 +9,7 @@ import signal
 import sys
 
 from PyQt5.QtCore import QTimer, pyqtRemoveInputHook
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QWidget
 
 from . import state
 from .main_window import MinegaulerGUI
@@ -28,12 +28,12 @@ def init_app() -> None:
     pyqtRemoveInputHook()
 
 
-def run_app(gui: MinegaulerGUI) -> int:
+def run_app(gui: QWidget) -> int:
     """
     Run the GUI application.
 
     :param gui:
-        The main PyQt GUI object.
+        The main GUI widget.
     :return:
         Exit code.
     """

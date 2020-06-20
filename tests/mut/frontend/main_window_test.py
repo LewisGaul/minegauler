@@ -105,10 +105,10 @@ class TestMinegaulerGUI:
         # update_cells()
         cells = {1: "a", 2: "b", 3: "c"}
         gui.update_cells(cells)
-        gui._mf_widget.set_cell_image.assert_has_calls(
+        gui._mf_widget._set_cell_image.assert_has_calls(
             [mock.call(k, v) for k, v in cells.items()], any_order=True
         )
-        assert gui._mf_widget.set_cell_image.call_count == len(cells)
+        assert gui._mf_widget._set_cell_image.call_count == len(cells)
 
         # update_game_state()
         gui._state.game_status = GameState.WON

@@ -12,6 +12,7 @@ Exports
 
 __all__ = ("MinegaulerGUI",)
 
+import json
 import logging
 import os
 import textwrap
@@ -46,7 +47,7 @@ from .. import ROOT_DIR, shared
 from ..core import api
 from ..shared.highscores import HighscoreSettingsStruct, HighscoreStruct
 from ..shared.types import (
-    CellContents_T,
+    CellContents,
     CellImageType,
     Coord_T,
     Difficulty,
@@ -56,7 +57,7 @@ from ..shared.types import (
 )
 from ..shared.utils import GUIOptsStruct
 from . import highscores, minefield, panel, state, utils
-from .utils import FILES_DIR
+from .utils import FILES_DIR, HIGHSCORES_DIR, save_highscore
 
 
 logger = logging.getLogger(__name__)
@@ -250,15 +251,14 @@ class MinegaulerGUI(
         self._state.mines = mines
         self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
-    def update_cells(self, cell_updates: Mapping[Coord_T, CellContents_T]) -> None:
+    def update_cells(self, cell_updates: Mapping[Coord_T, CellContents]) -> None:
         """
         Called to indicate some cells have changed state.
 
         :param cell_updates:
             A mapping of cell coordinates to their new state.
         """
-        for c, state in cell_updates.items():
-            self._mf_widget.set_cell_image(c, state)
+        self._mf_widget.update_cells(cell_updates)
 
     def update_game_state(self, game_state: GameState) -> None:
         """
@@ -591,6 +591,10 @@ class MinegaulerGUI(
             else:
                 if new_best:
                     self.open_highscores_window(highscore, new_best)
+                    save_highscore(
+                        self._state.current_game_state,
+                        self._mf_widget.get_mouse_events(),
+                    )
 
     def _open_save_board_modal(self) -> None:
         if not (
@@ -662,6 +666,10 @@ class MinegaulerGUI(
         win = _TextPopup(self, title, file)
         win.show()
         self._open_subwindows[title] = win
+
+    def _open_play_highscore_modal(self):
+        with open(HIGHSCORES_DIR / "B_3_True.mgh") as f:
+            data = json.load(f)
 
     def get_gui_opts(self) -> GUIOptsStruct:
         return GUIOptsStruct.from_structs(self._state, self._state.pending_game_state)

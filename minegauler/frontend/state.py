@@ -43,6 +43,10 @@ class PerGameState(StructConstructorMixin):
     lives: int = 1
     drag_select: bool = False
 
+    @property
+    def difficulty(self) -> Difficulty:
+        return Difficulty.from_board_values(self.x_size, self.y_size, self.mines)
+
 
 class HighscoreWindowState(StructConstructorMixin):
     """State associated with the highscores window."""
@@ -126,7 +130,7 @@ class State:
 
     @property
     def difficulty(self) -> Difficulty:
-        return Difficulty.from_board_values(self.x_size, self.y_size, self.mines)
+        return self._current_game_state.difficulty
 
     @property
     def pending_mines(self):
@@ -194,6 +198,10 @@ class State:
             return self.pending_game_state.drag_select
         else:
             return self._current_game_state.drag_select
+
+    @property
+    def current_game_state(self) -> PerGameState:
+        return self._current_game_state
 
     @property
     def pending_game_state(self) -> PerGameState:
