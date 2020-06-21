@@ -5,14 +5,14 @@ Utilities for the frontend.
 
 Exports
 -------
-.. class:: ClickEvent
-    An enum of click events.
-
-.. class:: MouseEvent
-    A mouse event tuple.
+.. class:: CellUpdate_T
+    A cell update type alias.
 
 .. class:: MouseMove
     A mouse move tuple.
+
+.. function:: save_highscore
+    Save a highscore to file.
 
 .. data:: FILES_DIR
     The directory containing files.
@@ -29,22 +29,21 @@ __all__ = (
     "FILES_DIR",
     "HIGHSCORES_DIR",
     "IMG_DIR",
-    "ClickEvent",
-    "MouseEvent",
+    "CellUpdate_T",
     "MouseMove",
     "save_highscore",
 )
 
-import enum
 import json
 import pathlib
+import time
 from collections import namedtuple
-from typing import List
+from typing import Iterable, Mapping, Tuple
 
 import attr
 
 from .. import ROOT_DIR
-from ..shared.types import Coord_T
+from ..shared.types import CellContents, Coord_T
 from . import state
 
 
@@ -53,26 +52,7 @@ FILES_DIR: pathlib.Path = ROOT_DIR / "files"
 HIGHSCORES_DIR: pathlib.Path = ROOT_DIR / "highscores"
 
 
-class ClickEvent(enum.IntEnum):
-    """An enum of events triggered by some form of mouse click."""
-
-    LEFT_DOWN = 1
-    LEFT_MOVE = 2
-    LEFT_UP = 3
-    RIGHT_DOWN = 4
-    RIGHT_MOVE = 5
-    BOTH_DOWN = 6
-    BOTH_MOVE = 7
-    FIRST_OF_BOTH_UP = 8
-    DOUBLE_LEFT_DOWN = 9
-    DOUBLE_LEFT_MOVE = 10
-
-
-class MouseEvent(namedtuple("_MouseEvent", ["elapsed", "event", "coord"])):
-    """A mouse event tuple."""
-
-    def __new__(cls, elapsed: float, event: ClickEvent, coord: Coord_T):
-        return super().__new__(cls, elapsed, event, coord)
+CellUpdate_T = Tuple[float, Mapping[Coord_T, CellContents]]
 
 
 class MouseMove(namedtuple("_MouseMove", ["elapsed", "position"])):
@@ -82,14 +62,24 @@ class MouseMove(namedtuple("_MouseMove", ["elapsed", "position"])):
         return super().__new__(cls, elapsed, position)
 
 
-def save_highscore(game_state: state.PerGameState, mouse_events: List[MouseEvent]):
+def save_highscore(
+    game_state: state.PerGameState, cell_updates: Iterable[CellUpdate_T]
+):
     """
     @@@
     :param game_state:
-    :param mouse_events:
+    :param cell_updates:
     """
-    fname = "{0.difficulty.value}_{0.per_cell}_{0.drag_select}.mgh".format(game_state)
-    data = {"game_opts": attr.asdict(game_state), "mouse_events": mouse_events}
+    fname = ("{0.difficulty.value}_{0.per_cell}_{0.drag_select}_{1}.mgh").format(
+        game_state, int(time.time())
+    )
+    data = {
+        "game_opts": attr.asdict(game_state),
+        "cell_updates": [
+            (t, [(c, str(x)) for c, x in updates.items()])
+            for t, updates in cell_updates
+        ],
+    }
     HIGHSCORES_DIR.mkdir(exist_ok=True)
     with open(HIGHSCORES_DIR / fname, "w") as f:
         json.dump(data, f)

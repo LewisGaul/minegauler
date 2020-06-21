@@ -1,133 +1,118 @@
-from typing import Optional
+import logging
+from typing import Dict, List, Mapping, Optional
 
 from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QMouseEvent
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtGui import QMouseEvent, QPixmap
+from PyQt5.QtWidgets import (
+    QDialog,
+    QFrame,
+    QGraphicsScene,
+    QGraphicsView,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
-from ..core import api
-from ..shared import GameOptsStruct, GUIOptsStruct
-from ..shared.types import Coord_T
-from .minefield import MinefieldWidget
-from .state import State
-from .utils import ClickEvent
+from minegauler.frontend.minefield import _update_cell_images
+from minegauler.frontend.utils import CellUpdate_T
+from minegauler.shared.types import CellContents, CellImageType, Coord_T
 
 
-class SimulationMinefieldWidget(MinefieldWidget):
+logger = logging.getLogger(__name__)
+
+
+class SimulationMinefieldWidget(QDialog):
     def __init__(
-        self, parent: Optional[QWidget], ctrlr: api.AbstractController, state: State
+        self,
+        parent: Optional[QWidget],
+        x_size: int,
+        y_size: int,
+        cell_updates: List[CellUpdate_T],
     ):
-        super().__init__(parent, ctrlr, state)
-        self._enable_mouse_tracking = False
+        super().__init__(parent)
+        self._x_size = x_size
+        self._y_size = y_size
+        self._remaining_cell_updates = cell_updates
 
-        self._remaining_click_events = []
+        self._cell_images: Dict[CellContents, QPixmap] = {}
+        _update_cell_images(
+            self._cell_images, self.btn_size, {CellImageType.BUTTONS: "standard"}
+        )
+
+        self._scene = QGraphicsScene()
+        self.setModal(True)
+        self._setup_ui()
+
+        for c in [(x, y) for x in range(self.x_size) for y in range(self.y_size)]:
+            self._set_cell_image(c, CellContents.Unclicked)
+
+    @property
+    def x_size(self) -> int:
+        return self._x_size
+
+    @property
+    def y_size(self) -> int:
+        return self._y_size
+
+    @property
+    def btn_size(self) -> int:
+        return 20
+
+    def _setup_ui(self):
+        base_layout = QVBoxLayout(self)
+        frame = QFrame(self)
+        frame.setFrameShadow(QFrame.Raised)
+        frame.setFrameShape(QFrame.Box)
+        frame.setLineWidth(5)
+        frame.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        base_layout.addWidget(frame)
+        sub_layout = QVBoxLayout(frame)
+        sub_layout.setContentsMargins(0, 0, 0, 0)
+        view = QGraphicsView(frame)
+        view.setScene(self._scene)
+        sub_layout.addWidget(view)
 
     # --------------------------------------------------------------------------
     # Qt method overrides
     # --------------------------------------------------------------------------
     def mousePressEvent(self, event: QMouseEvent):
         """Handle mouse press events."""
-        self.replay_click_events(click_events)  # @@@
-
-    def mouseDoubleClickEvent(self, event: QMouseEvent):
-        """Handle double clicks."""
-
-    def mouseMoveEvent(self, event: QMouseEvent):
-        """Handle mouse move events."""
-
-    def mouseReleaseEvent(self, event: QMouseEvent):
-        """Handle mouse release events."""
+        self._timer_cb()  # @@@
 
     # --------------------------------------------------------------------------
     # Other methods
     # --------------------------------------------------------------------------
-    def _do_click_event(self, event: ClickEvent, coord: Coord_T) -> None:
-        if event is ClickEvent.LEFT_DOWN:
-            self.left_button_down(coord)
-        elif event is ClickEvent.LEFT_MOVE:
-            self.left_button_move(coord)
-        elif event is ClickEvent.LEFT_UP:
-            self.left_button_release(coord)
-        elif event is ClickEvent.RIGHT_DOWN:
-            self.right_button_down(coord)
-        elif event is ClickEvent.RIGHT_MOVE:
-            self.right_button_move(coord)
-        elif event is ClickEvent.BOTH_DOWN:
-            self.both_buttons_down(coord)
-        elif event is ClickEvent.BOTH_MOVE:
-            self.both_buttons_move(coord)
-        elif event is ClickEvent.FIRST_OF_BOTH_UP:
-            self.first_of_both_buttons_release(coord)
-        elif event is ClickEvent.DOUBLE_LEFT_DOWN:
-            self.left_double_down(coord)
-        elif event is ClickEvent.DOUBLE_LEFT_MOVE:
-            self.left_double_move(coord)
-
     def _timer_cb(self):
-        evt = self._remaining_click_events.pop(0)
-        self._do_click_event(evt[1], evt[2])
-        if self._remaining_click_events:
+        evt = self._remaining_cell_updates.pop(0)
+        self._update_cells({tuple(c): CellContents.from_str(x) for c, x in evt[1]})
+        if self._remaining_cell_updates:
             QTimer.singleShot(
-                1000 * (self._remaining_click_events[0][0] - evt[0]), self._timer_cb
+                1000 * (self._remaining_cell_updates[0][0] - evt[0]), self._timer_cb
             )
 
-    def replay_click_events(self, click_events):
-        self._remaining_click_events = click_events.copy()
-        self._timer_cb()
+    def _set_cell_image(self, coord: Coord_T, state: CellContents) -> None:
+        """
+        Set the image of a cell.
 
+        Arguments:
+        coord ((x, y) tuple in grid range)
+            The coordinate of the cell.
+        state
+            The cell_images key for the image to be set.
+        """
+        if state not in self._cell_images:
+            logger.error("Missing cell image for state: %s", state)
+            return
+        x, y = coord
+        b = self._scene.addPixmap(self._cell_images[state])
+        b.setPos(x * self.btn_size, y * self.btn_size)
 
-if __name__ == "__main__":
-    import logging
-    from unittest import mock
+    def _update_cells(self, cell_updates: Mapping[Coord_T, CellContents]) -> None:
+        """
+        Called to indicate some cells have changed state.
 
-    from ..core import BaseController, Minefield
-    from . import init_app, run_app
-
-    logging.basicConfig(
-        level=logging.DEBUG, format="%(asctime)s[%(levelname)s](%(name)s) %(message)s",
-    )
-
-    init_app()
-
-    click_events = [
-        (0, ClickEvent.LEFT_DOWN, (1, 2)),
-        (0.5, ClickEvent.LEFT_UP, (1, 2)),
-        (2, ClickEvent.LEFT_DOWN, (6, 2)),
-        (2.5, ClickEvent.BOTH_DOWN, (6, 2)),
-        (3.5, ClickEvent.FIRST_OF_BOTH_UP, (6, 2)),
-        (3.5, ClickEvent.LEFT_DOWN, (6, 2)),
-        (4.2, ClickEvent.LEFT_MOVE, (6, 3)),
-        (4.2, ClickEvent.LEFT_MOVE, (7, 3)),
-        (4.4, ClickEvent.LEFT_MOVE, (7, 4)),
-        (4.6, ClickEvent.LEFT_MOVE, (7, 3)),
-        (4.8, ClickEvent.LEFT_MOVE, (7, 4)),
-        (5, ClickEvent.LEFT_MOVE, (7, 5)),
-        (6, ClickEvent.LEFT_UP, (7, 5)),
-    ]
-
-    ctrlr = BaseController(GameOptsStruct())
-    ctrlr._active_ctrlr._game.mf = Minefield.from_2d_array(
-        [
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-        ]
-    )
-    mf = SimulationMinefieldWidget(
-        None, ctrlr, State.from_opts(GameOptsStruct(), GUIOptsStruct())
-    )
-    mf._remaining_click_events = click_events.copy()
-
-    def update_cells(cell_updates):
+        :param cell_updates:
+            A mapping of cell coordinates to their new state.
+        """
         for c, state in cell_updates.items():
-            mf._set_cell_image(c, state)
-
-    listener = mock.Mock()
-    listener.update_cells = update_cells
-    ctrlr.register_listener(listener)
-
-    run_app(mf)
+            self._set_cell_image(c, state)

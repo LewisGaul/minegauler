@@ -56,7 +56,7 @@ from ..shared.types import (
     UIMode,
 )
 from ..shared.utils import GUIOptsStruct
-from . import highscores, minefield, panel, state, utils
+from . import highscores, minefield, panel, simulate, state, utils
 from .utils import FILES_DIR, HIGHSCORES_DIR, save_highscore
 
 
@@ -345,7 +345,6 @@ class MinegaulerGUI(
 
     def _populate_menubars(self) -> None:
         """Fill in the menubars."""
-
         # ----------
         # Game menu
         # ----------
@@ -422,6 +421,8 @@ class MinegaulerGUI(
             diff_act.setShortcut(diff.value)
 
         self._game_menu.addSeparator()
+
+        self._game_menu.addAction("Play highscore!", self._open_play_highscore_modal)
 
         # Zoom
         self._game_menu.addAction("Button size", self._open_zoom_modal)
@@ -563,6 +564,9 @@ class MinegaulerGUI(
             and info.difficulty is not Difficulty.CUSTOM
             and not info.minefield_known
         ):
+            save_highscore(
+                self._state.current_game_state, self._mf_widget.get_mouse_events(),
+            )  # @@@
             assert info.started_info.prop_complete == 1
             highscore = HighscoreStruct(
                 difficulty=info.difficulty,
@@ -668,8 +672,13 @@ class MinegaulerGUI(
         self._open_subwindows[title] = win
 
     def _open_play_highscore_modal(self):
-        with open(HIGHSCORES_DIR / "B_3_True.mgh") as f:
+        with open(HIGHSCORES_DIR / "B_1_False.mgh") as f:
             data = json.load(f)
+        game_opts = state.PerGameState(**data["game_opts"])
+        win = simulate.SimulationMinefieldWidget(
+            self, game_opts.x_size, game_opts.y_size, data["cell_updates"]
+        )
+        win.show()
 
     def get_gui_opts(self) -> GUIOptsStruct:
         return GUIOptsStruct.from_structs(self._state, self._state.pending_game_state)
