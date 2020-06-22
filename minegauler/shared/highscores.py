@@ -11,6 +11,7 @@ __all__ = (
     "filter_and_sort",
     "get_highscores",
     "insert_highscore",
+    "retrieve_highscores",
 )
 
 import abc
@@ -179,18 +180,19 @@ class _SQLMixin:
             ", ".join(_highscore_fields), ", ".join(fmt for _ in _highscore_fields)
         )
 
+    def _get_highscores_count_sql(self) -> str:
+        return "SELECT COUNT(*) FROM highscores"
+
 
 class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     """Database of local highscores."""
 
-    _DB_FILE = ROOT_DIR / "data" / "highscores.db"
-
-    def __init__(self):
-        if os.path.exists(self._DB_FILE):
-            self._conn = sqlite3.connect(str(self._DB_FILE))
+    def __init__(self, path=ROOT_DIR / "data" / "highscores.db"):
+        if os.path.exists(path):
+            self._conn = sqlite3.connect(str(path))
         else:
-            os.makedirs(self._DB_FILE.parent, exist_ok=True)
-            self._conn = sqlite3.connect(str(self._DB_FILE))
+            os.makedirs(path.parent, exist_ok=True)
+            self._conn = sqlite3.connect(str(path))
 
             cursor = self._conn.cursor()
             cursor.execute(self._CREATE_TABLE_SQL)
@@ -220,6 +222,27 @@ class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
             )
         )
         return cursor.fetchall()
+
+    def get_table_row_count(self) -> int:
+        row_factory = self._conn.row_factory
+        self._conn.row_factory = None
+        row_count = next(self.execute(self._get_highscores_count_sql()))[0]
+        self._conn.row_factory = row_factory
+        return row_count
+
+    def merge_highscores(self, path) -> int:
+
+        first_count = self.get_table_row_count()
+        self.execute(f"ATTACH DATABASE '{path}' AS toMerge")
+
+        self.execute(
+            "CREATE TABLE IF NOT EXISTS mergedTable AS "
+            "SELECT * FROM highscores UNION SELECT * FROM toMerge.highscores"
+        )
+        self.execute("DROP TABLE IF EXISTS highscores")
+        self.execute("ALTER TABLE mergedTable RENAME TO highscores")
+        self._conn.commit()
+        return self.get_table_row_count() - first_count
 
     def insert_highscore(self, highscore: HighscoreStruct) -> None:
         super().insert_highscore(highscore)
@@ -365,6 +388,10 @@ def insert_highscore(highscore: HighscoreStruct) -> None:
             logger.exception("Failed to insert highscore into remote DB")
 
     threading.Thread(target=_post_catch_exc).start()
+
+
+def retrieve_highscores(path) -> int:
+    return LocalHighscoresDB().merge_highscores(path)
 
 
 def filter_and_sort(

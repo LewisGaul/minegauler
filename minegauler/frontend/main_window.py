@@ -46,7 +46,11 @@ from PyQt5.QtWidgets import (
 
 from .. import ROOT_DIR, shared
 from ..core import api
-from ..shared.highscores import HighscoreSettingsStruct, HighscoreStruct
+from ..shared.highscores import (
+    HighscoreSettingsStruct,
+    HighscoreStruct,
+    retrieve_highscores,
+)
 from ..shared.types import (
     CellContents_T,
     CellImageType,
@@ -683,17 +687,18 @@ class MinegaulerGUI(
     def _open_retrieve_highscores_modal(self):
         """Open a window to select a highscores file to read in."""
         logger.debug("Opening window to retrieve highscores")
-        direc = QFileDialog.getExistingDirectory(
+        path, _ = QFileDialog.getOpenFileName(
             parent=self,
             caption="Retrieve highscores",
-            directory=str(pathlib.Path.home()),
+            directory=str(ROOT_DIR),
+            filter="Highscores Database (*.db)",
         )
-        logger.debug("Selected directory: %s", direc)
-        if not direc:
+        logger.debug("Selected directory: %s", path)
+        if not path:
             return  # cancelled
 
-        files_dir = pathlib.Path(direc) / "files"
-        if not files_dir.exists():
+        path = pathlib.Path(path)
+        if not path.exists():
             _msg_popup(
                 self,
                 QMessageBox.Warning,
@@ -701,24 +706,10 @@ class MinegaulerGUI(
                 "Couldn't find folder expected to contain highscores.",
             )
             return
-        # try:
-        #     info_path = files_dir.glob('info.*')[0]
-        #     with open(info_path, 'r') as f:
-        #         info = json.load(f)
-        #     version = info['version']
-        #     in_exe = info['frozen'] if 'frozen' in info else True
-        # except:
-        #     _info_popup(self, "Unknown version, try running the old game first. "
-        #              + "Contact minegauler@gmail.com if problems persist.")
-        #     return
-        # if LooseVersion(version) < '1.1.2':
-        #     _info_popup(self, "Cannot retrieve highscores from versions older than 1.1.2 - "
-        #              + "contact minegauler@gmail.com to have old highscores updated.")
-        #     return
+
         try:
-            logger.info("Fetching highscores from %s", files_dir)
-            # added = include_old_hscores(direc, version, in_exe)
-            added = 0
+            logger.info("Fetching highscores from %s", path)
+            added = retrieve_highscores(path)
             _msg_popup(
                 self,
                 QMessageBox.Information,
@@ -734,6 +725,8 @@ class MinegaulerGUI(
                 + "Contact minegauler@gmail.com if you expected this game "
                 + "to have highscores.",
             )
+        except Exception as e:
+            _msg_popup(self, QMessageBox.Warning, "Error merging highscores", str(e))
 
     def get_gui_opts(self) -> GUIOptsStruct:
         return GUIOptsStruct.from_structs(self._state, self._state.pending_game_state)
