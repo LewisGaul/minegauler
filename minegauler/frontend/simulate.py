@@ -1,3 +1,17 @@
+# June 2020, Lewis Gaul
+
+"""
+Simulate played games.
+
+Exports
+-------
+.. class:: SimulationMinefieldWidget
+    The simulation minefield widget class.
+
+"""
+
+__all__ = ("SimulationMinefieldWidget",)
+
 import logging
 from typing import Dict, List, Mapping, Optional
 
@@ -13,9 +27,9 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from minegauler.frontend.minefield import _update_cell_images
-from minegauler.frontend.utils import CellUpdate_T
-from minegauler.shared.types import CellContents, CellImageType, Coord_T
+from ..shared.types import CellContents, CellImageType, Coord_T
+from .minefield import _update_cell_images
+from .utils import CellUpdate_T
 
 
 logger = logging.getLogger(__name__)
@@ -41,10 +55,13 @@ class SimulationMinefieldWidget(QDialog):
 
         self._scene = QGraphicsScene()
         self.setModal(True)
+        self.setWindowTitle("Highscore replay")
         self._setup_ui()
 
         for c in [(x, y) for x in range(self.x_size) for y in range(self.y_size)]:
             self._set_cell_image(c, CellContents.Unclicked)
+
+        self._animation_started = False
 
     @property
     def x_size(self) -> int:
@@ -77,17 +94,21 @@ class SimulationMinefieldWidget(QDialog):
     # --------------------------------------------------------------------------
     def mousePressEvent(self, event: QMouseEvent):
         """Handle mouse press events."""
-        self._timer_cb()  # @@@
+        if not self._animation_started:
+            self._animation_started = True
+            self._do_next_update()
 
     # --------------------------------------------------------------------------
     # Other methods
     # --------------------------------------------------------------------------
-    def _timer_cb(self):
+    def _do_next_update(self):
+        """Perform the next set of cell updates."""
         evt = self._remaining_cell_updates.pop(0)
         self._update_cells({tuple(c): CellContents.from_str(x) for c, x in evt[1]})
         if self._remaining_cell_updates:
             QTimer.singleShot(
-                1000 * (self._remaining_cell_updates[0][0] - evt[0]), self._timer_cb
+                1000 * (self._remaining_cell_updates[0][0] - evt[0]),
+                self._do_next_update,
             )
 
     def _set_cell_image(self, coord: Coord_T, state: CellContents) -> None:

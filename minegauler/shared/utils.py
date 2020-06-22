@@ -20,6 +20,9 @@ Exports
 .. class:: StructConstructorMixin
     A mixin for structure classes.
 
+.. function:: format_timestamp
+    Format a timestamp.
+
 .. function:: is_flagging_threshold
     Check whether flagging threshold is met.
 
@@ -37,6 +40,7 @@ __all__ = (
     "GameOptsStruct",
     "Grid",
     "StructConstructorMixin",
+    "format_timestamp",
     "is_flagging_threshold",
     "read_settings_from_file",
     "write_settings_to_file",
@@ -44,6 +48,7 @@ __all__ = (
 
 import json
 import logging
+import time
 from typing import Any, Dict, Iterable, List
 
 import attr
@@ -321,3 +326,7 @@ def write_settings_to_file(settings: AllOptsStruct) -> None:
             json.dump(settings.encode_to_json(), f, indent=2)
     except Exception:
         logger.exception("Unexpected error writing settings to file")
+
+
+def format_timestamp(timestamp: float) -> str:
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp))
