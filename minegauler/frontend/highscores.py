@@ -273,6 +273,11 @@ class HighscoresTable(QTableView):
     def hideEvent(self, event: QHideEvent):
         self._filter_menu.close()
 
+    def sizeHint(self) -> QSize:
+        width = super().sizeHint().width()
+        height = width / 1.61
+        return QSize(width, height)
+
     def set_sort_indicator(self, *_):
         """Set the sort indicator to match the actual sorting."""
         self._header.setSortIndicator(
