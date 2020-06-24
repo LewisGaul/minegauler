@@ -1,7 +1,12 @@
+# July 2018, Lewis Gaul
 """
-highscores.py - Highscores window implementation
+Highscores window implementation.
 
-July 2018, Lewis Gaul
+Exports
+-------
+.. class:: HighscoresWindow
+    Widget for displaying highscores.
+
 """
 
 __all__ = ("HighscoresWindow",)
@@ -267,6 +272,11 @@ class HighscoresTable(QTableView):
 
     def hideEvent(self, event: QHideEvent):
         self._filter_menu.close()
+
+    def sizeHint(self) -> QSize:
+        width = super().sizeHint().width()
+        height = width / 1.61
+        return QSize(width, height)
 
     def set_sort_indicator(self, *_):
         """Set the sort indicator to match the actual sorting."""

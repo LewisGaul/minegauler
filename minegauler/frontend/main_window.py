@@ -1,22 +1,23 @@
+# April 2018, Lewis Gaul
+
 """
 Base GUI application implementation.
 
-April 2018, Lewis Gaul
+Exports
+-------
+.. class:: MinegaulerGUI
+    Main window widget.
 
-Exports:
-
-MinegaulerGUI
-    Minegauler main window class.
 """
 
 __all__ = ("MinegaulerGUI",)
 
 import glob
+import json
 import logging
 import os
 import pathlib
 import textwrap
-import time as tm
 import traceback
 from typing import Callable, Dict, Mapping, Optional
 
@@ -48,7 +49,7 @@ from .. import ROOT_DIR, shared
 from ..core import api
 from ..shared.highscores import HighscoreSettingsStruct, HighscoreStruct
 from ..shared.types import (
-    CellContents_T,
+    CellContents,
     CellImageType,
     Coord_T,
     Difficulty,
@@ -56,9 +57,9 @@ from ..shared.types import (
     PathLike,
     UIMode,
 )
-from ..shared.utils import GUIOptsStruct
-from . import highscores, minefield, panel, state, utils
-from .utils import FILES_DIR
+from ..shared.utils import GUIOptsStruct, format_timestamp
+from . import highscores, minefield, panel, simulate, state, utils
+from .utils import FILES_DIR, HIGHSCORES_DIR, read_highscore_file, save_highscore_file
 
 
 logger = logging.getLogger(__name__)
@@ -66,7 +67,9 @@ logger = logging.getLogger(__name__)
 BOARD_DIR = ROOT_DIR / "boards"
 
 
-def _msg_popup(parent: QWidget, icon: QMessageBox.Icon, title: str, msg: str) -> None:
+def _msg_popup(
+    parent: QWidget, icon: QMessageBox.Icon, title: str, msg: Optional[str] = None
+) -> None:
     """Open a modal popup with a simple message."""
     logger.debug(
         "Opening popup with message: %s", msg if len(msg) <= 50 else msg[:47] + "..."
@@ -74,7 +77,8 @@ def _msg_popup(parent: QWidget, icon: QMessageBox.Icon, title: str, msg: str) ->
     popup = QMessageBox(parent)
     popup.setIcon(icon)
     popup.setWindowTitle(title)
-    popup.setText(msg)
+    if msg:
+        popup.setText(msg)
     popup.exec_()
 
 
@@ -264,15 +268,14 @@ class MinegaulerGUI(
         self._state.mines = mines
         self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
-    def update_cells(self, cell_updates: Mapping[Coord_T, CellContents_T]) -> None:
+    def update_cells(self, cell_updates: Mapping[Coord_T, CellContents]) -> None:
         """
         Called to indicate some cells have changed state.
 
         :param cell_updates:
             A mapping of cell coordinates to their new state.
         """
-        for c, state in cell_updates.items():
-            self._mf_widget.set_cell_image(c, state)
+        self._mf_widget.update_cells(cell_updates)
 
     def update_game_state(self, game_state: GameState) -> None:
         """
@@ -435,6 +438,9 @@ class MinegaulerGUI(
             diff_act.setShortcut(diff.value)
 
         self._game_menu.addSeparator()
+
+        # Play highscore
+        self._game_menu.addAction("Play highscore", self._open_play_highscore_modal)
 
         # Zoom
         self._game_menu.addAction("Button size", self._open_zoom_modal)
@@ -608,6 +614,12 @@ class MinegaulerGUI(
             else:
                 if new_best:
                     self.open_highscores_window(highscore, new_best)
+                    try:
+                        save_highscore_file(
+                            highscore, self._mf_widget.get_mouse_events(),
+                        )
+                    except IOError:
+                        logger.exception("Error saving highscore to file")
 
     def _open_save_board_modal(self) -> None:
         if not (
@@ -735,6 +747,32 @@ class MinegaulerGUI(
                 + "to have highscores.",
             )
 
+    def _open_play_highscore_modal(self):
+        """Open a modal window to select a highscore file."""
+        logger.debug("Opening window to select a highscore to play back")
+        hs_file, _ = QFileDialog.getOpenFileName(
+            parent=self,
+            caption="Play highscore",
+            directory=str(HIGHSCORES_DIR),
+            filter="Minegauler highscores (*.mgh)",
+        )
+        logger.debug("Selected file: %s", hs_file)
+        if not hs_file:
+            return  # cancelled
+
+        hs_file = pathlib.Path(hs_file)
+        try:
+            hs, cell_updates = read_highscore_file(hs_file)
+            x_size, y_size, _ = hs.difficulty.get_board_values()
+            win = simulate.SimulationMinefieldWidget(self, x_size, y_size, cell_updates)
+        except Exception as e:
+            logger.exception("Error reading highscore file")
+            _msg_popup(
+                self, QMessageBox.Warning, "Error loading highscore file", str(e)
+            )
+        else:
+            win.show()
+
     def get_gui_opts(self) -> GUIOptsStruct:
         return GUIOptsStruct.from_structs(self._state, self._state.pending_game_state)
 
@@ -803,9 +841,7 @@ class _CurrentInfoModal(QDialog):
         if info.game_state.finished():
             assert info.started_info is not None
             fin_info = info.started_info
-            start_time = tm.strftime(
-                "%Y-%m-%d %H:%M:%S", tm.localtime(fin_info.start_time)
-            )
+            start_time = format_timestamp(fin_info.start_time)
             state = info.game_state.name.capitalize()
             info_text += textwrap.dedent(
                 f"""\

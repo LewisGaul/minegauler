@@ -1,13 +1,13 @@
+# November 2018, Lewis Gaul
+
 """
 The core game logic.
 
-November 2018, Lewis Gaul
-
 Exports
---------
-BaseController (class)
-    Implementation of game logic and provision of functions to be called by a
-    frontend implementation.
+-------
+.. class:: BaseController
+    Implementation of game logic.
+
 """
 
 __all__ = ("BaseController",)

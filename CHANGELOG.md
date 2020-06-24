@@ -23,6 +23,10 @@ The current release of version 4.0 includes:
  - Ability to reduce the window size and use scroll
 
 
+### 4.0.5-a2 (2020-06-22)
+ - Add ability to play back highscores
+
+
 ### 4.0.5-a1 (2020-06-17)
  - Fix double left-clicks not registering as two clicks
  - Add 'ludicrous' board difficulty

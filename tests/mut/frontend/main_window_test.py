@@ -1,7 +1,8 @@
-"""
-Test the main window of the GUI.
+# December 2018, Lewis Gaul
 
-December 2018, Lewis Gaul
+"""
+Tests for the main window of the GUI.
+
 """
 
 from unittest import mock
@@ -44,9 +45,10 @@ class TestMinegaulerGUI:
             side_effect=_MockMinefieldWidget,
         ).start()
         mock.patch("minegauler.frontend.panel._CounterWidget").start()
-        mock.patch("minegauler.frontend.minefield.init_or_update_cell_images").start()
+        mock.patch("minegauler.frontend.minefield._update_cell_images").start()
         mock.patch("minegauler.shared.highscores.insert_highscore").start()
         mock.patch("minegauler.shared.highscores.is_highscore_new_best").start()
+        # mock.patch("minegauler.shared.utils.save_highscore").start()
 
     @classmethod
     def teardown_class(cls):
@@ -104,10 +106,7 @@ class TestMinegaulerGUI:
         # update_cells()
         cells = {1: "a", 2: "b", 3: "c"}
         gui.update_cells(cells)
-        gui._mf_widget.set_cell_image.assert_has_calls(
-            [mock.call(k, v) for k, v in cells.items()], any_order=True
-        )
-        assert gui._mf_widget.set_cell_image.call_count == len(cells)
+        gui._mf_widget.update_cells.assert_called_once_with(cells)
 
         # update_game_state()
         gui._state.game_status = GameState.WON

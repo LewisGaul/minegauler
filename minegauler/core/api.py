@@ -1,7 +1,8 @@
-"""
-API on to the core, providing all information needed by frontends.
+# September 2019, Lewis Gaul
 
-September 2019, Lewis Gaul
+"""
+API between backend and frontends.
+
 """
 
 __all__ = (

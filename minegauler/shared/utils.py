@@ -1,7 +1,37 @@
-"""
-General utility classes/functions.
+# March 2018, Lewis Gaul
 
-March 2018, Lewis Gaul
+"""
+General utilities.
+
+Exports
+-------
+.. class:: AllOptsStruct
+    A structure class containing all persisted options.
+
+.. class:: GUIOptsStruct
+    A structure class containing persisted GUI options.
+
+.. class:: GameOptsStruct
+    A structure class containing persisted game options.
+
+.. class:: Grid
+    Representation of a 2D array.
+
+.. class:: StructConstructorMixin
+    A mixin for structure classes.
+
+.. function:: format_timestamp
+    Format a timestamp.
+
+.. function:: is_flagging_threshold
+    Check whether flagging threshold is met.
+
+.. function:: read_settings_from_file
+    Read persisted settings.
+
+.. function:: write_settings_to_file
+    Persist settings to file.
+
 """
 
 __all__ = (
@@ -10,6 +40,7 @@ __all__ = (
     "GameOptsStruct",
     "Grid",
     "StructConstructorMixin",
+    "format_timestamp",
     "is_flagging_threshold",
     "read_settings_from_file",
     "write_settings_to_file",
@@ -17,6 +48,7 @@ __all__ = (
 
 import json
 import logging
+import time
 from typing import Any, Dict, Iterable, List
 
 import attr
@@ -294,3 +326,7 @@ def write_settings_to_file(settings: AllOptsStruct) -> None:
             json.dump(settings.encode_to_json(), f, indent=2)
     except Exception:
         logger.exception("Unexpected error writing settings to file")
+
+
+def format_timestamp(timestamp: float) -> str:
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp))
