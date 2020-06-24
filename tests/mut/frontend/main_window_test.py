@@ -48,7 +48,6 @@ class TestMinegaulerGUI:
         mock.patch("minegauler.frontend.minefield._update_cell_images").start()
         mock.patch("minegauler.shared.highscores.insert_highscore").start()
         mock.patch("minegauler.shared.highscores.is_highscore_new_best").start()
-        # mock.patch("minegauler.shared.utils.save_highscore").start()
 
     @classmethod
     def teardown_class(cls):
@@ -141,11 +140,15 @@ class TestMinegaulerGUI:
         exp_highscore = shared.highscores.HighscoreStruct(
             Difficulty.BEGINNER, 2, False, "NAME", 1234, 99.01, 123, 123 / 99.01, 0.4
         )
+
+        save_hs_mock = mock.patch("minegauler.frontend.main_window.save_highscore_file")
+        save_hs_mock.start()
         with mock.patch.object(gui, "open_highscores_window") as mock_open:
             gui.update_game_state(GameState.WON)
             gui._panel_widget.timer.set_time.assert_called_once_with(100)
             shared.highscores.insert_highscore.assert_called_once_with(exp_highscore)
             mock_open.assert_called_once_with(mock.ANY, "3bv/s")
+        save_hs_mock.stop()
 
         # update_mines_remaining()
         gui.update_mines_remaining(56)
