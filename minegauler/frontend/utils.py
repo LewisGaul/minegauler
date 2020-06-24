@@ -87,7 +87,10 @@ def save_highscore_file(
     fname = (
         "{0.name}_{0.difficulty.value}_{0.elapsed:.2f}_{0.bbbv}_"
         "max={0.per_cell}_drag={0.drag_select}_{1}.mgh"
-    ).format(highscore, format_timestamp(highscore.timestamp).replace(" ", "_"))
+    ).format(
+        highscore,
+        format_timestamp(highscore.timestamp).replace(" ", "_").replace(":", "-"),
+    )
     data = {
         "highscore": attr.asdict(highscore),
         "cell_updates": [
