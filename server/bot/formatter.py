@@ -15,7 +15,7 @@ __all__ = (
 
 import datetime as dt
 import time
-from typing import Iterable, List, Mapping, Optional, Tuple
+from typing import Iterable, List, Mapping, Optional, Tuple, Union
 
 import pytz
 import tabulate
@@ -108,7 +108,7 @@ def format_kwargs(kwargs: Mapping) -> str:
 
 
 def format_filters(
-    difficulty: Optional[Difficulty],
+    difficulty: Optional[Union[str, Difficulty]],
     drag_select: Optional[bool],
     per_cell: Optional[int],
     *,
@@ -116,10 +116,10 @@ def format_filters(
 ) -> str:
     opts = dict()
     if not no_difficulty:
-        if difficulty:
+        try:
             diff = difficulty.name.capitalize()
-        else:
-            diff = "combined"
+        except AttributeError:
+            diff = difficulty if difficulty else "combined"
         opts["difficulty"] = diff
     if drag_select is not None:
         opts["drag-select"] = "on" if drag_select else "off"
