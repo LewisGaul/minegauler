@@ -19,6 +19,7 @@ from typing import Iterable, List, Mapping, Optional, Tuple
 import tabulate
 
 from minegauler.shared import highscores as hs
+from minegauler.shared.types import Difficulty
 
 from .utils import Matchup, PlayerInfo
 
@@ -38,7 +39,7 @@ def format_highscore_times(highscores: Iterable[Tuple[str, float]]) -> str:
 
 
 def format_player_highscores(
-    highscores: List[hs.HighscoreStruct], difficulty: Optional[str] = None
+    highscores: List[hs.HighscoreStruct], difficulty: Optional[Difficulty] = None
 ) -> List[str]:
     lines = []
     if highscores:
@@ -48,13 +49,18 @@ def format_player_highscores(
     lines.append(f"Last game played on {last_played}")
 
     if not difficulty:
-        for diff in ["beginner", "intermediate", "expert", "master"]:
-            hscores = [h.elapsed for h in highscores if h.difficulty.lower() == diff[0]]
+        for diff in [
+            Difficulty.BEGINNER,
+            Difficulty.INTERMEDIATE,
+            Difficulty.EXPERT,
+            Difficulty.MASTER,
+        ]:
+            hscores = [h.elapsed for h in highscores if h.difficulty is diff]
             if hscores:
                 best = f"{min(hscores):.2f}"
             else:
                 best = "None"
-            line = "{}: {}".format(diff.capitalize(), best)
+            line = "{}: {}".format(diff.name.capitalize(), best)
             lines.append(line)
     else:
         lines.append(f"Top {difficulty} times:")
@@ -100,7 +106,7 @@ def format_kwargs(kwargs: Mapping) -> str:
 
 
 def format_filters(
-    difficulty: Optional[str],
+    difficulty: Optional[Difficulty],
     drag_select: Optional[bool],
     per_cell: Optional[int],
     *,
@@ -108,9 +114,11 @@ def format_filters(
 ) -> str:
     opts = dict()
     if not no_difficulty:
-        if not difficulty:
-            difficulty = "combined"
-        opts["difficulty"] = difficulty
+        if difficulty:
+            diff = difficulty.name.capitalize()
+        else:
+            diff = "combined"
+        opts["difficulty"] = diff
     if drag_select is not None:
         opts["drag-select"] = "on" if drag_select else "off"
     if per_cell is not None:
