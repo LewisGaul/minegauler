@@ -13,9 +13,11 @@ __all__ = (
     "format_player_info",
 )
 
+import datetime as dt
 import time
 from typing import Iterable, List, Mapping, Optional, Tuple
 
+import pytz
 import tabulate
 
 from minegauler.shared import highscores as hs
@@ -133,4 +135,6 @@ def format_matchups(matchups: Iterable[Matchup]) -> List[str]:
 
 
 def format_timestamp(timestamp: float) -> str:
-    return time.strftime("%Y-%m-%d %H:%M", time.localtime(timestamp))
+    tz = pytz.timezone("Europe/London")
+    date = dt.datetime.fromtimestamp(timestamp).astimezone(tz)
+    return date.strftime("%Y-%m-%d %H:%M")
