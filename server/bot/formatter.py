@@ -63,7 +63,7 @@ def format_player_highscores(
             line = "{}: {}".format(diff.name.capitalize(), best)
             lines.append(line)
     else:
-        lines.append(f"Top {difficulty} times:")
+        lines.append(f"Top {difficulty.name.capitalize()} times:")
         for h in highscores[:5]:
             line = "{:.2f} ({:.2f} 3bv/s) - {}".format(
                 h.elapsed, h.bbbvps, format_timestamp(h.timestamp)
