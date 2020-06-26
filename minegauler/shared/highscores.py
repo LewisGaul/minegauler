@@ -197,6 +197,7 @@ class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
 
             cursor = self._conn.cursor()
             cursor.execute(self._CREATE_TABLE_SQL)
+            cursor.execute("PRAGMA user_version = 0")
         self._conn.row_factory = HighscoreStruct.from_sqlite_row
 
     @property
@@ -242,6 +243,7 @@ class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
         )
         self.execute("DROP TABLE IF EXISTS highscores")
         self.execute("ALTER TABLE mergedTable RENAME TO highscores")
+        self.execute("DETACH DATABASE toMerge")
         self._conn.commit()
         return self.get_table_row_count() - first_count
 
