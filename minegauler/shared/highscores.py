@@ -196,6 +196,7 @@ class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     """Database of local highscores."""
 
     def __init__(self, path: pathlib.Path = ROOT_DIR / "data" / "highscores.db"):
+        self._path = path
         if os.path.exists(path):
             self._conn = sqlite3.connect(str(path))
         else:
@@ -250,6 +251,9 @@ class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
 
     def merge_highscores(self, path: PathLike) -> int:
         """Merge in highscores from a given other SQLite DB."""
+        if pathlib.Path(path) == self._path:
+            raise ValueError("Cannot merge database into itself")
+
         hs_table = self._TABLE_NAME
         tmp_table = "mergedTable"
         attach_db = "toMergeDB"
