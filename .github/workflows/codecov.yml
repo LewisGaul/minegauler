@@ -31,7 +31,7 @@ jobs:
       env:
         COVERAGE_FILE: .cov-mut
       run: |
-        coverage run --source=minegauler/,tests/mut/ --branch -m pytest tests/mut/
+        coverage run --source=minegauler/,tests/mut/ -m pytest tests/mut/
         coverage report
         coverage xml -o cov-mut-with-tests.xml
         coverage xml --omit='tests/**' -o cov-mut-no-tests.xml
