@@ -14,6 +14,7 @@ from minegauler import shared
 from minegauler.core import api
 from minegauler.frontend import main_window, minefield, panel, state
 from minegauler.frontend.main_window import MinegaulerGUI
+from minegauler.shared import HighscoreStruct
 from minegauler.shared.types import Difficulty, GameState
 
 from ..utils import make_true_mock
@@ -46,8 +47,7 @@ class TestMinegaulerGUI:
         ).start()
         mock.patch("minegauler.frontend.panel._CounterWidget").start()
         mock.patch("minegauler.frontend.minefield._update_cell_images").start()
-        mock.patch("minegauler.shared.highscores.insert_highscore").start()
-        mock.patch("minegauler.shared.highscores.is_highscore_new_best").start()
+        mock.patch("minegauler.shared.highscores").start()
 
     @classmethod
     def teardown_class(cls):
@@ -137,7 +137,7 @@ class TestMinegaulerGUI:
         shared.highscores.is_highscore_new_best.return_value = "3bv/s"
         gui._state.drag_select = False
         gui._state.name = "NAME"
-        exp_highscore = shared.highscores.HighscoreStruct(
+        exp_highscore = HighscoreStruct(
             Difficulty.BEGINNER, 2, False, "NAME", 1234, 99.01, 123, 123 / 99.01, 0.4
         )
 
