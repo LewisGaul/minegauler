@@ -698,16 +698,27 @@ class MinegaulerGUI(
 
     def _open_retrieve_highscores_modal(self):
         """Open a window to select a highscores file to read in."""
+        accepted = False
+
+        def accept_cb():
+            nonlocal accepted
+            accepted = True
+
         logger.debug("Opening window to retrieve highscores")
-        path = QFileDialog.getExistingDirectory(
+        dialog = QFileDialog(
             parent=self,
             caption="Retrieve highscores",
             directory=str(pathlib.Path.home()),
-            options=QFileDialog.DontUseNativeDialog,
+            filter="highscores.db",
         )
-        if not path:
+        dialog.setFileMode(QFileDialog.Directory)
+        dialog.accepted.connect(accept_cb)
+        dialog.exec_()
+
+        if not accepted:
             return  # cancelled
 
+        path = dialog.selectedFiles()[0]
         logger.debug("Selected directory: %s", path)
 
         path = pathlib.Path(path)
