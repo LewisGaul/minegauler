@@ -24,6 +24,7 @@ The current release of version 4.0 includes:
 
 
 ### 4.0.5-a2 (2020-06-22)
+ - Fix bug when changing max mines per cell mid-game
  - Add ability to play back highscores
 
 
