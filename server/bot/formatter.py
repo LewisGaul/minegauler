@@ -13,12 +13,15 @@ __all__ = (
     "format_player_info",
 )
 
+import datetime as dt
 import time
-from typing import Iterable, List, Mapping, Optional, Tuple
+from typing import Iterable, List, Mapping, Optional, Tuple, Union
 
+import pytz
 import tabulate
 
 from minegauler.shared import highscores as hs
+from minegauler.shared.types import Difficulty
 
 from .utils import Matchup, PlayerInfo
 
@@ -38,7 +41,7 @@ def format_highscore_times(highscores: Iterable[Tuple[str, float]]) -> str:
 
 
 def format_player_highscores(
-    highscores: List[hs.HighscoreStruct], difficulty: Optional[str] = None
+    highscores: List[hs.HighscoreStruct], difficulty: Optional[Difficulty] = None
 ) -> List[str]:
     lines = []
     if highscores:
@@ -48,16 +51,21 @@ def format_player_highscores(
     lines.append(f"Last game played on {last_played}")
 
     if not difficulty:
-        for diff in ["beginner", "intermediate", "expert", "master"]:
-            hscores = [h.elapsed for h in highscores if h.difficulty.lower() == diff[0]]
+        for diff in [
+            Difficulty.BEGINNER,
+            Difficulty.INTERMEDIATE,
+            Difficulty.EXPERT,
+            Difficulty.MASTER,
+        ]:
+            hscores = [h.elapsed for h in highscores if h.difficulty is diff]
             if hscores:
                 best = f"{min(hscores):.2f}"
             else:
                 best = "None"
-            line = "{}: {}".format(diff.capitalize(), best)
+            line = "{}: {}".format(diff.name.capitalize(), best)
             lines.append(line)
     else:
-        lines.append(f"Top {difficulty} times:")
+        lines.append(f"Top {difficulty.name.capitalize()} times:")
         for h in highscores[:5]:
             line = "{:.2f} ({:.2f} 3bv/s) - {}".format(
                 h.elapsed, h.bbbvps, format_timestamp(h.timestamp)
@@ -100,7 +108,7 @@ def format_kwargs(kwargs: Mapping) -> str:
 
 
 def format_filters(
-    difficulty: Optional[str],
+    difficulty: Optional[Union[str, Difficulty]],
     drag_select: Optional[bool],
     per_cell: Optional[int],
     *,
@@ -108,9 +116,11 @@ def format_filters(
 ) -> str:
     opts = dict()
     if not no_difficulty:
-        if not difficulty:
-            difficulty = "combined"
-        opts["difficulty"] = difficulty
+        try:
+            diff = difficulty.name.capitalize()
+        except AttributeError:
+            diff = difficulty if difficulty else "combined"
+        opts["difficulty"] = diff
     if drag_select is not None:
         opts["drag-select"] = "on" if drag_select else "off"
     if per_cell is not None:
@@ -125,4 +135,6 @@ def format_matchups(matchups: Iterable[Matchup]) -> List[str]:
 
 
 def format_timestamp(timestamp: float) -> str:
-    return time.strftime("%Y-%m-%d %H:%M", time.localtime(timestamp))
+    tz = pytz.timezone("Europe/London")
+    date = dt.datetime.fromtimestamp(timestamp).astimezone(tz)
+    return date.strftime("%Y-%m-%d %H:%M")
