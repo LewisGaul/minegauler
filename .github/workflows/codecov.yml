@@ -59,34 +59,18 @@ jobs:
         file: ./cov-all-no-tests.xml
         fail_ci_if_error: true
 
-#    - name: Upload coverage to Codecov - mut
-#      uses: codecov/codecov-action@v1
-#      with:
-#        token: ${{ secrets.CODECOV_TOKEN }}
-#        file: ./cov-mut-no-tests.xml
-#        flags: mut
-#        fail_ci_if_error: true
-#
-#    - name: Upload coverage to Codecov - mut_with_tests
-#      uses: codecov/codecov-action@v1
-#      with:
-#        token: ${{ secrets.CODECOV_TOKEN }}
-#        file: ./cov-mut-with-tests.xml
-#        flags: mut_with_tests
-#        fail_ci_if_error: false
-#
-#    - name: Upload coverage to Codecov - it
-#      uses: codecov/codecov-action@v1
-#      with:
-#        token: ${{ secrets.CODECOV_TOKEN }}
-#        file: ./cov-it-no-tests.xml
-#        flags: it
-#        fail_ci_if_error: true
-#
-#    - name: Upload coverage to Codecov - it_with_tests
-#      uses: codecov/codecov-action@v1
-#      with:
-#        token: ${{ secrets.CODECOV_TOKEN }}
-#        file: ./cov-it-with-tests.xml
-#        flags: it_with_tests
-#        fail_ci_if_error: false
+    - name: Upload coverage to Codecov - mut
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./cov-mut-no-tests.xml
+        flags: mut
+        fail_ci_if_error: true
+
+    - name: Upload coverage to Codecov - it
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./cov-it-no-tests.xml
+        flags: it
+        fail_ci_if_error: true
