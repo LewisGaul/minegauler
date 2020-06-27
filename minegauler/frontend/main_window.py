@@ -12,7 +12,6 @@ Exports
 
 __all__ = ("MinegaulerGUI",)
 
-import json
 import logging
 import os
 import pathlib
@@ -46,7 +45,11 @@ from PyQt5.QtWidgets import (
 
 from .. import ROOT_DIR, shared
 from ..core import api
-from ..shared.highscores import HighscoreSettingsStruct, HighscoreStruct
+from ..shared.highscores import (
+    HighscoreSettingsStruct,
+    HighscoreStruct,
+    retrieve_highscores,
+)
 from ..shared.types import (
     CellContents,
     CellImageType,
@@ -536,6 +539,10 @@ class MinegaulerGUI(
             lambda: self._open_text_popup("Tips", FILES_DIR / "tips.txt")
         )
 
+        retrieve_act = QAction("Retrieve highscores", self)
+        retrieve_act.triggered.connect(self._open_retrieve_highscores_modal)
+        self._help_menu.addAction(retrieve_act)
+
         self._help_menu.addSeparator()
 
         about_act = QAction("About", self)
@@ -686,6 +693,75 @@ class MinegaulerGUI(
         win = _TextPopup(self, title, file)
         win.show()
         self._open_subwindows[title] = win
+
+    def _open_retrieve_highscores_modal(self):
+        """Open a window to select a highscores file to read in."""
+        accepted = False
+
+        def accept_cb():
+            nonlocal accepted
+            accepted = True
+
+        logger.debug("Opening window to retrieve highscores")
+        dialog = QFileDialog(
+            parent=self,
+            caption="Retrieve highscores",
+            directory=str(pathlib.Path.home()),
+            filter="highscores.db",
+        )
+        dialog.setFileMode(QFileDialog.Directory)
+        dialog.accepted.connect(accept_cb)
+        dialog.exec_()
+
+        if not accepted:
+            return  # cancelled
+
+        path = dialog.selectedFiles()[0]
+        logger.debug("Selected directory: %s", path)
+
+        path = pathlib.Path(path)
+        if not path.exists():
+            _msg_popup(
+                self,
+                QMessageBox.Critical,
+                "Not found",
+                "Unable to access selected folder.",
+            )
+            return
+
+        tail = pathlib.Path()
+        for part in reversed(["minegauler", "data", "highscores.db"]):
+            tail = part / tail
+            if (path / tail).is_file():
+                file = path / tail
+                break
+        else:
+            _msg_popup(
+                self,
+                QMessageBox.Warning,
+                "Not found",
+                "No highscores database found when searching along the path "
+                "'.../minegauler/data/highscores.db'. Contact "
+                "minegauler@gmail.com if this error is unexpected.",
+            )
+            return
+
+        try:
+            logger.info("Fetching highscores from %s", file)
+            added = retrieve_highscores(file)
+            _msg_popup(
+                self,
+                QMessageBox.Information,
+                "Highscores retrieved",
+                f"Number of highscores added: {added}",
+            )
+        except Exception as e:
+            _msg_popup(
+                self,
+                QMessageBox.Critical,
+                "Error",
+                str(e) + " Contact minegauler@gmail.com if this error is unexpected.",
+            )
 
     def _open_play_highscore_modal(self):
         """Open a modal window to select a highscore file."""
