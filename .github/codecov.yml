@@ -3,5 +3,7 @@ coverage:
     project:
       default:
         informational: true
-#        flags:
-#          - mut
+    patch:
+      default:
+        target: 90%
+        threshold: 0%
