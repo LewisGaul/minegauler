@@ -181,10 +181,10 @@ class _SQLMixin:
 
     def _get_insert_highscore_sql(self, fmt="%s") -> str:
         """Get the SQL command to insert a highscore into a DB."""
-        return "INSERT INTO {table} ({fields}) VALUES ({fmt})".format(
+        return "INSERT INTO {table} ({fields}) VALUES ({fmt_})".format(
             table=self._TABLE_NAME,
             fields=", ".join(_highscore_fields),
-            fmt=", ".join(fmt for _ in _highscore_fields),
+            fmt_=", ".join(fmt for _ in _highscore_fields),
         )
 
     def _get_highscores_count_sql(self) -> str:
