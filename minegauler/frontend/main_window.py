@@ -12,8 +12,6 @@ Exports
 
 __all__ = ("MinegaulerGUI",)
 
-import glob
-import json
 import logging
 import os
 import pathlib
