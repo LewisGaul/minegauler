@@ -52,7 +52,7 @@ jobs:
         coverage xml -o cov-all-with-tests.xml
         coverage xml --omit='tests/**' -o cov-all-no-tests.xml
 
-    - name: Upload coverage to Codecov - mut
+    - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
