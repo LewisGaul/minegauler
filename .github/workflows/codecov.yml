@@ -58,19 +58,3 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         file: ./cov-all-no-tests.xml
         fail_ci_if_error: true
-
-    - name: Upload coverage to Codecov - mut
-      uses: codecov/codecov-action@v1
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        file: ./cov-mut-no-tests.xml
-        flags: mut
-        fail_ci_if_error: true
-
-    - name: Upload coverage to Codecov - it
-      uses: codecov/codecov-action@v1
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        file: ./cov-it-no-tests.xml
-        flags: it
-        fail_ci_if_error: true

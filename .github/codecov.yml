@@ -3,5 +3,5 @@ coverage:
     project:
       default:
         informational: true
-        flags:
-          - mut
+#        flags:
+#          - mut
