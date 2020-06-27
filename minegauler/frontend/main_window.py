@@ -703,6 +703,7 @@ class MinegaulerGUI(
             parent=self,
             caption="Retrieve highscores",
             directory=str(pathlib.Path.home()),
+            options=QFileDialog.DontUseNativeDialog,
         )
         if not path:
             return  # cancelled
