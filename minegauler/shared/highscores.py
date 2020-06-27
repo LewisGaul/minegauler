@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 _REMOTE_POST_URL = "http://minegauler.lewisgaul.co.uk/api/v1/highscore"
 
 
-@attr.attrs(auto_attribs=True)
+@attr.attrs(auto_attribs=True, frozen=True)
 class HighscoreSettingsStruct(StructConstructorMixin):
     """A set of highscore settings."""
 
@@ -57,7 +57,7 @@ class HighscoreSettingsStruct(StructConstructorMixin):
         return cls(Difficulty.BEGINNER, 1, False)
 
 
-@attr.attrs(auto_attribs=True)
+@attr.attrs(auto_attribs=True, frozen=True)
 class HighscoreStruct(HighscoreSettingsStruct):
     """A single highscore."""
 
@@ -215,6 +215,10 @@ class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     @property
     def conn(self) -> sqlite3.Connection:
         return self._conn
+
+    @property
+    def path(self) -> pathlib.Path:
+        return self._path
 
     @staticmethod
     def _highscore_row_factory(cursor: sqlite3.Cursor, row: Tuple) -> HighscoreStruct:
