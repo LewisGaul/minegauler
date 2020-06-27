@@ -699,46 +699,59 @@ class MinegaulerGUI(
     def _open_retrieve_highscores_modal(self):
         """Open a window to select a highscores file to read in."""
         logger.debug("Opening window to retrieve highscores")
-        path, _ = QFileDialog.getOpenFileName(
+        path = QFileDialog.getExistingDirectory(
             parent=self,
             caption="Retrieve highscores",
-            directory=str(ROOT_DIR),
-            filter="Highscores Database (*.db)",
+            directory=str(pathlib.Path.home()),
         )
-        logger.debug("Selected directory: %s", path)
         if not path:
             return  # cancelled
+
+        logger.debug("Selected directory: %s", path)
 
         path = pathlib.Path(path)
         if not path.exists():
             _msg_popup(
                 self,
+                QMessageBox.Critical,
+                "Not found",
+                "Unable to access selected folder.",
+            )
+            return
+
+        tail = pathlib.Path()
+        for part in reversed(["minegauler", "data", "highscores.db"]):
+            tail = part / tail
+            if (path / tail).is_file():
+                file = path / tail
+                break
+        else:
+            _msg_popup(
+                self,
                 QMessageBox.Warning,
-                "File not found",
-                "Couldn't find folder expected to contain highscores.",
+                "Not found",
+                "No highscores database found when searching along the path "
+                "'.../minegauler/data/highscores.db'. Contact "
+                "minegauler@gmail.com if this error is unexpected.",
             )
             return
 
         try:
-            logger.info("Fetching highscores from %s", path)
-            added = retrieve_highscores(path)
+            logger.info("Fetching highscores from %s", file)
+            added = retrieve_highscores(file)
             _msg_popup(
                 self,
                 QMessageBox.Information,
                 "Highscores retrieved",
                 f"Number of highscores added: {added}",
             )
-            # save_all_highscores()
-        except FileNotFoundError:
+        except Exception as e:
             _msg_popup(
                 self,
-                QMessageBox.Warning,
-                "Cannot find highscores files. "
-                + "Contact minegauler@gmail.com if you expected this game "
-                + "to have highscores.",
+                QMessageBox.Critical,
+                "Error",
+                str(e) + " Contact minegauler@gmail.com if this error is unexpected.",
             )
-        except Exception as e:
-            _msg_popup(self, QMessageBox.Warning, "Error merging highscores", str(e))
 
     def _open_play_highscore_modal(self):
         """Open a modal window to select a highscore file."""
