@@ -27,6 +27,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 
 import attr
 import mysql.connector
+import mysql.connector.cursor
 import requests
 
 from .. import ROOT_DIR
@@ -83,6 +84,11 @@ class AbstractHighscoresDB(abc.ABC):
     def conn(self):
         """The active database connection."""
         return NotImplemented
+
+    @staticmethod
+    def extract_single_elem(cursor):
+        """Extract a single element using a cursor."""
+        return next(cursor)[0]
 
     @abc.abstractmethod
     def get_highscores(
@@ -219,7 +225,8 @@ class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
 
     def get_db_version(self) -> int:
         """Get the database version number."""
-        return next(self.execute("PRAGMA user_version"))[0]
+        cursor = self.execute("PRAGMA user_version")
+        return self.extract_single_elem(cursor)
 
     def get_highscores(
         self,
@@ -358,7 +365,7 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
 
     def execute(
         self, cmd: str, params: Tuple = (), *, commit=False, **cursor_args
-    ) -> sqlite3.Cursor:
+    ) -> mysql.connector.cursor.MySQLCursor:
         try:
             return super().execute(cmd, params, commit=commit, **cursor_args)
         except mysql.connector.Error as e:
