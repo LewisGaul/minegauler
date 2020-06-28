@@ -110,9 +110,10 @@ class _BaseMainWindow(QMainWindow):
         self._icon: QIcon = QIcon(str(utils.IMG_DIR / "icon.ico"))
         self.setWindowTitle(title)
         self.setWindowIcon(self._icon)
-        # Disable maximise button
-        self.setWindowFlags(self.windowFlags() | Qt.CustomizeWindowHint)
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowMaximizeButtonHint)
+        # Enable maximise button.
+        self.setWindowFlags(
+            self.windowFlags() | Qt.CustomizeWindowHint | Qt.WindowMaximizeButtonHint
+        )
         self._setup_ui()
         # Keep track of all non-modal subwindows that are open.
         self._open_subwindows: Dict[str, QWidget] = {}
@@ -342,6 +343,9 @@ class MinegaulerGUI(
         )
         return QSize(width, height)
 
+    def maximumSizeHint(self) -> QSize:
+        return self.sizeHint()
+
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
         self._name_entry_widget.clearFocus()
@@ -352,7 +356,6 @@ class MinegaulerGUI(
     def _update_size(self):
         """Update the window size."""
         self.setMinimumSize(self.minimumSizeHint())
-        self.setMaximumSize(self.sizeHint())
         self.resize(self.sizeHint())
         self.adjustSize()
         # print(self.sizeHint(), self.size())
