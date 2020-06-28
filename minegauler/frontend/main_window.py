@@ -442,7 +442,7 @@ class MinegaulerGUI(
         self._game_menu.addSeparator()
 
         # Play highscore
-        self._game_menu.addAction("Play highscore", self._open_play_highscore_modal)
+        # self._game_menu.addAction("Play highscore", self._open_play_highscore_modal)
 
         # Zoom
         self._game_menu.addAction("Button size", self._open_zoom_modal)
@@ -616,12 +616,12 @@ class MinegaulerGUI(
             else:
                 if new_best:
                     self.open_highscores_window(highscore, new_best)
-                    try:
-                        save_highscore_file(
-                            highscore, self._mf_widget.get_mouse_events(),
-                        )
-                    except IOError:
-                        logger.exception("Error saving highscore to file")
+                    # try:
+                    #     save_highscore_file(
+                    #         highscore, self._mf_widget.get_mouse_events(),
+                    #     )
+                    # except IOError:
+                    #     logger.exception("Error saving highscore to file")
 
     def _open_save_board_modal(self) -> None:
         if not (
