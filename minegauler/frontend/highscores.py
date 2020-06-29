@@ -1,4 +1,5 @@
 # July 2018, Lewis Gaul
+
 """
 Highscores window implementation.
 
@@ -18,6 +19,7 @@ from typing import Dict, List, Optional
 
 from PyQt5.QtCore import (
     QAbstractTableModel,
+    QModelIndex,
     QPoint,
     QRect,
     QSize,
@@ -103,7 +105,7 @@ class HighscoresModel(QAbstractTableModel):
     """Model handling sorting and filtering of a highscore group."""
 
     sort_changed = pyqtSignal(int)
-    headers = ["name", "time", "3bv", "3bv/s", "date", "flagging"]
+    _HEADERS = ["name", "time", "3bv", "3bv/s", "date", "flagging"]
 
     def __init__(self, parent: Optional[QWidget], state_: state.HighscoreWindowState):
         super().__init__(parent)
@@ -121,14 +123,14 @@ class HighscoresModel(QAbstractTableModel):
     # -------------------------------------------------------------------------
     # Implement abstract methods
     # -------------------------------------------------------------------------
-    def rowCount(self, parent=None):
+    def rowCount(self, parent=None) -> int:
         return len(self._displayed_data)
 
-    def columnCount(self, parent=None):
-        return len(self.headers)
+    def columnCount(self, parent=None) -> int:
+        return len(self._HEADERS)
 
-    def data(self, index, role):
-        header = self.headers[index.column()]
+    def data(self, index: QModelIndex, role: int) -> QVariant:
+        header = self._HEADERS[index.column()]
         if not index.isValid():
             return QVariant()
         elif role == Qt.DisplayRole:
@@ -143,18 +145,20 @@ class HighscoresModel(QAbstractTableModel):
         else:
             return QVariant()
 
-    def headerData(self, index, orientation, role):
+    def headerData(
+        self, index: QModelIndex, orientation: Qt.Orientation, role: int
+    ) -> QVariant:
         bold_font = QFont("Sans-serif", 9)
         bold_font.setBold(True)
         # Horizontal header
         if orientation == Qt.Horizontal:
-            header = self.headers[index]
+            header = self._HEADERS[index]
             if role == Qt.DisplayRole:
                 return QVariant(header.capitalize())
             elif role == Qt.FontRole:
                 if (
                     self._filters.get(header)
-                    or self._state.sort_by == self.headers[index]
+                    or self._state.sort_by == self._HEADERS[index]
                 ):
                     return bold_font
             elif role == Qt.SizeHintRole:
@@ -170,8 +174,8 @@ class HighscoresModel(QAbstractTableModel):
                     return bold_font
         return QVariant()
 
-    def sort(self, index: int, order=Qt.DescendingOrder):
-        header = self.headers[index]
+    def sort(self, index: int, order=Qt.DescendingOrder) -> None:
+        header = self._HEADERS[index]
         if header not in ["time", "3bv/s"]:
             return
         self._state.sort_by = header
@@ -179,7 +183,7 @@ class HighscoresModel(QAbstractTableModel):
         self.sort_changed.emit(index)
 
     # -------------------------------------------------------------------------
-    # New methods
+    # Other methods
     # -------------------------------------------------------------------------
     def update_highscores_group(
         self, settings: highscores.HighscoreSettingsStruct
@@ -281,13 +285,13 @@ class HighscoresTable(QTableView):
     def set_sort_indicator(self, *_):
         """Set the sort indicator to match the actual sorting."""
         self._header.setSortIndicator(
-            self._model.headers.index(self._state.sort_by), Qt.DescendingOrder
+            self._model._HEADERS.index(self._state.sort_by), Qt.DescendingOrder
         )
 
     @pyqtSlot(int)
     def show_header_menu(self, col):
         """Pop up a mini entry menu for filtering on a column."""
-        key = self._model.headers[col]
+        key = self._model._HEADERS[col]
         if key not in ["name", "flagging"] or self._block_header_menu:
             self._block_header_menu = False
             return
