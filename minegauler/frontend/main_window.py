@@ -1008,6 +1008,9 @@ class _AdvancedOptionsModal(QDialog):
     def _setup_ui(self):
         """Set up the window layout."""
         vlayout = QVBoxLayout(self)
+        vlayout.addWidget(
+            QLabel("These options are in beta - stability not guaranteed", self)
+        )
 
         def add_opt(label: str, func: Callable):
             hlayout = QHBoxLayout(self)
