@@ -13,7 +13,7 @@ Exports
 __all__ = ("HighscoresWindow",)
 
 import logging
-import time as tm
+import time
 from typing import Dict, List, Optional
 
 from PyQt5.QtCore import (
@@ -35,7 +35,6 @@ from PyQt5.QtWidgets import (
     QActionGroup,
     QDialog,
     QHBoxLayout,
-    QHeaderView,
     QLineEdit,
     QMenu,
     QTableView,
@@ -122,6 +121,9 @@ class HighscoresModel(QAbstractTableModel):
     # -------------------------------------------------------------------------
     # Implement abstract methods
     # -------------------------------------------------------------------------
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        return super().flags(index)
+
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         if parent.isValid():
             return 0
@@ -170,19 +172,19 @@ class HighscoresModel(QAbstractTableModel):
         elif role == Qt.TextAlignmentRole:
             return QVariant(Qt.AlignHCenter | Qt.AlignVCenter)
         elif role == Qt.FontRole:
-            bold_font = QFont("Sans-serif", 8)
+            bold_font = QFont("Sans-serif", 9)
             bold_font.setBold(True)
             if index.row() == self._get_active_row():
                 return bold_font
         return QVariant()
 
-    def sort(self, index: int, order=Qt.DescendingOrder) -> None:
-        header = self._HEADERS[index]
+    def sort(self, column: int, order: Qt.SortOrder = Qt.DescendingOrder) -> None:
+        header = self._HEADERS[column]
         if header not in ["time", "3bv/s"]:
             return
         self._state.sort_by = header
         self.filter_and_sort()
-        self.sort_changed.emit(index)
+        self.sort_changed.emit(column)
 
     # -------------------------------------------------------------------------
     # Other methods
@@ -215,7 +217,7 @@ class HighscoresModel(QAbstractTableModel):
         elif key == "name":
             return h.name
         elif key == "date":
-            return tm.strftime("%Y-%m-%d %H:%M:%S", tm.localtime(h.timestamp))
+            return time.strftime("%Y-%m-%d", time.localtime(h.timestamp))
         elif key == "flagging":
             return "F" if utils.is_flagging_threshold(h.flagging) else "NF"
         else:
@@ -227,9 +229,9 @@ class HighscoresModel(QAbstractTableModel):
         self._displayed_data = highscores.filter_and_sort(
             self._all_data, self._state.sort_by, self._filters
         )
+        # TODO: Should call changePersistentIndexList()?
         self.layoutChanged.emit()
-        dummy_index = self.createIndex(0, 0)
-        self.dataChanged.emit(dummy_index, dummy_index)
+        self.dataChanged.emit(QModelIndex(), QModelIndex())
 
 
 class HighscoresTable(QTableView):
@@ -257,8 +259,8 @@ class HighscoresTable(QTableView):
         self.setFocusPolicy(Qt.NoFocus)
         self.setCornerButtonEnabled(False)
         self.setSortingEnabled(True)
-        # Fix width of all columns, let first column stretch to width.
-        self._header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        # TODO: ResizeToContents is too slow.
+        # self._header.setSectionResizeMode(QHeaderView.ResizeToContents)
         self._header.setSortIndicatorShown(True)
         self.set_sort_indicator()
         # Sort indicator is changed by clicking a header column, although in
@@ -267,7 +269,8 @@ class HighscoresTable(QTableView):
         self._header.sortIndicatorChanged.connect(self.set_sort_indicator)
         self._header.sectionClicked.connect(self.show_header_menu)
         # Set height of rows.
-        self._index.setSectionResizeMode(QHeaderView.ResizeToContents)
+        # TODO: ResizeToContents is too slow.
+        # self._index.setSectionResizeMode(QHeaderView.ResizeToContents)
         self._index.setSectionsClickable(False)
         self._filter_menu = QMenu(None)
         self._block_header_menu = False
