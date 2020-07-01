@@ -352,7 +352,6 @@ class MinegaulerGUI(
     # --------------------------------------------------------------------------
     def _update_size(self):
         """Update the window size."""
-        print("shouldn't be here")
         self.setMinimumSize(self.minimumSizeHint())
         self.setMaximumSize(self.sizeHint())
         self.resize(self.sizeHint())
@@ -1030,7 +1029,6 @@ class _AdvancedOptionsModal(QDialog):
         def update_size():
             win.setMinimumSize(win.minimumSizeHint())
             if not win.isMaximized():
-                print("Not maximised")
                 win.resize(win.sizeHint())
                 win.adjustSize()
 
