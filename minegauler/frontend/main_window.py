@@ -22,6 +22,7 @@ from typing import Callable, Dict, Mapping, Optional
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QFocusEvent, QFont, QIcon, QKeyEvent
 from PyQt5.QtWidgets import (
+    QWIDGETSIZE_MAX,
     QAction,
     QActionGroup,
     QDialog,
@@ -475,6 +476,9 @@ class MinegaulerGUI(
                 style_act.triggered.connect(get_change_style_func(img_group, style))
                 submenu.addAction(style_act)
 
+        # Advanced options
+        self._game_menu.addAction("Advanced options", self._open_advanced_opts_modal)
+
         self._game_menu.addSeparator()
 
         # Exit (F4)
@@ -789,6 +793,9 @@ class MinegaulerGUI(
         else:
             win.show()
 
+    def _open_advanced_opts_modal(self):
+        _AdvancedOptionsModal(self, self).show()
+
     def get_gui_opts(self) -> GUIOptsStruct:
         return GUIOptsStruct.from_structs(self._state, self._state.pending_game_state)
 
@@ -985,6 +992,53 @@ class _ButtonSizeModal(QDialog):
         base_layout.addLayout(btns_layout)
         btns_layout.addWidget(ok_btn)
         btns_layout.addWidget(cancel_btn)
+
+
+class _AdvancedOptionsModal(QDialog):
+    """A popup window to select advanced options."""
+
+    def __init__(self, parent: QWidget, main_window: MinegaulerGUI):
+        super().__init__(parent)
+        self.setWindowTitle("Advanced options")
+        self.setModal(True)
+        self._main_window = main_window
+        self._setup_ui()
+
+    def _setup_ui(self):
+        """Set up the window layout."""
+        vlayout = QVBoxLayout(self)
+        vlayout.addWidget(
+            QLabel("These options are in beta - stability not guaranteed", self)
+        )
+
+        def add_opt(label: str, func: Callable):
+            hlayout = QHBoxLayout(self)
+            vlayout.addLayout(hlayout)
+            hlayout.addWidget(QLabel(label, self))
+            button = QPushButton("Enable", self)
+            button.clicked.connect(func)
+            button.clicked.connect(lambda: button.setDisabled(True))
+            hlayout.addWidget(button)
+
+        add_opt("Enable main window maximising", self._enable_maximise)
+
+    def _enable_maximise(self):
+        """Enable maximising the main window."""
+        win = self._main_window
+
+        def update_size():
+            win.setMinimumSize(win.minimumSizeHint())
+            if not win.isMaximized():
+                win.resize(win.sizeHint())
+                win.adjustSize()
+
+        win.hide()
+        win.setWindowFlag(Qt.WindowMaximizeButtonHint)
+        win.setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX)
+        win._mf_widget.size_changed.disconnect(win._update_size)
+        win._update_size = update_size
+        win._mf_widget.size_changed.connect(win._update_size)
+        win.show()
 
 
 class _SliderSpinner(QWidget):
