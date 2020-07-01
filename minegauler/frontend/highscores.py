@@ -1,4 +1,5 @@
 # July 2018, Lewis Gaul
+
 """
 Highscores window implementation.
 
@@ -12,12 +13,12 @@ Exports
 __all__ = ("HighscoresWindow",)
 
 import logging
-import sys
-import time as tm
+import time
 from typing import Dict, List, Optional
 
 from PyQt5.QtCore import (
     QAbstractTableModel,
+    QModelIndex,
     QPoint,
     QRect,
     QSize,
@@ -34,7 +35,6 @@ from PyQt5.QtWidgets import (
     QActionGroup,
     QDialog,
     QHBoxLayout,
-    QHeaderView,
     QLineEdit,
     QMenu,
     QTableView,
@@ -103,7 +103,7 @@ class HighscoresModel(QAbstractTableModel):
     """Model handling sorting and filtering of a highscore group."""
 
     sort_changed = pyqtSignal(int)
-    headers = ["name", "time", "3bv", "3bv/s", "date", "flagging"]
+    _HEADERS = ["name", "time", "3bv", "3bv/s", "date", "flagging"]
 
     def __init__(self, parent: Optional[QWidget], state_: state.HighscoreWindowState):
         super().__init__(parent)
@@ -121,65 +121,73 @@ class HighscoresModel(QAbstractTableModel):
     # -------------------------------------------------------------------------
     # Implement abstract methods
     # -------------------------------------------------------------------------
-    def rowCount(self, parent=None):
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        return super().flags(index)
+
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        if parent.isValid():
+            return 0
+        return len(self._HEADERS)
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        if parent.isValid():
+            return 0
         return len(self._displayed_data)
 
-    def columnCount(self, parent=None):
-        return len(self.headers)
-
-    def data(self, index, role):
-        header = self.headers[index.column()]
-        if not index.isValid():
-            return QVariant()
-        elif role == Qt.DisplayRole:
-            return QVariant(self.format_data(index.row(), header))
-        elif role == Qt.TextAlignmentRole:
-            return QVariant(Qt.AlignHCenter | Qt.AlignVCenter)
-        elif role == Qt.FontRole:
-            bold_font = QFont("Sans-serif", 8)
-            bold_font.setBold(True)
-            if index.row() == self.get_active_row():
-                return bold_font
-        else:
-            return QVariant()
-
-    def headerData(self, index, orientation, role):
+    def headerData(
+        self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole
+    ) -> QVariant:
         bold_font = QFont("Sans-serif", 9)
         bold_font.setBold(True)
         # Horizontal header
         if orientation == Qt.Horizontal:
-            header = self.headers[index]
+            header = self._HEADERS[section]
             if role == Qt.DisplayRole:
                 return QVariant(header.capitalize())
             elif role == Qt.FontRole:
                 if (
                     self._filters.get(header)
-                    or self._state.sort_by == self.headers[index]
+                    or self._state.sort_by == self._HEADERS[section]
                 ):
                     return bold_font
             elif role == Qt.SizeHintRole:
                 # Set size hint for 'Name' column width (minimum width).
-                if index == 0:
+                if header == "name":
                     return QSize(200, 0)
         # Vertical indexing
         elif orientation == Qt.Vertical:
             if role == Qt.DisplayRole:
-                return QVariant(str(index + 1))
+                return QVariant(str(section + 1))
             elif role == Qt.FontRole:
-                if index == self.get_active_row():
+                if section == self._get_active_row():
                     return bold_font
         return QVariant()
 
-    def sort(self, index: int, order=Qt.DescendingOrder):
-        header = self.headers[index]
+    def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> QVariant:
+        header = self._HEADERS[index.column()]
+        if not index.isValid():
+            return QVariant()
+        elif role == Qt.DisplayRole:
+            return QVariant(self._format_data(index.row(), header))
+        elif role == Qt.TextAlignmentRole:
+            return QVariant(Qt.AlignHCenter | Qt.AlignVCenter)
+        elif role == Qt.FontRole:
+            bold_font = QFont("Sans-serif", 9)
+            bold_font.setBold(True)
+            if index.row() == self._get_active_row():
+                return bold_font
+        return QVariant()
+
+    def sort(self, column: int, order: Qt.SortOrder = Qt.DescendingOrder) -> None:
+        header = self._HEADERS[column]
         if header not in ["time", "3bv/s"]:
             return
         self._state.sort_by = header
         self.filter_and_sort()
-        self.sort_changed.emit(index)
+        self.sort_changed.emit(column)
 
     # -------------------------------------------------------------------------
-    # New methods
+    # Other methods
     # -------------------------------------------------------------------------
     def update_highscores_group(
         self, settings: highscores.HighscoreSettingsStruct
@@ -190,14 +198,14 @@ class HighscoresModel(QAbstractTableModel):
         self._all_data = highscores.get_highscores(settings=settings)
         self.filter_and_sort()
 
-    def get_active_row(self) -> Optional[int]:
+    def _get_active_row(self) -> Optional[int]:
         """Get the index of the row containing the active highscore."""
         if self._state.current_highscore in self._displayed_data:
             return self._displayed_data.index(self._state.current_highscore)
         else:
             return None
 
-    def format_data(self, row: int, key: str) -> str:
+    def _format_data(self, row: int, key: str) -> str:
         """Get the string to display in a given cell."""
         h = self._displayed_data[row]
         if key == "time":
@@ -209,7 +217,7 @@ class HighscoresModel(QAbstractTableModel):
         elif key == "name":
             return h.name
         elif key == "date":
-            return tm.strftime("%Y-%m-%d %H:%M:%S", tm.localtime(h.timestamp))
+            return time.strftime("%Y-%m-%d", time.localtime(h.timestamp))
         elif key == "flagging":
             return "F" if utils.is_flagging_threshold(h.flagging) else "NF"
         else:
@@ -221,9 +229,9 @@ class HighscoresModel(QAbstractTableModel):
         self._displayed_data = highscores.filter_and_sort(
             self._all_data, self._state.sort_by, self._filters
         )
+        # TODO: Should call changePersistentIndexList()?
         self.layoutChanged.emit()
-        dummy_index = self.createIndex(0, 0)
-        self.dataChanged.emit(dummy_index, dummy_index)
+        self.dataChanged.emit(QModelIndex(), QModelIndex())
 
 
 class HighscoresTable(QTableView):
@@ -251,8 +259,8 @@ class HighscoresTable(QTableView):
         self.setFocusPolicy(Qt.NoFocus)
         self.setCornerButtonEnabled(False)
         self.setSortingEnabled(True)
-        # Fix width of all columns, let first column stretch to width.
-        self._header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        # TODO: ResizeToContents is too slow.
+        # self._header.setSectionResizeMode(QHeaderView.ResizeToContents)
         self._header.setSortIndicatorShown(True)
         self.set_sort_indicator()
         # Sort indicator is changed by clicking a header column, although in
@@ -261,7 +269,8 @@ class HighscoresTable(QTableView):
         self._header.sortIndicatorChanged.connect(self.set_sort_indicator)
         self._header.sectionClicked.connect(self.show_header_menu)
         # Set height of rows.
-        self._index.setSectionResizeMode(QHeaderView.ResizeToContents)
+        # TODO: ResizeToContents is too slow.
+        # self._index.setSectionResizeMode(QHeaderView.ResizeToContents)
         self._index.setSectionsClickable(False)
         self._filter_menu = QMenu(None)
         self._block_header_menu = False
@@ -281,18 +290,18 @@ class HighscoresTable(QTableView):
     def set_sort_indicator(self, *_):
         """Set the sort indicator to match the actual sorting."""
         self._header.setSortIndicator(
-            self._model.headers.index(self._state.sort_by), Qt.DescendingOrder
+            self._model._HEADERS.index(self._state.sort_by), Qt.DescendingOrder
         )
 
     @pyqtSlot(int)
-    def show_header_menu(self, col):
+    def show_header_menu(self, col: int):
         """Pop up a mini entry menu for filtering on a column."""
-        key = self._model.headers[col]
+        key = self._model._HEADERS[col]
         if key not in ["name", "flagging"] or self._block_header_menu:
             self._block_header_menu = False
             return
         self._filter_menu = QMenu(self.parent())
-        self._filter_menu.aboutToHide.connect(self.check_mouse_on_header_menu_hide)
+        self._filter_menu.aboutToHide.connect(self._check_mouse_on_header_menu_hide)
 
         def get_filter_cb(key, f):
             def cb():
@@ -353,7 +362,7 @@ class HighscoresTable(QTableView):
         self._filter_menu.exec_(pos)  # modal dialog
         self.resizeRowsToContents()
 
-    def check_mouse_on_header_menu_hide(self):
+    def _check_mouse_on_header_menu_hide(self):
         header_pos = self.mapToGlobal(self._header.pos())
         x_min = header_pos.x() + sum(
             [self._header.sectionSize(i) for i in range(self._filter_menu.index)]
@@ -363,13 +372,3 @@ class HighscoresTable(QTableView):
         height = self.mapToGlobal(self._index.pos()).y() - y_min
         if QRect(x_min, y_min, width, height).contains(QCursor.pos()):
             self._block_header_menu = True
-
-
-if __name__ == "__main__":
-    from PyQt5.QtWidgets import QApplication
-
-    app = QApplication(sys.argv)
-    settings = highscores.HighscoreSettingsStruct.get_default()
-    win = HighscoresWindow(None, settings)
-    win.show()
-    sys.exit(app.exec_())
