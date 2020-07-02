@@ -24,9 +24,13 @@ The latest release for version 4.0 includes:
  - Ability to fetch local highscores from another app installation
 
 
+### 4.0.5 (2020-07-02)
+ - Fix crash when clicking multiple mouse buttons off the board
+
+
 ### 4.0.5-a3 (2020-07-01)
-- Fix slowness of highscores table
-- Add advanced/beta options, allowing maximising the main window
+ - Fix slowness of highscores table
+ - Add advanced/beta options, allowing maximising the main window
 
 
 ### 4.0.5-a2 (2020-06-22)
@@ -66,8 +70,8 @@ The latest release for version 4.0 includes:
 
 ### 4.0.4-a0 (2020-01-14)
  - Upload highscores to remote server
-   - Only when there is an internet connection, not queued for later
-   - View highscores e.g. at URL http://minegauler.lewisgaul.co.uk/highscores?per_cell=3&name=Siwel%20G&drag_select=1
+ - Only when there is an internet connection, not queued for later
+ - View highscores e.g. at URL http://minegauler.lewisgaul.co.uk/highscores?per_cell=3&name=Siwel%20G&drag_select=1
 
 
 ### 4.0.3-a4 (2020-01-04)
