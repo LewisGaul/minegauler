@@ -1103,11 +1103,11 @@ class _NameEntryBar(QLineEdit):
 class _TextPopup(QWidget):
     """A popup window containing a block of text."""
 
-    def __init__(self, parent: Optional[QWidget], title: str, file: os.PathLike):
+    def __init__(self, parent: Optional[QWidget], title: str, file: PathLike):
         super().__init__(parent)
         self.setWindowFlag(Qt.Window)
         self.setWindowTitle(title)
-        self.setMinimumSize(300, 300)
+        self.setMinimumSize(200, 100)
 
         self._text_widget = QLabel(self)
         self._ok_button = QPushButton(self)
@@ -1136,3 +1136,8 @@ class _TextPopup(QWidget):
         self._ok_button.setMaximumWidth(50)
         self._ok_button.clicked.connect(self.close)
         lyt.addWidget(self._ok_button)
+
+    def sizeHint(self) -> QSize:
+        size = super().sizeHint()
+        area = size.width() * size.height()
+        return QSize(int(area ** 0.5), int(area ** 0.4))
