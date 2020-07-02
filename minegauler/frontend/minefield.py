@@ -12,9 +12,10 @@ Exports
 
 __all__ = ("MinefieldWidget",)
 
+import functools
 import logging
 import time
-from typing import Dict, Iterable, List, Mapping, Optional, Set
+from typing import Callable, Dict, Iterable, List, Mapping, Optional, Set
 
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QMouseEvent, QPainter, QPixmap
@@ -117,6 +118,31 @@ def _make_pixmap(
     return image
 
 
+def _filter_left_and_right(mouse_event_func: Callable):
+    """
+    Decorator for mouse event methods to filter out buttons that aren't the
+    standard left or right mouse buttons.
+    """
+
+    @functools.wraps(mouse_event_func)
+    def wrapper(self, event: QMouseEvent):
+        if event.button() not in [Qt.LeftButton, Qt.RightButton, Qt.NoButton]:
+            return
+        event = QMouseEvent(
+            event.type(),
+            event.localPos(),
+            event.windowPos(),
+            event.screenPos(),
+            event.button(),
+            event.buttons() & (Qt.LeftButton | Qt.RightButton),
+            event.modifiers(),
+            event.source(),
+        )
+        return mouse_event_func(self, event)
+
+    return wrapper
+
+
 class MinefieldWidget(QGraphicsView):
     """
     The minefield widget.
@@ -189,57 +215,69 @@ class MinefieldWidget(QGraphicsView):
     def sizeHint(self) -> QSize:
         return QSize(self.x_size * self.btn_size, self.y_size * self.btn_size)
 
+    @_filter_left_and_right
     def mousePressEvent(self, event: QMouseEvent):
         """Handle mouse press events."""
-        # Ignore any clicks which aren't the left or right mouse buttons.
-        if event.button() not in [Qt.LeftButton, Qt.RightButton]:
-            return
+        coord = self._coord_from_event(event)
+
+        # If the button pressed here is the only button down, we reset the
+        # tracking variables.
+        # However, if the click was outside the board, we should wait for all
+        # buttons to be released before acknowledging clicks.
         if event.button() == event.buttons():
-            self._await_release_all_buttons = False
             self._both_mouse_buttons_pressed = False
-        elif self._await_release_all_buttons:
-            return
+            self._await_release_all_buttons = False
+            self._was_double_left_click = False
+            if not coord:
+                self._await_release_all_buttons = True
+
         if self._was_double_left_click:
+            self._await_release_all_buttons = True
+            return
+        if self._await_release_all_buttons:
             return
 
-        self._mouse_coord = coord = self._coord_from_event(event)
+        self._mouse_coord = coord
 
         ## Bothclick
-        if event.buttons() & Qt.LeftButton and event.buttons() & Qt.RightButton:
+        if event.buttons() == (Qt.LeftButton | Qt.RightButton):
             logger.debug("Both mouse buttons down on cell %s", coord)
             self._both_mouse_buttons_pressed = True
-            self.both_buttons_down(coord)
+            if coord:
+                self.both_buttons_down(coord)
         ## Leftclick
         elif event.button() == Qt.LeftButton:
             logger.debug("Left mouse button down on cell %s", coord)
-            self._was_double_left_click = False
+            assert coord is not None
             self.left_button_down(coord)
         ## Rightclick
         elif event.button() == Qt.RightButton:
             logger.debug("Right mouse button down on cell %s", coord)
+            assert coord is not None
             self.right_button_down(coord)
 
+    @_filter_left_and_right
     def mouseDoubleClickEvent(self, event: QMouseEvent):
         """Handle double clicks."""
         self._mouse_coord = coord = self._coord_from_event(event)
 
-        if event.button() == Qt.LeftButton and not self._both_mouse_buttons_pressed:
+        if (
+            event.button() == Qt.LeftButton
+            and not self._both_mouse_buttons_pressed
+            and coord
+        ):
             self._was_double_left_click = True
             self.left_button_double_down(coord)
         else:
             return self.mousePressEvent(event)
 
+    @_filter_left_and_right
     def mouseMoveEvent(self, event: QMouseEvent):
         """Handle mouse move events."""
         coord = self._coord_from_event(event)
 
-        # Return if not the left or right mouse buttons, or if the mouse wasn't
-        #  moved to a different cell.
-        if (
-            not event.buttons() & int(Qt.LeftButton | Qt.RightButton)
-            or self._await_release_all_buttons
-            or coord == self._mouse_coord
-        ):
+        # Return if the mouse wasn't moved to a different cell.
+        if self._await_release_all_buttons or coord == self._mouse_coord:
             return
 
         self._mouse_coord = coord
@@ -261,34 +299,30 @@ class MinefieldWidget(QGraphicsView):
             if event.buttons() & Qt.RightButton:
                 self.right_button_move(coord)
 
+    @_filter_left_and_right
     def mouseReleaseEvent(self, event: QMouseEvent):
         """Handle mouse release events."""
         if self._await_release_all_buttons and not event.buttons():
             self._await_release_all_buttons = False
             return
-        # Ignore any clicks which aren't the left or right mouse buttons.
-        if event.button() not in [Qt.LeftButton, Qt.RightButton]:
-            return
 
         coord = self._coord_from_event(event)
 
         ## Bothclick (one of the buttons still down)
-        if event.buttons() & int(Qt.LeftButton | Qt.RightButton):
-            logger.debug("Mouse button release on cell %s after both down", coord)
-            self.first_of_both_buttons_release(coord)
-
-            if self._state.drag_select and event.button() == Qt.LeftButton:
+        if self._both_mouse_buttons_pressed:
+            if event.buttons():
+                logger.debug("Mouse button release on cell %s after both down", coord)
+                self.first_of_both_buttons_release(coord)
+            if not self._state.drag_select or event.buttons() == Qt.RightButton:
                 # Only right button down - no risk.
                 self.no_risk_signal.emit()
-
-        elif not self._both_mouse_buttons_pressed:
-            ## Leftclick
-            if event.button() == Qt.LeftButton and not self._was_double_left_click:
-                logger.debug("Left mouse button release on cell %s", coord)
-                self.left_button_release(coord)
+        ## Left release
+        elif event.button() == Qt.LeftButton and not self._was_double_left_click:
+            logger.debug("Left mouse button release on cell %s", coord)
+            self.left_button_release(coord)
 
         # Reset variables if neither of the mouse buttons are down.
-        if not (event.buttons() & int(Qt.LeftButton | Qt.RightButton)):
+        if not event.buttons():
             logger.debug("No mouse buttons down, reset variables")
             self.all_buttons_release()
 
@@ -317,7 +351,7 @@ class MinefieldWidget(QGraphicsView):
             self._was_double_left_click = False
             self.left_button_down(coord)
 
-    def left_button_move(self, coord: Coord_T) -> None:
+    def left_button_move(self, coord: Optional[Coord_T]) -> None:
         """
         Left mouse button was moved after a single click. Change display as
         appropriate.
@@ -327,11 +361,11 @@ class MinefieldWidget(QGraphicsView):
         if coord is not None:
             self.left_button_down(coord)
 
-    def left_button_double_move(self, coord: Coord_T) -> None:
+    def left_button_double_move(self, coord: Optional[Coord_T]) -> None:
         """
         Left mouse button moved after a double click.
         """
-        if self._state.drag_select:
+        if self._state.drag_select and coord is not None:
             self._ctrlr.remove_cell_flags(coord)
 
     def left_button_release(self, coord: Coord_T) -> None:
@@ -355,7 +389,7 @@ class MinefieldWidget(QGraphicsView):
         else:
             self._unflag_on_right_drag = False
 
-    def right_button_move(self, coord: Coord_T) -> None:
+    def right_button_move(self, coord: Optional[Coord_T]) -> None:
         """
         Right mouse button was moved. Change display as appropriate.
         """
@@ -376,14 +410,13 @@ class MinefieldWidget(QGraphicsView):
             self.at_risk_signal.emit()
             self._ctrlr.chord_on_cell(coord)
 
-    def both_buttons_move(self, coord: Coord_T) -> None:
+    def both_buttons_move(self, coord: Optional[Coord_T]) -> None:
         """
         Both left and right mouse buttons were moved. Change display as
         appropriate.
         """
         self._raise_all_sunken_cells()
-        if not self._state.drag_select:
-            self.no_risk_signal.emit()
+        self.no_risk_signal.emit()
         if coord is not None:
             self.both_buttons_down(coord)
 
@@ -393,18 +426,15 @@ class MinefieldWidget(QGraphicsView):
         display and call callback functions as appropriate.
         """
         self._raise_all_sunken_cells()
-        if not self._state.drag_select:
-            self.no_risk_signal.emit()
-            if coord is not None:
-                self._ctrlr.chord_on_cell(coord)
+        if not self._state.drag_select and coord is not None:
+            self._ctrlr.chord_on_cell(coord)
 
     def all_buttons_release(self) -> None:
         """
         The second of the mouse buttons was released after both were pressed.
         Change display and call callback functions as appropriate.
         """
-        if self._state.drag_select:
-            self.no_risk_signal.emit()
+        self.no_risk_signal.emit()
         self._mouse_coord = None
         self._both_mouse_buttons_pressed = False
         self._await_release_all_buttons = False
@@ -417,6 +447,14 @@ class MinefieldWidget(QGraphicsView):
         return self._board.is_coord_in_grid(coord)
 
     def _coord_from_event(self, event: QMouseEvent) -> Optional[Coord_T]:
+        """
+        Get cell coordinate from mouse button event.
+
+        :param event:
+            The mouse event.
+        :return:
+            The cell coordinate, or None if outside the board.
+        """
         pos = self.mapToScene(event.pos())
 
         coord = int(pos.x()) // self.btn_size, int(pos.y()) // self.btn_size
