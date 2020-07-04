@@ -1,7 +1,37 @@
+# June 2018, Lewis Gaul
+
 """
 Types used throughout the project.
 
-June 2018, Lewis Gaul
+Exports
+-------
+.. class:: CellContents
+    An ADT-like class providing cell contents types.
+
+.. class:: CellContents_T
+    A type alias for a `CellContents` ADT type.
+
+.. class:: CellImageType
+    An enum of cell image types.
+
+.. class:: Coord_T
+    A type alias for a coordinate.
+
+.. class:: Difficulty
+    An enum of board difficulties.
+
+.. class:: FaceState
+    An enum of possible face states.
+
+.. class:: GameState
+    An enum of states a game can be in.
+
+.. class:: PathLike
+    A more permissive version of the `os.PathLike` type alias.
+
+.. class:: UIMode
+    An enum of supported UI modes.
+
 """
 
 __all__ = (
@@ -86,11 +116,12 @@ class CellContents:
     def __repr__(self):
         return self.char
 
-    def is_mine_type(self) -> bool:
-        return False  # Overridden by subclasses as required
-
     @staticmethod
     def from_char(char: str) -> CellContents_T:
+        return NotImplemented  # Implemented below, after subclasses
+
+    @staticmethod
+    def from_str(string: str) -> "CellContents":
         return NotImplemented  # Implemented below, after subclasses
 
     def is_type(self, item: CellContents_T) -> bool:
@@ -100,6 +131,9 @@ class CellContents:
             return type(self) is item
         else:
             raise ValueError(f"Unrecognised type {item!r}")
+
+    def is_mine_type(self) -> bool:
+        return False  # Overridden by subclasses as required
 
 
 class _CellUnclicked(CellContents):
@@ -181,7 +215,7 @@ CellContents.items = [
 ]
 
 
-def _from_char(char: str):
+def _from_char(char: str) -> CellContents_T:
     """
     Get the class of mine-like cell contents using the character
     representation.
@@ -191,19 +225,25 @@ def _from_char(char: str):
     :return:
         The cell contents enum item.
     """
-    for item in [
-        CellContents.Unclicked,
-        CellContents.Num,
-        CellContents.Mine,
-        CellContents.HitMine,
-        CellContents.Flag,
-        CellContents.WrongFlag,
-    ]:
+    for item in CellContents.items:
         if item.char == char:
             return item
 
 
+def _from_str(string: str) -> CellContents:
+    if string.isnumeric():
+        return CellContents.Num(int(string))
+    elif len(string) == 2:
+        char, num = string
+        return CellContents.from_char(char)(int(num))
+    elif string == CellContents.Unclicked.char:
+        return CellContents.Unclicked
+    else:
+        raise ValueError(f"Unknown cell contents representation {string!r}")
+
+
 CellContents.from_char = _from_char
+CellContents.from_str = _from_str
 
 
 # ------------------------------------------------------------------------------

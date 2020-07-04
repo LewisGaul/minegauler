@@ -1,7 +1,8 @@
-"""
-utils.py - General test utils
+# December 2019, Lewis Gaul
 
-December 2019, Lewis Gaul
+"""
+General test utils.
+
 """
 
 import contextlib

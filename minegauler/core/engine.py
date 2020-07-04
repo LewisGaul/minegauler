@@ -1,13 +1,13 @@
+# November 2018, Lewis Gaul
+
 """
 The core game logic.
 
-November 2018, Lewis Gaul
-
 Exports
---------
-BaseController (class)
-    Implementation of game logic and provision of functions to be called by a
-    frontend implementation.
+-------
+.. class:: BaseController
+    Implementation of game logic.
+
 """
 
 __all__ = ("BaseController",)
@@ -273,7 +273,7 @@ class _GameController(_AbstractSubController):
         if cell_state is CellContents.Unclicked:
             self._game.set_cell_flags(coord, 1)
         elif isinstance(cell_state, CellContents.Flag):
-            if cell_state.num == self._opts.per_cell:
+            if cell_state.num >= self._game.per_cell:
                 if flag_only:
                     return
                 self._game.set_cell_flags(coord, 0)
@@ -350,8 +350,11 @@ class _GameController(_AbstractSubController):
                 f"Max number of mines per cell must be at least 1, got {value}"
             )
         self._opts.per_cell = value
+        # If the game is not started and the minefiels is not known then the
+        # new per-cell value should be picked up immediately, and the board
+        # cleared of any flags (e.g. 3-flag cells may no longer be allowed!).
         if not (self._game.state.started() or self._game.minefield_known):
-            self._game.per_cell = value
+            self.new_game()
 
     def save_current_minefield(self, file: PathLike) -> None:
         """

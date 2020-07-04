@@ -1,7 +1,8 @@
-"""
-Expose package imports.
+# April 2018, Lewis Gaul
 
-April 2018, Lewis Gaul
+"""
+Available package imports.
+
 """
 
 __all__ = (

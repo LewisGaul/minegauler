@@ -20,31 +20,41 @@ jobs:
         python-version: 3.6
 
     - name: Install Python requirements
-      run: pip install pytest pytest-cov pytest-qt -r requirements.txt
+      run: pip install pytest pytest-qt coverage -r requirements.txt
 
     - name: Set up X-server
       run: |
         sudo apt-get install -y xvfb libxkbcommon-x11-0
         Xvfb :0 &
 
-    - name: Run tests
-      run: python -m pytest tests/mut/ --cov --cov-report xml --cov-report term
+    - name: Collect MUT coverage
+      env:
+        COVERAGE_FILE: .cov-mut
+      run: |
+        coverage run --source=minegauler/,tests/mut/ -m pytest tests/mut/
+        coverage report
+        coverage xml -o cov-mut-with-tests.xml
+        coverage xml --omit='tests/**' -o cov-mut-no-tests.xml
 
-    - name: Create custom reports
-      run: python -m coverage xml --omit "tests/**" -o coverage-no-tests.xml
+    - name: Collect IT coverage
+      env:
+        COVERAGE_FILE: .cov-it
+      run: |
+        coverage run --source=minegauler/,tests/it/ -m pytest tests/it/
+        coverage report
+        coverage xml -o cov-it-with-tests.xml
+        coverage xml --omit='tests/**' -o cov-it-no-tests.xml
+
+    - name: Combine coverage
+      run: |
+        coverage combine .cov-mut .cov-it
+        coverage report
+        coverage xml -o cov-all-with-tests.xml
+        coverage xml --omit='tests/**' -o cov-all-no-tests.xml
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        file: ./coverage-no-tests.xml
-        flags: mut
+        file: ./cov-all-no-tests.xml
         fail_ci_if_error: true
-
-    - name: Upload coverage to Codecov (include test coverage)
-      uses: codecov/codecov-action@v1
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        file: ./coverage.xml
-        flags: mut_with_tests
-        fail_ci_if_error: false

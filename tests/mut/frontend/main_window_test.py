@@ -1,7 +1,8 @@
-"""
-Test the main window of the GUI.
+# December 2018, Lewis Gaul
 
-December 2018, Lewis Gaul
+"""
+Tests for the main window of the GUI.
+
 """
 
 from unittest import mock
@@ -13,6 +14,7 @@ from minegauler import shared
 from minegauler.core import api
 from minegauler.frontend import main_window, minefield, panel, state
 from minegauler.frontend.main_window import MinegaulerGUI
+from minegauler.shared import HighscoreStruct
 from minegauler.shared.types import Difficulty, GameState
 
 from ..utils import make_true_mock
@@ -44,9 +46,8 @@ class TestMinegaulerGUI:
             side_effect=_MockMinefieldWidget,
         ).start()
         mock.patch("minegauler.frontend.panel._CounterWidget").start()
-        mock.patch("minegauler.frontend.minefield.init_or_update_cell_images").start()
-        mock.patch("minegauler.shared.highscores.insert_highscore").start()
-        mock.patch("minegauler.shared.highscores.is_highscore_new_best").start()
+        mock.patch("minegauler.frontend.minefield._update_cell_images").start()
+        mock.patch("minegauler.shared.highscores").start()
 
     @classmethod
     def teardown_class(cls):
@@ -104,10 +105,7 @@ class TestMinegaulerGUI:
         # update_cells()
         cells = {1: "a", 2: "b", 3: "c"}
         gui.update_cells(cells)
-        gui._mf_widget.set_cell_image.assert_has_calls(
-            [mock.call(k, v) for k, v in cells.items()], any_order=True
-        )
-        assert gui._mf_widget.set_cell_image.call_count == len(cells)
+        gui._mf_widget.update_cells.assert_called_once_with(cells)
 
         # update_game_state()
         gui._state.game_status = GameState.WON
@@ -139,14 +137,18 @@ class TestMinegaulerGUI:
         shared.highscores.is_highscore_new_best.return_value = "3bv/s"
         gui._state.drag_select = False
         gui._state.name = "NAME"
-        exp_highscore = shared.highscores.HighscoreStruct(
+        exp_highscore = HighscoreStruct(
             Difficulty.BEGINNER, 2, False, "NAME", 1234, 99.01, 123, 123 / 99.01, 0.4
         )
+
+        save_hs_mock = mock.patch("minegauler.frontend.main_window.save_highscore_file")
+        save_hs_mock.start()
         with mock.patch.object(gui, "open_highscores_window") as mock_open:
             gui.update_game_state(GameState.WON)
             gui._panel_widget.timer.set_time.assert_called_once_with(100)
             shared.highscores.insert_highscore.assert_called_once_with(exp_highscore)
             mock_open.assert_called_once_with(mock.ANY, "3bv/s")
+        save_hs_mock.stop()
 
         # update_mines_remaining()
         gui.update_mines_remaining(56)

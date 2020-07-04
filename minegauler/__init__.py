@@ -1,7 +1,19 @@
-"""
-__init__.py - Available imports from the package
+# December 2018, Lewis Gaul
 
-December 2018, Lewis Gaul
+"""
+Available imports from the package.
+
+Exports
+-------
+.. data:: ROOT_DIR
+    The path to the root directory.
+
+.. data:: SETTINGS_FILE
+    The path to the settings file.
+
+.. data:: IN_EXE
+    Whether running from a packaged executable.
+
 """
 
 __all__ = ("IN_EXE", "ROOT_DIR", "SETTINGS_FILE")

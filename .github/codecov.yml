@@ -1,0 +1,9 @@
+coverage:
+  status:
+    project:
+      default:
+        informational: true  # Don't fail PR checks
+    patch:
+      default:
+        target: 90%
+        threshold: 100%  # Don't fail PR checks

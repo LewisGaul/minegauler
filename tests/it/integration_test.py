@@ -1,7 +1,10 @@
-"""
-Integration test, aiming to cover all mainline code.
+# December 2019, Lewis Gaul
 
-December 2019, Lewis Gaul
+"""
+Integration tests.
+
+Aims to cover all mainline code.  # TODO - incomplete
+
 """
 
 import logging

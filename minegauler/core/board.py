@@ -1,13 +1,16 @@
+# March 2018, Lewis Gaul
+
 """
-board.py - Minesweeper board implementation
+Minesweeper board implementation.
 
-March 2018, Lewis Gaul
-
-Exports:
-Board (class)
+Exports
+-------
+.. class:: Board
     Representation of a minesweeper board.
-Minefield (class)
-    Representation of the positioning of mines in minesweeper board.
+
+.. class:: Minefield
+    Grid representation of the positions of mines.
+
 """
 
 __all__ = ("Board", "Minefield")
@@ -40,6 +43,9 @@ class Board(utils.Grid):
 
     def __str__(self):
         return super().__str__(mapping={CellContents.Num(0): "."})
+
+    def __getitem__(self, item: Coord_T) -> CellContents:
+        return super().__getitem__(item)
 
     def __setitem__(self, key: Coord_T, value: CellContents):
         if not isinstance(value, CellContents):
