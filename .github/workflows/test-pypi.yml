@@ -1,24 +1,27 @@
-# This workflows will upload a Python Package using Twine when a release is created
-# For more information see: https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
-
-name: Upload Python Package
+name: Workflow to upload to test-PyPI
 on:
   push:
+    branches: [test-pypi]
   release:
     types: [created]
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v2
+
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
         python-version: 3.6
+
     - name: Install dependencies
       run: pip install setuptools wheel
+
     - name: Run setup.py
       run: python setup.py sdist bdist_wheel
+
     - name: Upload to Test PyPI
       uses: pypa/gh-action-pypi-publish@master
       with:
