@@ -1,9 +1,10 @@
-name: Workflow to upload to test-PyPI
+name: Workflow for uploading to PyPI
 on:
+  # Only published to Test-PyPI in response to push to master.
   push:
-    branches: [test-pypi]
+    branches: [master]
   release:
-    types: [created]
+    types: [published]
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -23,7 +24,14 @@ jobs:
       run: python setup.py sdist bdist_wheel
 
     - name: Upload to Test PyPI
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@v1
       with:
         password: ${{ secrets.TEST_PYPI_PASSWORD }}
         repository_url: https://test.pypi.org/legacy/
+        skip_existing: true
+
+    - name: Upload to PyPI
+      if: startsWith(github.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@v1
+      with:
+        password: ${{ secrets.PYPI_PASSWORD }}

@@ -22,8 +22,8 @@ Read more about the project history on [my website](https://www.lewisgaul.co.uk/
 The application has been packaged with PyInstaller so that it can be played without setting up Python.
 
 Download links available here:
- - [Windows (32 bit)](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-windows32.zip)
- - [Linux (64 bit)](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-linux-x86_64.tar.gz)
+ - [Windows](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-4.0.5-windows.zip)
+ - [Linux](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-4.0.5-linux.tgz)
 
 
 ### Install from PyPI
