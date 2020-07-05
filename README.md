@@ -23,7 +23,7 @@ The application has been packaged with PyInstaller so that it can be played with
 
 Download links available here:
  - [Windows](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-v4.0.5-windows-latest.zip)
- - [Linux](https://github.com/LewisGaul/minegauler/releases/download/v4.0.5/minegauler-v4.0.5-ubuntu-latest.tgz)
+ - [Linux](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-v4.0.5-ubuntu-latest.tgz)
  - [Mac](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-v4.0.5-macOS-latest.tgz)
 
 
