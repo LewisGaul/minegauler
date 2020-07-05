@@ -1,7 +1,8 @@
+# October 2018, Lewis Gaul
+
 """
 Test the package requirements are installed.
 
-October 2018, Lewis Gaul
 """
 
 import pathlib

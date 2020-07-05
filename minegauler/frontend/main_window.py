@@ -1,26 +1,28 @@
+# April 2018, Lewis Gaul
+
 """
 Base GUI application implementation.
 
-April 2018, Lewis Gaul
+Exports
+-------
+.. class:: MinegaulerGUI
+    Main window widget.
 
-Exports:
-
-MinegaulerGUI
-    Minegauler main window class.
 """
 
 __all__ = ("MinegaulerGUI",)
 
 import logging
 import os
+import pathlib
 import textwrap
-import time as tm
 import traceback
 from typing import Callable, Dict, Mapping, Optional
 
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QFocusEvent, QFont, QIcon, QKeyEvent
 from PyQt5.QtWidgets import (
+    QWIDGETSIZE_MAX,
     QAction,
     QActionGroup,
     QDialog,
@@ -33,6 +35,7 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QMenu,
     QMenuBar,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QSlider,
@@ -43,9 +46,13 @@ from PyQt5.QtWidgets import (
 
 from .. import ROOT_DIR, shared
 from ..core import api
-from ..shared.highscores import HighscoreSettingsStruct, HighscoreStruct
+from ..shared.highscores import (
+    HighscoreSettingsStruct,
+    HighscoreStruct,
+    retrieve_highscores,
+)
 from ..shared.types import (
-    CellContents_T,
+    CellContents,
     CellImageType,
     Coord_T,
     Difficulty,
@@ -53,14 +60,29 @@ from ..shared.types import (
     PathLike,
     UIMode,
 )
-from ..shared.utils import GUIOptsStruct
-from . import highscores, minefield, panel, state, utils
-from .utils import FILES_DIR
+from ..shared.utils import GUIOptsStruct, format_timestamp
+from . import highscores, minefield, panel, simulate, state, utils
+from .utils import FILES_DIR, HIGHSCORES_DIR, read_highscore_file, save_highscore_file
 
 
 logger = logging.getLogger(__name__)
 
 BOARD_DIR = ROOT_DIR / "boards"
+
+
+def _msg_popup(
+    parent: QWidget, icon: QMessageBox.Icon, title: str, msg: Optional[str] = None
+) -> None:
+    """Open a modal popup with a simple message."""
+    logger.debug(
+        "Opening popup with message: %s", msg if len(msg) <= 50 else msg[:47] + "..."
+    )
+    popup = QMessageBox(parent)
+    popup.setIcon(icon)
+    popup.setWindowTitle(title)
+    if msg:
+        popup.setText(msg)
+    popup.exec_()
 
 
 class _BaseMainWindow(QMainWindow):
@@ -249,15 +271,14 @@ class MinegaulerGUI(
         self._state.mines = mines
         self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
-    def update_cells(self, cell_updates: Mapping[Coord_T, CellContents_T]) -> None:
+    def update_cells(self, cell_updates: Mapping[Coord_T, CellContents]) -> None:
         """
         Called to indicate some cells have changed state.
 
         :param cell_updates:
             A mapping of cell coordinates to their new state.
         """
-        for c, state in cell_updates.items():
-            self._mf_widget.set_cell_image(c, state)
+        self._mf_widget.update_cells(cell_updates)
 
     def update_game_state(self, game_state: GameState) -> None:
         """
@@ -344,7 +365,6 @@ class MinegaulerGUI(
 
     def _populate_menubars(self) -> None:
         """Fill in the menubars."""
-
         # ----------
         # Game menu
         # ----------
@@ -422,6 +442,9 @@ class MinegaulerGUI(
 
         self._game_menu.addSeparator()
 
+        # Play highscore
+        # self._game_menu.addAction("Play highscore", self._open_play_highscore_modal)
+
         # Zoom
         self._game_menu.addAction("Button size", self._open_zoom_modal)
 
@@ -452,6 +475,9 @@ class MinegaulerGUI(
                 group.addAction(style_act)
                 style_act.triggered.connect(get_change_style_func(img_group, style))
                 submenu.addAction(style_act)
+
+        # Advanced options
+        self._game_menu.addAction("Advanced options", self._open_advanced_opts_modal)
 
         self._game_menu.addSeparator()
 
@@ -516,6 +542,10 @@ class MinegaulerGUI(
         tips_act.triggered.connect(
             lambda: self._open_text_popup("Tips", FILES_DIR / "tips.txt")
         )
+
+        retrieve_act = QAction("Retrieve highscores", self)
+        retrieve_act.triggered.connect(self._open_retrieve_highscores_modal)
+        self._help_menu.addAction(retrieve_act)
 
         self._help_menu.addSeparator()
 
@@ -590,6 +620,12 @@ class MinegaulerGUI(
             else:
                 if new_best:
                     self.open_highscores_window(highscore, new_best)
+                    # try:
+                    #     save_highscore_file(
+                    #         highscore, self._mf_widget.get_mouse_events(),
+                    #     )
+                    # except IOError:
+                    #     logger.exception("Error saving highscore to file")
 
     def _open_save_board_modal(self) -> None:
         if not (
@@ -662,6 +698,104 @@ class MinegaulerGUI(
         win.show()
         self._open_subwindows[title] = win
 
+    def _open_retrieve_highscores_modal(self):
+        """Open a window to select a highscores file to read in."""
+        accepted = False
+
+        def accept_cb():
+            nonlocal accepted
+            accepted = True
+
+        logger.debug("Opening window to retrieve highscores")
+        dialog = QFileDialog(
+            parent=self,
+            caption="Retrieve highscores",
+            directory=str(pathlib.Path.home()),
+            filter="highscores.db",
+        )
+        dialog.setFileMode(QFileDialog.Directory)
+        dialog.accepted.connect(accept_cb)
+        dialog.exec_()
+
+        if not accepted:
+            return  # cancelled
+
+        path = dialog.selectedFiles()[0]
+        logger.debug("Selected directory: %s", path)
+
+        path = pathlib.Path(path)
+        if not path.exists():
+            _msg_popup(
+                self,
+                QMessageBox.Critical,
+                "Not found",
+                "Unable to access selected folder.",
+            )
+            return
+
+        tail = pathlib.Path()
+        for part in reversed(["minegauler", "data", "highscores.db"]):
+            tail = part / tail
+            if (path / tail).is_file():
+                file = path / tail
+                break
+        else:
+            _msg_popup(
+                self,
+                QMessageBox.Warning,
+                "Not found",
+                "No highscores database found when searching along the path "
+                "'.../minegauler/data/highscores.db'. Contact "
+                "minegauler@gmail.com if this error is unexpected.",
+            )
+            return
+
+        try:
+            logger.info("Fetching highscores from %s", file)
+            added = retrieve_highscores(file)
+            _msg_popup(
+                self,
+                QMessageBox.Information,
+                "Highscores retrieved",
+                f"Number of highscores added: {added}",
+            )
+        except Exception as e:
+            _msg_popup(
+                self,
+                QMessageBox.Critical,
+                "Error",
+                str(e) + " Contact minegauler@gmail.com if this error is unexpected.",
+            )
+
+    def _open_play_highscore_modal(self):
+        """Open a modal window to select a highscore file."""
+        logger.debug("Opening window to select a highscore to play back")
+        hs_file, _ = QFileDialog.getOpenFileName(
+            parent=self,
+            caption="Play highscore",
+            directory=str(HIGHSCORES_DIR),
+            filter="Minegauler highscores (*.mgh)",
+        )
+        logger.debug("Selected file: %s", hs_file)
+        if not hs_file:
+            return  # cancelled
+
+        hs_file = pathlib.Path(hs_file)
+        try:
+            hs, cell_updates = read_highscore_file(hs_file)
+            x_size, y_size, _ = hs.difficulty.get_board_values()
+            win = simulate.SimulationMinefieldWidget(self, x_size, y_size, cell_updates)
+        except Exception as e:
+            logger.exception("Error reading highscore file")
+            _msg_popup(
+                self, QMessageBox.Warning, "Error loading highscore file", str(e)
+            )
+        else:
+            win.show()
+
+    def _open_advanced_opts_modal(self):
+        _AdvancedOptionsModal(self, self).show()
+
     def get_gui_opts(self) -> GUIOptsStruct:
         return GUIOptsStruct.from_structs(self._state, self._state.pending_game_state)
 
@@ -730,9 +864,7 @@ class _CurrentInfoModal(QDialog):
         if info.game_state.finished():
             assert info.started_info is not None
             fin_info = info.started_info
-            start_time = tm.strftime(
-                "%Y-%m-%d %H:%M:%S", tm.localtime(fin_info.start_time)
-            )
+            start_time = format_timestamp(fin_info.start_time)
             state = info.game_state.name.capitalize()
             info_text += textwrap.dedent(
                 f"""\
@@ -862,6 +994,53 @@ class _ButtonSizeModal(QDialog):
         btns_layout.addWidget(cancel_btn)
 
 
+class _AdvancedOptionsModal(QDialog):
+    """A popup window to select advanced options."""
+
+    def __init__(self, parent: QWidget, main_window: MinegaulerGUI):
+        super().__init__(parent)
+        self.setWindowTitle("Advanced options")
+        self.setModal(True)
+        self._main_window = main_window
+        self._setup_ui()
+
+    def _setup_ui(self):
+        """Set up the window layout."""
+        vlayout = QVBoxLayout(self)
+        vlayout.addWidget(
+            QLabel("These options are in beta - stability not guaranteed", self)
+        )
+
+        def add_opt(label: str, func: Callable):
+            hlayout = QHBoxLayout(self)
+            vlayout.addLayout(hlayout)
+            hlayout.addWidget(QLabel(label, self))
+            button = QPushButton("Enable", self)
+            button.clicked.connect(func)
+            button.clicked.connect(lambda: button.setDisabled(True))
+            hlayout.addWidget(button)
+
+        add_opt("Enable main window maximising", self._enable_maximise)
+
+    def _enable_maximise(self):
+        """Enable maximising the main window."""
+        win = self._main_window
+
+        def update_size():
+            win.setMinimumSize(win.minimumSizeHint())
+            if not win.isMaximized():
+                win.resize(win.sizeHint())
+                win.adjustSize()
+
+        win.hide()
+        win.setWindowFlag(Qt.WindowMaximizeButtonHint)
+        win.setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX)
+        win._mf_widget.size_changed.disconnect(win._update_size)
+        win._update_size = update_size
+        win._mf_widget.size_changed.connect(win._update_size)
+        win.show()
+
+
 class _SliderSpinner(QWidget):
     """A combination of a slider and a spinbox."""
 
@@ -924,11 +1103,11 @@ class _NameEntryBar(QLineEdit):
 class _TextPopup(QWidget):
     """A popup window containing a block of text."""
 
-    def __init__(self, parent: Optional[QWidget], title: str, file: os.PathLike):
+    def __init__(self, parent: Optional[QWidget], title: str, file: PathLike):
         super().__init__(parent)
         self.setWindowFlag(Qt.Window)
         self.setWindowTitle(title)
-        self.setMinimumSize(300, 300)
+        self.setMinimumSize(200, 100)
 
         self._text_widget = QLabel(self)
         self._ok_button = QPushButton(self)
@@ -957,3 +1136,8 @@ class _TextPopup(QWidget):
         self._ok_button.setMaximumWidth(50)
         self._ok_button.clicked.connect(self.close)
         lyt.addWidget(self._ok_button)
+
+    def sizeHint(self) -> QSize:
+        size = super().sizeHint()
+        area = size.width() * size.height()
+        return QSize(int(area ** 0.5), int(area ** 0.4))

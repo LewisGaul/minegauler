@@ -1,7 +1,8 @@
-"""
-__init__.py - Code shared between core and frontend
+# December 2019, Lewis Gaul
 
-December 2019, Lewis Gaul
+"""
+Code not belonging to another specific sub-package.
+
 """
 
 __all__ = (
