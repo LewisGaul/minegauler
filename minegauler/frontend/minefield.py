@@ -520,6 +520,7 @@ class MinefieldWidget(QGraphicsView):
     def reset(self) -> None:
         """Reset all cell images and other state for a new game."""
         logger.info("Resetting minefield widget")
+        self._scene.clear()
         for c in self._board.all_coords:
             self._set_cell_image(c, CellContents.Unclicked)
         self._mouse_coord = None
