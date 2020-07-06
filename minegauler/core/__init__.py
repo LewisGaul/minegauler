@@ -1,13 +1,13 @@
-"""
-__init__.py - Available imports from the package
+# April 2018, Lewis Gaul
 
-April 2018, Lewis Gaul
+"""
+Available package imports.
+
 """
 
 __all__ = (
     "BaseController",
-    "CreateController",
-    "GameController",
+    "Board",
     "Minefield",
     "api",
     "board",
@@ -16,5 +16,5 @@ __all__ = (
 )
 
 from . import api, board, engine, game
-from .board import Minefield
-from .engine import BaseController, CreateController, GameController
+from .board import Board, Minefield
+from .engine import BaseController

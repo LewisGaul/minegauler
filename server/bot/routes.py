@@ -89,7 +89,7 @@ def bot_message():
         )
     except requests.HTTPError:
         logger.exception("Error sending bot response message")
-        _send_myself_error_msg("sending bot repsonse message")
+        _send_myself_error_msg("sending bot response message")
 
     return "", 200
 
@@ -109,15 +109,15 @@ def new_highscore_hook(highscore: hs.HighscoreStruct) -> None:
             utils.send_new_best_message(highscore)
         except Exception:
             logger.exception("Error sending webex message for new best")
-            _send_myself_error_msg()
+            _send_myself_error_msg("sending webex message for new best")
 
 
 def activate_bot_msg_handling(app: flask.app.Flask) -> None:
     """Register a route to handle bot messages."""
 
-    def bot_message_with_error_catching(*args, **kwargs):
+    def bot_message_with_error_catching():
         try:
-            return bot_message(*args, **kwargs)
+            return bot_message()
         except Exception:
             logger.exception("Unexpected error occurred handling a bot message")
             _send_myself_error_msg("<uncaught> occurred")

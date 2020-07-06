@@ -28,12 +28,13 @@ import collections
 import json
 import logging
 import pathlib
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 import requests
 from requests_toolbelt import MultipartEncoder
 
 from minegauler.shared import highscores as hs
+from minegauler.shared.types import Difficulty
 
 
 logger = logging.getLogger(__name__)
@@ -101,16 +102,7 @@ def send_group_message(text: str) -> requests.Response:
 
 def send_new_best_message(h: hs.HighscoreStruct) -> None:
     """Send a group message when a new personal time record is set."""
-    if h.difficulty == "B":
-        diff = "beginner"
-    elif h.difficulty == "I":
-        diff = "intermediate"
-    elif h.difficulty == "E":
-        diff = "expert"
-    elif h.difficulty == "M":
-        diff = "master"
-    else:
-        assert False
+    diff = h.difficulty.name.lower()
     drag_select = "on" if h.drag_select else "off"
     send_group_message(
         f"New personal record of {h.elapsed:.2f} set by {h.name} on {diff}!\n"
@@ -140,19 +132,21 @@ def set_user_nickname(user: str, nickname: str) -> None:
 
 
 def get_highscore_times(
-    difficulty: Optional[str],
+    difficulty: Optional[Difficulty],
     drag_select: Optional[bool] = None,
     per_cell: Optional[int] = None,
     users: Optional[Iterable[str]] = None,
 ) -> List[Tuple[str, float]]:
+    if difficulty is Difficulty.CUSTOM:
+        raise ValueError("No highscores for custom difficulty")
     if users is None:
         users = USER_NAMES.values()
     lower_users = {u.lower(): u for u in users}
 
-    if difficulty in ["beginner", "intermediate", "expert", "master"]:
+    if difficulty:
         highscores = hs.filter_and_sort(
             _get_highscores(
-                difficulty=difficulty[0], drag_select=drag_select, per_cell=per_cell,
+                difficulty=difficulty, drag_select=drag_select, per_cell=per_cell,
             )
         )
         times = {
@@ -161,7 +155,6 @@ def get_highscore_times(
             if h.name.lower() in lower_users
         }
     else:
-        assert difficulty is None
         times = {
             u: _get_combined_highscore(u, drag_select=drag_select, per_cell=per_cell)
             for u in users

@@ -1,13 +1,15 @@
-"""
-__init__.py - Available imports from the package
+# December 2018, Lewis Gaul
 
-December 2018, Lewis Gaul
 """
+Available imports from the package.
+
+"""
+
 import signal
 import sys
 
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QTimer, pyqtRemoveInputHook
+from PyQt5.QtWidgets import QApplication, QWidget
 
 from . import state
 from .main_window import MinegaulerGUI
@@ -23,14 +25,15 @@ _timer = None
 def init_app() -> None:
     global _app
     _app = QApplication(sys.argv)
+    pyqtRemoveInputHook()
 
 
-def run_app(gui: MinegaulerGUI) -> int:
+def run_app(gui: QWidget) -> int:
     """
     Run the GUI application.
 
     :param gui:
-        The main PyQt GUI object.
+        The main GUI widget.
     :return:
         Exit code.
     """

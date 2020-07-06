@@ -1,0 +1,33 @@
+name: Workflow for basic tests
+on:
+  push:
+    paths:
+      - 'minegauler/**'
+      - 'tests/**'
+      - '.github/**'
+env:
+  DISPLAY: ":0"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Setup Python
+        uses: actions/setup-python@master
+        with:
+          python-version: 3.6
+
+      - name: Install Python requirements
+        run: pip install pytest pytest-qt -r requirements.txt
+
+      - name: Set up X-server
+        run: |
+          sudo apt-get install -y xvfb libxkbcommon-x11-0
+          Xvfb :0 &
+
+      - name: Run MUT
+        run: python -m pytest tests/mut/
+
+      - name: Run IT
+        run: python -m pytest tests/it/

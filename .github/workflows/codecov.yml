@@ -1,0 +1,60 @@
+name: Workflow for Codecov
+on:
+  push:
+    paths:
+      - 'minegauler/**'
+      - 'tests/**'
+      - '.github/**'
+  pull_request:
+env:
+  DISPLAY: ":0"
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Setup Python
+      uses: actions/setup-python@master
+      with:
+        python-version: 3.6
+
+    - name: Install Python requirements
+      run: pip install pytest pytest-qt coverage -r requirements.txt
+
+    - name: Set up X-server
+      run: |
+        sudo apt-get install -y xvfb libxkbcommon-x11-0
+        Xvfb :0 &
+
+    - name: Collect MUT coverage
+      env:
+        COVERAGE_FILE: .cov-mut
+      run: |
+        coverage run --source=minegauler/,tests/mut/ -m pytest tests/mut/
+        coverage report
+        coverage xml -o cov-mut-with-tests.xml
+        coverage xml --omit='tests/**' -o cov-mut-no-tests.xml
+
+    - name: Collect IT coverage
+      env:
+        COVERAGE_FILE: .cov-it
+      run: |
+        coverage run --source=minegauler/,tests/it/ -m pytest tests/it/
+        coverage report
+        coverage xml -o cov-it-with-tests.xml
+        coverage xml --omit='tests/**' -o cov-it-no-tests.xml
+
+    - name: Combine coverage
+      run: |
+        coverage combine .cov-mut .cov-it
+        coverage report
+        coverage xml -o cov-all-with-tests.xml
+        coverage xml --omit='tests/**' -o cov-all-no-tests.xml
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./cov-all-no-tests.xml
+        fail_ci_if_error: true

@@ -1,0 +1,94 @@
+name: Workflow for creating a release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  pyinstaller:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v2
+      # Get the 'GIT_TAG_NAME' env var.
+      - uses: olegtarasov/get-tag@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@master
+        with:
+          # PyInstaller does not yet support 3.8, https://github.com/pyinstaller/pyinstaller/issues/4311
+          python-version: 3.7
+
+      - name: Install Python requirements
+        run: pip install pyinstaller -r requirements.txt
+
+      - name: Build with PyInstaller
+        run: pyinstaller minegauler.spec
+
+      - run: mkdir artefacts
+
+      - name: Compress (*nix)
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macOS-latest'
+        run: tar -C dist -czvf artefacts/minegauler-${{ env.GIT_TAG_NAME }}-${{ matrix.os }}.tgz minegauler
+
+      - name: Compress (Windows)
+        if: matrix.os == 'windows-latest'
+        run: tar.exe -C dist -acvf artefacts\minegauler-${{ env.GIT_TAG_NAME }}-${{ matrix.os }}.zip minegauler
+
+      - name: Store artefacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.os }}
+          path: artefacts/
+
+  create-release:
+    name: Create release in GitHub
+    needs: pyinstaller
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      # Get the 'GIT_TAG_NAME' env var.
+      - uses: olegtarasov/get-tag@v2
+
+      # Fetch artefacts from pyinstaller job. Unfortunately, the download
+      # involves creating artefact folders, meaning they end up at:
+      # ./artefacts/<os>/minegauler-<version>-<os>.{tgz,zip}
+      - name: Fetch artefacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artefacts/
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: Release ${{ env.GIT_TAG_NAME }}
+          body: |
+            Changes in this release
+            - First change
+            - Second change
+          files: artefacts/*/minegauler-*
+          draft: true
+          prerelease: false
+
+  cleanup:
+    name: Clean up at the end of the workflow
+    runs-on: ubuntu-latest
+    needs: create-release
+    if: always()
+    steps:
+      - name: Delete artefacts shared between jobs
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: |
+            ubuntu-latest
+            macOS-latest
+            windows-latest
+          failOnError: false

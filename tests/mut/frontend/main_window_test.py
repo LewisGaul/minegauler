@@ -1,10 +1,8 @@
+# December 2018, Lewis Gaul
+
 """
-main_window_test.py - Test the main window of the GUI
+Tests for the main window of the GUI.
 
-December 2018, Lewis Gaul
-
-Uses pytest - simply run 'python -m pytest tests/ [-k main_window_test]' from
-the root directory.
 """
 
 from unittest import mock
@@ -16,10 +14,11 @@ from minegauler import shared
 from minegauler.core import api
 from minegauler.frontend import main_window, minefield, panel, state
 from minegauler.frontend.main_window import MinegaulerGUI
-from minegauler.types import GameState
+from minegauler.shared import HighscoreStruct
+from minegauler.shared.types import Difficulty, GameState
 
 from ..utils import make_true_mock
-from . import utils
+from .utils import maybe_stop_for_interaction
 
 
 _MockPanelWidget = make_true_mock(panel.PanelWidget)
@@ -47,18 +46,15 @@ class TestMinegaulerGUI:
             side_effect=_MockMinefieldWidget,
         ).start()
         mock.patch("minegauler.frontend.panel._CounterWidget").start()
-        mock.patch("minegauler.frontend.minefield.init_or_update_cell_images").start()
-        mock.patch("minegauler.shared.highscores.insert_highscore").start()
-        mock.patch("minegauler.shared.highscores.is_highscore_new_best").start()
+        mock.patch("minegauler.frontend.minefield._update_cell_images").start()
+        mock.patch("minegauler.shared.highscores").start()
 
     @classmethod
     def teardown_class(cls):
         mock.patch.stopall()
 
     @pytest.fixture
-    def gui(
-        self, qtbot: QtBot, ctrlr: api.AbstractSwitchingController
-    ) -> MinegaulerGUI:
+    def gui(self, qtbot: QtBot, ctrlr: api.AbstractController) -> MinegaulerGUI:
         gui = MinegaulerGUI(ctrlr, self.initial_state)
         qtbot.addWidget(gui)
         self._reset_gui_mocks(gui)
@@ -67,7 +63,7 @@ class TestMinegaulerGUI:
     # --------------------------------------------------------------------------
     # Testcases
     # --------------------------------------------------------------------------
-    def test_create(self, qtbot: QtBot, ctrlr: api.AbstractSwitchingController):
+    def test_create(self, qtbot: QtBot, ctrlr: api.AbstractController):
         """Test basic creation of the window."""
         gui = MinegaulerGUI(ctrlr, self.initial_state)
         qtbot.addWidget(gui)
@@ -83,7 +79,7 @@ class TestMinegaulerGUI:
         self._minefield_class_mock.assert_called_once()
         assert type(gui._name_entry_widget) is main_window._NameEntryBar
         gui.show()
-        utils.maybe_stop_for_interaction(qtbot)
+        maybe_stop_for_interaction(qtbot)
 
     def test_listener_methods(self, qtbot: QtBot, gui: MinegaulerGUI):
         """Test the AbstractListener methods."""
@@ -109,10 +105,7 @@ class TestMinegaulerGUI:
         # update_cells()
         cells = {1: "a", 2: "b", 3: "c"}
         gui.update_cells(cells)
-        gui._mf_widget.set_cell_image.assert_has_calls(
-            [mock.call(k, v) for k, v in cells.items()], any_order=True
-        )
-        assert gui._mf_widget.set_cell_image.call_count == len(cells)
+        gui._mf_widget.update_cells.assert_called_once_with(cells)
 
         # update_game_state()
         gui._state.game_status = GameState.WON
@@ -122,26 +115,44 @@ class TestMinegaulerGUI:
         assert gui._state.highscores_state.current_highscore is None
         gui._panel_widget.update_game_state.assert_called_once_with(GameState.READY)
 
-        # update_mines_remaining()
-        gui.update_mines_remaining(56)
-        gui._panel_widget.set_mines_counter.assert_called_once_with(56)
-
-        # handle_finished_game()
-        info = api.EndedGameInfo(
-            GameState.WON, "M", 2, 1234.5678, 99.01, 123, 0.4, False
+        gui._ctrlr.get_game_info.return_value = api.GameInfo(
+            game_state=GameState.WON,
+            x_size=8,
+            y_size=8,
+            mines=10,
+            difficulty=Difficulty.BEGINNER,
+            per_cell=2,
+            first_success=True,
+            minefield_known=False,
+            started_info=api.GameInfo.StartedInfo(
+                start_time=1234,
+                elapsed=99.01,
+                bbbv=123,
+                rem_bbbv=0,
+                bbbvps=123 / 99.01,
+                prop_complete=1,
+                prop_flagging=0.4,
+            ),
         )
         shared.highscores.is_highscore_new_best.return_value = "3bv/s"
         gui._state.drag_select = False
         gui._state.name = "NAME"
-        exp_highscore = shared.highscores.HighscoreStruct(
-            "M", 2, False, "NAME", 1234, 99.01, 123, 123 / 99.01, 0.4
+        exp_highscore = HighscoreStruct(
+            Difficulty.BEGINNER, 2, False, "NAME", 1234, 99.01, 123, 123 / 99.01, 0.4
         )
+
+        save_hs_mock = mock.patch("minegauler.frontend.main_window.save_highscore_file")
+        save_hs_mock.start()
         with mock.patch.object(gui, "open_highscores_window") as mock_open:
-            gui.handle_finished_game(info)
-            gui._panel_widget.timer.stop.assert_called_once()
+            gui.update_game_state(GameState.WON)
             gui._panel_widget.timer.set_time.assert_called_once_with(100)
             shared.highscores.insert_highscore.assert_called_once_with(exp_highscore)
             mock_open.assert_called_once_with(mock.ANY, "3bv/s")
+        save_hs_mock.stop()
+
+        # update_mines_remaining()
+        gui.update_mines_remaining(56)
+        gui._panel_widget.set_mines_counter.assert_called_once_with(56)
 
         # handle_exception()
         with pytest.raises(RuntimeError):

@@ -1,16 +1,18 @@
+# November 2018, Lewis Gaul
+
 """
-engine.py - The core game logic
+The core game logic.
 
-November 2018, Lewis Gaul
+Exports
+-------
+.. class:: BaseController
+    Implementation of game logic.
 
-Exports:
-BaseController (class)
-    Implementation of game logic and provision of functions to be called by a
-    frontend implementation.
 """
 
-__all__ = ("BaseController", "CreateController", "GameController")
+__all__ = ("BaseController",)
 
+import abc
 import json
 import logging
 import os
@@ -18,111 +20,101 @@ from typing import Dict, Optional
 
 import attr
 
-from ..shared import utils
-from ..types import (
-    CellContentsType,
-    CellFlag,
-    CellMine,
-    CellNum,
-    CellUnclicked,
+from ..shared.types import (
+    CellContents,
+    Coord_T,
+    Difficulty,
     GameState,
+    PathLike,
     UIMode,
 )
-from ..typing import Coord_T
-from . import api
-from . import board as brd
-from . import game
+from ..shared.utils import GameOptsStruct, Grid
+from . import api, game
+from .board import Board, Minefield
 
 
 logger = logging.getLogger(__name__)
 
 
-def _save_minefield(mf: brd.Minefield, file: os.PathLike) -> None:
+def _save_minefield(mf: Minefield, file: PathLike) -> None:
     """
     Save a minefield to file.
 
     :param mf:
         The minefield to save.
+    :param file:
+        The path of the file to save at.
+    :raises OSError:
+        If saving to file fails.
     """
     if os.path.isfile(file):
         logger.warning("Overwriting file at %s", file)
-    elif os.path.isdir(file):
-        logger.error("Unable to save minefield - directory exists at %s", file)
-        return
     with open(file, "w") as f:
         json.dump(mf.to_json(), f)
 
 
-@attr.attrs(auto_attribs=True)
+@attr.attrs(auto_attribs=True, kw_only=True)
 class _SharedInfo:
     """
     Information to pass to frontends.
     
     Elements:
-    cell_updates ({(int, int): CellContentsType, ...})
+    cell_updates
         Dictionary of updates to cells, mapping the coordinate to the new
         contents of the cell.
-    game_state (GameState)
+    game_state
         The state of the game.
-    mines_remaining (int)
+    mines_remaining
         The number of mines remaining to be found, given by
-        [total mines] - [number of flags]. Can be negative if there are too many
-        flags. If the number is unchanged, None may be passed.
-    lives_remaining (int)
+        [total mines] - [number of flags].
+        Can be negative if there are too many flags.
+    lives_remaining
         The number of lives remaining.
-    finish_time (float | None)
-        The time elapsed if the game has ended, otherwise None.
     """
 
-    cell_updates: Dict[Coord_T, CellContentsType] = attr.Factory(dict)
+    cell_updates: Optional[Dict[Coord_T, CellContents]] = None
     game_state: GameState = GameState.READY
     mines_remaining: int = 0
     lives_remaining: int = 0
-    end_game_info: Optional[api.EndedGameInfo] = None
 
 
-class BaseController(api.AbstractSwitchingController):
+class _AbstractSubController(api.AbstractController, metaclass=abc.ABCMeta):
+    """A sub controller that can be switched into by the base controller."""
+
+    def switch_mode(self, mode: UIMode) -> None:
+        return NotImplemented
+
+
+class BaseController(api.AbstractController):
     """Base controller implementing all user interaction methods."""
 
-    def __init__(
-        self, opts: utils.GameOptsStruct, *, notif: Optional[api.Caller] = None
-    ):
-        super().__init__(opts, notif=notif)
+    def __init__(self, opts: GameOptsStruct):
+        super().__init__(opts)
         self._mode = UIMode.GAME
-        self._active_ctrlr: api.AbstractController = GameController(
+        self._active_ctrlr: _AbstractSubController = _GameController(
             self._opts, notif=self._notif
         )
 
-    def reinitialise(self):
-        """Reinitialise the concrete game controller."""
-        self._mode = UIMode.GAME
-        self._active_ctrlr: api.AbstractController = GameController(
-            self._opts, notif=self._notif
-        )
-
-    def switch_mode(self, mode: UIMode, *args, **kwargs) -> None:
+    def switch_mode(self, mode: UIMode) -> None:
         """Switch the mode of the UI, e.g. into 'create' mode."""
         super().switch_mode(mode)
         if mode is self._mode:
             logger.debug("Ignore switch mode request because mode is already %s", mode)
             return
         if mode is UIMode.GAME:
-            self._active_ctrlr = GameController(
-                self._opts, notif=self._notif, *args, **kwargs
-            )
+            self._active_ctrlr = _GameController(self._opts, notif=self._notif)
         elif mode is UIMode.CREATE:
-            self._active_ctrlr = CreateController(
-                self._opts, notif=self._notif, *args, **kwargs
-            )
+            self._active_ctrlr = _CreateController(self._opts, notif=self._notif)
         else:
             raise ValueError(f"Unrecognised UI mode: {mode}")
         self._mode = mode
+        self._notif.reset()
 
     # ----------------------------------
     # Delegated abstractmethods
     # ----------------------------------
     @property
-    def board(self) -> brd.Board:
+    def board(self) -> Board:
         return self._active_ctrlr.board
 
     def get_game_info(self) -> api.GameInfo:
@@ -147,89 +139,80 @@ class BaseController(api.AbstractSwitchingController):
         self._active_ctrlr.remove_cell_flags(coord)
 
     def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
-        self._opts.x_size = x_size
-        self._opts.y_size = y_size
-        self._opts.mines = mines
-        self._active_ctrlr.resize_board(x_size=x_size, y_size=y_size, mines=mines)
+        self._active_ctrlr.resize_board(x_size, y_size, mines)
 
     def set_first_success(self, value: bool) -> None:
-        self._opts.first_success = value
         self._active_ctrlr.set_first_success(value)
 
     def set_per_cell(self, value: int) -> None:
-        self._opts.per_cell = value
         self._active_ctrlr.set_per_cell(value)
 
-    def save_current_minefield(self, file: os.PathLike) -> None:
+    def save_current_minefield(self, file: PathLike) -> None:
         self._active_ctrlr.save_current_minefield(file)
 
-    def load_minefield(self, file: os.PathLike) -> None:
-        with open(file) as f:
-            mf = brd.Minefield.from_json(json.load(f))
-        self._opts.x_size = mf.x_size
-        self._opts.y_size = mf.y_size
-        self._opts.mines = mf.nr_mines
+    def load_minefield(self, file: PathLike) -> None:
+        """
+        Load a minefield from file.
 
+        :param file:
+            The location of the file to load from. Should have the extension
+            ".mgb".
+        """
         if self._mode is UIMode.CREATE:
-            self.switch_mode(UIMode.GAME, minefield_file=file)
-            self._notif.switch_mode(UIMode.GAME)
-        else:
-            self._active_ctrlr.load_minefield(file)
+            self.switch_mode(UIMode.GAME)
+            self._notif.ui_mode_changed(UIMode.GAME)
+        self._active_ctrlr.load_minefield(file)
 
 
-class GameController(api.AbstractController):
+class _GameController(_AbstractSubController):
     """
     Class for processing all game logic. Implements functions defined in
-    AbstractController that are called from UI.
-    
-    Attributes:
-    opts (GameOptsStruct)
-        Options for use in games.
+    AbstractController that are called from the UI.
     """
 
     def __init__(
-        self,
-        opts: utils.GameOptsStruct,
-        *,
-        notif: Optional[api.Caller] = None,
-        minefield_file: Optional[os.PathLike] = None,
+        self, opts: GameOptsStruct, *, notif: api.AbstractListener,
     ):
         """
         :param opts:
             Game options.
         :param notif:
-            Optionally provide a notifier defining callbacks.
-        :param minefield_file:
-            Optionally provide a path to a minefield file to create the initial
-            game from.
+            A notifier defining callbacks.
         """
-        super().__init__(opts, notif=notif)
-
-        self._drag_select = False
-        self._name = ""
-        self._game: game.Game
-        self._last_update: _SharedInfo = _SharedInfo()
-        self._notif.update_game_state(GameState.READY)
+        super().__init__(opts)
+        # Use a reference to the given opts rather than a copy.
+        self._opts = opts
+        self._notif = notif
+        self._game = game.Game(
+            x_size=self._opts.x_size,
+            y_size=self._opts.y_size,
+            mines=self._opts.mines,
+            per_cell=self._opts.per_cell,
+            lives=self._opts.lives,
+            first_success=self._opts.first_success,
+        )
+        self._last_update = _SharedInfo()
+        self._send_updates()
         self._notif.set_mines(self._opts.mines)
-        if minefield_file:
-            self.load_minefield(minefield_file)
-        else:
-            self.new_game()
 
     @property
-    def board(self) -> brd.Board:
+    def board(self) -> Board:
         return self._game.board
 
     def get_game_info(self) -> api.GameInfo:
+        """Get info about the current game."""
         ret = api.GameInfo(
             game_state=self._game.state,
             x_size=self._game.x_size,
             y_size=self._game.y_size,
             mines=self._game.mines,
+            difficulty=self._game.difficulty,
             per_cell=self._game.per_cell,
+            first_success=self._game.first_success,
+            minefield_known=self._game.minefield_known,
         )
-        if self._game.state.finished():
-            ret.finished_info = api.GameInfo.FinishedInfo(
+        if self._game.state.started():
+            ret.started_info = api.GameInfo.StartedInfo(
                 start_time=self._game.start_time,
                 elapsed=self._game.get_elapsed(),
                 bbbv=self._game.mf.bbbv,
@@ -249,6 +232,8 @@ class GameController(api.AbstractController):
         if self._opts.mines > self._opts.per_cell * (
             self._opts.x_size * self._opts.y_size - 1
         ):
+            # This is needed since it's possible to create a board with more
+            # mines than is normally allowed.
             logger.debug(
                 "Reducing number of mines from %d to %d because they don't fit",
                 self._opts.mines,
@@ -285,10 +270,10 @@ class GameController(api.AbstractController):
         super().flag_cell(coord)
 
         cell_state = self._game.board[coord]
-        if cell_state is CellUnclicked():
+        if cell_state is CellContents.Unclicked:
             self._game.set_cell_flags(coord, 1)
-        elif isinstance(cell_state, CellFlag):
-            if cell_state.num == self._opts.per_cell:
+        elif isinstance(cell_state, CellContents.Flag):
+            if cell_state.num >= self._game.per_cell:
                 if flag_only:
                     return
                 self._game.set_cell_flags(coord, 0)
@@ -360,26 +345,35 @@ class GameController(api.AbstractController):
         Set the maximum number of mines per cell.
         """
         super().set_per_cell(value)
-        if self._opts.per_cell != value:
-            self._opts.per_cell = value
-            if not (self._game.state.started() or self._game.minefield_known):
-                self.new_game()
+        if value < 1:
+            raise ValueError(
+                f"Max number of mines per cell must be at least 1, got {value}"
+            )
+        self._opts.per_cell = value
+        # If the game is not started and the minefiels is not known then the
+        # new per-cell value should be picked up immediately, and the board
+        # cleared of any flags (e.g. 3-flag cells may no longer be allowed!).
+        if not (self._game.state.started() or self._game.minefield_known):
+            self.new_game()
 
-    def save_current_minefield(self, file: os.PathLike) -> None:
+    def save_current_minefield(self, file: PathLike) -> None:
         """
         Save the current minefield to file.
 
         :param file:
             The location of the file to save to. Should have the extension
             ".mgb".
+        :raises RuntimeError:
+            If the game is not finished.
+        :raises OSError:
+            If saving to file fails.
         """
         super().save_current_minefield(file)
-        if self._game.mf is None:
-            logger.warning("Unable to save current minefield - doesn't exist")
-            return
+        if not self._game.state.finished():
+            raise RuntimeError("Can only save minefields when the game is completed")
         _save_minefield(self._game.mf, file)
 
-    def load_minefield(self, file: os.PathLike) -> None:
+    def load_minefield(self, file: PathLike) -> None:
         """
         Load a minefield from file.
 
@@ -388,8 +382,14 @@ class GameController(api.AbstractController):
             ".mgb".
         """
         with open(file) as f:
-            mf = brd.Minefield.from_json(json.load(f))
+            mf = Minefield.from_json(json.load(f))
 
+        logger.debug(
+            "Loaded minefield from file (%d x %d, %d mines)",
+            mf.x_size,
+            mf.y_size,
+            mf.nr_mines,
+        )
         self._opts.x_size = mf.x_size
         self._opts.y_size = mf.y_size
         self._opts.mines = mf.nr_mines
@@ -400,42 +400,28 @@ class GameController(api.AbstractController):
     # Helper methods
     # --------------------------------------------------------------------------
     def _send_reset_update(self) -> None:
-        self._send_updates(dict())
+        """Send an update to reset the board."""
         self._notif.reset()
-        self._last_update = _SharedInfo()
+        self._send_updates()
 
     def _send_resize_update(self) -> None:
-        self._send_updates(dict())
+        """Send an update to change the dimensions and number of mines."""
         self._notif.resize_minefield(self._opts.x_size, self._opts.y_size)
         self._notif.set_mines(self._opts.mines)
-        self._notif.reset()
+        self._send_updates()
 
-    def _send_updates(self, cells_updated: Dict[Coord_T, CellContentsType]) -> None:
+    def _send_updates(
+        self, cells_updated: Optional[Dict[Coord_T, CellContents]] = None
+    ) -> None:
         """Send updates to registered listeners."""
-        end_game_info = None
-        if (
-            self._game.state.finished()
-            and self._game.state is not self._last_update.game_state
-        ):
-            end_game_info = api.EndedGameInfo(
-                game_state=self._game.state,
-                difficulty=self._game.difficulty,
-                per_cell=self._game.per_cell,
-                start_time=self._game.start_time,
-                elapsed=self._game.get_elapsed(),
-                bbbv=self._game.mf.bbbv,
-                flagging=self._game.get_flag_proportion(),
-                minefield_known=self._game.minefield_known,
-            )
         update = _SharedInfo(
             cell_updates=cells_updated,
             mines_remaining=self._game.mines_remaining,
             lives_remaining=self._game.lives_remaining,
             game_state=self._game.state,
-            end_game_info=end_game_info,
         )
 
-        # Send updates to registered frontends.
+        # Send updates to registered listeners.
         if update.cell_updates:
             self._notif.update_cells(update.cell_updates)
         if update.mines_remaining != self._last_update.mines_remaining:
@@ -444,27 +430,24 @@ class GameController(api.AbstractController):
         #     self._notif.update_lives_remaining(update.lives_remaining)
         if update.game_state is not self._last_update.game_state:
             self._notif.update_game_state(update.game_state)
-        if update.end_game_info is not None:
-            self._notif.handle_finished_game(update.end_game_info)
 
         self._last_update = update
 
 
-class CreateController(api.AbstractController):
+class _CreateController(_AbstractSubController):
     """A controller for creating boards."""
 
-    def __init__(
-        self, opts: utils.GameOptsStruct, *, notif: Optional[api.Caller] = None
-    ):
-        super().__init__(opts, notif=notif)
-        self._board: brd.Board = brd.Board(self._opts.x_size, self._opts.y_size)
+    def __init__(self, opts: GameOptsStruct, *, notif: api.AbstractListener):
+        super().__init__(opts)
+        # Use a reference to the given opts rather than a copy.
+        self._opts = opts
+        self._notif = notif
+        self._board = Board(self._opts.x_size, self._opts.y_size)
         self._flags: int = 0
-        self._notif.update_game_state(GameState.READY)
         self._notif.set_mines(self._flags)
-        self._notif.reset()
 
     @property
-    def board(self) -> brd.Board:
+    def board(self) -> Board:
         return self._board
 
     def get_game_info(self) -> api.GameInfo:
@@ -473,13 +456,18 @@ class CreateController(api.AbstractController):
             x_size=self._opts.x_size,
             y_size=self._opts.y_size,
             mines=self._flags,
+            difficulty=Difficulty.from_board_values(
+                self._opts.x_size, self._opts.x_size, self._flags
+            ),
             per_cell=self._opts.per_cell,
+            first_success=self._opts.first_success,
+            minefield_known=True,
         )
 
     def new_game(self) -> None:
         """See AbstractController."""
         super().new_game()
-        self._board = brd.Board(self._opts.x_size, self._opts.y_size)
+        self._board = Board(self._opts.x_size, self._opts.y_size)
         self._flags = 0
         self._notif.reset()
 
@@ -490,9 +478,9 @@ class CreateController(api.AbstractController):
     def select_cell(self, coord: Coord_T) -> None:
         super().select_cell(coord)
         cell = self._board[coord]
-        if cell is CellUnclicked():
-            self._board[coord] = CellNum(0)
-        elif isinstance(cell, CellNum):
+        if cell is CellContents.Unclicked:
+            self._board[coord] = CellContents.Num(0)
+        elif isinstance(cell, CellContents.Num):
             self._board[coord] += 1
         else:
             return
@@ -502,20 +490,20 @@ class CreateController(api.AbstractController):
         super().flag_cell(coord)
         cell = self._board[coord]
 
-        if cell is CellUnclicked():
-            self._board[coord] = CellMine(1)
+        if cell is CellContents.Unclicked:
+            self._board[coord] = CellContents.Mine(1)
             self._flags += 1
-        elif isinstance(cell, CellMine):
+        elif isinstance(cell, CellContents.Mine):
             if cell.num == self._opts.per_cell:
                 if flag_only:
                     return
-                self._board[coord] = CellUnclicked()
+                self._board[coord] = CellContents.Unclicked
                 self._flags -= self._opts.per_cell
             else:
                 self._board[coord] += 1
                 self._flags += 1
-        elif isinstance(cell, CellNum):
-            self.board[coord] = CellUnclicked()
+        elif isinstance(cell, CellContents.Num):
+            self.board[coord] = CellContents.Unclicked
         else:
             return
         self._notif.update_cells({coord: self._board[coord]})
@@ -527,14 +515,15 @@ class CreateController(api.AbstractController):
     def remove_cell_flags(self, coord: Coord_T) -> None:
         super().remove_cell_flags(coord)
         cell = self._board[coord]
-        if not isinstance(cell, CellMine):
+        if not isinstance(cell, CellContents.Mine):
             return
-        self._board[coord] = CellUnclicked()
+        self._board[coord] = CellContents.Unclicked
         self._flags -= cell.num
         self._notif.update_cells({coord: self._board[coord]})
         self._notif.update_mines_remaining(self._flags)
 
     def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
+        """Resize the board. The number of mines is ignored."""
         super().resize_board(x_size=x_size, y_size=y_size, mines=mines)
         if x_size == self._opts.x_size and y_size == self._opts.y_size:
             logger.info(
@@ -557,28 +546,29 @@ class CreateController(api.AbstractController):
 
     def set_first_success(self, value: bool) -> None:
         super().set_first_success(value)
-        # Store the value so it can be retrieved from the next controller.
         self._opts.first_success = value
 
     def set_per_cell(self, value: int) -> None:
         super().set_per_cell(value)
         self._opts.per_cell = value
 
-    def save_current_minefield(self, file: os.PathLike) -> None:
+    def save_current_minefield(self, file: PathLike) -> None:
         """
         Save the current created minefield to file.
 
         :param file:
             The location of the file to save to. Should have the extension
             ".mgb".
+        :raises OSError:
+            If saving to file fails.
         """
         super().save_current_minefield(file)
-        mines_grid = utils.Grid(self._opts.x_size, self._opts.y_size)
+        mines_grid = Grid(self._opts.x_size, self._opts.y_size)
         for c in self._board.all_coords:
-            if type(self._board[c]) is CellMine:
+            if type(self._board[c]) is CellContents.Mine:
                 mines_grid[c] = self._board[c].num
-        mf = brd.Minefield.from_grid(mines_grid, per_cell=self._opts.per_cell)
+        mf = Minefield.from_grid(mines_grid, per_cell=self._opts.per_cell)
         _save_minefield(mf, file)
 
-    def load_minefield(self, file: os.PathLike) -> None:
+    def load_minefield(self, file: PathLike) -> None:
         return NotImplemented

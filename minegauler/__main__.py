@@ -1,7 +1,8 @@
-"""
-__main__.py - Entry point for the application.
+# December 2018, Lewis Gaul
 
-December 2018, Lewis Gaul
+"""
+Entry point for the application.
+
 """
 
 # Workaround to get the mysql libcrypto and libssl libs loaded.
@@ -46,8 +47,6 @@ frontend.init_app()
 gui = frontend.MinegaulerGUI(ctrlr, frontend.state.State.from_opts(game_opts, gui_opts))
 # Register frontend with core controller.
 ctrlr.register_listener(gui)
-# Perform initialisation again now that the frontend is registered.
-ctrlr.reinitialise()
 
 # Run the app.
 logger.debug("Entering event loop")

@@ -1,7 +1,8 @@
-"""
-highscores.py - Highscores handling
+# December 2019, Felix Gaul
 
-December 2019, Felix Gaul
+"""
+Highscores handling.
+
 """
 
 __all__ = (
@@ -11,12 +12,14 @@ __all__ = (
     "filter_and_sort",
     "get_highscores",
     "insert_highscore",
+    "retrieve_highscores",
 )
 
 import abc
 import enum
 import logging
 import os
+import pathlib
 import sqlite3
 import threading
 from textwrap import dedent
@@ -24,11 +27,13 @@ from typing import Dict, Iterable, List, Optional, Tuple
 
 import attr
 import mysql.connector
+import mysql.connector.cursor
 import requests
 
 from .. import ROOT_DIR
-from ..utils import StructConstructorMixin
 from . import utils
+from .types import Difficulty, PathLike
+from .utils import StructConstructorMixin
 
 
 logger = logging.getLogger(__name__)
@@ -36,11 +41,11 @@ logger = logging.getLogger(__name__)
 _REMOTE_POST_URL = "http://minegauler.lewisgaul.co.uk/api/v1/highscore"
 
 
-@attr.attrs(auto_attribs=True)
+@attr.attrs(auto_attribs=True, frozen=True)
 class HighscoreSettingsStruct(StructConstructorMixin):
     """A set of highscore settings."""
 
-    difficulty: str
+    difficulty: Difficulty = attr.attrib(converter=Difficulty.from_str)
     per_cell: int
     drag_select: bool
 
@@ -49,10 +54,10 @@ class HighscoreSettingsStruct(StructConstructorMixin):
 
     @classmethod
     def get_default(cls) -> "HighscoreSettingsStruct":
-        return cls("B", 1, False)
+        return cls(Difficulty.BEGINNER, 1, False)
 
 
-@attr.attrs(auto_attribs=True)
+@attr.attrs(auto_attribs=True, frozen=True)
 class HighscoreStruct(HighscoreSettingsStruct):
     """A single highscore."""
 
@@ -62,11 +67,6 @@ class HighscoreStruct(HighscoreSettingsStruct):
     bbbv: int
     bbbvps: float
     flagging: float
-
-    @classmethod
-    def from_sqlite_row(cls, cursor: sqlite3.Cursor, row: Tuple) -> "HighscoreStruct":
-        """Create an instance from an SQLite row."""
-        return cls(**{col[0]: row[i] for i, col in enumerate(cursor.description)})
 
 
 _highscore_fields = attr.fields_dict(HighscoreStruct).keys()
@@ -83,19 +83,31 @@ class AbstractHighscoresDB(abc.ABC):
     @abc.abstractmethod
     def conn(self):
         """The active database connection."""
-        return None
+        return NotImplemented
+
+    @staticmethod
+    def extract_single_elem(cursor):
+        """Extract a single element using a cursor."""
+        return next(cursor)[0]
 
     @abc.abstractmethod
     def get_highscores(
         self,
         *,
-        difficulty: Optional[str] = None,
+        difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
         drag_select: Optional[bool] = None,
         name: Optional[str] = None,
     ) -> Iterable[HighscoreStruct]:
         """Fetch highscores from the database using the given filters."""
         logger.debug("%s: Getting highscores", type(self).__name__)
+        return NotImplemented
+
+    @abc.abstractmethod
+    def count_highscores(self) -> int:
+        """Count the number of rows in the highscores table."""
+        logger.debug("%s: Counting number of highscores in DB", type(self).__name__)
+        return NotImplemented
 
     @abc.abstractmethod
     def insert_highscore(self, highscore: HighscoreStruct) -> None:
@@ -152,7 +164,7 @@ class _SQLMixin:
     def _get_select_highscores_sql(
         self,
         *,
-        difficulty: Optional[str] = None,
+        difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
         drag_select: Optional[bool] = None,
         name: Optional[str] = None,
@@ -160,49 +172,70 @@ class _SQLMixin:
         """Get the SQL command to get/select highscores from a DB."""
         conditions = []
         if difficulty is not None:
-            conditions.append(f"difficulty='{difficulty}'")
+            conditions.append(f"difficulty='{difficulty.value}'")
         if per_cell is not None:
             conditions.append(f"per_cell={per_cell}")
         if drag_select is not None:
             conditions.append(f"drag_select={drag_select:d}")
         if name is not None:
             conditions.append(f"LOWER(name)='{name.lower()}'")
-        return "SELECT {} FROM highscores {} ORDER BY elapsed ASC".format(
-            ", ".join(_highscore_fields),
-            "WHERE " + " AND ".join(conditions) if conditions else "",
+        return "SELECT {fields} FROM {table} {where} ORDER BY elapsed ASC".format(
+            fields=", ".join(_highscore_fields),
+            table=self._TABLE_NAME,
+            where="WHERE " + " AND ".join(conditions) if conditions else "",
         )
 
-    def _get_insert_highscore_sql(self, format="%s") -> str:
+    def _get_insert_highscore_sql(self, fmt="%s") -> str:
         """Get the SQL command to insert a highscore into a DB."""
-        return "INSERT INTO highscores ({}) " "VALUES ({})".format(
-            ", ".join(_highscore_fields), ", ".join(format for _ in _highscore_fields)
+        return "INSERT INTO {table} ({fields}) VALUES ({fmt_})".format(
+            table=self._TABLE_NAME,
+            fields=", ".join(_highscore_fields),
+            fmt_=", ".join(fmt for _ in _highscore_fields),
         )
+
+    def _get_highscores_count_sql(self) -> str:
+        """Get the SQL command to count the rows of the highscores table."""
+        return f"SELECT COUNT(*) FROM {self._TABLE_NAME}"
 
 
 class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     """Database of local highscores."""
 
-    _DB_FILE = ROOT_DIR / "data" / "highscores.db"
-
-    def __init__(self):
-        if os.path.exists(self._DB_FILE):
-            self._conn = sqlite3.connect(str(self._DB_FILE))
+    def __init__(self, path: pathlib.Path = ROOT_DIR / "data" / "highscores.db"):
+        self._path = path
+        if os.path.exists(path):
+            self._conn = sqlite3.connect(str(path))
         else:
-            os.makedirs(self._DB_FILE.parent, exist_ok=True)
-            self._conn = sqlite3.connect(str(self._DB_FILE))
+            os.makedirs(path.parent, exist_ok=True)
+            self._conn = sqlite3.connect(str(path))
 
-            cursor = self._conn.cursor()
-            cursor.execute(self._CREATE_TABLE_SQL)
-        self._conn.row_factory = HighscoreStruct.from_sqlite_row
+            self.execute(self._CREATE_TABLE_SQL)
+            self.execute("PRAGMA user_version = 0")
 
     @property
     def conn(self) -> sqlite3.Connection:
         return self._conn
 
+    @property
+    def path(self) -> pathlib.Path:
+        return self._path
+
+    @staticmethod
+    def _highscore_row_factory(cursor: sqlite3.Cursor, row: Tuple) -> HighscoreStruct:
+        """Create a HighscoreStruct instance from a row in the highscores table."""
+        return HighscoreStruct(
+            **{col[0]: row[i] for i, col in enumerate(cursor.description)}
+        )
+
+    def get_db_version(self) -> int:
+        """Get the database version number."""
+        cursor = self.execute("PRAGMA user_version")
+        return self.extract_single_elem(cursor)
+
     def get_highscores(
         self,
         *,
-        difficulty: Optional[str] = None,
+        difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
         drag_select: Optional[bool] = None,
         name: Optional[str] = None,
@@ -210,6 +243,7 @@ class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
         super().get_highscores(
             difficulty=difficulty, per_cell=per_cell, drag_select=drag_select, name=name
         )
+        self._conn.row_factory = self._highscore_row_factory
         cursor = self.execute(
             self._get_select_highscores_sql(
                 difficulty=difficulty,
@@ -218,12 +252,41 @@ class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
                 name=name,
             )
         )
+        self._conn.row_factory = None
         return cursor.fetchall()
+
+    def count_highscores(self) -> int:
+        """Count the number of rows in the highscores table."""
+        super().count_highscores()
+        return next(self.execute(self._get_highscores_count_sql()))[0]
+
+    def merge_highscores(self, path: PathLike) -> int:
+        """Merge in highscores from a given other SQLite DB."""
+        if pathlib.Path(path) == self._path:
+            raise ValueError("Cannot merge database into itself")
+
+        hs_table = self._TABLE_NAME
+        tmp_table = "mergedTable"
+        attach_db = "toMergeDB"
+
+        first_count = self.count_highscores()
+        self.execute(f"ATTACH DATABASE '{path!s}' AS {attach_db}")
+
+        self.execute(
+            f"CREATE TABLE IF NOT EXISTS {tmp_table} AS "
+            f"SELECT * FROM {hs_table} UNION SELECT * FROM {attach_db}.{hs_table}"
+        )
+        # TODO: This is not completely atomic, can we do better?
+        self.execute(f"DROP TABLE IF EXISTS {hs_table}")
+        self.execute(f"ALTER TABLE {tmp_table} RENAME TO {hs_table}")
+        self.execute(f"DETACH DATABASE {attach_db}")
+        self.conn.commit()
+        return self.count_highscores() - first_count
 
     def insert_highscore(self, highscore: HighscoreStruct) -> None:
         super().insert_highscore(highscore)
         self.execute(
-            self._get_insert_highscore_sql(format="?"),
+            self._get_insert_highscore_sql(fmt="?"),
             attr.astuple(highscore),
             commit=True,
         )
@@ -240,7 +303,6 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     _USER = "admin"
     _HOST = "minegauler-highscores.cb4tvkuqujyi.eu-west-2.rds.amazonaws.com"
     _DB_NAME = "minegauler"
-    _TABLE_NAME = "highscores"
 
     _cached_conn: Optional[mysql.connector.MySQLConnection] = None
 
@@ -275,7 +337,7 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     def get_highscores(
         self,
         *,
-        difficulty: Optional[str] = None,
+        difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
         drag_select: Optional[bool] = None,
         name: Optional[str] = None,
@@ -294,6 +356,11 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
         )
         return [HighscoreStruct(**r) for r in cursor.fetchall()]
 
+    def count_highscores(self) -> int:
+        """Count the number of rows in the highscores table."""
+        super().count_highscores()
+        return next(self.execute(self._get_highscores_count_sql()))[0]
+
     def insert_highscore(self, highscore: HighscoreStruct) -> None:
         super().insert_highscore(highscore)
         self.execute(
@@ -302,7 +369,7 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
 
     def execute(
         self, cmd: str, params: Tuple = (), *, commit=False, **cursor_args
-    ) -> sqlite3.Cursor:
+    ) -> mysql.connector.cursor.MySQLCursor:
         try:
             return super().execute(cmd, params, commit=commit, **cursor_args)
         except mysql.connector.Error as e:
@@ -323,7 +390,7 @@ def get_highscores(
     database=HighscoresDatabases.LOCAL,
     *,
     settings: Optional[HighscoreSettingsStruct] = None,
-    difficulty: Optional[str] = None,
+    difficulty: Optional[Difficulty] = None,
     per_cell: Optional[int] = None,
     drag_select: Optional[bool] = None,
     name: Optional[str] = None,
@@ -364,6 +431,10 @@ def insert_highscore(highscore: HighscoreStruct) -> None:
             logger.exception("Failed to insert highscore into remote DB")
 
     threading.Thread(target=_post_catch_exc).start()
+
+
+def retrieve_highscores(path: PathLike) -> int:
+    return LocalHighscoresDB().merge_highscores(path)
 
 
 def filter_and_sort(

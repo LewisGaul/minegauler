@@ -1,10 +1,10 @@
+# December 2019, Lewis Gaul
+
 """
-integration_test.py - Integration test, aiming for all mainline code
+Integration tests.
 
-December 2019, Lewis Gaul
+Aims to cover all mainline code.  # TODO - incomplete
 
-Uses pytest - simply run 'python -m pytest tests/ [-k integration_test]' from
-the root directory.
 """
 
 import logging
@@ -97,5 +97,6 @@ class TestMain:
             wait = float(os.environ["TEST_IT_EVENT_WAIT"])
         else:
             wait = 0
-        while QApplication.hasPendingEvents() or time.time() - start_time < wait:
+        QApplication.processEvents()
+        while time.time() < start_time + wait:
             QApplication.processEvents()

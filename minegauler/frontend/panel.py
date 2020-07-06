@@ -1,24 +1,24 @@
+# April 2018, Lewis Gaul
+
 """
-panel.py - Widgets in the top panel
+Widgets in the top panel.
 
-April 2018, Lewis Gaul
+Exports
+-------
+.. class:: PanelWidget
+    Widget for the top panel of the Minegauler GUI.
 
-Exports:
-PanelWidget
-    A panel widget class, to be packed in a parent container. Receives
-    clicks and calls any registered functions.
 """
 
 __all__ = ("PanelWidget",)
 
-import sys
 from typing import Optional, Union
 
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QColor, QFont, QPalette, QPixmap
-from PyQt5.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QWidget
+from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QWidget
 
-from ..types import FaceState, GameState
+from ..shared.types import FaceState, GameState
 from . import state
 from .utils import IMG_DIR
 
@@ -142,6 +142,7 @@ class PanelWidget(QWidget):
             self.timer.stop()
             self.set_face(state)
         else:
+            self.timer.reset()
             self.set_face(state)
 
 
@@ -195,6 +196,7 @@ class Timer(QTimer):
         super().__init__()
         self.widget = _CounterWidget(parent)
         self.timeout.connect(self.update)
+        self.seconds = 0
 
     # -------
     # Methods from parent class
@@ -220,11 +222,3 @@ class Timer(QTimer):
 
     def set_time(self, seconds):
         self.widget.setText("{:03d}".format(min(seconds, 999)))
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    panel_widget = PanelWidget(None, 123)
-    panel_widget.timer.start()
-    panel_widget.show()
-    sys.exit(app.exec_())

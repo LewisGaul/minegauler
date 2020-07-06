@@ -1,7 +1,19 @@
-"""
-state.py - State shared by any of the frontend modules
+# December 2019, Lewis Gaul
 
-December 2019, Lewis Gaul
+"""
+State shared by the frontend.
+
+Exports
+-------
+.. class:: State
+    A collection of all frontend state.
+
+.. class:: PerGameState
+    State corresponding to a single game.
+
+.. class:: HighscoreWindowState
+    State for the highscores window.
+
 """
 
 __all__ = ("HighscoreWindowState", "PerGameState", "State")
@@ -11,14 +23,16 @@ from typing import Dict, Optional
 
 import attr
 
-from .. import shared, types, utils
+from ..shared import HighscoreStruct
+from ..shared.types import CellImageType, Difficulty, GameState, UIMode
+from ..shared.utils import GameOptsStruct, GUIOptsStruct, StructConstructorMixin
 
 
 logger = logging.getLogger(__name__)
 
 
 @attr.attrs(auto_attribs=True)
-class PerGameState(utils.StructConstructorMixin):
+class PerGameState(StructConstructorMixin):
     """State that applies to an in-progress game."""
 
     x_size: int = 8
@@ -29,15 +43,19 @@ class PerGameState(utils.StructConstructorMixin):
     lives: int = 1
     drag_select: bool = False
 
+    @property
+    def difficulty(self) -> Difficulty:
+        return Difficulty.from_board_values(self.x_size, self.y_size, self.mines)
 
-class HighscoreWindowState(utils.StructConstructorMixin):
+
+class HighscoreWindowState(StructConstructorMixin):
     """State associated with the highscores window."""
 
     name_filter: Optional[str] = None
     name_hint: str = ""
     flagging_filter: Optional[str] = None
     sort_by: str = "time"
-    current_highscore: Optional[shared.HighscoreStruct] = None
+    current_highscore: Optional[HighscoreStruct] = None
 
 
 @attr.attrs(auto_attribs=True, kw_only=True)
@@ -49,15 +67,15 @@ class State:
 
     btn_size: int = 16
     name: str = ""
-    styles: Dict[types.CellImageType, str] = {
-        types.CellImageType.BUTTONS: "Standard",
-        types.CellImageType.NUMBERS: "Standard",
-        types.CellImageType.MARKERS: "Standard",
+    styles: Dict[CellImageType, str] = {
+        CellImageType.BUTTONS: "Standard",
+        CellImageType.NUMBERS: "Standard",
+        CellImageType.MARKERS: "Standard",
     }
 
-    _game_status: types.GameState = types.GameState.READY
+    _game_status: GameState = GameState.READY
 
-    ui_mode: types.UIMode = types.UIMode.GAME
+    ui_mode: UIMode = UIMode.GAME
 
     highscores_state: HighscoreWindowState = HighscoreWindowState()
 
@@ -65,7 +83,7 @@ class State:
     # Handling for game state fields
     # ---------------------------------
     def _update_game_state(self, field: str, value) -> None:
-        if self.game_status is types.GameState.READY:
+        if self.game_status is GameState.READY:
             setattr(self._current_game_state, field, value)
         else:
             if not self.has_pending_game_state():
@@ -111,8 +129,8 @@ class State:
         self._update_game_state("mines", value)
 
     @property
-    def difficulty(self) -> str:
-        return shared.get_difficulty(self.x_size, self.y_size, self.mines)
+    def difficulty(self) -> Difficulty:
+        return self._current_game_state.difficulty
 
     @property
     def pending_mines(self):
@@ -182,6 +200,10 @@ class State:
             return self._current_game_state.drag_select
 
     @property
+    def current_game_state(self) -> PerGameState:
+        return self._current_game_state
+
+    @property
     def pending_game_state(self) -> PerGameState:
         if self.has_pending_game_state():
             return self._pending_game_state
@@ -197,13 +219,13 @@ class State:
             self._pending_game_state = None
 
     @property
-    def game_status(self) -> types.GameState:
+    def game_status(self) -> GameState:
         return self._game_status
 
     @game_status.setter
-    def game_status(self, value: types.GameState):
+    def game_status(self, value: GameState):
         self._game_status = value
-        if value is types.GameState.READY and self.has_pending_game_state():
+        if value is GameState.READY and self.has_pending_game_state():
             logger.info(
                 "Updating game state on new game from %s to %s",
                 self._current_game_state,
@@ -228,9 +250,7 @@ class State:
         )
 
     @classmethod
-    def from_opts(
-        cls, game_opts: shared.GameOptsStruct, gui_opts: shared.GUIOptsStruct
-    ) -> "State":
+    def from_opts(cls, game_opts: GameOptsStruct, gui_opts: GUIOptsStruct) -> "State":
         dict_ = {**attr.asdict(game_opts), **attr.asdict(gui_opts)}
         args = {a: v for a, v in dict_.items() if a in attr.fields_dict(cls)}
         args["current_game_state"] = PerGameState.from_structs(game_opts, gui_opts)

@@ -1,28 +1,28 @@
+# April 2018, Lewis Gaul
+
 """
-main_window.py - Base GUI application implementation
+Base GUI application implementation
 
-April 2018, Lewis Gaul
 
-Exports:
-BaseMainWindow
-    Main window class.
-    
-MinegaulerGUI
+Exports
+-------
+.. class:: MinegaulerGUI
     Minegauler main window class.
+
 """
 
 __all__ = ("MinegaulerGUI",)
 
 import logging
-import os
+import pathlib
 import textwrap
-import time as tm
 import traceback
-from typing import Callable, Dict, Mapping, Optional, Type
+from typing import Callable, Dict, Mapping, Optional
 
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QFocusEvent, QFont, QIcon, QKeyEvent
 from PyQt5.QtWidgets import (
+    QWIDGETSIZE_MAX,
     QAction,
     QActionGroup,
     QDialog,
@@ -35,6 +35,7 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QMenu,
     QMenuBar,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QSlider,
@@ -45,17 +46,43 @@ from PyQt5.QtWidgets import (
 
 from .. import ROOT_DIR, shared
 from ..core import api
-from ..shared.highscores import HighscoreSettingsStruct, HighscoreStruct
-from ..shared.utils import GUIOptsStruct, get_difficulty
-from ..types import CellContentsType, CellImageType, GameState, UIMode
-from ..typing import Coord_T
-from . import highscores, minefield, panel, state, utils
-from .utils import FILES_DIR
+from ..shared.highscores import (
+    HighscoreSettingsStruct,
+    HighscoreStruct,
+    retrieve_highscores,
+)
+from ..shared.types import (
+    CellContents,
+    CellImageType,
+    Coord_T,
+    Difficulty,
+    GameState,
+    PathLike,
+    UIMode,
+)
+from ..shared.utils import GUIOptsStruct, format_timestamp
+from . import highscores, minefield, panel, simulate, state, utils
+from .utils import FILES_DIR, HIGHSCORES_DIR, read_highscore_file
 
 
 logger = logging.getLogger(__name__)
 
 BOARD_DIR = ROOT_DIR / "boards"
+
+
+def _msg_popup(
+    parent: QWidget, icon: QMessageBox.Icon, title: str, msg: Optional[str] = None
+) -> None:
+    """Open a modal popup with a simple message."""
+    logger.debug(
+        "Opening popup with message: %s", msg if len(msg) <= 50 else msg[:47] + "..."
+    )
+    popup = QMessageBox(parent)
+    popup.setIcon(icon)
+    popup.setWindowTitle(title)
+    if msg:
+        popup.setText(msg)
+    popup.exec_()
 
 
 class _BaseMainWindow(QMainWindow):
@@ -89,7 +116,7 @@ class _BaseMainWindow(QMainWindow):
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowMaximizeButtonHint)
         self._setup_ui()
         # Keep track of all non-modal subwindows that are open.
-        self._open_subwindows: Dict[Type[QWidget], QWidget] = {}
+        self._open_subwindows: Dict[str, QWidget] = {}
 
     # --------------------------------------------------------------------------
     # UI setup
@@ -175,9 +202,7 @@ class MinegaulerGUI(
 ):
     """The main Minegauler GUI window."""
 
-    def __init__(
-        self, ctrlr: api.AbstractSwitchingController, initial_state: state.State
-    ):
+    def __init__(self, ctrlr: api.AbstractController, initial_state: state.State):
         """
         :param ctrlr:
             The core controller.
@@ -185,11 +210,11 @@ class MinegaulerGUI(
             Initial application state.
         """
         super().__init__(None, "Minegauler")
-        self._ctrlr: api.AbstractSwitchingController = ctrlr
+        self._ctrlr: api.AbstractController = ctrlr
         self._state: state.State = initial_state.deepcopy()
 
         self._create_menu_action: QAction
-        self._diff_menu_actions: Dict[str, QAction] = dict()
+        self._diff_menu_actions: Dict[Difficulty, QAction] = dict()
         self._populate_menubars()
         self._menubar.setFixedHeight(self._menubar.sizeHint().height())
         self._panel_widget = panel.PanelWidget(self, self._state)
@@ -215,6 +240,7 @@ class MinegaulerGUI(
 
         This is distinct from a factory reset (settings are not changed).
         """
+        self._state.game_status = GameState.READY
         self._panel_widget.reset()
         self._mf_widget.reset()
 
@@ -227,10 +253,12 @@ class MinegaulerGUI(
         :param y_size:
             The number of rows.
         """
+        # Game state needs updating first for state changes to be applied.
+        if self._state.game_status is not GameState.READY:
+            self.reset()
         self._state.x_size = x_size
         self._state.y_size = y_size
         self._mf_widget.reshape(x_size, y_size)
-        # self._update_size()
         self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
     def set_mines(self, mines: int) -> None:
@@ -243,15 +271,14 @@ class MinegaulerGUI(
         self._state.mines = mines
         self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
-    def update_cells(self, cell_updates: Mapping[Coord_T, CellContentsType]) -> None:
+    def update_cells(self, cell_updates: Mapping[Coord_T, CellContents]) -> None:
         """
         Called to indicate some cells have changed state.
 
         :param cell_updates:
             A mapping of cell coordinates to their new state.
         """
-        for c, state in cell_updates.items():
-            self._mf_widget.set_cell_image(c, state)
+        self._mf_widget.update_cells(cell_updates)
 
     def update_game_state(self, game_state: GameState) -> None:
         """
@@ -261,9 +288,10 @@ class MinegaulerGUI(
             The new game state.
         """
         self._state.game_status = game_state
-        if game_state is GameState.READY:
-            self._state.highscores_state.current_highscore = None
+        self._state.highscores_state.current_highscore = None
         self._panel_widget.update_game_state(game_state)
+        if game_state.finished():
+            self._handle_finished_game()
 
     def update_mines_remaining(self, mines_remaining: int) -> None:
         """
@@ -274,52 +302,9 @@ class MinegaulerGUI(
         """
         self._panel_widget.set_mines_counter(mines_remaining)
 
-    def handle_finished_game(self, info: api.EndedGameInfo) -> None:
+    def ui_mode_changed(self, mode: UIMode) -> None:
         """
-        Called once when a game ends.
-
-        :param info:
-            A store of end-game information.
-        """
-        self._panel_widget.timer.stop()
-        self._panel_widget.timer.set_time(int(info.elapsed + 1))
-        # Store the highscore if the game was won.
-        if (
-            info.game_state is GameState.WON
-            and info.difficulty != "C"
-            and not info.minefield_known
-        ):
-            highscore = HighscoreStruct(
-                difficulty=info.difficulty,
-                per_cell=info.per_cell,
-                timestamp=int(info.start_time),
-                elapsed=info.elapsed,
-                bbbv=info.bbbv,
-                bbbvps=info.bbbv / info.elapsed,
-                drag_select=self._state.drag_select,
-                name=self._state.name,
-                flagging=info.flagging,
-            )
-            try:
-                shared.highscores.insert_highscore(highscore)
-            except Exception:
-                logger.exception("Error inserting highscore")
-            self._state.highscores_state.current_highscore = highscore
-            # Check whether to pop up the highscores window.
-            # TODO: This is too slow...
-            try:
-                new_best = shared.highscores.is_highscore_new_best(
-                    highscore, shared.highscores.get_highscores(settings=highscore)
-                )
-            except Exception:
-                logger.exception("Error getting highscores")
-            else:
-                if new_best:
-                    self.open_highscores_window(highscore, new_best)
-
-    def switch_mode(self, mode: UIMode) -> None:
-        """
-        Called to indicate the game mode has change.
+        Called to indicate the UI mode has changed.
 
         :param mode:
             The mode to change to.
@@ -380,7 +365,6 @@ class MinegaulerGUI(
 
     def _populate_menubars(self) -> None:
         """Fill in the menubars."""
-
         # ----------
         # Game menu
         # ----------
@@ -426,7 +410,6 @@ class MinegaulerGUI(
         # - Auto flag (Ctrl+F)
         # - Auto click (Ctrl+Enter)
         def solve():
-            import sys
             import time as tm
             from ..solver.logic import Solver
 
@@ -463,21 +446,22 @@ class MinegaulerGUI(
         # - Custom (c)
         diff_group = QActionGroup(self)
         diff_group.setExclusive(True)
-        for diff in ["Beginner", "Intermediate", "Expert", "Master", "Custom"]:
-            diff_act = QAction(diff, diff_group, checkable=True)
-            self._diff_menu_actions[diff[0]] = diff_act
+        for diff in Difficulty:
+            diff_act = QAction(diff.name.capitalize(), diff_group, checkable=True)
+            self._diff_menu_actions[diff] = diff_act
             self._game_menu.addAction(diff_act)
-            diff_act.id = diff[0]
-            if diff_act.id == get_difficulty(
-                self._state.x_size, self._state.y_size, self._state.mines
-            ):
+            diff_act.id = diff
+            if diff is self._state.difficulty:
                 diff_act.setChecked(True)
             diff_act.triggered.connect(
                 lambda _: self._change_difficulty(diff_group.checkedAction().id)
             )
-            diff_act.setShortcut(diff[0])
+            diff_act.setShortcut(diff.value)
 
         self._game_menu.addSeparator()
+
+        # Play highscore
+        # self._game_menu.addAction("Play highscore", self._open_play_highscore_modal)
 
         # Zoom
         self._game_menu.addAction("Button size", self._open_zoom_modal)
@@ -509,6 +493,9 @@ class MinegaulerGUI(
                 group.addAction(style_act)
                 style_act.triggered.connect(get_change_style_func(img_group, style))
                 submenu.addAction(style_act)
+
+        # Advanced options
+        self._game_menu.addAction("Advanced options", self._open_advanced_opts_modal)
 
         self._game_menu.addSeparator()
 
@@ -574,6 +561,10 @@ class MinegaulerGUI(
             lambda: self._open_text_popup("Tips", FILES_DIR / "tips.txt")
         )
 
+        retrieve_act = QAction("Retrieve highscores", self)
+        retrieve_act.triggered.connect(self._open_retrieve_highscores_modal)
+        self._help_menu.addAction(retrieve_act)
+
         self._help_menu.addSeparator()
 
         about_act = QAction("About", self)
@@ -583,40 +574,82 @@ class MinegaulerGUI(
         )
         about_act.setShortcut("F1")
 
-    def _change_difficulty(self, id_: str) -> None:
+    def _change_difficulty(self, diff: Difficulty) -> None:
         """
         Change the difficulty via the core controller.
 
-        :param id_:
-            The difficulty ('b', 'i', 'e', 'm' or 'c').
+        :param diff:
+            The difficulty.
         """
-        id_ = id_.upper()
-        if id_ == "B":
-            x, y, m = 8, 8, 10
-        elif id_ == "I":
-            x, y, m = 16, 16, 40
-        elif id_ == "E":
-            x, y, m = 30, 16, 99
-        elif id_ == "M":
-            x, y, m = 30, 30, 200
-        elif id_ == "C":
+        if diff is Difficulty.CUSTOM:
+            # Undo changing the menu radiobutton because the board hasn't been
+            # changed yet.
             self._diff_menu_actions[self._state.difficulty].setChecked(True)
             logger.info("Opening popup window for selecting custom board")
             self._open_custom_board_modal()
             return
         else:
-            raise ValueError(f"Unrecognised difficulty '{id_}'")
-
-        self._ctrlr.resize_board(x_size=x, y_size=y, mines=m)
+            x, y, m = diff.get_board_values()
+            self._ctrlr.resize_board(x_size=x, y_size=y, mines=m)
 
     def _set_name(self, name: str) -> None:
         self._state.name = name
         self._state.highscores_state.name_hint = name
 
+    def _handle_finished_game(self) -> None:
+        """Called once when a game ends."""
+        info: api.GameInfo = self._ctrlr.get_game_info()
+        assert info.game_state.finished()
+        assert info.started_info is not None
+
+        self._panel_widget.timer.set_time(int(info.started_info.elapsed + 1))
+
+        # Store the highscore if the game was won.
+        if (
+            info.game_state is GameState.WON
+            and info.difficulty is not Difficulty.CUSTOM
+            and not info.minefield_known
+        ):
+            assert info.started_info.prop_complete == 1
+            highscore = HighscoreStruct(
+                difficulty=info.difficulty,
+                per_cell=info.per_cell,
+                timestamp=int(info.started_info.start_time),
+                elapsed=info.started_info.elapsed,
+                bbbv=info.started_info.bbbv,
+                bbbvps=info.started_info.bbbvps,
+                drag_select=self._state.drag_select,
+                name=self._state.name,
+                flagging=info.started_info.prop_flagging,
+            )
+            try:
+                shared.highscores.insert_highscore(highscore)
+            except Exception:
+                logger.exception("Error inserting highscore")
+            self._state.highscores_state.current_highscore = highscore
+            # Check whether to pop up the highscores window.
+            # TODO: This is too slow...
+            try:
+                new_best = shared.highscores.is_highscore_new_best(
+                    highscore, shared.highscores.get_highscores(settings=highscore)
+                )
+            except Exception:
+                logger.exception("Error getting highscores")
+            else:
+                if new_best:
+                    self.open_highscores_window(highscore, new_best)
+                    # try:
+                    #     save_highscore_file(
+                    #         highscore, self._mf_widget.get_mouse_events(),
+                    #     )
+                    # except IOError:
+                    #     logger.exception("Error saving highscore to file")
+
     def _open_save_board_modal(self) -> None:
         if not (
             self._state.game_status.finished() or self._state.ui_mode is UIMode.CREATE
         ):
+            # TODO: The menubar option should be disabled.
             return
         file, _ = QFileDialog.getSaveFileName(
             self,
@@ -633,6 +666,7 @@ class MinegaulerGUI(
             self._ctrlr.save_current_minefield(file)
         except Exception:
             logger.exception("Error occurred trying to save minefield to file")
+            # TODO: Pop up an error message.
 
     def _open_load_board_modal(self) -> None:
         file, _ = QFileDialog.getOpenFileName(
@@ -647,6 +681,7 @@ class MinegaulerGUI(
         try:
             self._ctrlr.load_minefield(file)
         except Exception:
+            # TODO: Pop up error message.
             logger.exception("Error occurred trying to load minefield from file")
 
     def _open_current_info_modal(self) -> None:
@@ -668,18 +703,116 @@ class MinegaulerGUI(
         """Open the popup to set the button size."""
         _ButtonSizeModal(self, self._state.btn_size, self.set_button_size).show()
 
-    def _open_text_popup(self, title: str, file: os.PathLike):
+    def _open_text_popup(self, title: str, file: PathLike):
         """Open a text popup window."""
         if title in self._open_subwindows:
             try:
                 self._open_subwindows[title].close()
                 # self._open_subwindows[title].setFocus()  # TODO: doesn't work!
                 # return
-            except:
+            except Exception:
                 self._open_subwindows.pop(title)
         win = _TextPopup(self, title, file)
         win.show()
         self._open_subwindows[title] = win
+
+    def _open_retrieve_highscores_modal(self):
+        """Open a window to select a highscores file to read in."""
+        accepted = False
+
+        def accept_cb():
+            nonlocal accepted
+            accepted = True
+
+        logger.debug("Opening window to retrieve highscores")
+        dialog = QFileDialog(
+            parent=self,
+            caption="Retrieve highscores",
+            directory=str(pathlib.Path.home()),
+            filter="highscores.db",
+        )
+        dialog.setFileMode(QFileDialog.Directory)
+        dialog.accepted.connect(accept_cb)
+        dialog.exec_()
+
+        if not accepted:
+            return  # cancelled
+
+        path = dialog.selectedFiles()[0]
+        logger.debug("Selected directory: %s", path)
+
+        path = pathlib.Path(path)
+        if not path.exists():
+            _msg_popup(
+                self,
+                QMessageBox.Critical,
+                "Not found",
+                "Unable to access selected folder.",
+            )
+            return
+
+        tail = pathlib.Path()
+        for part in reversed(["minegauler", "data", "highscores.db"]):
+            tail = part / tail
+            if (path / tail).is_file():
+                file = path / tail
+                break
+        else:
+            _msg_popup(
+                self,
+                QMessageBox.Warning,
+                "Not found",
+                "No highscores database found when searching along the path "
+                "'.../minegauler/data/highscores.db'. Contact "
+                "minegauler@gmail.com if this error is unexpected.",
+            )
+            return
+
+        try:
+            logger.info("Fetching highscores from %s", file)
+            added = retrieve_highscores(file)
+            _msg_popup(
+                self,
+                QMessageBox.Information,
+                "Highscores retrieved",
+                f"Number of highscores added: {added}",
+            )
+        except Exception as e:
+            _msg_popup(
+                self,
+                QMessageBox.Critical,
+                "Error",
+                str(e) + " Contact minegauler@gmail.com if this error is unexpected.",
+            )
+
+    def _open_play_highscore_modal(self):
+        """Open a modal window to select a highscore file."""
+        logger.debug("Opening window to select a highscore to play back")
+        hs_file, _ = QFileDialog.getOpenFileName(
+            parent=self,
+            caption="Play highscore",
+            directory=str(HIGHSCORES_DIR),
+            filter="Minegauler highscores (*.mgh)",
+        )
+        logger.debug("Selected file: %s", hs_file)
+        if not hs_file:
+            return  # cancelled
+
+        hs_file = pathlib.Path(hs_file)
+        try:
+            hs, cell_updates = read_highscore_file(hs_file)
+            x_size, y_size, _ = hs.difficulty.get_board_values()
+            win = simulate.SimulationMinefieldWidget(self, x_size, y_size, cell_updates)
+        except Exception as e:
+            logger.exception("Error reading highscore file")
+            _msg_popup(
+                self, QMessageBox.Warning, "Error loading highscore file", str(e)
+            )
+        else:
+            win.show()
+
+    def _open_advanced_opts_modal(self):
+        _AdvancedOptionsModal(self, self).show()
 
     def get_gui_opts(self) -> GUIOptsStruct:
         return GUIOptsStruct.from_structs(self._state, self._state.pending_game_state)
@@ -699,15 +832,13 @@ class MinegaulerGUI(
             Optionally specify the key to sort the highscores by. Defaults to
             the previous sort key.
         """
-        if self._state.difficulty == "C":
+        if self._state.difficulty is Difficulty.CUSTOM:
             return
         if self._open_subwindows.get("highscores"):
             self._open_subwindows.get("highscores").close()
         if not settings:
             settings = HighscoreSettingsStruct(
-                difficulty=get_difficulty(
-                    self._state.x_size, self._state.y_size, self._state.mines
-                ),
+                difficulty=self._state.difficulty,
                 per_cell=self._state.per_cell,
                 drag_select=self._state.drag_select,
             )
@@ -748,11 +879,10 @@ class _CurrentInfoModal(QDialog):
             Drag-select: {self._state.drag_select}
             """
         )
-        if info.finished_info:
-            start_time = tm.strftime(
-                "%Y-%m-%d %H:%M:%S", tm.localtime(info.finished_info.start_time)
-            )
-            fin_info = info.finished_info
+        if info.game_state.finished():
+            assert info.started_info is not None
+            fin_info = info.started_info
+            start_time = format_timestamp(fin_info.start_time)
             state = info.game_state.name.capitalize()
             info_text += textwrap.dedent(
                 f"""\
@@ -773,10 +903,8 @@ class _CurrentInfoModal(QDialog):
                     """
                 )
                 if fin_info.prop_complete > 0:
-                    info_text += textwrap.dedent(
-                        f"""\
-                        Predicted completion time: {fin_info.elapsed / fin_info.prop_complete:.2f} seconds
-                        """
+                    info_text += "Predicted completion time: {:.2f} seconds".format(
+                        fin_info.elapsed / fin_info.prop_complete
                     )
         base_layout.addWidget(QLabel(info_text, self))
         ok_btn = QPushButton("Ok", self)
@@ -884,6 +1012,53 @@ class _ButtonSizeModal(QDialog):
         btns_layout.addWidget(cancel_btn)
 
 
+class _AdvancedOptionsModal(QDialog):
+    """A popup window to select advanced options."""
+
+    def __init__(self, parent: QWidget, main_window: MinegaulerGUI):
+        super().__init__(parent)
+        self.setWindowTitle("Advanced options")
+        self.setModal(True)
+        self._main_window = main_window
+        self._setup_ui()
+
+    def _setup_ui(self):
+        """Set up the window layout."""
+        vlayout = QVBoxLayout(self)
+        vlayout.addWidget(
+            QLabel("These options are in beta - stability not guaranteed", self)
+        )
+
+        def add_opt(label: str, func: Callable):
+            hlayout = QHBoxLayout(self)
+            vlayout.addLayout(hlayout)
+            hlayout.addWidget(QLabel(label, self))
+            button = QPushButton("Enable", self)
+            button.clicked.connect(func)
+            button.clicked.connect(lambda: button.setDisabled(True))
+            hlayout.addWidget(button)
+
+        add_opt("Enable main window maximising", self._enable_maximise)
+
+    def _enable_maximise(self):
+        """Enable maximising the main window."""
+        win = self._main_window
+
+        def update_size():
+            win.setMinimumSize(win.minimumSizeHint())
+            if not win.isMaximized():
+                win.resize(win.sizeHint())
+                win.adjustSize()
+
+        win.hide()
+        win.setWindowFlag(Qt.WindowMaximizeButtonHint)
+        win.setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX)
+        win._mf_widget.size_changed.disconnect(win._update_size)
+        win._update_size = update_size
+        win._mf_widget.size_changed.connect(win._update_size)
+        win.show()
+
+
 class _SliderSpinner(QWidget):
     """A combination of a slider and a spinbox."""
 
@@ -946,11 +1121,11 @@ class _NameEntryBar(QLineEdit):
 class _TextPopup(QWidget):
     """A popup window containing a block of text."""
 
-    def __init__(self, parent: Optional[QWidget], title: str, file: os.PathLike):
+    def __init__(self, parent: Optional[QWidget], title: str, file: PathLike):
         super().__init__(parent)
         self.setWindowFlag(Qt.Window)
         self.setWindowTitle(title)
-        self.setMinimumSize(300, 300)
+        self.setMinimumSize(200, 100)
 
         self._text_widget = QLabel(self)
         self._ok_button = QPushButton(self)
@@ -980,12 +1155,7 @@ class _TextPopup(QWidget):
         self._ok_button.clicked.connect(self.close)
         lyt.addWidget(self._ok_button)
 
-
-if __name__ == "__main__":
-    from PyQt5.QtWidgets import QApplication
-    import sys
-
-    app = QApplication(sys.argv)
-    widget = _CustomBoardModal(None, 10, 20, 30, lambda x, y, z: print(x, y, z))
-    widget.show()
-    app.exec()
+    def sizeHint(self) -> QSize:
+        size = super().sizeHint()
+        area = size.width() * size.height()
+        return QSize(int(area ** 0.5), int(area ** 0.4))

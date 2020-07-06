@@ -1,39 +1,40 @@
+# September 2019, Lewis Gaul
+
 """
-api.py - API on to the core, providing all information needed by frontends
+API between backend and frontends.
 
-September 2019, Lewis Gaul
-
-Exports:
-TODO
 """
 
 __all__ = (
     "AbstractController",
     "AbstractListener",
-    "AbstractSwitchingController",
-    "Caller",
-    "EndedGameInfo",
+    "GameInfo",
 )
 
 import abc
 import logging
-import os
 from typing import Callable, Dict, Iterable, List, Optional
 
 import attr
 
 from ..core import board as brd
-from ..shared import utils
-from ..types import CellContentsType, GameState, UIMode
-from ..typing import Coord_T
+from ..shared.types import (
+    CellContents,
+    Coord_T,
+    Difficulty,
+    GameState,
+    PathLike,
+    UIMode,
+)
+from ..shared.utils import GameOptsStruct
 
 
-@attr.attrs(auto_attribs=True)
+@attr.attrs(auto_attribs=True, kw_only=True)
 class GameInfo:
     """General information about a game."""
 
-    @attr.attrs(auto_attribs=True)
-    class FinishedInfo:
+    @attr.attrs(auto_attribs=True, kw_only=True)
+    class StartedInfo:
         start_time: float
         elapsed: float
         bbbv: int
@@ -46,22 +47,12 @@ class GameInfo:
     x_size: int
     y_size: int
     mines: int
+    difficulty: Difficulty
     per_cell: int
-    finished_info: Optional[FinishedInfo] = None
+    first_success: bool
 
-
-@attr.attrs(auto_attribs=True)
-class EndedGameInfo:
-    """Information about a finished game."""
-
-    game_state: GameState
-    difficulty: str
-    per_cell: int
-    start_time: float
-    elapsed: float
-    bbbv: int
-    flagging: float
     minefield_known: bool
+    started_info: Optional[StartedInfo] = None
 
 
 class AbstractListener(metaclass=abc.ABCMeta):
@@ -98,7 +89,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
+    def update_cells(self, cell_updates: Dict[Coord_T, CellContents]) -> None:
         """
         Called when one or more cells were updated.
 
@@ -128,19 +119,9 @@ class AbstractListener(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def handle_finished_game(self, info: EndedGameInfo) -> None:
+    def ui_mode_changed(self, mode: UIMode) -> None:
         """
-        Called once when a game ends.
-
-        :param info:
-            A store of end-game information.
-        """
-        return NotImplemented
-
-    @abc.abstractmethod
-    def switch_mode(self, mode: UIMode) -> None:
-        """
-        Called to indicate the game mode has change.
+        Called to indicate the game mode has changed.
 
         :param mode:
             The mode to change to.
@@ -162,10 +143,8 @@ class AbstractListener(metaclass=abc.ABCMeta):
         return NotImplemented
 
 
-class Caller(AbstractListener):
-    """
-    Pass on calls to registered listeners.
-    """
+class _Notifier(AbstractListener):
+    """Pass on calls to registered listeners."""
 
     _count: int = 0
 
@@ -177,7 +156,9 @@ class Caller(AbstractListener):
         """
         self._listeners: List[AbstractListener] = list(listeners) if listeners else []
         self._id: int = self._count
-        self._logger = logging.getLogger(f"{__name__}.{type(self).__name__}{self._id}")
+        self._logger = logging.getLogger(
+            f"{__name__}.{self.__class__.__name__}[{self._id}]"
+        )
 
         self.__class__._count += 1
 
@@ -256,7 +237,7 @@ class Caller(AbstractListener):
         """
         self._logger.debug(f"Calling set_mines() with {mines}")
 
-    def update_cells(self, cell_updates: Dict[Coord_T, CellContentsType]) -> None:
+    def update_cells(self, cell_updates: Dict[Coord_T, CellContents]) -> None:
         """
         Called when one or more cells were updated.
 
@@ -285,23 +266,14 @@ class Caller(AbstractListener):
         """
         self._logger.debug(f"Calling update_mines_remaining() with {mines_remaining}")
 
-    def handle_finished_game(self, info: EndedGameInfo) -> None:
+    def ui_mode_changed(self, mode: UIMode) -> None:
         """
-        Called once when a game ends.
-
-        :param info:
-            A store of end-game information.
-        """
-        self._logger.debug(f"Calling handle_finished_game() with {info}")
-
-    def switch_mode(self, mode: UIMode) -> None:
-        """
-        Called to indicate the game mode has change.
+        Called to indicate the UI mode has changed.
 
         :param mode:
             The mode to change to.
         """
-        self._logger.debug(f"Calling switch_mode() with {mode}")
+        self._logger.debug(f"Calling ui_mode_changed() with {mode}")
 
     def handle_exception(self, method: str, exc: Exception) -> None:
         """
@@ -312,16 +284,17 @@ class Caller(AbstractListener):
 
 class AbstractController(metaclass=abc.ABCMeta):
     """
-    Abstract controller base class. Listeners can be registered for receiving
-    updates.
+    Abstract controller base class.
+
+    Listeners can be registered for receiving updates.
     """
 
-    def __init__(self, opts: utils.GameOptsStruct, *, notif: Optional[Caller] = None):
-        self._opts = utils.GameOptsStruct.from_structs(opts)
+    def __init__(self, opts: GameOptsStruct):
+        self._opts = GameOptsStruct.from_structs(opts)
         # The registered functions to be called with updates.
-        self._notif: Caller = notif if notif else Caller()
+        self._notif = _Notifier()
         self._logger = logging.getLogger(
-            ".".join([type(self).__module__, type(self).__name__])
+            ".".join([self.__class__.__module__, self.__class__.__name__])
         )
 
     def register_listener(self, listener: AbstractListener) -> None:
@@ -355,6 +328,9 @@ class AbstractController(metaclass=abc.ABCMeta):
         )
         self._notif.unregister_listener(listener)
 
+    # --------------------------------------------------------------------------
+    # Getters
+    # --------------------------------------------------------------------------
     @property
     @abc.abstractmethod
     def board(self) -> brd.Board:
@@ -365,7 +341,7 @@ class AbstractController(metaclass=abc.ABCMeta):
         """Get information about the current game."""
         return NotImplemented
 
-    def get_game_options(self) -> utils.GameOptsStruct:
+    def get_game_options(self) -> GameOptsStruct:
         return self._opts
 
     # --------------------------------------------------------------------------
@@ -437,7 +413,7 @@ class AbstractController(metaclass=abc.ABCMeta):
         self._logger.debug("Setting per cell to %s", value)
 
     @abc.abstractmethod
-    def save_current_minefield(self, file: os.PathLike) -> None:
+    def save_current_minefield(self, file: PathLike) -> None:
         """
         Save the current minefield to file.
 
@@ -448,7 +424,7 @@ class AbstractController(metaclass=abc.ABCMeta):
         self._logger.debug("Saving current minefield to file: %s", file)
 
     @abc.abstractmethod
-    def load_minefield(self, file: os.PathLike) -> None:
+    def load_minefield(self, file: PathLike) -> None:
         """
         Load a minefield from file.
 
@@ -457,10 +433,6 @@ class AbstractController(metaclass=abc.ABCMeta):
             ".mgb".
         """
         self._logger.debug("Loading minefield from file: %s", file)
-
-
-class AbstractSwitchingController(AbstractController):
-    """An abstract base class for controllers that support switching mode."""
 
     @abc.abstractmethod
     def switch_mode(self, mode: UIMode) -> None:
