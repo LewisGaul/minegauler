@@ -62,7 +62,7 @@ from ..shared.types import (
 )
 from ..shared.utils import GUIOptsStruct, format_timestamp
 from . import highscores, minefield, panel, simulate, state, utils
-from .utils import FILES_DIR, HIGHSCORES_DIR, read_highscore_file
+from .utils import FILES_DIR, HIGHSCORES_DIR, read_highscore_file, save_highscore_file
 
 
 logger = logging.getLogger(__name__)

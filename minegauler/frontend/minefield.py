@@ -134,7 +134,7 @@ def _filter_left_and_right(mouse_event_func: Callable):
             event.windowPos(),
             event.screenPos(),
             event.button(),
-            event.buttons() & (Qt.LeftButton | Qt.RightButton),
+            event.buttons() & int(Qt.LeftButton | Qt.RightButton),
             event.modifiers(),
             event.source(),
         )
