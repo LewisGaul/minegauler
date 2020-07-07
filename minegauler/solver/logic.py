@@ -1,4 +1,7 @@
+# May 2020, Lewis Gaul
+
 """
+Solver logic.
 
 """
 
@@ -13,8 +16,7 @@ import scipy.optimize
 import sympy
 
 from ..core.board import Board
-from ..types import CellNum, CellUnclicked
-from ..typing import Coord_T
+from ..shared.types import CellContents, Coord_T
 
 
 _debug = os.environ.get("SOLVER_DEBUG")
@@ -108,9 +110,11 @@ class Solver:
         self.mines = mines
 
         self.unclicked_cells = [
-            c for c in board.all_coords if type(board[c]) is not CellNum
+            c for c in board.all_coords if type(board[c]) is not CellContents.Num
         ]
-        self.number_cells = [c for c in board.all_coords if type(board[c]) is CellNum]
+        self.number_cells = [
+            c for c in board.all_coords if type(board[c]) is CellContents.Num
+        ]
 
     def find_configs(self) -> List[Tuple[int, ...]]:
         full_matrix = self._find_full_matrix()
@@ -199,14 +203,14 @@ class Solver:
 
 
 if __name__ == "__main__":
-    U = CellUnclicked().char
+    x = CellContents.Unclicked.char
     board = Board.from_2d_array(
         [
-            [U, 2, U, U, U],
-            [U, U, U, U, U],
-            [U, 3, U, U, U],
-            [U, 2, U, 4, U],
-            [U, U, U, U, U],
+            [x, 2, x, x, x],
+            [x, x, x, x, x],
+            [x, 3, x, x, x],
+            [x, 2, x, 4, x],
+            [x, x, x, x, x],
         ]
     )
     print("Using board:")
@@ -221,22 +225,22 @@ if __name__ == "__main__":
     # fmt: off
     board2 = Board.from_2d_array([
     #    0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
-        [U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U], #  0
-        [U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U], #  1
-        [U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U], #  2
-        [U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U], #  3
-        [U, U, U, U, U, U, U, U, U, U, U, U, 4, 2, 2, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U], #  4
-        [U, U, U, U, U, U, U, U, U, U, 5, U, 2, 0, 2, 3, U, U, U, U, U, U, U, U, U, U, U, U, U, U], #  5
-        [U, U, U, U, U, U, U, U, U, U, U, 3, 1, 0, 1, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U], #  6
-        [U, U, U, U, U, U, U, U, U, 6, U, 2, 0, 1, 2, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U], #  7
-        [U, U, U, U, U, U, 2, U, U, U, 4, 1, 0, 1, U, 2, U, U, U, U, U, U, U, U, U, U, U, U, U, U], #  8
-        [U, U, U, U, 2, 1, 1, 1, 4, U, 3, 0, 0, 1, 1, 2, U, U, U, U, U, U, U, U, U, U, U, U, U, U], #  9
-        [U, U, U, U, 2, 0, 0, 0, 1, 1, 2, 1, 1, 0, 1, 2, U, U, U, U, U, U, U, U, U, U, U, U, U, U], # 10
-        [U, U, U, U, 2, 0, 0, 1, 1, 1, 2, U, 2, 0, 1, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U], # 11
-        [U, U, U, U, 1, 0, 0, 1, U, 2, 4, U, 3, 1, 3, 4, U, U, U, U, U, U, U, U, U, U, U, U, U, U], # 12
-        [U, U, U, U, 2, 1, 1, 2, 2, 2, U, U, 2, 2, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U], # 13
-        [U, U, U, U, U, 1, 1, U, 1, 1, 2, 2, 1, 2, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U], # 14
-        [U, U, U, U, 2, 1, 1, 1, 1, 0, 0, 0, 0, 1, 2, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U], # 15
+        [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  0
+        [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  1
+        [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  2
+        [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  3
+        [x, x, x, x, x, x, x, x, x, x, x, x, 4, 2, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  4
+        [x, x, x, x, x, x, x, x, x, x, 5, x, 2, 0, 2, 3, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  5
+        [x, x, x, x, x, x, x, x, x, x, x, 3, 1, 0, 1, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  6
+        [x, x, x, x, x, x, x, x, x, 6, x, 2, 0, 1, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  7
+        [x, x, x, x, x, x, 2, x, x, x, 4, 1, 0, 1, x, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  8
+        [x, x, x, x, 2, 1, 1, 1, 4, x, 3, 0, 0, 1, 1, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  9
+        [x, x, x, x, 2, 0, 0, 0, 1, 1, 2, 1, 1, 0, 1, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 10
+        [x, x, x, x, 2, 0, 0, 1, 1, 1, 2, x, 2, 0, 1, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 11
+        [x, x, x, x, 1, 0, 0, 1, x, 2, 4, x, 3, 1, 3, 4, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 12
+        [x, x, x, x, 2, 1, 1, 2, 2, 2, x, x, 2, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 13
+        [x, x, x, x, x, 1, 1, x, 1, 1, 2, 2, 1, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 14
+        [x, x, x, x, 2, 1, 1, 1, 1, 0, 0, 0, 0, 1, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 15
     ])
     # fmt: on
 

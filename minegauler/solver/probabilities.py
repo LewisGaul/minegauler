@@ -1,7 +1,8 @@
-"""
-probabilities.py - Probability calculations
+# May 2020, Lewis Gaul
 
-Lewis Gaul, May 2020
+"""
+Probability calculation interface with Rust.
+
 """
 
 import pathlib
@@ -10,8 +11,8 @@ import subprocess
 import cffi
 
 from ..core.board import Board
+from ..shared.types import CellContents
 from ..shared.utils import Grid
-from ..types import CellMine, CellMineType, CellNum, CellUnclicked
 
 
 rust_project_path = pathlib.Path(__file__).resolve().parent.parent / "rust" / "solver"
@@ -53,21 +54,21 @@ class SolverFFI(cffi.FFI):
         number_names = {1: "one", 2: "two", 3: "three"}
         for i, coord in enumerate(board.all_coords):
             val = board[coord]
-            if isinstance(val, CellNum) and 0 <= val.num <= 8:
+            if isinstance(val, CellContents.Num) and 0 <= val.num <= 8:
                 cells[i] = val.num
-            elif isinstance(val, CellMineType) and 1 <= val.num <= 3:
+            elif val.is_mine_type() and 1 <= val.num <= 3:
                 enum_name = "SOLVER_CELL_{}_MINE".format(number_names[val.num].upper())
                 cells[i] = getattr(self.lib, enum_name)
-            elif isinstance(val, CellUnclicked):
+            elif val is CellContents.Unclicked:
                 cells[i] = self.lib.SOLVER_CELL_UNCLICKED
             else:
                 raise ValueError(f"Unsupported board cell contents: {val}")
 
 
 board = Board(6, 4)
-board[(0, 0)] = CellMine(1)
-board[(2, 2)] = CellNum(1)
-board[(2, 3)] = CellNum(2)
+board[(0, 0)] = CellContents.Mine(1)
+board[(2, 2)] = CellContents.Num(1)
+board[(2, 3)] = CellContents.Num(2)
 print(board)
 print()
 probs = SolverFFI().calc_probs(board)

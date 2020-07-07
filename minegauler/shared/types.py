@@ -69,7 +69,7 @@ class _NumericCellContentsMixin:
 
     char: str
 
-    def __init__(self, num):
+    def __init__(self, num: int):
         if not isinstance(num, int):
             raise TypeError("Number should be an integer")
         self.num = num
