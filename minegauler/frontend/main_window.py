@@ -416,7 +416,7 @@ class MinegaulerGUI(
             start = tm.time()
             s = Solver(self._ctrlr.board, self._ctrlr.get_game_info().mines)
             try:
-                configs = s.find_configs()
+                configs = s._find_configs()
                 end = tm.time()
             except Exception as e:
                 print(self._ctrlr.board)

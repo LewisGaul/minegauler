@@ -72,10 +72,6 @@ class Board(utils.Grid):
         ValueError
             - Invalid string representation of cell contents.
         """
-        try:
-            return super().from_2d_array(array)
-        except TypeError:
-            pass
         grid = utils.Grid.from_2d_array(array)
         board = cls(grid.x_size, grid.y_size)
         for c in grid.all_coords:
@@ -84,10 +80,15 @@ class Board(utils.Grid):
             elif type(grid[c]) is str and len(grid[c]) == 2:
                 char, num = grid[c]
                 board[c] = CellContents.from_char(char)(int(num))
-            elif grid[c] != CellContents.Unclicked.char:
-                raise ValueError(
-                    f"Unknown cell contents representation in cell {c}: {grid[c]}"
-                )
+            elif grid[c] == CellContents.Unclicked.char:
+                pass
+            else:
+                try:
+                    board[c] = grid[c]
+                except TypeError:
+                    raise ValueError(
+                        f"Unknown cell contents representation in cell {c}: {grid[c]}"
+                    )
         return board
 
     @classmethod

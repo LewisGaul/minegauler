@@ -9,7 +9,7 @@ import itertools
 import os
 from collections import defaultdict
 from pprint import pprint
-from typing import List, Tuple
+from typing import Iterable, List, Tuple, Union
 
 import numpy as np
 import scipy.optimize
@@ -21,11 +21,17 @@ from ..shared.types import CellContents, Coord_T
 
 _debug = os.environ.get("SOLVER_DEBUG")
 
+# A configuration type, where each value in the tuple corresponds to the number
+# of mines in the corresponding group.
+_Config_T = Tuple[int, ...]
+
 
 class _MatrixAndVec:
-    """"""
+    """Representation of simultaneous equations in matrix form."""
 
-    def __init__(self, matrix, vec):
+    def __init__(
+        self, matrix: Union[np.ndarray, Iterable], vec: Union[np.ndarray, Iterable]
+    ):
         self._matrix = np.array(matrix, int)
         self._vec = np.array(vec, int)
 
@@ -38,18 +44,18 @@ class _MatrixAndVec:
         return "\n".join(lines)
 
     @property
-    def rows(self):
+    def rows(self) -> int:
         return self._matrix.shape[0]
 
     @property
-    def cols(self):
+    def cols(self) -> int:
         return self._matrix.shape[1]
 
     def get_parts(self) -> Tuple[np.ndarray, np.ndarray]:
         return self._matrix, self._vec
 
     def unique_cols(self) -> Tuple["_MatrixAndVec", Tuple[int, ...]]:
-        """Return a copy without duplicate columns, in the original order."""
+        """Return a copy without duplicate columns, with column order unchanged."""
         cols = []
         inverse = []
         for i, col in enumerate(self._matrix.T):
@@ -63,6 +69,7 @@ class _MatrixAndVec:
         return self.__class__(np.array(cols).T, self._vec), tuple(inverse)
 
     def rref(self) -> Tuple["_MatrixAndVec", Tuple[int, ...], Tuple[int, ...]]:
+        """Convert to Reduced-Row-Echelon Form."""
         sp_matrix, fixed_cols = sympy.Matrix(self._join_matrix_vec()).rref()
         free_cols = tuple(
             i for i in range(self._matrix.shape[1]) if i not in fixed_cols
@@ -98,7 +105,7 @@ class _MatrixAndVec:
         return np.c_[self._matrix, self._vec]
 
     @classmethod
-    def _from_joined_matrix_vec(cls, joined) -> "_MatrixAndVec":
+    def _from_joined_matrix_vec(cls, joined: np.ndarray) -> "_MatrixAndVec":
         return cls(joined[:, :-1], joined[:, -1])
 
 
@@ -109,14 +116,40 @@ class Solver:
         self.board = board
         self.mines = mines
 
-        self.unclicked_cells = [
+        self._unclicked_cells = [
             c for c in board.all_coords if type(board[c]) is not CellContents.Num
         ]
-        self.number_cells = [
+        self._number_cells = [
             c for c in board.all_coords if type(board[c]) is CellContents.Num
         ]
 
-    def find_configs(self) -> List[Tuple[int, ...]]:
+    @staticmethod
+    def _iter_rectangular(max_values: _Config_T):
+        yield from itertools.product(*[range(v + 1) for v in max_values])
+
+    def _find_full_matrix(self) -> _MatrixAndVec:
+        """
+        Convert the board into a set of simultaneous equations, represented
+        in matrix form.
+        """
+        matrix_arr = []
+        vec = []
+        for num_coord in self._number_cells:
+            num_nbrs = self.board.get_nbrs(num_coord)
+            if any([c in self._unclicked_cells for c in num_nbrs]):
+                matrix_arr.append([num_nbrs.count(c) for c in self._unclicked_cells])
+                vec.append(self.board[num_coord].num)
+        matrix_arr.append([1] * len(self._unclicked_cells))
+        vec.append(self.mines)
+        return _MatrixAndVec(matrix_arr, vec)
+
+    def _find_groups(self, matrix_inverse) -> List[List[Coord_T]]:
+        groups = defaultdict(list)
+        for cell_ind, group_ind in enumerate(matrix_inverse):
+            groups[group_ind].append(self._unclicked_cells[cell_ind])
+        return list(groups.values())
+
+    def _find_configs(self) -> Iterable[_Config_T]:
         full_matrix = self._find_full_matrix()
         # if _debug:
         #     print("Full matrix:")
@@ -157,7 +190,7 @@ class Solver:
             print(free_vars_max)
             print()
 
-        configs = []
+        configs = set()
         cfg = [0 for _ in range(rref_matrix.cols)]
         for free_var_vals in self._iter_rectangular(free_vars_max):
             fixed_var_vals = free_matrix.reduce_vec_with_vals(free_var_vals)
@@ -171,35 +204,13 @@ class Solver:
                 cfg[c] = free_var_vals[i]
             for i, c in enumerate(fixed_cols):
                 cfg[c] = fixed_var_vals[i]
-            configs.append(tuple(cfg))
+            configs.add(tuple(cfg))
         if _debug:
             print(f"Configurations ({len(configs)}):")
             print("\n".join(map(str, configs)))
             print()
 
         return configs
-
-    def _find_full_matrix(self) -> _MatrixAndVec:
-        matrix_arr = []
-        vec = []
-        for num_coord in self.number_cells:
-            num_nbrs = self.board.get_nbrs(num_coord)
-            if any([c in self.unclicked_cells for c in num_nbrs]):
-                matrix_arr.append([num_nbrs.count(c) for c in self.unclicked_cells])
-                vec.append(self.board[num_coord].num)
-        matrix_arr.append([1] * len(self.unclicked_cells))
-        vec.append(self.mines)
-        return _MatrixAndVec(matrix_arr, vec)
-
-    def _find_groups(self, matrix_inverse) -> List[List[Coord_T]]:
-        groups = defaultdict(list)
-        for cell_ind, group_ind in enumerate(matrix_inverse):
-            groups[group_ind].append(self.unclicked_cells[cell_ind])
-        return list(groups.values())
-
-    @staticmethod
-    def _iter_rectangular(max_values: Tuple[int, ...],):
-        yield from itertools.product(*[range(v + 1) for v in max_values])
 
 
 if __name__ == "__main__":
@@ -217,7 +228,7 @@ if __name__ == "__main__":
     print(board)
 
     s = Solver(board, 8)
-    s.find_configs()
+    s._find_configs()
     m1 = s._find_full_matrix()
     m2 = m1.unique_cols()[0]
     m3 = m2.rref()[0]
