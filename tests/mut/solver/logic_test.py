@@ -6,14 +6,14 @@ MUT for the solver logic module.
 """
 
 import logging
-from collections import namedtuple
-from typing import Iterable
+from types import SimpleNamespace
+from typing import Iterable, List, Optional
 
 import numpy as np
 import pytest
 
 from minegauler.core import Board
-from minegauler.shared.types import CellContents
+from minegauler.shared.types import CellContents, Coord_T
 from minegauler.shared.utils import Grid
 from minegauler.solver import logic
 from minegauler.solver.logic import _Config_T
@@ -27,28 +27,113 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------------------
 
 
-class Case(namedtuple("_Case", "board, mines, configs, probs")):
+class Case(SimpleNamespace):
     """Boards for testing."""
 
-    def __new__(
-        cls, board: Board, mines: int, configs: Iterable[_Config_T], probs: Grid
+    board: Board
+    mines: int
+    full_matrix: Optional[np.ndarray]
+    groups: Optional[List[Iterable[Coord_T]]]
+    groups_matrix: Optional[np.ndarray]
+    configs: Optional[Iterable[_Config_T]]
+    probs: Grid
+
+    def __init__(
+        self,
+        board: List[List],
+        *,
+        mines: int,
+        full_matrix: Optional[List[List[int]]] = None,
+        groups: Optional[List[Iterable[Coord_T]]] = None,
+        groups_matrix: Optional[List[List[int]]] = None,
+        configs: Optional[Iterable[_Config_T]] = None,
+        probs: List[List],
     ):
-        return super().__new__(cls, board, mines, configs, probs)
+        super().__init__(
+            board=Board.from_2d_array(board),
+            mines=mines,
+            full_matrix=np.array(full_matrix) if full_matrix else None,
+            groups=groups,
+            groups_matrix=np.array(groups_matrix) if groups_matrix else None,
+            configs=configs,
+            probs=Grid.from_2d_array(probs),
+        )
 
 
 x = CellContents.Unclicked
 F = CellContents.Flag(1)
+
+# fmt: off
 cases = [
+    # Basic case with single configuration.
     Case(
-        board=Board.from_2d_array(
-            [
-                [x, 2, x, x, x],
-                [x, x, x, x, x],
-                [x, 3, x, x, x],
-                [x, 2, x, 4, x],
-                [x, x, x, x, x],
-            ]
-        ),
+        [
+            [x, x, 1],
+            [3, x, 2],
+            [x, x, x],
+        ],
+        mines=3,
+        full_matrix=[
+            [1, 1, 1, 1, 1, 0],
+            [0, 0, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1],
+        ],
+        groups_matrix=[
+            [1, 1, 1, 0],  # [3]
+            [0, 1, 0, 0],  # [1]
+            [0, 1, 1, 1],  # [2]
+            [1, 1, 1, 1],  # [3] (mines)
+        ],
+        groups=[
+            {(0, 0), (0, 2)},  # 0
+            {(1, 0), (1, 1)},  # 1
+            {(1, 2)},          # 2
+            {(2, 2)},          # 3
+        ],
+        configs={
+            (1, 1, 1, 0),
+        },
+        probs=[
+            [0.5, 0.5, 0],
+            [0,   0.5, 0],
+            [0.5, 1,   0],
+        ],
+    ),
+
+    # Same as above with 4 mines instead of 3.
+    Case(
+        [
+            [x, x, 1],
+            [3, x, 2],
+            [x, x, x],
+        ],
+        mines=4,
+        groups=[
+            {(0, 0), (0, 2)},  # 0
+            {(1, 0), (1, 1)},  # 1
+            {(1, 2)},          # 2
+            {(2, 2)},          # 3
+        ],
+        configs={
+            (2, 1, 0, 1),
+        },
+        probs=[
+            [1, 0.5, 1],
+            [0, 0.5, 0],
+            [0, 0,   1],
+        ],
+    ),
+
+    # Constructed medium example.
+    Case(
+        [
+            [x, 2, x, x, x],
+            [x, x, x, x, x],
+            [x, 3, x, x, x],
+            [x, 2, x, 4, x],
+            [x, x, x, x, x],
+        ],
         mines=8,
         configs={
             (1, 1, 0, 0, 2, 0, 2, 2),
@@ -59,9 +144,43 @@ cases = [
             (0, 2, 0, 1, 1, 0, 1, 3),
             (0, 2, 1, 1, 0, 0, 0, 4),
         },
-        probs=Grid.from_2d_array([[0]]),
-    )
+        probs=[
+            [0.2711, 0,      0.2711, 0.5,    0.5   ],
+            [0.4859, 0.4859, 0.4859, 0.5,    0.5   ],
+            [0.2651, 0,      0.5060, 0.5494, 0.5494],
+            [0.2651, 0,      0.5060, 0,      0.5494],
+            [0.1084, 0.1084, 0.2410, 0.5494, 0.5494],
+        ],
+    ),
+
+    # Partially completed expert board.
+    Case(
+        [
+          #  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+            [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  0
+            [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  1
+            [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  2
+            [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  3
+            [x, x, x, x, x, x, x, x, x, x, x, x, 4, 2, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  4
+            [x, x, x, x, x, x, x, x, x, x, 5, x, 2, 0, 2, 3, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  5
+            [x, x, x, x, x, x, x, x, x, x, x, 3, 1, 0, 1, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  6
+            [x, x, x, x, x, x, x, x, x, 6, x, 2, 0, 1, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  7
+            [x, x, x, x, x, x, 2, x, x, x, 4, 1, 0, 1, x, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  8
+            [x, x, x, x, 2, 1, 1, 1, 4, x, 3, 0, 0, 1, 1, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  9
+            [x, x, x, x, 2, 0, 0, 0, 1, 1, 2, 1, 1, 0, 1, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 10
+            [x, x, x, x, 2, 0, 0, 1, 1, 1, 2, x, 2, 0, 1, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 11
+            [x, x, x, x, 1, 0, 0, 1, x, 2, 4, x, 3, 1, 3, 4, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 12
+            [x, x, x, x, 2, 1, 1, 2, 2, 2, x, x, 2, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 13
+            [x, x, x, x, x, 1, 1, x, 1, 1, 2, 2, 1, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 14
+            [x, x, x, x, 2, 1, 1, 1, 1, 0, 0, 0, 0, 1, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 15
+        ],
+        mines=99,
+        probs=[
+            [0],
+        ],
+    ),
 ]
+# fmt: on
 
 
 # ------------------------------------------------------------------------------
@@ -75,39 +194,42 @@ def assert_np_rows_equal(array1: np.ndarray, array2: np.ndarray):
 
 
 @pytest.mark.parametrize("case", cases)
-def test_basic(case: Case):
+def test_full_flow(case: Case):
     logger.debug("Using board with %d mines:\n%s", case.mines, case.board)
 
     s = logic.Solver(case.board, case.mines)
-    cfgs = s._find_configs()
 
-    assert set(cfgs) == case.configs
+    # Full matrix
+    if case.full_matrix is not None:
+        s._full_matrix = s._find_full_matrix()
+        logger.debug("Got full matrix:\n%s", s._full_matrix)
+        assert_np_rows_equal(s._full_matrix.matrix, case.full_matrix)
 
+    # Setup (if required)
+    if any(x is not None for x in (case.groups, case.groups_matrix, case.configs)):
+        if s._full_matrix is None:
+            s._full_matrix = s._find_full_matrix()
+        s._groups_matrix, inversion = s._full_matrix.unique_cols()
+        s._groups = s._find_groups(inversion)
+        assert np.all(s._groups_matrix.matrix[:, inversion] == s._full_matrix.matrix)
 
-def test_full_flow():
-    board = Board.from_2d_array(
-        [
-            [x, 2, x, x, x],
-            [x, x, x, x, x],
-            [x, 3, x, x, x],
-            [x, 2, x, 4, x],
-            [x, x, x, x, x],
-        ]
-    )
-    mines = 8
-    logger.debug("Using board with %d mines:\n%s", mines, board)
+    # Groups
+    if case.groups is not None:
+        logger.debug("Got %d group(s)", len(s._groups))
+        assert [set(g) for g in s._groups] == [set(g) for g in case.groups]
 
-    s = logic.Solver(board, mines)
-    full_matrix = s._find_full_matrix()
-    logger.debug("Got full matrix:\n%s", full_matrix)
-    exp_matrix = logic._MatrixAndVec(
-        [
-            [1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        ],
-        [2, 3, 2, 4, 8],
-    )
-    assert_np_rows_equal(full_matrix._join_matrix_vec(), exp_matrix._join_matrix_vec())
+    # Groups matrix
+    if case.groups_matrix is not None:
+        logger.debug("Got groups matrix:\n%s", s._groups_matrix)
+        assert_np_rows_equal(s._groups_matrix.matrix, case.groups_matrix)
+
+    # Configs
+    if case.configs is not None:
+        cfgs = s._find_configs()
+        logger.debug("Got %d config(s)", len(cfgs))
+        assert set(cfgs) == case.configs
+
+    # Probabilities
+    probs = s.calculate()
+    logger.debug("Got probabilities:\n%s", probs)
+    # assert probs == case.probs

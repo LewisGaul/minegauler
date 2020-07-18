@@ -6,8 +6,11 @@ Solver logic.
 """
 
 import itertools
+import logging
+import math
 import os
 from collections import defaultdict
+from math import factorial as fac
 from pprint import pprint
 from typing import Iterable, List, Tuple, Union
 
@@ -17,9 +20,13 @@ import sympy
 
 from ..core.board import Board
 from ..shared.types import CellContents, Coord_T
+from ..shared.utils import Grid
+from .gen_probs import combs as get_combs
+from .gen_probs import prob as get_unsafe_prob
 
 
 _debug = os.environ.get("SOLVER_DEBUG")
+logger = logging.getLogger(__name__)
 
 # A configuration type, where each value in the tuple corresponds to the number
 # of mines in the corresponding group.
@@ -32,57 +39,55 @@ class _MatrixAndVec:
     def __init__(
         self, matrix: Union[np.ndarray, Iterable], vec: Union[np.ndarray, Iterable]
     ):
-        self._matrix = np.array(matrix, int)
-        self._vec = np.array(vec, int)
+        self.matrix = np.array(matrix, int)
+        self.vec = np.array(vec, int)
 
     def __str__(self):
-        matrix_lines = [L[2:].rstrip("]") for L in str(self._matrix).splitlines()]
+        matrix_lines = [L[2:].rstrip("]") for L in str(self.matrix).splitlines()]
         vec_lines = [
-            L[2:].rstrip("]") for L in str(np.array([self._vec]).T).splitlines()
+            L[2:].rstrip("]") for L in str(np.array([self.vec]).T).splitlines()
         ]
         lines = (f"|{i} | {j} |" for i, j in zip(matrix_lines, vec_lines))
         return "\n".join(lines)
 
     @property
     def rows(self) -> int:
-        return self._matrix.shape[0]
+        return self.matrix.shape[0]
 
     @property
     def cols(self) -> int:
-        return self._matrix.shape[1]
+        return self.matrix.shape[1]
 
     def get_parts(self) -> Tuple[np.ndarray, np.ndarray]:
-        return self._matrix, self._vec
+        return self.matrix, self.vec
 
     def unique_cols(self) -> Tuple["_MatrixAndVec", Tuple[int, ...]]:
         """Return a copy without duplicate columns, with column order unchanged."""
         cols = []
         inverse = []
-        for i, col in enumerate(self._matrix.T):
+        for i, col in enumerate(self.matrix.T):
             for j, c in enumerate(cols):
-                if (c == col).all():
+                if np.all(c == col):
                     inverse.append(j)
                     break
             else:
                 cols.append(col)
                 inverse.append(len(cols) - 1)
-        return self.__class__(np.array(cols).T, self._vec), tuple(inverse)
+        return self.__class__(np.array(cols).T, self.vec), tuple(inverse)
 
     def rref(self) -> Tuple["_MatrixAndVec", Tuple[int, ...], Tuple[int, ...]]:
         """Convert to Reduced-Row-Echelon Form."""
         sp_matrix, fixed_cols = sympy.Matrix(self._join_matrix_vec()).rref()
-        free_cols = tuple(
-            i for i in range(self._matrix.shape[1]) if i not in fixed_cols
-        )
+        free_cols = tuple(i for i in range(self.matrix.shape[1]) if i not in fixed_cols)
         np_matrix = np.array(sp_matrix, int)
         np_matrix = np_matrix[(np_matrix != 0).any(axis=1)]
         return self._from_joined_matrix_vec(np_matrix), fixed_cols, free_cols
 
     def filter_rows(self, rows) -> "_MatrixAndVec":
-        return self.__class__(self._matrix[rows, :], self._vec[rows])
+        return self.__class__(self.matrix[rows, :], self.vec[rows])
 
     def filter_cols(self, cols) -> "_MatrixAndVec":
-        return self.__class__(self._matrix[:, cols], self._vec)
+        return self.__class__(self.matrix[:, cols], self.vec)
 
     def where_rows(self, func) -> "_MatrixAndVec":
         joined = self._join_matrix_vec()
@@ -93,16 +98,16 @@ class _MatrixAndVec:
         for i in range(self.cols):
             c = [-int(i == j) for j in range(self.cols)]
             res = scipy.optimize.linprog(
-                c, A_ub=self._matrix, b_ub=self._vec, method="revised simplex"
+                c, A_ub=self.matrix, b_ub=self.vec, method="revised simplex"
             )
             max_vals.append(int(res.x[i]))
         return tuple(max_vals)
 
     def reduce_vec_with_vals(self, vals) -> np.ndarray:
-        return self._vec - np.matmul(self._matrix, vals)
+        return self.vec - np.matmul(self.matrix, vals)
 
     def _join_matrix_vec(self) -> np.ndarray:
-        return np.c_[self._matrix, self._vec]
+        return np.c_[self.matrix, self.vec]
 
     @classmethod
     def _from_joined_matrix_vec(cls, joined: np.ndarray) -> "_MatrixAndVec":
@@ -110,11 +115,12 @@ class _MatrixAndVec:
 
 
 class Solver:
-    """"""
+    """Main solver class."""
 
     def __init__(self, board: Board, mines: int):
         self.board = board
         self.mines = mines
+        self.per_cell = 1
 
         self._unclicked_cells = [
             c for c in board.all_coords if type(board[c]) is not CellContents.Num
@@ -122,6 +128,11 @@ class Solver:
         self._number_cells = [
             c for c in board.all_coords if type(board[c]) is CellContents.Num
         ]
+
+        self._full_matrix = None
+        self._groups_matrix = None
+        self._groups = None
+        self._configs = None
 
     @staticmethod
     def _iter_rectangular(max_values: _Config_T):
@@ -150,26 +161,7 @@ class Solver:
         return list(groups.values())
 
     def _find_configs(self) -> Iterable[_Config_T]:
-        full_matrix = self._find_full_matrix()
-        # if _debug:
-        #     print("Full matrix:")
-        #     print(full_matrix)
-        #     print()
-
-        groups_matrix, matrix_inverse = full_matrix.unique_cols()
-        if _debug:
-            print("Groups matrix:")
-            print(groups_matrix)
-            print()
-        assert (groups_matrix._matrix[:, matrix_inverse] == full_matrix._matrix).all()
-
-        groups = self._find_groups(matrix_inverse)
-        if _debug:
-            print(f"Groups ({len(groups)}):")
-            pprint([(i, g if len(g) <= 8 else "...") for i, g in enumerate(groups)])
-            print()
-
-        rref_matrix, fixed_cols, free_cols = groups_matrix.rref()
+        rref_matrix, fixed_cols, free_cols = self._groups_matrix.rref()
         if _debug:
             print("RREF:")
             print(rref_matrix)
@@ -212,58 +204,94 @@ class Solver:
 
         return configs
 
+    def _find_probs(self) -> Grid:
+        # Number of remaining unclicked cells (@@@ including outer group).
+        n = len(self._unclicked_cells)
+        # Number of remaining mines.
+        k = self.mines  # - self.flags
+        # # Number of cells which are next to a revealed number.
+        # S = self._full_matrix.shape[1]
+        # Probabilities associated with each configuration in list of configs.
+        cfg_probs = []
+        for cfg in self._configs:
+            # Total mines in cfg.
+            M = sum(cfg)
+            if M > k:  # too many mines
+                logger.warning("Too many mines in cfg:\n%s", cfg)
+                cfg_probs.append(0)
+                continue
+            # Initialise the number of combinations.
+            combs = fac(k) / fac(k - M)
+            # This is the product term in xi(cfg).
+            for i, m_i in enumerate(cfg):
+                g_size = len(self._groups[i])
+                combs *= get_combs(g_size, m_i, self.per_cell)
+                combs /= fac(m_i)
+            cfg_probs.append(combs * get_combs(n, k - M, self.per_cell))
 
-if __name__ == "__main__":
-    x = CellContents.Unclicked.char
-    board = Board.from_2d_array(
-        [
-            [x, 2, x, x, x],
-            [x, x, x, x, x],
-            [x, 3, x, x, x],
-            [x, 2, x, 4, x],
-            [x, x, x, x, x],
-        ]
-    )
-    print("Using board:")
-    print(board)
+        weight = math.log(sum(cfg_probs))
+        for i, p in enumerate(cfg_probs):
+            if p == 0:
+                continue
+            cfg_probs[i] = math.exp(math.log(p) - weight)
 
-    s = Solver(board, 8)
-    s._find_configs()
-    m1 = s._find_full_matrix()
-    m2 = m1.unique_cols()[0]
-    m3 = m2.rref()[0]
+        probs_grid = Grid(self.board.x_size, self.board.y_size)
+        self._group_probs = []
+        for i, g in enumerate(self._groups):
+            g_size = len(g)
+            probs = [0] * (g_size * self.per_cell)
+            unsafe_prob = 0
+            for j in range(len(probs)):
+                p = sum(
+                    [cfg_probs[k] for k, c in enumerate(self._configs) if c[i] == j]
+                )
+                if p == 0:
+                    continue
+                probs[j] = p
+                unsafe_prob += p * get_unsafe_prob(g_size, j, self.per_cell)
+                if not 0 <= unsafe_prob <= 1:
+                    logger.error(
+                        "Invalid configuration, got probability of %.2f", unsafe_prob
+                    )
+                    raise RuntimeError(
+                        "Encountered an error in probability calculation"
+                    )
+            # Probability of the group containing 0, 1, 2,... mines, where the
+            # number corresponds to the index.
+            self._group_probs.append(tuple(probs))
+            for coord in g:
+                # Avoid rounding errors.
+                probs_grid[coord] = round(unsafe_prob, 5)
 
-    # fmt: off
-    board2 = Board.from_2d_array([
-    #    0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
-        [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  0
-        [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  1
-        [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  2
-        [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  3
-        [x, x, x, x, x, x, x, x, x, x, x, x, 4, 2, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  4
-        [x, x, x, x, x, x, x, x, x, x, 5, x, 2, 0, 2, 3, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  5
-        [x, x, x, x, x, x, x, x, x, x, x, 3, 1, 0, 1, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  6
-        [x, x, x, x, x, x, x, x, x, 6, x, 2, 0, 1, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  7
-        [x, x, x, x, x, x, 2, x, x, x, 4, 1, 0, 1, x, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  8
-        [x, x, x, x, 2, 1, 1, 1, 4, x, 3, 0, 0, 1, 1, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  #  9
-        [x, x, x, x, 2, 0, 0, 0, 1, 1, 2, 1, 1, 0, 1, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 10
-        [x, x, x, x, 2, 0, 0, 1, 1, 1, 2, x, 2, 0, 1, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 11
-        [x, x, x, x, 1, 0, 0, 1, x, 2, 4, x, 3, 1, 3, 4, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 12
-        [x, x, x, x, 2, 1, 1, 2, 2, 2, x, x, 2, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 13
-        [x, x, x, x, x, 1, 1, x, 1, 1, 2, 2, 1, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 14
-        [x, x, x, x, 2, 1, 1, 1, 1, 0, 0, 0, 0, 1, 2, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x],  # 15
-    ])
-    # fmt: on
+        return probs_grid
 
-    print("\n\n")
-    print("Using board:")
-    print(board2)
+    def calculate(self) -> Grid:
+        """Perform the probability calculation."""
+        self._full_matrix = self._find_full_matrix()
+        # if _debug:
+        #     print("Full matrix:")
+        #     print(full_matrix)
+        #     print()
 
-    np.set_printoptions(threshold=np.inf, linewidth=np.inf)
-    s2 = Solver(board2, 99)
-    m4 = s2._find_full_matrix()
-    m5 = m4.unique_cols()[0]
-    m6 = m5.rref()[0]
+        self._groups_matrix, matrix_inverse = self._full_matrix.unique_cols()
+        if _debug:
+            # This is how to get back to the original matrix:
+            assert np.all(
+                self._groups_matrix.matrix[:, matrix_inverse]
+                == self._full_matrix.matrix
+            )
+            print("Groups matrix:")
+            print(self._groups_matrix)
+            print()
 
-    print("\n\n")
-    # s2.find_configs()
+        self._groups = self._find_groups(matrix_inverse)
+        if _debug:
+            print(f"Groups ({len(self._groups)}):")
+            pprint(
+                [(i, g if len(g) <= 8 else "...") for i, g in enumerate(self._groups)]
+            )
+            print()
+
+        self._configs = self._find_configs()
+
+        return self._find_probs()
