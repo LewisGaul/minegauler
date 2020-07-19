@@ -5,16 +5,15 @@ Generate probabilities.
 
 """
 
-__all__ = (
-    "combs",
-    "prob",
-)
+__all__ = ("combs", "prob")
 
+import functools
 from math import exp
 from math import factorial as fac
 from math import log
 
 
+# @@@ Move this to testing.
 # Cache of combination calculations.
 # This mapping is structured as follows:
 #  {
@@ -24,7 +23,7 @@ from math import log
 #    },
 #    ...
 #  }
-mult_combs = {
+_mult_combs = {
     2: {(2, 3): 6, (2, 4): 6, (3, 4): 14, (3, 5): 20, (3, 6): 20},
     3: {
         (2, 3): 24,
@@ -72,9 +71,10 @@ mult_combs = {
 }
 
 
-def combs(s, m, xmax=1):
+@functools.lru_cache(1000)
+def combs(s: int, m: int, xmax: int = 1) -> int:
     if xmax == 1:
-        return fac(s) / fac(s - m)
+        return fac(s) // fac(s - m)
     elif xmax >= m:
         return s ** m
     elif m > s * xmax:
@@ -82,15 +82,10 @@ def combs(s, m, xmax=1):
     elif s == 1:
         return 1
     else:
-        try:
-            return mult_combs[s][(xmax, m)]
-        except KeyError:
-            return find_combs(s, m, xmax)
-            # raise ValueError(
-            #     "Missing entry for s={}, xmax={}, m={}".format(s, xmax, m))
+        return _find_combs(s, m, xmax)
 
 
-def prob(s, m, xmax=1):
+def prob(s: int, m: int, xmax: int = 1) -> float:
     """
     Calculate the probability a cell contains a mine in a group of size s
     containing m mines and with max per cell of xmax.
@@ -99,26 +94,16 @@ def prob(s, m, xmax=1):
         # raise ValueError("Too many mines for group size.")
         return 0
     if xmax == 1:
-        return float(m) / s
+        return m / s
     elif xmax >= m:
-        return 1 - (1 - 1.0 / s) ** m
+        return 1 - (1 - 1 / s) ** m
     elif m > xmax * (s - 1):
         return 1
     else:
         return 1 - exp(log(combs(s - 1, m, xmax)) - log(combs(s, m, xmax)))
 
 
-def _uniqueify(x):
-    return sorted(set(x))
-
-
-def _set_mult_combs(s, m, xmax, val):
-    if s not in mult_combs:
-        mult_combs[s] = dict()
-    mult_combs[s][(xmax, m)] = val
-
-
-def find_combs(s, m, xmax):
+def _find_combs(s: int, m: int, xmax: int) -> int:
     cfgs = [[0] * s]
     # cfgs = [(1,) * min(m,s) + (0,) * max(0,s-m)]
     # i = m
@@ -139,7 +124,7 @@ def find_combs(s, m, xmax):
         new_cfgs = []
         # print cfgs
         for c in cfgs:
-            for j in range((m - sum(c) - 1) / (s - i) + 1, min(xmax, m - sum(c)) + 1):
+            for j in range((m - sum(c) - 1) // (s - i) + 1, min(xmax, m - sum(c)) + 1):
                 if i != 0 and j > c[i - 1]:
                     break
                 c1 = c[:]
@@ -152,16 +137,10 @@ def find_combs(s, m, xmax):
     # print "Time taken:", tm.time() - t, s, m
     cfgs = sorted(end_cfgs, reverse=True)
     tot = 0
-    old_max = 1e5
     for c in cfgs:
-        if max(c) > old_max:
-            # Store number for lower xmax.
-            _set_mult_combs(s, m, old_max, tot)
-        old_max = max(c)
         combs = fac(s) * fac(m)
-        for i in _uniqueify(c):
-            combs /= fac(c.count(i))
-            combs /= fac(i) ** c.count(i)
+        for i in sorted(set(c)):
+            combs //= fac(c.count(i))
+            combs //= fac(i) ** c.count(i)
         tot += combs
-    _set_mult_combs(s, m, xmax, tot)
     return tot

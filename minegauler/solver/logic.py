@@ -104,7 +104,7 @@ class _MatrixAndVec:
         return tuple(max_vals)
 
     def reduce_vec_with_vals(self, vals) -> np.ndarray:
-        return self.vec - np.matmul(self.matrix, vals)
+        return self.vec - np.matmul(self.matrix, np.array(vals, dtype=int))
 
     def _join_matrix_vec(self) -> np.ndarray:
         return np.c_[self.matrix, self.vec]
@@ -206,49 +206,55 @@ class Solver:
 
     def _find_probs(self) -> Grid:
         # Number of remaining unclicked cells (@@@ including outer group).
-        n = len(self._unclicked_cells)
+        # n = len(self._unclicked_cells)
         # Number of remaining mines.
-        k = self.mines  # - self.flags
+        # k = self.mines  # - self.flags
         # # Number of cells which are next to a revealed number.
         # S = self._full_matrix.shape[1]
+
         # Probabilities associated with each configuration in list of configs.
         cfg_probs = []
         for cfg in self._configs:
             # Total mines in cfg.
-            M = sum(cfg)
-            if M > k:  # too many mines
-                logger.warning("Too many mines in cfg:\n%s", cfg)
-                cfg_probs.append(0)
-                continue
+            # M = sum(cfg)
+            assert sum(cfg) == self.mines
+            # if M > k:  # too many mines
+            #     logger.warning("Too many mines in cfg:\n%s", cfg)
+            #     cfg_probs.append(0)
+            #     continue
             # Initialise the number of combinations.
-            combs = fac(k) / fac(k - M)
+            # combs = fac(k)  # // fac(k - M)
+            combs = 1
             # This is the product term in xi(cfg).
             for i, m_i in enumerate(cfg):
                 g_size = len(self._groups[i])
                 combs *= get_combs(g_size, m_i, self.per_cell)
-                combs /= fac(m_i)
-            cfg_probs.append(combs * get_combs(n, k - M, self.per_cell))
+                combs //= fac(m_i)
+            cfg_probs.append(combs)
+            # cfg_probs.append(combs * get_combs(n, k - M, self.per_cell))
 
         weight = math.log(sum(cfg_probs))
         for i, p in enumerate(cfg_probs):
             if p == 0:
                 continue
             cfg_probs[i] = math.exp(math.log(p) - weight)
+        assert sum(cfg_probs) == 1
 
         probs_grid = Grid(self.board.x_size, self.board.y_size)
         self._group_probs = []
-        for i, g in enumerate(self._groups):
-            g_size = len(g)
-            probs = [0] * (g_size * self.per_cell)
+        # Iterate over the groups, and then over the possible number of mines
+        # in the group.
+        for i, grp in enumerate(self._groups):
+            probs = [0] * (len(grp) * self.per_cell + 1)
             unsafe_prob = 0
-            for j in range(len(probs)):
+            for j in range(1, len(probs)):
                 p = sum(
                     [cfg_probs[k] for k, c in enumerate(self._configs) if c[i] == j]
                 )
                 if p == 0:
                     continue
                 probs[j] = p
-                unsafe_prob += p * get_unsafe_prob(g_size, j, self.per_cell)
+                unsafe_prob += p * get_unsafe_prob(len(grp), j, self.per_cell)
                 if not 0 <= unsafe_prob <= 1:
                     logger.error(
                         "Invalid configuration, got probability of %.2f", unsafe_prob
@@ -259,7 +265,7 @@ class Solver:
             # Probability of the group containing 0, 1, 2,... mines, where the
             # number corresponds to the index.
             self._group_probs.append(tuple(probs))
-            for coord in g:
+            for coord in grp:
                 # Avoid rounding errors.
                 probs_grid[coord] = round(unsafe_prob, 5)
 
