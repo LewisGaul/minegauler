@@ -73,14 +73,14 @@ _mult_combs = {
 
 @functools.lru_cache(1000)
 def combs(s: int, m: int, xmax: int = 1) -> int:
-    if xmax == 1:
-        return fac(s) // fac(s - m)
-    elif xmax >= m:
-        return s ** m
-    elif m > s * xmax:
+    if m > s * xmax:
         return 0
     elif s == 1:
         return 1
+    elif xmax == 1:
+        return fac(s) // fac(s - m)
+    elif xmax >= m:
+        return s ** m
     else:
         return _find_combs(s, m, xmax)
 
