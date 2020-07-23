@@ -4,11 +4,12 @@
 Solver logic.
 
 """
-
+import functools
 import itertools
 import logging
 import math
 import os
+import time
 from collections import defaultdict
 from math import factorial as fac
 from pprint import pprint
@@ -31,6 +32,17 @@ logger = logging.getLogger(__name__)
 # A configuration type, where each value in the tuple corresponds to the number
 # of mines in the corresponding group.
 _Config_T = Tuple[int, ...]
+
+
+def _time(func):
+    @functools.wraps(func)
+    def timing_wrapper(*args, **kwargs):
+        start = time.time()
+        ret = func(*args, **kwargs)
+        print(f"TIME {func.__name__:20s}: {time.time()-start:.2f}s")
+        return ret
+
+    return timing_wrapper
 
 
 class _MatrixAndVec:
@@ -75,6 +87,7 @@ class _MatrixAndVec:
                 inverse.append(len(cols) - 1)
         return self.__class__(np.array(cols).T, self.vec), tuple(inverse)
 
+    @_time
     def rref(self) -> Tuple["_MatrixAndVec", Tuple[int, ...], Tuple[int, ...]]:
         """Convert to Reduced-Row-Echelon Form."""
         sp_matrix, fixed_cols = sympy.Matrix(self._join_matrix_vec()).rref()
@@ -138,6 +151,7 @@ class Solver:
     def _iter_rectangular(max_values: _Config_T):
         yield from itertools.product(*[range(v + 1) for v in max_values])
 
+    @_time
     def _find_full_matrix(self) -> _MatrixAndVec:
         """
         Convert the board into a set of simultaneous equations, represented
@@ -154,12 +168,14 @@ class Solver:
         vec.append(self.mines)
         return _MatrixAndVec(matrix_arr, vec)
 
+    @_time
     def _find_groups(self, matrix_inverse) -> List[List[Coord_T]]:
         groups = defaultdict(list)
         for cell_ind, group_ind in enumerate(matrix_inverse):
             groups[group_ind].append(self._unclicked_cells[cell_ind])
         return list(groups.values())
 
+    @_time
     def _find_configs(self) -> Iterable[_Config_T]:
         rref_matrix, fixed_cols, free_cols = self._groups_matrix.rref()
         if _debug:
@@ -204,6 +220,7 @@ class Solver:
 
         return configs
 
+    @_time
     def _find_probs(self) -> Grid:
         # Probabilities associated with each configuration in list of configs.
         cfg_probs = []
@@ -250,22 +267,20 @@ class Solver:
                 probs[c[i]] += cfg_probs[j]
             for j, p in enumerate(probs):
                 unsafe_prob += p * get_unsafe_prob(len(grp), j, self.per_cell)
-                if not 0 <= unsafe_prob <= 1:
-                    logger.error(
-                        "Invalid configuration, got probability of %.2f", unsafe_prob
-                    )
-                    raise RuntimeError(
-                        "Encountered an error in probability calculation"
-                    )
+            unsafe_prob = round(unsafe_prob, 5)
+            if not 0 <= unsafe_prob <= 1:
+                logger.error("Invalid setup, got probability of %f", unsafe_prob)
+                raise RuntimeError("Encountered an error in probability calculation")
             # Probability of the group containing 0, 1, 2,... mines, where the
             # number corresponds to the index.
             self._group_probs.append(tuple(probs))
             for coord in grp:
                 # Avoid rounding errors.
-                probs_grid[coord] = round(unsafe_prob, 5)
+                probs_grid[coord] = unsafe_prob
 
         return probs_grid
 
+    @_time
     def calculate(self) -> Grid:
         """Perform the probability calculation."""
         self._full_matrix = self._find_full_matrix()

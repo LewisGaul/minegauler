@@ -410,20 +410,24 @@ class MinegaulerGUI(
         # - Auto flag (Ctrl+F)
         # - Auto click (Ctrl+Enter)
         def solve():
+            print(self._ctrlr.board)
             import time as tm
             from ..solver.logic import Solver
 
-            start = tm.time()
             s = Solver(self._ctrlr.board, self._ctrlr.get_game_info().mines)
+            start = tm.time()
             try:
-                configs = s._find_configs()
-                end = tm.time()
-            except Exception as e:
-                print(self._ctrlr.board)
+                probs = s.calculate()
+            except Exception:
                 raise
             else:
-                print("\n".join(map(str, configs)))
-                print("Found {} configs in {:.2f}s".format(len(configs), end - start))
+                end = tm.time()
+                print(
+                    "Found {} configs, calculation completed in {:.2f}s".format(
+                        len(s._configs), end - start
+                    )
+                )
+                print(probs)
 
         solver_act = self._game_menu.addAction("Solver", solve)
         solver_act.setShortcut("F5")
