@@ -414,7 +414,8 @@ class MinegaulerGUI(
             import time as tm
             from ..solver.logic import Solver
 
-            s = Solver(self._ctrlr.board, self._ctrlr.get_game_info().mines)
+            game_info = self._ctrlr.get_game_info()
+            s = Solver(self._ctrlr.board, game_info.mines, game_info.per_cell)
             start = tm.time()
             try:
                 probs = s.calculate()

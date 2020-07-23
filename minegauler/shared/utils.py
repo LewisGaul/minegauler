@@ -49,7 +49,7 @@ __all__ = (
 import json
 import logging
 import time
-from typing import Any, Dict, Iterable, List
+from typing import Any, Collection, Dict, List
 
 import attr
 
@@ -203,7 +203,7 @@ class Grid(list):
             for i in range(len(row)):
                 row[i] = item
 
-    def get_nbrs(self, coord: Coord_T, *, include_origin=False) -> Iterable[Coord_T]:
+    def get_nbrs(self, coord: Coord_T, *, include_origin=False) -> Collection[Coord_T]:
         """
         Get a list of the coordinates of neighbouring cells.
 

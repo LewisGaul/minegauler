@@ -4,6 +4,7 @@
 Solver logic.
 
 """
+
 import functools
 import itertools
 import logging
@@ -13,7 +14,7 @@ import time
 from collections import defaultdict
 from math import factorial as fac
 from pprint import pprint
-from typing import Iterable, List, Tuple, Union
+from typing import Collection, Iterable, List, Tuple, Union
 
 import numpy as np
 import scipy.optimize
@@ -148,7 +149,7 @@ class Solver:
         self._configs = None
 
     @staticmethod
-    def _iter_rectangular(max_values: _Config_T):
+    def _iter_rectangular(max_values: _Config_T) -> Iterable[Coord_T]:
         yield from itertools.product(*[range(v + 1) for v in max_values])
 
     @_time
@@ -161,8 +162,8 @@ class Solver:
         vec = []
         for num_coord in self._number_cells:
             num_nbrs = self.board.get_nbrs(num_coord)
-            if any([c in self._unclicked_cells for c in num_nbrs]):
-                matrix_arr.append([num_nbrs.count(c) for c in self._unclicked_cells])
+            if any(c in self._unclicked_cells for c in num_nbrs):
+                matrix_arr.append([int(c in num_nbrs) for c in self._unclicked_cells])
                 vec.append(self.board[num_coord].num)
         matrix_arr.append([1] * len(self._unclicked_cells))
         vec.append(self.mines)
@@ -176,7 +177,7 @@ class Solver:
         return list(groups.values())
 
     @_time
-    def _find_configs(self) -> Iterable[_Config_T]:
+    def _find_configs(self) -> Collection[_Config_T]:
         rref_matrix, fixed_cols, free_cols = self._groups_matrix.rref()
         if _debug:
             print("RREF:")
