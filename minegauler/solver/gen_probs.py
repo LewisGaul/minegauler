@@ -5,7 +5,7 @@ Generate probabilities.
 
 """
 
-__all__ = ("combs", "prob")
+__all__ = ("combs", "log_combs", "prob")
 
 import functools
 from math import exp
@@ -85,13 +85,26 @@ def combs(s: int, m: int, xmax: int = 1) -> int:
         return _find_combs(s, m, xmax)
 
 
+@functools.lru_cache(1000)
+def log_combs(s: int, m: int, xmax: int = 1) -> float:
+    if m > s * xmax:
+        raise ValueError("Too many mines")
+    elif s == 1:
+        return 0
+    elif xmax == 1:
+        return sum(log(x) for x in range(s, s - m, -1))
+    elif xmax >= m:
+        return m * log(s)
+    else:
+        return log(_find_combs(s, m, xmax))
+
+
 def prob(s: int, m: int, xmax: int = 1) -> float:
     """
     Calculate the probability a cell contains a mine in a group of size s
     containing m mines and with max per cell of xmax.
     """
     if m > s * xmax:
-        # raise ValueError("Too many mines for group size.")
         return 0
     if xmax == 1:
         return m / s
@@ -100,7 +113,7 @@ def prob(s: int, m: int, xmax: int = 1) -> float:
     elif m > xmax * (s - 1):
         return 1
     else:
-        return 1 - exp(log(combs(s - 1, m, xmax)) - log(combs(s, m, xmax)))
+        return 1 - exp(log_combs(s - 1, m, xmax) - log_combs(s, m, xmax))
 
 
 def _find_combs(s: int, m: int, xmax: int) -> int:

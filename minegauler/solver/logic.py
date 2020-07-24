@@ -23,7 +23,7 @@ import sympy
 from ..core.board import Board
 from ..shared.types import CellContents, Coord_T
 from ..shared.utils import Grid
-from .gen_probs import combs as get_combs
+from .gen_probs import log_combs as get_log_combs
 from .gen_probs import prob as get_unsafe_prob
 
 
@@ -44,6 +44,36 @@ def _time(func):
         return ret
 
     return timing_wrapper
+
+
+def _get_log_combs_approx(s: int, m: int, xmax: int) -> float:
+    # If the max number of mines per cell is more than 1, the calculation is
+    # slow as the size of the group gets large. In reality, with densities
+    # generally lower than 50%, approximating with xmax=inf is reasonable, and
+    # much quicker.
+    if xmax > 1 and s > 8:
+        if m / s > 0.3:
+            logger.warning(
+                "Approximating combs with xmax=inf for s=%d, m=%d, xmax=%d", s, m, xmax
+            )
+        return get_log_combs(s, m, xmax=m + 1)
+    else:
+        return get_log_combs(s, m, xmax)
+
+
+def _get_unsafe_prob_approx(s: int, m: int, xmax: int) -> float:
+    # If the max number of mines per cell is more than 1, the calculation is
+    # slow as the size of the group gets large. In reality, with densities
+    # generally lower than 50%, approximating with xmax=inf is reasonable, and
+    # much quicker.
+    if xmax > 1 and s > 8:
+        if m / s > 0.3:
+            logger.warning(
+                "Approximating probs with xmax=inf for s=%d, m=%d, xmax=%d", s, m, xmax
+            )
+        return get_unsafe_prob(s, m, xmax=m + 1)
+    else:
+        return get_unsafe_prob(s, m, xmax)
 
 
 class _MatrixAndVec:
@@ -228,18 +258,19 @@ class Solver:
         invalid_cfgs = []
         for cfg in self._configs:
             assert sum(cfg) == self.mines
-            combs = 1
-            # This is the product term in xi(cfg).
-            for i, m_i in enumerate(cfg):
-                g_size = len(self._groups[i])
-                combs *= get_combs(g_size, m_i, self.per_cell)
-                combs //= fac(m_i)
-            if combs == 0:
+            try:
+                log_combs = 0
+                # This is the product term in xi(cfg).
+                for i, m_i in enumerate(cfg):
+                    g_size = len(self._groups[i])
+                    log_combs += get_log_combs(g_size, m_i, self.per_cell)
+                    log_combs -= math.log(fac(m_i))
+            except ValueError:
                 # @@@ Deal with these better/earlier.
                 logger.warning("Invalid configuration (1): %s", cfg)
                 invalid_cfgs.append(cfg)
                 continue
-            cfg_probs.append(combs)
+            cfg_probs.append(math.exp(log_combs))
 
         for cfg in invalid_cfgs:
             self._configs.remove(cfg)
@@ -247,11 +278,11 @@ class Solver:
         if sum(cfg_probs) == 0:
             raise RuntimeError("No valid configurations found")
 
-        weight = math.log(sum(cfg_probs))
+        weight = sum(cfg_probs)
         for i, p in enumerate(cfg_probs):
             if p == 0:
                 continue
-            cfg_probs[i] = math.exp(math.log(p) - weight)
+            cfg_probs[i] = p / weight
         assert round(sum(cfg_probs), 5) == 1
 
         probs_grid = Grid(self.board.x_size, self.board.y_size)
@@ -267,6 +298,8 @@ class Solver:
                     continue
                 probs[c[i]] += cfg_probs[j]
             for j, p in enumerate(probs):
+                if p == 0:
+                    continue
                 unsafe_prob += p * get_unsafe_prob(len(grp), j, self.per_cell)
             unsafe_prob = round(unsafe_prob, 5)
             if not 0 <= unsafe_prob <= 1:
