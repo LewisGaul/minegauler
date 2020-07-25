@@ -288,10 +288,10 @@ cases = [
             (0, 2, 1, 1, 0, 0, 0, 4),
         },
         probs=[
-            [0.24726, 0      , 0.24726, 0.28282, 0.28282],
+            [0.24726, 0,       0.24726, 0.28282, 0.28282],
             [0.44566, 0.44566, 0.44566, 0.28282, 0.28282],
-            [0.25164, 0      , 0.44201, 0.46915, 0.46915],
-            [0.25164, 0      , 0.44201, 0      , 0.46915],
+            [0.25164, 0,       0.44201, 0.46915, 0.46915],
+            [0.25164, 0,       0.44201, 0,       0.46915],
             [0.13457, 0.13457, 0.23632, 0.46915, 0.46915],
         ],
     ),
@@ -317,10 +317,10 @@ cases = [
             (0, 2, 1, 1, 0, 0, 0, 4),
         },
         probs=[
-            [0.24632, 0      , 0.24632, 0.27807, 0.27807],
+            [0.24632, 0,       0.24632, 0.27807, 0.27807],
             [0.44608, 0.44608, 0.44608, 0.27807, 0.27807],
-            [0.25825, 0      , 0.43509, 0.46175, 0.46175],
-            [0.25825, 0      , 0.43509, 0      , 0.46175],
+            [0.25825, 0,       0.43509, 0.46175, 0.46175],
+            [0.25825, 0,       0.43509, 0,       0.46175],
             [0.13789, 0.13789, 0.23158, 0.46175, 0.46175],
         ],
     ),
@@ -384,7 +384,7 @@ def assert_np_rows_equal(array1: np.ndarray, array2: np.ndarray):
 @pytest.mark.parametrize("case", cases)
 def test_full_flow(case: Case):
     print()
-    logger.debug(
+    logger.info(
         "Using board with mines=%d, per_cell=%d:\n%s",
         case.mines,
         case.per_cell,
@@ -403,9 +403,7 @@ def test_full_flow(case: Case):
     if any(x is not None for x in (case.groups, case.groups_matrix, case.configs)):
         if s._full_matrix is None:
             s._full_matrix = s._find_full_matrix()
-        s._groups_matrix, inversion = s._full_matrix.unique_cols()
-        s._groups = s._find_groups(inversion)
-        assert np.all(s._groups_matrix.matrix[:, inversion] == s._full_matrix.matrix)
+        s._groups = s._find_groups()
 
     # Groups
     if case.groups is not None:

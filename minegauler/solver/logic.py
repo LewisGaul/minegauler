@@ -14,7 +14,7 @@ import time
 from collections import defaultdict
 from math import factorial as fac
 from pprint import pprint
-from typing import Collection, Iterable, List, Tuple, Union
+from typing import Iterable, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import scipy.optimize
@@ -33,6 +33,9 @@ logger = logging.getLogger(__name__)
 # A configuration type, where each value in the tuple corresponds to the number
 # of mines in the corresponding group.
 _Config_T = Tuple[int, ...]
+
+# A group type - a list of cell coordinates forming the group.
+_Group_T = List[Coord_T]
 
 
 def _time(func):
@@ -137,6 +140,7 @@ class _MatrixAndVec:
         joined = self._join_matrix_vec()
         return self._from_joined_matrix_vec(joined[func(joined), :])
 
+    @_time
     def max_from_ineq(self) -> Tuple[int, ...]:
         max_vals = []
         for i in range(self.cols):
@@ -173,10 +177,14 @@ class Solver:
             c for c in board.all_coords if type(board[c]) is CellContents.Num
         ]
 
-        self._full_matrix = None
-        self._groups_matrix = None
-        self._groups = None
-        self._configs = None
+        # The full matrix, where each column corresponds to a cell and each row
+        # correspongs to a displayed number.
+        self._full_matrix: Optional[_MatrixAndVec] = None
+        # The groups matrix, where each column corresponds to a group of cells
+        # and each row correspongs to a displayed number.
+        self._groups_matrix: Optional[_MatrixAndVec] = None
+        self._groups: Optional[List[_Group_T]] = None
+        self._configs: Optional[Set[_Config_T]] = None
 
     @staticmethod
     def _iter_rectangular(max_values: _Config_T) -> Iterable[Coord_T]:
@@ -200,14 +208,36 @@ class Solver:
         return _MatrixAndVec(matrix_arr, vec)
 
     @_time
-    def _find_groups(self, matrix_inverse) -> List[List[Coord_T]]:
+    def _find_groups(self) -> List[_Group_T]:
+        self._groups_matrix, matrix_inverse = self._full_matrix.unique_cols()
+        if _debug:
+            # This is how to get back to the original matrix:
+            assert np.all(
+                self._groups_matrix.matrix[:, matrix_inverse]
+                == self._full_matrix.matrix
+            )
+            print("Groups matrix:")
+            print(self._groups_matrix)
+            print()
+
         groups = defaultdict(list)
         for cell_ind, group_ind in enumerate(matrix_inverse):
             groups[group_ind].append(self._unclicked_cells[cell_ind])
         return list(groups.values())
 
+    @functools.lru_cache()
+    def _get_group_max(self, i: int) -> int:
+        return len(self._groups[i]) * self.per_cell
+
+    def _is_cfg_valid(self, cfg: _Config_T) -> bool:
+        if any(x < 0 for x in cfg):
+            return False
+        if any(x > self._get_group_max(i) for i, x in enumerate(cfg)):
+            return False
+        return True
+
     @_time
-    def _find_configs(self) -> Collection[_Config_T]:
+    def _find_configs(self) -> Set[_Config_T]:
         rref_matrix, fixed_cols, free_cols = self._groups_matrix.rref()
         if _debug:
             print("RREF:")
@@ -230,20 +260,16 @@ class Solver:
             print()
 
         configs = set()
-        cfg = [0 for _ in range(rref_matrix.cols)]
+        cfg_maker = [0 for _ in range(rref_matrix.cols)]
         for free_var_vals in self._iter_rectangular(free_vars_max):
             fixed_var_vals = free_matrix.reduce_vec_with_vals(free_var_vals)
-            if not (fixed_var_vals >= 0).all():
-                continue
-            assert len(free_cols) == len(free_var_vals)
-            assert len(fixed_cols) == len(fixed_var_vals)
-            assert len(free_cols) + len(fixed_var_vals) == rref_matrix.cols
-            assert not set(free_cols) & set(fixed_cols)
             for i, c in enumerate(free_cols):
-                cfg[c] = free_var_vals[i]
+                cfg_maker[c] = free_var_vals[i]
             for i, c in enumerate(fixed_cols):
-                cfg[c] = fixed_var_vals[i]
-            configs.add(tuple(cfg))
+                cfg_maker[c] = fixed_var_vals[i]
+            cfg = tuple(cfg_maker)
+            if self._is_cfg_valid(cfg):
+                configs.add(cfg)
         if _debug:
             print(f"Configurations ({len(configs)}):")
             print("\n".join(map(str, configs)))
@@ -255,26 +281,16 @@ class Solver:
     def _find_probs(self) -> Grid:
         # Probabilities associated with each configuration in list of configs.
         cfg_probs = []
-        invalid_cfgs = []
         for cfg in self._configs:
             assert sum(cfg) == self.mines
-            try:
-                log_combs = 0
-                # This is the product term in xi(cfg).
-                for i, m_i in enumerate(cfg):
-                    g_size = len(self._groups[i])
-                    # @@@ Should we be worried about float accuracy?
-                    log_combs += get_log_combs(g_size, m_i, self.per_cell)
-                    log_combs -= math.log(fac(m_i))
-            except ValueError:
-                # @@@ Deal with these better/earlier.
-                logger.warning("Invalid configuration (1): %s", cfg)
-                invalid_cfgs.append(cfg)
-                continue
+            log_combs = 0
+            # This is the product term in xi(cfg).
+            for i, m_i in enumerate(cfg):
+                g_size = len(self._groups[i])
+                # @@@ Should we be worried about float accuracy?
+                log_combs += get_log_combs(g_size, m_i, self.per_cell)
+                log_combs -= math.log(fac(m_i))
             cfg_probs.append(math.exp(log_combs))
-
-        for cfg in invalid_cfgs:
-            self._configs.remove(cfg)
 
         if sum(cfg_probs) == 0:
             raise RuntimeError("No valid configurations found")
@@ -295,7 +311,7 @@ class Solver:
             unsafe_prob = 0
             for j, c in enumerate(self._configs):
                 if c[i] >= len(probs):
-                    logger.warning("Invalid configuration (2): %s", c)
+                    logger.error("Invalid configuration (2): %s", c)
                     continue
                 probs[c[i]] += cfg_probs[j]
             for j, p in enumerate(probs):
@@ -324,18 +340,7 @@ class Solver:
         #     print(full_matrix)
         #     print()
 
-        self._groups_matrix, matrix_inverse = self._full_matrix.unique_cols()
-        if _debug:
-            # This is how to get back to the original matrix:
-            assert np.all(
-                self._groups_matrix.matrix[:, matrix_inverse]
-                == self._full_matrix.matrix
-            )
-            print("Groups matrix:")
-            print(self._groups_matrix)
-            print()
-
-        self._groups = self._find_groups(matrix_inverse)
+        self._groups = self._find_groups()
         if _debug:
             print(f"Groups ({len(self._groups)}):")
             pprint(
@@ -344,5 +349,9 @@ class Solver:
             print()
 
         self._configs = self._find_configs()
+        if _debug:
+            print(f"Configs ({len(self._configs)}):")
+            pprint([(i, c) for i, c in enumerate(self._configs)])
+            print()
 
         return self._find_probs()
