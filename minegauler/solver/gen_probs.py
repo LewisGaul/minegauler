@@ -92,7 +92,7 @@ def log_combs(s: int, m: int, xmax: int = 1) -> float:
     elif s == 1:
         return 0
     elif xmax == 1:
-        return sum(log(x) for x in range(s, s - m, -1))
+        return log(fac(s) // fac(s - m))
     elif xmax >= m:
         return m * log(s)
     else:

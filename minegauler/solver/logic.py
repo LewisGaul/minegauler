@@ -263,6 +263,7 @@ class Solver:
                 # This is the product term in xi(cfg).
                 for i, m_i in enumerate(cfg):
                     g_size = len(self._groups[i])
+                    # @@@ Should we be worried about float accuracy?
                     log_combs += get_log_combs(g_size, m_i, self.per_cell)
                     log_combs -= math.log(fac(m_i))
             except ValueError:
