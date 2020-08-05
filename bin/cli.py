@@ -1,8 +1,9 @@
 import pathlib
 import sys
+from typing import List
 
 
-def run():
+def run(argv: List[str]):
     sys.path.append(str(pathlib.Path(__file__).parent.parent))
     from server.bot import msgparse, utils
 
@@ -13,7 +14,8 @@ def run():
         "stan": "stan",
         "kkw": "KKW",
     }
-    msgparse.main(sys.argv[1:])
+    msgparse.main(argv)
 
 
-run()
+if __name__ == "__main__":
+    run(sys.argv[1:])

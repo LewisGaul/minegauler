@@ -1,0 +1,53 @@
+help: |
+  The all-in-one Minegauler CLI!
+  Run the app by passing no arguments!
+command: "run"
+
+subtree:
+  - keyword: venv
+    help: "Virtual environment commands"
+    command: "make-venv"
+
+  - keyword: dev
+    help: "Developer commands"
+    subtree:
+      - keyword: tests
+        help: "Run tests - arguments passed through to pytest"
+        command: "run-tests"
+
+      - keyword: bumpversion
+        help: "Bump version"
+        command: "bump-version"
+        args:
+          - name: part
+            help: "The part to bump, one of 'major', 'minor', 'patch', 'build'"
+            positional: true
+            enum:
+              - major
+              - minor
+              - patch
+              - build
+
+      - keyword: server
+        help: "Server commands"
+        subtree:
+          - keyword: start
+            help: "Start the server"
+            command: "start-server"
+            args:
+              - name: port
+                help: "The port to run on"
+                default: 80
+                type: integer
+              - name: host
+                help: "The bind address"
+                default: "0.0.0.0"
+
+  - keyword: bot
+    help: "Bot CLI"
+    command: "bot"
+    args:
+      - name: command
+        help: "Bot command"
+        positional: true
+        type: text
