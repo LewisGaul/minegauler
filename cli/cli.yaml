@@ -9,12 +9,21 @@ subtree:
     help: "Virtual environment commands"
     command: "make-venv"
 
+  - keyword: tests
+    help: "Run tests"
+    command: "run-tests"
+    args:
+      - name: pytest-help
+        help: "Print help from pytest"
+        type: flag
+      - name: args
+        help: "Args to pass through to pytest (separate args with '--' if needed)"
+        positional: true
+        type: text
+
   - keyword: dev
     help: "Developer commands"
     subtree:
-      - keyword: tests
-        help: "Run tests - arguments passed through to pytest"
-        command: "run-tests"
 
       - keyword: bumpversion
         help: "Bump version"

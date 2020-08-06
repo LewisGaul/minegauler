@@ -27,16 +27,29 @@ def run_app(args):
     subprocess.run(["python", "-m", "minegauler"])
 
 
+def run_tests(args):
+    # TODO: Use the venv python.
+    # The double dash can be used to pass args through to pytest.
+    try:
+        args.remaining_args.remove("--")
+    except ValueError:
+        pass
+    if args.pytest_help:
+        subprocess.run(["python", "-m", "pytest", "-h"])
+    else:
+        subprocess.run(["python", "-m", "pytest"] + args.remaining_args)
+
+
 def run_bot_cli(args):
     from bin.cli import run
 
-    return run(args.remaining_argv)
+    return run(args.remaining_args)
 
 
 _COMMANDS: Dict[str, Callable[[Any], int]] = {
     "run": run_app,
     "make-venv": lambda args: print("Not implemented"),
-    "run-tests": lambda args: print("Not implemented"),
+    "run-tests": run_tests,
     "bump-version": lambda args: print("Not implemented"),
     "bot": run_bot_cli,
 }

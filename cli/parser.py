@@ -85,7 +85,14 @@ class Arg(_CommonFieldsMixin):
 
     @type.setter
     def type(self, value: str):
-        accepted_types = {"integer": int, "string": str, "float": float, "text": list}
+        # TODO: 'type' should be an enum rather than a Python type.
+        accepted_types = {
+            "integer": int,
+            "string": str,
+            "float": float,
+            "flag": bool,
+            "text": list,
+        }
         if value in accepted_types:
             value = accepted_types[value]
         else:
@@ -249,10 +256,15 @@ class CLIParser:
         # Add arguments for end-of-command.
         for arg in node.args:
             name = arg.name if arg.positional else "--" + arg.name
-            nargs = argparse.REMAINDER if arg.type is list else 1
-            parser.add_argument(name, help=arg.help, nargs=nargs)
+            kwargs = dict()
+            kwargs["help"] = arg.help
+            if arg.type is bool:
+                kwargs["action"] = "store_true"
+            elif arg.type is list:
+                kwargs["nargs"] = argparse.REMAINDER
+            parser.add_argument(name, **kwargs)
 
         args_ns = parser.parse_args(remaining_args, namespace)
         args_ns.command = node.command
-        args_ns.remaining_argv = remaining_args
+        args_ns.remaining_args = remaining_args
         return args_ns
