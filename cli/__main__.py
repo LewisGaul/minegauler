@@ -5,6 +5,7 @@ CLI entry-point.
 
 """
 
+import logging
 import pathlib
 import subprocess
 import sys
@@ -17,6 +18,8 @@ from .parser import CLIParser
 
 
 _THIS_DIR = pathlib.Path(__file__).absolute().parent
+
+logger = logging.getLogger(__name__)
 
 
 def run_app(args):
@@ -47,7 +50,7 @@ def main(argv):
     # Parse argv.
     prog = "run.bat" if sys.platform.startswith("win") else "run.sh"
     args = CLIParser(schema, prog=prog).parse_args(argv)
-    print("Got args:", args)
+    logger.debug("Got args:", args)
 
     # Run the command!
     return _COMMANDS[args.command](args)
