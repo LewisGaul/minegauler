@@ -220,7 +220,7 @@ class CLIParser:
                 break
 
         if show_help:
-            remaining_args.append("--help")
+            remaining_args.insert(0, "--help")
 
         # Construct an arg parser for the node we reached.
         parser = argparse.ArgumentParser(
@@ -235,7 +235,7 @@ class CLIParser:
         # Add arguments for end-of-command.
         for arg in node.args:
             name = arg.name if arg.positional else "--" + arg.name
-            nargs = "+" if arg.type is list else 1
+            nargs = argparse.REMAINDER if arg.type is list else 1
             parser.add_argument(name, help=arg.help, nargs=nargs)
 
         args_ns = parser.parse_args(remaining_args, namespace)

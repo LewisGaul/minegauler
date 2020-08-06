@@ -50,4 +50,4 @@ subtree:
       - name: command
         help: "Bot command"
         positional: true
-        type: text
+        type: text  # Must be the last arg
