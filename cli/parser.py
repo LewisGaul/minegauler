@@ -187,12 +187,13 @@ class SubNode(_NodeBase):
 class CLIParser:
     """Argument parser based off a structured definition."""
 
-    def __init__(self, schema: Dict[str, typing.Any]):
+    def __init__(self, schema: Dict[str, typing.Any], *, prog: Optional[str] = None):
         """
         :param schema:
             The schema for the arg parsing.
         """
         self._schema = RootNode(schema)
+        self._prog = prog
 
     def parse_args(
         self, args: Optional[List[str]] = None, namespace=None
@@ -223,8 +224,12 @@ class CLIParser:
             remaining_args.insert(0, "--help")
 
         # Construct an arg parser for the node we reached.
+        if self._prog:
+            prog_args = [self._prog] + consumed_args
+        else:
+            prog_args = consumed_args
         parser = argparse.ArgumentParser(
-            prog=" ".join(["run.sh"] + consumed_args), description=node.help
+            prog=" ".join(prog_args), description=node.help
         )
         # Use subparsers to represent the subnodes in displayed help.
         if node.subtree and show_help:

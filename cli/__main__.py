@@ -13,14 +13,15 @@ from typing import Any, Callable, Dict
 # Any 3rd-party dependencies must be kept in bootstrap/.
 import yaml
 
-from cli.parser import CLIParser
+from .parser import CLIParser
 
 
 _THIS_DIR = pathlib.Path(__file__).absolute().parent
 
 
 def run_app(args):
-    subprocess.run(["python3", "-m", "minegauler"])
+    # TODO: Use the venv python.
+    subprocess.run(["python", "-m", "minegauler"])
 
 
 def run_bot_cli(args):
@@ -44,7 +45,8 @@ def main(argv):
         schema = yaml.safe_load(f)
 
     # Parse argv.
-    args = CLIParser(schema).parse_args(argv)
+    prog = "run.bat" if sys.platform.startswith("win") else "run.sh"
+    args = CLIParser(schema, prog=prog).parse_args(argv)
     print("Got args:", args)
 
     # Run the command!
