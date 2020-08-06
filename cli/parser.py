@@ -1,7 +1,14 @@
+# August 2020, Lewis Gaul
+
+"""
+CLI parsing.
+
+"""
+
 import argparse as argparse
 import sys
 import typing
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional
 
 
 # ------------------------------------------------------------------------------
