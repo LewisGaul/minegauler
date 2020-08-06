@@ -1,7 +1,8 @@
-"""
-formatter.py - Format bot messages
+# February 2020, Lewis Gaul
 
-February 2020, Lewis Gaul
+"""
+Format bot messages.
+
 """
 
 __all__ = (

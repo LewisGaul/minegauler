@@ -1,7 +1,8 @@
-"""
-routes.py - Definition of bot HTTP routes
+# February 2020, Lewis Gaul
 
-February 2020, Lewis Gaul
+"""
+Definition of bot HTTP routes.
+
 """
 
 __all__ = ("activate_bot_msg_handling", "new_highscore_hook")
@@ -15,7 +16,6 @@ from flask import request
 
 from minegauler.shared import highscores as hs
 
-from ..utils import is_highscore_new_best
 from . import msgparse, utils
 
 
@@ -103,7 +103,7 @@ def new_highscore_hook(highscore: hs.HighscoreStruct) -> None:
 
     if (
         highscore.name in utils.USER_NAMES.values()
-        and is_highscore_new_best(highscore) == "time"
+        and utils.is_highscore_new_best(highscore) == "time"
     ):
         try:
             utils.send_new_best_message(highscore)

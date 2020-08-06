@@ -1,7 +1,8 @@
-"""
-__init__.py - Bot package
+# February 2020, Lewis Gaul
 
-February 2020, Lewis Gaul
+"""
+Bot package.
+
 """
 
 __all__ = ("init_route_handling",)
@@ -13,7 +14,8 @@ import sys
 
 import flask
 
-from .. import add_new_highscore_hook
+from server import add_new_highscore_hook
+
 from . import routes, utils
 
 

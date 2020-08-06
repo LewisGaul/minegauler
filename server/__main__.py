@@ -1,7 +1,8 @@
-"""
-__main__.py - Server entry-point
+# January 2020, Lewis Gaul
 
-January 2020, Lewis Gaul
+"""
+Server entry-point.
+
 """
 
 import argparse
@@ -12,9 +13,9 @@ import sys
 import attr
 from flask import Flask, abort, jsonify, redirect, request
 
+import bot
 from minegauler.shared import highscores as hs
 from minegauler.shared.types import Difficulty
-from server import bot
 from server.utils import is_highscore_new_best
 
 from . import get_new_highscore_hooks
@@ -173,4 +174,5 @@ def main(argv):
         serve(app, port=args.port if args.port else 80)
 
 
-main(sys.argv[1:])
+if __name__ == "__main__":
+    main(sys.argv[1:])

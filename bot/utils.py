@@ -1,7 +1,8 @@
-"""
-utils.py - Bot utilities
+# February 2020, Lewis Gaul
 
-February 2020, Lewis Gaul
+"""
+Bot utilities.
+
 """
 
 __all__ = (
@@ -15,6 +16,7 @@ __all__ = (
     "get_message",
     "get_highscore_times",
     "get_player_info",
+    "is_highscore_new_best",
     "send_group_message",
     "send_message",
     "send_new_best_message",
@@ -50,6 +52,8 @@ _BOT_EMAIL = f"{BOT_NAME}@webex.bot"
 _WEBEX_GROUP_ROOM_ID = (
     "Y2lzY29zcGFyazovL3VzL1JPT00vNzYyNjI4NTAtMzg3Ni0xMWVhLTlhM2ItODMyNzMyZDlkZTg3"
 )
+
+_API_BASEURL = "http://minegauler.lewisgaul.co.uk/api/v1/highscores"
 
 
 # ------------------------------------------------------------------------------
@@ -204,6 +208,11 @@ def get_player_info(username: str) -> PlayerInfo:
     return PlayerInfo(username, name, combined_time, hs_types, last_highscore)
 
 
+def is_highscore_new_best(h: hs.HighscoreStruct) -> Optional[str]:
+    all_highscores = _get_highscores(settings=h, name=h.name)
+    return hs.is_highscore_new_best(h, all_highscores)
+
+
 # ------------------------------------------------------------------------------
 # Internal
 # ------------------------------------------------------------------------------
@@ -213,8 +222,40 @@ def _strbool(b: bool) -> str:
     return "True" if b else "False"
 
 
-def _get_highscores(*args, **kwargs) -> Iterable[hs.HighscoreStruct]:
-    return hs.get_highscores(hs.HighscoresDatabases.REMOTE, *args, **kwargs)
+def _get_highscores(
+    *,
+    settings: Optional[hs.HighscoreSettingsStruct] = None,
+    difficulty: Optional[Difficulty] = None,
+    per_cell: Optional[int] = None,
+    drag_select: Optional[bool] = None,
+    name: Optional[str] = None,
+) -> Iterable[hs.HighscoreStruct]:
+    """
+    Get highscores using the REST API.
+
+    :param settings:
+        Highscore filter to apply.
+    :raises Exception:
+        If the HTTP request fails or returns bad data.
+    :return:
+        Matching highscores.
+    """
+    if settings is not None:
+        difficulty = settings.difficulty
+        per_cell = settings.per_cell
+        drag_select = settings.drag_select
+    args = []
+    if difficulty:
+        args.append(f"difficulty={difficulty.name[0]}")
+    if per_cell:
+        args.append(f"per_cell={per_cell}")
+    if drag_select:
+        args.append(f"drag_select={int(drag_select)}")
+    if name:
+        args.append(f"name={name}")
+    url = _API_BASEURL + "?" + "&".join(args)
+    response = requests.get(url)
+    return [hs.HighscoreStruct.from_dict(h) for h in response.json()]
 
 
 def _get_combined_highscore(

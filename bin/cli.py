@@ -5,7 +5,8 @@ from typing import List
 
 def run(argv: List[str]):
     sys.path.append(str(pathlib.Path(__file__).parent.parent))
-    from server.bot import msgparse, utils
+    from bot import msgparse
+    from bot import utils
 
     utils.USER_NAMES = {
         "legaul": "Siwel G",

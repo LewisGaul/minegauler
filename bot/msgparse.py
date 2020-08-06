@@ -1,7 +1,8 @@
-"""
-msgparse.py - Parse bot messages
+# February 2020, Lewis Gaul
 
-February 2020, Lewis Gaul
+"""
+Parse bot messages.
+
 """
 
 __all__ = ("GENERAL_INFO", "RoomType", "parse_msg")
@@ -496,7 +497,7 @@ def ranks(args, **kwargs) -> str:
 
 
 @helpstring("Get stats for played games")
-@schema(
+@schema(  # @@@ This is bad because it requires knowledge of sub-commands.
     "stats [players ...] [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
