@@ -11,6 +11,7 @@ __all__ = (
     "USER_NAMES",
     "Matchup",
     "PlayerInfo",
+    "get_highscores",
     "get_matchups",
     "get_message",
     "get_highscore_times",
@@ -119,7 +120,7 @@ def read_users_file():
         with open(_USER_NAMES_FILE) as f:
             USER_NAMES = json.load(f)
     except FileNotFoundError:
-        logger.warning("%s file not found", _USER_NAMES_FILE)
+        logger.info("%s file not found", _USER_NAMES_FILE)
 
 
 def save_users_file():
@@ -161,7 +162,7 @@ def get_highscore_times(
 
     if difficulty:
         highscores = hs.filter_and_sort(
-            _get_highscores(
+            get_highscores(
                 difficulty=difficulty, drag_select=drag_select, per_cell=per_cell,
             )
         )
@@ -211,7 +212,7 @@ PlayerInfo = collections.namedtuple(
 
 def get_player_info(username: str) -> PlayerInfo:
     name = USER_NAMES[username]
-    highscores = _get_highscores(name=name)
+    highscores = get_highscores(name=name)
     combined_time = _get_combined_highscore(name)
     last_highscore = max(h.timestamp for h in highscores) if highscores else None
     hs_types = len(
@@ -221,20 +222,11 @@ def get_player_info(username: str) -> PlayerInfo:
 
 
 def is_highscore_new_best(h: hs.HighscoreStruct) -> Optional[str]:
-    all_highscores = _get_highscores(settings=h, name=h.name)
+    all_highscores = get_highscores(settings=h, name=h.name)
     return hs.is_highscore_new_best(h, all_highscores)
 
 
-# ------------------------------------------------------------------------------
-# Internal
-# ------------------------------------------------------------------------------
-
-
-def _strbool(b: bool) -> str:
-    return "True" if b else "False"
-
-
-def _get_highscores(
+def get_highscores(
     *,
     settings: Optional[hs.HighscoreSettingsStruct] = None,
     difficulty: Optional[Difficulty] = None,
@@ -270,12 +262,21 @@ def _get_highscores(
     return [hs.HighscoreStruct.from_dict(h) for h in response.json()]
 
 
+# ------------------------------------------------------------------------------
+# Internal
+# ------------------------------------------------------------------------------
+
+
+def _strbool(b: bool) -> str:
+    return "True" if b else "False"
+
+
 def _get_combined_highscore(
     name: str, *, per_cell: Optional[int] = None, drag_select: Optional[bool] = None
 ) -> float:
     total = 0
     for diff in ["b", "i", "e"]:
-        all_highscores = _get_highscores(
+        all_highscores = get_highscores(
             name=name, drag_select=drag_select, per_cell=per_cell,
         )
         highscores = [h.elapsed for h in all_highscores if h.difficulty.lower() == diff]

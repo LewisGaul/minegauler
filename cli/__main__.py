@@ -45,6 +45,10 @@ def run_bot_cli(args):
 
     bot.utils.read_users_file()
 
+    try:
+        args.remaining_args.remove("--")
+    except ValueError:
+        pass
     return bot.msgparse.main(args.remaining_args)
 
 

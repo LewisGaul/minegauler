@@ -439,8 +439,7 @@ def player(args, username: str, allow_markdown=False, **kwargs):
     if args.username == "me":
         args.username = username
 
-    highscores = hs.get_highscores(
-        hs.HighscoresDatabases.REMOTE,
+    highscores = utils.get_highscores(
         name=utils.USER_NAMES[args.username],
         difficulty=args.difficulty,
         drag_select=args.drag_select,
@@ -798,7 +797,8 @@ def parse_msg(
 
 def main(argv):
     try:
-        resp = parse_msg(" ".join(argv), RoomType.GROUP, username="dummy-user")
+        # TODO: Need to not join argv, since player names can contain spaces.
+        resp = parse_msg(" ".join(argv), RoomType.DIRECT, username="dummy-user")
     except InvalidArgsError as e:
         resp = str(e)
     print(resp)
