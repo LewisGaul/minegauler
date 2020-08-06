@@ -9,7 +9,6 @@ __all__ = (
     "BOT_NAME",
     "NO_TAG_USERS",
     "USER_NAMES",
-    "USER_NAMES_FILE",
     "Matchup",
     "PlayerInfo",
     "get_matchups",
@@ -43,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 
 USER_NAMES = dict()
-USER_NAMES_FILE = pathlib.Path(__file__).parent / "users.json"
+_USER_NAMES_FILE = pathlib.Path(__file__).parent / "users.json"
 NO_TAG_USERS = {"_paula", "_felix", "_kunz", "esinghal"}
 
 BOT_NAME = "minegaulerbot"
@@ -114,6 +113,20 @@ def send_new_best_message(h: hs.HighscoreStruct) -> None:
     )
 
 
+def read_users_file():
+    global USER_NAMES
+    try:
+        with open(_USER_NAMES_FILE) as f:
+            USER_NAMES = json.load(f)
+    except FileNotFoundError:
+        logger.warning("%s file not found", _USER_NAMES_FILE)
+
+
+def save_users_file():
+    with open(_USER_NAMES_FILE, "w") as f:
+        json.dump(USER_NAMES, f)
+
+
 def user_from_email(email: str) -> str:
     return email.split("@", maxsplit=1)[0]
 
@@ -131,8 +144,7 @@ def tag_user(user: str) -> str:
 
 def set_user_nickname(user: str, nickname: str) -> None:
     USER_NAMES[user] = nickname
-    with open(USER_NAMES_FILE, "w") as f:
-        json.dump(USER_NAMES, f)
+    save_users_file()
 
 
 def get_highscore_times(

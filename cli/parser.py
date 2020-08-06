@@ -255,7 +255,7 @@ class CLIParser:
                 subparsers.add_parser(subnode.keyword, help=subnode.help)
         # Add arguments for end-of-command.
         for arg in node.args:
-            name = arg.name if arg.positional else "--" + arg.name
+            name = arg.name.replace("-", "_") if arg.positional else "--" + arg.name
             kwargs = dict()
             kwargs["help"] = arg.help
             if arg.type is bool:

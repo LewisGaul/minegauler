@@ -41,9 +41,26 @@ def run_tests(args):
 
 
 def run_bot_cli(args):
-    from bin.cli import run
+    import bot
 
-    return run(args.remaining_args)
+    bot.utils.read_users_file()
+
+    return bot.msgparse.main(args.remaining_args)
+
+
+def add_bot_player(args):
+    import bot.utils
+
+    bot.utils.read_users_file()
+    bot.utils.set_user_nickname(args.player_name, args.player_name)
+
+
+def remove_bot_player(args):
+    import bot.utils
+
+    bot.utils.read_users_file()
+    bot.utils.USER_NAMES.pop(args.player_name)
+    bot.utils.save_users_file()
 
 
 _COMMANDS: Dict[str, Callable[[Any], int]] = {
@@ -52,6 +69,8 @@ _COMMANDS: Dict[str, Callable[[Any], int]] = {
     "run-tests": run_tests,
     "bump-version": lambda args: print("Not implemented"),
     "bot": run_bot_cli,
+    "bot-add-player": add_bot_player,
+    "bot-remove-player": remove_bot_player,
 }
 
 

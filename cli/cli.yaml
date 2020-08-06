@@ -24,7 +24,6 @@ subtree:
   - keyword: dev
     help: "Developer commands"
     subtree:
-
       - keyword: bumpversion
         help: "Bump version"
         command: "bump-version"
@@ -61,3 +60,21 @@ subtree:
         help: "Bot command"
         positional: true
         type: text  # Must be the last arg
+    subtree:
+      - keyword: player
+        help: "Player commands (add, remove, ...)"
+        subtree:
+          - keyword: add
+            help: "Add a player to the bot"
+            command: "bot-add-player"
+            args:
+              - name: player-name
+                help: "The in-game name of the player"
+                positional: true
+          - keyword: remove
+            help: "Remove a player from the bot"
+            command: "bot-remove-player"
+            args:
+              - name: player-name
+                help: "The in-game name of the player"
+                positional: true
