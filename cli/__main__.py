@@ -6,10 +6,12 @@ CLI entry-point.
 """
 
 import pathlib
+import subprocess
 import sys
 from typing import Any, Callable, Dict
 
-import yaml  # @@@ Erk - dependency
+# Any 3rd-party dependencies must be kept in bootstrap/.
+import yaml
 
 from cli.parser import CLIParser
 
@@ -18,7 +20,7 @@ _THIS_DIR = pathlib.Path(__file__).absolute().parent
 
 
 def run_app(args):
-    import minegauler.__main__
+    subprocess.run(["python3", "-m", "minegauler"])
 
 
 def run_bot_cli(args):

@@ -1,3 +1,3 @@
 #!/usr/bin/env sh
 
-python3 -m cli "$@"
+PYTHONPATH='bootstrap' python3 -m cli "$@"
