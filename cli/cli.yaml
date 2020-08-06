@@ -1,6 +1,7 @@
 help: |
   The all-in-one Minegauler CLI!
-  Run the app by passing no arguments!
+
+  Run the app by simply passing in no arguments...
 command: "run"
 
 subtree:

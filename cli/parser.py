@@ -229,7 +229,9 @@ class CLIParser:
         else:
             prog_args = consumed_args
         parser = argparse.ArgumentParser(
-            prog=" ".join(prog_args), description=node.help
+            prog=" ".join(prog_args),
+            description=node.help,
+            formatter_class=argparse.RawDescriptionHelpFormatter,
         )
         # Use subparsers to represent the subnodes in displayed help.
         if node.subtree and show_help:
