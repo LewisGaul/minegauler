@@ -61,8 +61,8 @@ subtree:
         positional: true
         type: text  # Must be the last arg
     subtree:
-      - keyword: player
-        help: "Player commands (add, remove, ...)"
+      - keyword: user
+        help: "Manage tracked users (add, remove, ...)"
         subtree:
           - keyword: add
             help: "Add a player to the bot"
