@@ -311,10 +311,11 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
         :raise DBConnectionError:
             If connecting to the DB fails for any reason.
         """
-        if not self._cached_conn:
+        cls = type(self)
+        if not cls._cached_conn:
             logger.info("Initialising connection to remote highscores DB")
             try:
-                self._cached_conn = mysql.connector.connect(
+                cls._cached_conn = mysql.connector.connect(
                     user=self._USER,
                     password=self._PASSWORD,
                     host=self._HOST,
@@ -324,7 +325,7 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
                 raise DBConnectionError(
                     "Unable to connect to remote highscores database"
                 ) from e
-        self._conn = self._cached_conn
+        self._conn = cls._cached_conn
 
     @property
     def conn(self) -> mysql.connector.MySQLConnection:
