@@ -294,7 +294,7 @@ GENERAL_INFO = """\
 Welcome to the Minegauler bot!
 
 Instructions for downloading Minegauler can be found in the \
-[GitHub repo](https://github.com/LewisGaul/minegauler/blob/master/README.md).
+[GitHub repo](https://github.com/LewisGaul/minegauler/blob/main/README.md).
 
 The bot provides the ability to check highscores and matchups for games of \
 Minegauler, and also gives notifications whenever anyone in the group sets a \

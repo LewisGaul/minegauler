@@ -1,9 +1,9 @@
 name: Workflow for full test matrix
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master, dev]
+    branches: [main, dev]
 env:
   DISPLAY: ":0"
 jobs:
