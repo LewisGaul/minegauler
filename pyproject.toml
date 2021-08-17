@@ -1,7 +1,7 @@
 [tool.black]
 line-length = 88
 target-version = ['py36']
-exclude = '.*venv.*'
+exclude = '.*venv.*|bootstrap'
 
 [tool.isort]
 # Make compatible with Black

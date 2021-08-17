@@ -60,9 +60,7 @@ Alternatively, feel free to [open an issue](https://github.com/LewisGaul/minegau
 # Should be a release version, e.g. "4.0.1"
 version = "4.0.6-a1"
 if "-" in version:
-    answer = input("Version is not a release version, continue? y/[n]")
-    if answer.strip() not in ["y", "yes"]:
-        sys.exit(1)
+    print("WARNING: Version is not a release version", file=sys.stderr)
 
 
 setuptools.setup(
