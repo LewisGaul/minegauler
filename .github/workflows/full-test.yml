@@ -33,7 +33,7 @@ jobs:
       - name: Set up X-server (MacOS)
         if: matrix.os == 'macOS-latest'
         run: |
-          brew cask install xquartz
+          brew install xquartz
           chmod go-w /Users/runner/ || chmod go-w /opt/* || true
           /usr/X11/bin/Xquartz :0 &
 
