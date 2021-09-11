@@ -104,7 +104,9 @@ def save_highscore_file(
     return HIGHSCORES_DIR / fname
 
 
-def read_highscore_file(path: PathLike,) -> Tuple[HighscoreStruct, List[CellUpdate_T]]:
+def read_highscore_file(
+    path: PathLike,
+) -> Tuple[HighscoreStruct, List[CellUpdate_T]]:
     """
     Read data from a highscore file.
 

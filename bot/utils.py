@@ -163,7 +163,9 @@ def get_highscore_times(
     if difficulty:
         highscores = hs.filter_and_sort(
             get_highscores(
-                difficulty=difficulty, drag_select=drag_select, per_cell=per_cell,
+                difficulty=difficulty,
+                drag_select=drag_select,
+                per_cell=per_cell,
             )
         )
         times = {
@@ -277,7 +279,9 @@ def _get_combined_highscore(
     total = 0
     for diff in ["b", "i", "e"]:
         all_highscores = get_highscores(
-            name=name, drag_select=drag_select, per_cell=per_cell,
+            name=name,
+            drag_select=drag_select,
+            per_cell=per_cell,
         )
         highscores = [h.elapsed for h in all_highscores if h.difficulty.lower() == diff]
         total += min(highscores) if highscores else 1000

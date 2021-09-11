@@ -57,7 +57,7 @@ def _save_minefield(mf: Minefield, file: PathLike) -> None:
 class _SharedInfo:
     """
     Information to pass to frontends.
-    
+
     Elements:
     cell_updates
         Dictionary of updates to cells, mapping the coordinate to the new
@@ -171,7 +171,10 @@ class _GameController(_AbstractSubController):
     """
 
     def __init__(
-        self, opts: GameOptsStruct, *, notif: api.AbstractListener,
+        self,
+        opts: GameOptsStruct,
+        *,
+        notif: api.AbstractListener,
     ):
         """
         :param opts:

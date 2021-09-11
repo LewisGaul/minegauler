@@ -153,7 +153,10 @@ class MinefieldWidget(QGraphicsView):
     size_changed = pyqtSignal()
 
     def __init__(
-        self, parent: Optional[QWidget], ctrlr: api.AbstractController, state: State,
+        self,
+        parent: Optional[QWidget],
+        ctrlr: api.AbstractController,
+        state: State,
     ):
         super().__init__(parent)
         logger.info("Initialising minefield widget")
