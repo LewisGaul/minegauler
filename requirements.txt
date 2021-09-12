@@ -7,8 +7,9 @@ idna==3.2
 #--install-option='--no-deps' --install-option='--only-binary=:all:'
 mysql-connector-python==8.0.26
 protobuf==3.17.3
-PyQt5==5.11.3
-PyQt5_sip==4.19.19
+PyQt5==5.15.4
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.9.0
 requests==2.26.0
 six==1.16.0
 urllib3==1.26.6
