@@ -5,6 +5,7 @@ on:
       - 'minegauler/**'
       - 'tests/**'
       - '.github/**'
+      - 'requirements.txt'
 env:
   DISPLAY: ":0"
 jobs:
