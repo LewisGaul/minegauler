@@ -37,8 +37,7 @@ Pygments==2.10.0
 pyinstaller==4.5.1
 pyinstaller-hooks-contrib==2021.3
 pyparsing==2.4.7
-PyQt5==5.15.4
-PyQt5-Qt5==5.15.2
+PyQt5==5.14.2
 PyQt5-sip==12.9.0
 pytest==6.2.5
 pytest-cov==2.12.1
