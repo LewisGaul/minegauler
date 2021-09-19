@@ -16,7 +16,7 @@ import enum
 import functools
 import logging
 import time
-from typing import Callable, Dict, Iterable, List, Mapping, Optional, Set
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Set
 
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QMouseEvent, QPainter, QPixmap
@@ -406,7 +406,7 @@ class MinefieldWidget(QGraphicsView):
         Both left and right mouse buttons were pressed. Change display and call
         callback functions as appropriate.
         """
-        if not self._board[coord].is_mine_type():
+        if True or not self._board[coord].is_mine_type():
             self._sink_unclicked_cells(self._board.get_nbrs(coord, include_origin=True))
         if self._state.drag_select:
             self.at_risk_signal.emit()
@@ -625,6 +625,22 @@ class SplitCellMinefieldWidget(MinefieldWidget):
     def reset(self) -> None:
         super().reset()
         self._right_click_action = None
+
+    def update_cells(self, cell_updates: Mapping[Coord_T, Any]) -> None:
+        """
+        Called to indicate some cells have changed state.
+
+        :param cell_updates:
+            A mapping of cell coordinates to their new state.
+        """
+        for c in cell_updates:
+            if self._board.is_cell_split(c):
+                self._set_cell_image(c, self._board[c])
+            else:
+                overlay_coord = (c[0] // 2, c[1] // 2)
+                self._set_large_cell_image(
+                    overlay_coord, self._board.large_cells[overlay_coord]
+                )
 
     # --------------------------------------------------------------------------
     # Helpers

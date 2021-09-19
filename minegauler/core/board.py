@@ -95,10 +95,33 @@ class SplitCellBoard(Board):
         if x_size % 2 or y_size % 2:
             raise ValueError("Split cell board must have an even number of sub-cells")
         super().__init__(x_size, y_size)
-        self._unsplit_cells = self.all_coords.copy()
+        self.fill(None)
+        self.large_cells = utils.Grid(
+            x_size // 2, y_size // 2, fill=CellContents.Unclicked
+        )
 
     def __repr__(self):
         return f"<{self.x_size}x{self.y_size} split cell board>"
+
+    def get_nbrs(self, coord: Coord_T, *, include_origin=False) -> Iterable[Coord_T]:
+        """
+        Get small-cell coordinates of neighbouring cells (for large or small
+        cell).
+        """
+        try:
+            check_nbrs = self.get_cells_in_unsplit(coord)
+        except ValueError:
+            check_nbrs = [coord]
+        small_nbrs = set(check_nbrs)
+        for c in check_nbrs:
+            small_nbrs.update(super().get_nbrs(c))
+        for c in small_nbrs.copy():
+            if not self.is_cell_split(c):
+                small_nbrs.update(self.get_cells_in_unsplit(c))
+        if not include_origin:
+            for c in check_nbrs:
+                small_nbrs.remove(c)
+        return small_nbrs
 
     def get_cells_in_unsplit(self, coord: Coord_T) -> Iterable[Coord_T]:
         """
@@ -116,16 +139,18 @@ class SplitCellBoard(Board):
         ]
 
     def is_cell_split(self, coord: Coord_T) -> bool:
-        return coord not in self._unsplit_cells
+        return self[coord] is not None
 
     def split_cell(self, coord: Coord_T) -> Iterable[Coord_T]:
         """
         Split a large cell at the coordinate of a small cell, returning coords
         of all small cells included in the large cell.
         """
+        overlay_coord = (coord[0] // 2, coord[1] // 2)
+        self.large_cells[overlay_coord] = None
         small_coords = self.get_cells_in_unsplit(coord)
         for c in small_coords:
-            self._unsplit_cells.remove(c)
+            self[c] = CellContents.Unclicked
         return small_coords
 
 
