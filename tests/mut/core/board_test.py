@@ -10,7 +10,7 @@ from typing import List
 
 import pytest
 
-from minegauler.core.board import Board, Minefield
+from minegauler.core.board import Board, Minefield, SplitCellBoard
 from minegauler.shared.types import CellContents, Coord_T
 from minegauler.shared.utils import Grid
 
@@ -268,3 +268,68 @@ class TestMinefield:
         for c in mf.all_coords:
             assert mf[c] == mf.mine_coords.count(c)
             assert mf.completed_board[c] == exp_completed_board[c]
+
+
+class TestSplitCellBoard:
+    """Test the SplitCellBoard class."""
+
+    x, y = 4, 6
+
+    def test_init(self):
+        board = SplitCellBoard(self.x, self.y)
+        assert board.x_size == self.x
+        assert board.y_size == self.y
+        assert board.large_cells.x_size == self.x / 2
+        assert board.large_cells.y_size == self.y / 2
+        assert all(board[c] is None for c in board.all_coords)
+        assert all(
+            board.large_cells[c] is CellContents.Unclicked
+            for c in board.large_cells.all_coords
+        )
+
+    def test_split_cell(self):
+        board = SplitCellBoard(self.x, self.y)
+        board.split_cell((2, 2))
+        assert board[(1, 1)] is None
+        for c in [(2, 2), (2, 3), (3, 2), (3, 3)]:
+            assert board[c] is CellContents.Unclicked
+
+    def test_get_nbrs(self):
+        board = SplitCellBoard(self.x, self.y)
+
+        # All cells unsplit.
+        nbrs = board.get_nbrs((0, 0))
+        assert nbrs == {
+            # fmt: off
+            (0, 2), (0, 3), (1, 2), (1, 3),
+            (2, 0), (3, 0), (2, 1), (3, 1),
+            (2, 2), (2, 3), (3, 2), (3, 3),
+            # fmt: on
+        }
+        assert board.get_nbrs((0, 1)) == nbrs
+        assert board.get_nbrs((1, 0)) == nbrs
+        assert board.get_nbrs((1, 1)) == nbrs
+
+        # Neighbours of an unsplit, with some split neighbours.
+        board.split_cell((0, 2))
+        nbrs = board.get_nbrs((0, 0))
+        assert nbrs == {
+            # fmt: off
+            (0, 2), (1, 2),
+            (2, 0), (3, 0), (2, 1), (3, 1),
+            (2, 2), (2, 3), (3, 2), (3, 3),
+            # fmt: on
+        }
+        assert board.get_nbrs((0, 1)) == nbrs
+        assert board.get_nbrs((1, 0)) == nbrs
+        assert board.get_nbrs((1, 1)) == nbrs
+
+        # Neighbours of a split, with some split neighbours.
+        nbrs = board.get_nbrs((0, 2))
+        assert nbrs == {
+            # fmt: off
+            (0, 0), (0, 1), (1, 0), (1, 1),
+            (1, 2), (0, 3), (1, 3),
+            # fmt: on
+        }
+        assert board.get_nbrs((1, 2)) != nbrs

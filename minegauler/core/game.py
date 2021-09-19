@@ -578,6 +578,22 @@ class SplitCellGame(Game):
                     coord, CellContents.Num(self._calc_nbr_mines(coord))
                 )
 
+    def _finalise_lost_game(self) -> None:
+        logger.info("Game lost")
+        self.end_time = tm.time()
+        self.state = GameState.LOST
+        for c in self.mf.all_coords:
+            if self.mf.cell_contains_mine(c) and (
+                self.board[c] is CellContents.Unclicked or self.board[c] is None
+            ):
+                self._set_cell(c, CellContents.Mine(self.mf[c]))
+
+            elif (
+                type(self.board[c]) is CellContents.Flag
+                and self.board[c] != self.mf.completed_board[c]
+            ):
+                self._set_cell(c, CellContents.WrongFlag(self.board[c].num))
+
     def _select_cell_action(self, coord: Coord_T) -> None:
         """
         Implementation of the action of selecting/clicking a cell.
@@ -587,9 +603,7 @@ class SplitCellGame(Game):
             if any(self.mf.cell_contains_mine(c) for c in small_cells):
                 logger.debug("Mine hit")
                 self._set_large_cell(coord, CellContents.HitMine(1))
-                logger.info("Game lost")
-                self.end_time = tm.time()
-                self.state = GameState.LOST
+                self._finalise_lost_game()
             else:
                 logger.debug("Regular cell revealed")
                 cell_num = self._calc_nbr_mines(coord)
@@ -599,36 +613,26 @@ class SplitCellGame(Game):
         if self.mf.cell_contains_mine(coord):
             logger.debug("Mine hit at %s", coord)
             self._set_cell(coord, CellContents.HitMine(self.mf[coord]))
-            logger.info("Game lost")
-            self.end_time = tm.time()
-            self.state = GameState.LOST
-
-            for c in self.mf.all_coords:
-                if (
-                    self.mf.cell_contains_mine(c)
-                    and self.board[c] is CellContents.Unclicked
-                ):
-                    self._set_cell(c, CellContents.Mine(self.mf[c]))
-
-                elif (
-                    type(self.board[c]) is CellContents.Flag
-                    and self.board[c] != self.mf.completed_board[c]
-                ):
-                    self._set_cell(c, CellContents.WrongFlag(self.board[c].num))
+            self._finalise_lost_game()
         else:
             logger.debug("Regular cell revealed")
-            self._set_cell(coord, self.mf.completed_board[coord])
+            self._set_cell(coord, CellContents.Num(self._calc_nbr_mines(coord)))
 
     @_check_coord
     @_ignore_if_not(
-        game_state=(GameState.READY, GameState.ACTIVE),
-        cell_state=CellContents.Unclicked,
+        game_state=GameState.ACTIVE, cell_state=CellContents.Unclicked,
     )
     def split_cell(self, coord: Coord_T) -> Iterable[Coord_T]:
-        logger.debug("Splitting cell %s", coord)
-        for c in self.board.split_cell(coord):
-            self._cell_updates[c] = None
-        self._update_board_numbers()
+        small_cells = self.board.get_cells_in_unsplit(coord)
+        if not any(self.mf.cell_contains_mine(c) for c in small_cells):
+            logger.debug("Incorrect cell split %s", coord)
+            self._set_large_cell(coord, CellContents.WrongFlag(1))
+            self._finalise_lost_game()
+        else:
+            logger.debug("Splitting cell %s", coord)
+            for c in self.board.split_cell(coord):
+                self._cell_updates[c] = None
+            self._update_board_numbers()
         try:
             return self._cell_updates
         finally:
