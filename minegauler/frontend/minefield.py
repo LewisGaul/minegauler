@@ -12,6 +12,7 @@ Exports
 
 __all__ = ("MinefieldWidget", "SplitCellMinefieldWidget")
 
+import enum
 import functools
 import logging
 import time
@@ -572,15 +573,63 @@ class MinefieldWidget(QGraphicsView):
         return self._mouse_events
 
 
+RightClickAction = enum.Enum("RightClickAction", ["FLAG", "UNFLAG", "SPLIT"])
+
+
 class SplitCellMinefieldWidget(MinefieldWidget):
     def __init__(self, *args, **kwargs):
         self._large_cell_images: Dict[CellContents, QPixmap] = {}
         super().__init__(*args, **kwargs)
 
+        self._right_click_action: Optional[RightClickAction] = None
+        del self._unflag_on_right_drag
+
     @property
     def _board(self) -> SplitCellBoard:
         return self._ctrlr.board
 
+    # --------------------------------------------------------------------------
+    # Mouse click handlers
+    # --------------------------------------------------------------------------
+    def right_button_down(self, coord: Coord_T) -> None:
+        """
+        Right mouse button was pressed. Change display and call callback
+        functions as appropriate.
+        """
+        if not self._board.is_cell_split(coord):
+            self._ctrlr.split_cell(coord)
+            self._right_click_action = RightClickAction.SPLIT
+        else:
+            self._ctrlr.flag_cell(coord)
+            if self._board[coord] is CellContents.Unclicked:
+                self._right_click_action = RightClickAction.UNFLAG
+            else:
+                self._right_click_action = RightClickAction.FLAG
+
+    def right_button_move(self, coord: Optional[Coord_T]) -> None:
+        """
+        Right mouse button was moved. Change display as appropriate.
+        """
+        if self._state.drag_select and coord is not None:
+            if self._right_click_action is RightClickAction.SPLIT:
+                self._ctrlr.split_cell(coord)
+            elif self._right_click_action is RightClickAction.UNFLAG:
+                self._ctrlr.remove_cell_flags(coord)
+            elif self._right_click_action is RightClickAction.FLAG:
+                self._ctrlr.flag_cell(coord, flag_only=True)
+            else:
+                assert False
+
+    # --------------------------------------------------------------------------
+    # Other public methods
+    # --------------------------------------------------------------------------
+    def reset(self) -> None:
+        super().reset()
+        self._right_click_action = None
+
+    # --------------------------------------------------------------------------
+    # Helpers
+    # --------------------------------------------------------------------------
     def _set_large_cell_image(self, coord: Coord_T, state: CellContents) -> None:
         if state not in self._large_cell_images:
             logger.error("Missing cell image for state: %s", state)

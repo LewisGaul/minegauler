@@ -163,6 +163,10 @@ class BaseController(api.AbstractController):
             self._notif.ui_mode_changed(UIMode.GAME)
         self._active_ctrlr.load_minefield(file)
 
+    def split_cell(self, coord: Coord_T) -> None:
+        # TODO: Check the sub controller can do this...
+        self._active_ctrlr.split_cell(coord)
+
 
 class _GameController(_AbstractSubController):
     """
@@ -483,24 +487,19 @@ class _SplitCellGameController(_GameController):
         self._game = game.SplitCellGame(minefield=self._game.mf, lives=self._opts.lives)
         self._send_reset_update()
 
-    def flag_cell(self, coord: Coord_T, *, flag_only: bool = False) -> None:
-        """See AbstractController."""
+    def split_cell(self, coord: Coord_T) -> None:
         if not self.board.is_cell_split(coord):
             self._send_updates(self._game.split_cell(coord))
+
+    def flag_cell(self, coord: Coord_T, *, flag_only: bool = False) -> None:
+        if not self.board.is_cell_split(coord):
             return
+        super().flag_cell(coord, flag_only=flag_only)
 
-        cell_state = self.board[coord]
-        if cell_state is CellContents.Unclicked:
-            self._game.set_cell_flags(coord, 1)
-        elif isinstance(cell_state, CellContents.Flag):
-            if cell_state.num >= self._game.per_cell:
-                if flag_only:
-                    return
-                self._game.set_cell_flags(coord, 0)
-            else:
-                self._game.set_cell_flags(coord, cell_state.num + 1)
-
-        self._send_updates({coord: self.board[coord]})
+    def remove_cell_flags(self, coord: Coord_T) -> None:
+        if not self.board.is_cell_split(coord):
+            return
+        super().remove_cell_flags(coord)
 
 
 class _CreateController(_AbstractSubController):
