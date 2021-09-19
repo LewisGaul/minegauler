@@ -100,6 +100,21 @@ class SplitCellBoard(Board):
     def __repr__(self):
         return f"<{self.x_size}x{self.y_size} split cell board>"
 
+    def get_cells_in_unsplit(self, coord: Coord_T) -> Iterable[Coord_T]:
+        """
+        Given the coord of a small cell, return all small-cell coords contained
+        withing the large unsplit cell.
+        """
+        if self.is_cell_split(coord):
+            raise ValueError(f"Cell {coord} is split")
+
+        overlay_coord = (coord[0] // 2, coord[1] // 2)
+        return [
+            (x, y)
+            for x in range(2 * overlay_coord[0], 2 * (overlay_coord[0] + 1))
+            for y in range(2 * overlay_coord[1], 2 * (overlay_coord[1] + 1))
+        ]
+
     def is_cell_split(self, coord: Coord_T) -> bool:
         return coord not in self._unsplit_cells
 
@@ -108,17 +123,9 @@ class SplitCellBoard(Board):
         Split a large cell at the coordinate of a small cell, returning coords
         of all small cells included in the large cell.
         """
-        overlay_coord = (coord[0] // 2, coord[1] // 2)
-        small_coords = [
-            (x, y)
-            for x in range(2 * overlay_coord[0], 2 * (overlay_coord[0] + 1))
-            for y in range(2 * overlay_coord[1], 2 * (overlay_coord[1] + 1))
-        ]
+        small_coords = self.get_cells_in_unsplit(coord)
         for c in small_coords:
-            try:
-                self._unsplit_cells.remove(c)
-            except ValueError:
-                raise ValueError(f"Coord {c} is already split") from None
+            self._unsplit_cells.remove(c)
         return small_coords
 
 

@@ -553,8 +553,7 @@ class MinefieldWidget(QGraphicsView):
     def reshape(self, x_size: int, y_size: int) -> None:
         logger.info("Resizing minefield to %sx%s", x_size, y_size)
         self._update_size()
-        for c in [(i, j) for i in range(self.x_size) for j in range(self.y_size)]:
-            self._set_cell_image(c, CellContents.Unclicked)
+        self._redraw_cells()
 
     def update_style(self, img_type: CellImageType, style: str) -> None:
         """Update the cell images."""

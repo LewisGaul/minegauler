@@ -561,6 +561,13 @@ class SplitCellGame(Game):
         self.board[coord] = state
         self._cell_updates[coord] = state
 
+    def _select_cell_action(self, coord: Coord_T) -> None:
+        if self.board.is_cell_split(coord):
+            super()._select_cell_action(coord)
+        else:
+            for c in self.board.get_cells_in_unsplit(coord):
+                super()._select_cell_action(c)
+
     @_check_coord
     @_ignore_if_not(
         game_state=(GameState.READY, GameState.ACTIVE),
