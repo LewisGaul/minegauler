@@ -30,7 +30,7 @@ from ..shared.types import (
 )
 from ..shared.utils import GameOptsStruct, Grid
 from . import api, game
-from .board import Board, Minefield
+from .board import Board, Minefield, SplitCellBoard
 
 
 logger = logging.getLogger(__name__)
@@ -91,7 +91,7 @@ class BaseController(api.AbstractController):
     def __init__(self, opts: GameOptsStruct):
         super().__init__(opts)
         self._mode = UIMode.GAME
-        self._active_ctrlr: _AbstractSubController = _GameController(
+        self._active_ctrlr: _AbstractSubController = _SplitCellGameController(
             self._opts, notif=self._notif
         )
 
@@ -171,10 +171,7 @@ class _GameController(_AbstractSubController):
     """
 
     def __init__(
-        self,
-        opts: GameOptsStruct,
-        *,
-        notif: api.AbstractListener,
+        self, opts: GameOptsStruct, *, notif: api.AbstractListener,
     ):
         """
         :param opts:
@@ -272,7 +269,7 @@ class _GameController(_AbstractSubController):
         """See AbstractController."""
         super().flag_cell(coord)
 
-        cell_state = self._game.board[coord]
+        cell_state = self.board[coord]
         if cell_state is CellContents.Unclicked:
             self._game.set_cell_flags(coord, 1)
         elif isinstance(cell_state, CellContents.Flag):
@@ -283,13 +280,13 @@ class _GameController(_AbstractSubController):
             else:
                 self._game.set_cell_flags(coord, cell_state.num + 1)
 
-        self._send_updates({coord: self._game.board[coord]})
+        self._send_updates({coord: self.board[coord]})
 
     def remove_cell_flags(self, coord: Coord_T) -> None:
         """See AbstractController."""
         super().remove_cell_flags(coord)
         self._game.set_cell_flags(coord, 0)
-        self._send_updates({coord: self._game.board[coord]})
+        self._send_updates({coord: self.board[coord]})
 
     def chord_on_cell(self, coord: Coord_T) -> None:
         """See AbstractController."""
@@ -435,6 +432,75 @@ class _GameController(_AbstractSubController):
             self._notif.update_game_state(update.game_state)
 
         self._last_update = update
+
+
+class _SplitCellGameController(_GameController):
+    def __init__(
+        self, opts: GameOptsStruct, *, notif: api.AbstractListener,
+    ):
+        super().__init__(opts, notif=notif)
+        self._game = game.SplitCellGame(
+            x_size=self._opts.x_size,
+            y_size=self._opts.y_size,
+            mines=self._opts.mines,
+            per_cell=self._opts.per_cell,
+            lives=self._opts.lives,
+            first_success=self._opts.first_success,
+        )
+
+    @property
+    def board(self) -> SplitCellBoard:
+        return self._game.board
+
+    def new_game(self) -> None:
+        """See AbstractController."""
+        if self._opts.mines > self._opts.per_cell * (
+            self._opts.x_size * self._opts.y_size - 1
+        ):
+            # This is needed since it's possible to create a board with more
+            # mines than is normally allowed.
+            logger.debug(
+                "Reducing number of mines from %d to %d because they don't fit",
+                self._opts.mines,
+                self._opts.x_size * self._opts.y_size - 1,
+            )
+            self._opts.mines = self._opts.x_size * self._opts.y_size - 1
+            self._notif.set_mines(self._opts.mines)
+        self._game = game.SplitCellGame(
+            x_size=self._opts.x_size,
+            y_size=self._opts.y_size,
+            mines=self._opts.mines,
+            per_cell=self._opts.per_cell,
+            lives=self._opts.lives,
+            first_success=self._opts.first_success,
+        )
+        self._send_reset_update()
+
+    def restart_game(self) -> None:
+        """See AbstractController."""
+        if not self._game.mf:
+            return
+        self._game = game.SplitCellGame(minefield=self._game.mf, lives=self._opts.lives)
+        self._send_reset_update()
+
+    def flag_cell(self, coord: Coord_T, *, flag_only: bool = False) -> None:
+        """See AbstractController."""
+        if not self.board.is_cell_split(coord):
+            self._send_updates(self._game.split_cell(coord))
+            return
+
+        cell_state = self.board[coord]
+        if cell_state is CellContents.Unclicked:
+            self._game.set_cell_flags(coord, 1)
+        elif isinstance(cell_state, CellContents.Flag):
+            if cell_state.num >= self._game.per_cell:
+                if flag_only:
+                    return
+                self._game.set_cell_flags(coord, 0)
+            else:
+                self._game.set_cell_flags(coord, cell_state.num + 1)
+
+        self._send_updates({coord: self.board[coord]})
 
 
 class _CreateController(_AbstractSubController):

@@ -13,7 +13,7 @@ Exports
 
 """
 
-__all__ = ("Board", "Minefield")
+__all__ = ("Board", "Minefield", "SplitCellBoard")
 
 import random as rnd
 from typing import Any, Collection, Dict, Iterable, List, Optional, Union
@@ -88,6 +88,38 @@ class Board(utils.Grid):
         """Reset the board to the initial state."""
         for c in self.all_coords:
             self[c] = CellContents.Unclicked
+
+
+class SplitCellBoard(Board):
+    def __init__(self, x_size: int, y_size: int):
+        if x_size % 2 or y_size % 2:
+            raise ValueError("Split cell board must have an even number of sub-cells")
+        super().__init__(x_size, y_size)
+        self._unsplit_cells = self.all_coords.copy()
+
+    def __repr__(self):
+        return f"<{self.x_size}x{self.y_size} split cell board>"
+
+    def is_cell_split(self, coord: Coord_T) -> bool:
+        return coord not in self._unsplit_cells
+
+    def split_cell(self, coord: Coord_T) -> Iterable[Coord_T]:
+        """
+        Split a large cell at the coordinate of a small cell, returning coords
+        of all small cells included in the large cell.
+        """
+        overlay_coord = (coord[0] // 2, coord[1] // 2)
+        small_coords = [
+            (x, y)
+            for x in range(2 * overlay_coord[0], 2 * (overlay_coord[0] + 1))
+            for y in range(2 * overlay_coord[1], 2 * (overlay_coord[1] + 1))
+        ]
+        for c in small_coords:
+            try:
+                self._unsplit_cells.remove(c)
+            except ValueError:
+                raise ValueError(f"Coord {c} is already split") from None
+        return small_coords
 
 
 class Minefield(utils.Grid):

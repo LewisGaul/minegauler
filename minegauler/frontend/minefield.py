@@ -10,7 +10,7 @@ Exports
 
 """
 
-__all__ = ("MinefieldWidget",)
+__all__ = ("MinefieldWidget", "SplitCellMinefieldWidget")
 
 import functools
 import logging
@@ -22,6 +22,7 @@ from PyQt5.QtGui import QImage, QMouseEvent, QPainter, QPixmap
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QSizePolicy, QWidget
 
 from ..core import Board, api
+from ..core.board import SplitCellBoard
 from ..shared.types import CellContents, CellImageType, Coord_T
 from .state import State
 from .utils import IMG_DIR, CellUpdate_T, MouseMove
@@ -153,17 +154,14 @@ class MinefieldWidget(QGraphicsView):
     size_changed = pyqtSignal()
 
     def __init__(
-        self,
-        parent: Optional[QWidget],
-        ctrlr: api.AbstractController,
-        state: State,
+        self, parent: Optional[QWidget], ctrlr: api.AbstractController, state: State,
     ):
         super().__init__(parent)
         logger.info("Initialising minefield widget")
         self._ctrlr: api.AbstractController = ctrlr
         self._state: State = state
         self._cell_images: Dict[CellContents, QPixmap] = {}
-        _update_cell_images(self._cell_images, self.btn_size, self._state.styles)
+        self._update_cell_images()
 
         self._scene = QGraphicsScene()
         self.setScene(self._scene)
@@ -520,12 +518,19 @@ class MinefieldWidget(QGraphicsView):
         )
         self.size_changed.emit()
 
+    def _update_cell_images(self, img_type: CellImageType = CellImageType.ALL) -> None:
+        _update_cell_images(
+            self._cell_images, self.btn_size, self._state.styles, img_type
+        )
+
+    def _redraw_cells(self) -> None:
+        for coord in self._board.all_coords:
+            self._set_cell_image(coord, self._board[coord])
+
     def reset(self) -> None:
         """Reset all cell images and other state for a new game."""
         logger.info("Resetting minefield widget")
-        self._scene.clear()
-        for c in self._board.all_coords:
-            self._set_cell_image(c, CellContents.Unclicked)
+        self._redraw_cells()
         self._mouse_coord = None
         self._both_mouse_buttons_pressed = False
         self._await_release_all_buttons = True
@@ -553,19 +558,53 @@ class MinefieldWidget(QGraphicsView):
     def update_style(self, img_type: CellImageType, style: str) -> None:
         """Update the cell images."""
         logger.info("Updating %s style to '%s'", img_type.name, style)
-        _update_cell_images(
-            self._cell_images, self.btn_size, self._state.styles, img_type
-        )
-        for coord in self._board.all_coords:
-            self._set_cell_image(coord, self._board[coord])
+        self._update_cell_images(img_type)
+        self._redraw_cells()
 
     def update_btn_size(self, size: int) -> None:
         """Update the size of the cells."""
         assert size == self._state.btn_size
-        _update_cell_images(self._cell_images, self.btn_size, self._state.styles)
-        for coord in self._board.all_coords:
-            self._set_cell_image(coord, self._board[coord])
+        self._update_cell_images()
+        self._redraw_cells()
         self._update_size()
 
     def get_mouse_events(self) -> List[CellUpdate_T]:
         return self._mouse_events
+
+
+class SplitCellMinefieldWidget(MinefieldWidget):
+    def __init__(self, *args, **kwargs):
+        self._large_cell_images: Dict[CellContents, QPixmap] = {}
+        super().__init__(*args, **kwargs)
+
+    @property
+    def _board(self) -> SplitCellBoard:
+        return self._ctrlr.board
+
+    def _set_large_cell_image(self, coord: Coord_T, state: CellContents) -> None:
+        if state not in self._large_cell_images:
+            logger.error("Missing cell image for state: %s", state)
+            return
+        x, y = coord
+        b = self._scene.addPixmap(self._large_cell_images[state])
+        b.setPos(x * self.btn_size * 2, y * self.btn_size * 2)
+
+    def _redraw_cells(self):
+        self._scene.clear()
+        for coord in self._board.all_coords:
+            x, y = coord
+            if self._board.is_cell_split(coord):
+                self._set_cell_image(coord, self._board[coord])
+            else:
+                if x % 2 or y % 2:
+                    continue
+                else:
+                    self._set_large_cell_image((x // 2, y // 2), CellContents.Unclicked)
+
+    def _update_cell_images(self, img_type: CellImageType = CellImageType.ALL) -> None:
+        _update_cell_images(
+            self._cell_images, self.btn_size, self._state.styles, img_type
+        )
+        _update_cell_images(
+            self._large_cell_images, self.btn_size * 2, self._state.styles, img_type
+        )

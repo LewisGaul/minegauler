@@ -10,7 +10,7 @@ Exports
 
 """
 
-__all__ = ("Game", "GameNotStartedError")
+__all__ = ("Game", "GameNotStartedError", "SplitCellGame")
 
 import functools
 import logging
@@ -19,7 +19,7 @@ import time as tm
 from typing import Callable, Dict, Iterable, Optional, Union
 
 from ..shared.types import CellContents, CellContents_T, Coord_T, Difficulty, GameState
-from .board import Board, Minefield
+from .board import Board, Minefield, SplitCellBoard
 
 
 logger = logging.getLogger(__name__)
@@ -390,9 +390,7 @@ class Game:
                     logger.debug("Opening hit: %s", full_opening)
                     break
             else:
-                logger.error(
-                    "Coordinate %s not found in openings %s", coord, self.mf.openings
-                )
+                raise RuntimeError(f"Coordinate {coord} not found in openings")
 
             # Get the propagation of cells forming part of the opening.
             opening = set()  # Coords belonging to the opening
@@ -461,8 +459,7 @@ class Game:
     )
     def select_cell(self, coord: Coord_T) -> Dict[Coord_T, CellContents]:
         """
-        Perform the action of selecting/clicking a cell. Game must be started
-        before calling this method.
+        Perform the action of selecting/clicking a cell.
         """
         just_started = False
         if self.state is GameState.READY:
@@ -543,3 +540,39 @@ class Game:
             return self._cell_updates
         finally:
             self._cell_updates = dict()
+
+
+class SplitCellGame(Game):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.board = SplitCellBoard(self.board.x_size, self.board.y_size)
+
+    def _set_cell(self, coord: Coord_T, state: CellContents):
+        """
+        Set the contents of a cell and store the update.
+
+        :param coord:
+            The coordinate of the cell to set.
+        :param state:
+            The state to set the cell to.
+        """
+        if not self.board.is_cell_split(coord):
+            self.board.split_cell(coord)
+        self.board[coord] = state
+        self._cell_updates[coord] = state
+
+    @_check_coord
+    @_ignore_if_not(
+        game_state=(GameState.READY, GameState.ACTIVE),
+        cell_state=CellContents.Unclicked,
+    )
+    def split_cell(self, coord: Coord_T) -> Dict[Coord_T, CellContents]:
+        logger.debug("Splitting cell %s", coord)
+        affected_coords = self.board.split_cell(coord)
+        return {c: CellContents.Unclicked for c in affected_coords}
+
+    @_check_coord
+    @_ignore_if_not(game_state=GameState.ACTIVE, cell_state=CellContents.Num)
+    def chord_on_cell(self, coord: Coord_T) -> Dict[Coord_T, CellContents]:
+        """Chord on a cell that contains a revealed number."""
+        # TODO: Implement
