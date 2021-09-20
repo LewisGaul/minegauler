@@ -620,10 +620,9 @@ class SplitCellGame(Game):
                 continue
 
             if (
-                small_coord in self.board
-                and self.board[small_coord] in [CellContents.Unclicked, None]
-                and self.mf.cell_contains_mine(c)
-            ):
+                small_coord not in self.board
+                or self.board[small_coord] is CellContents.Unclicked
+            ) and self.mf.cell_contains_mine(c):
                 self._set_cell(small_coord, CellContents.Mine(self.mf[c]))
             elif (
                 small_coord in self.board
