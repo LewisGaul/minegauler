@@ -583,6 +583,7 @@ class SplitCellGame(Game):
         self.end_time = tm.time()
         self.state = GameState.LOST
         for c in self.mf.all_coords:
+
             if self.mf.cell_contains_mine(c) and (
                 self.board[c] is CellContents.Unclicked or self.board[c] is None
             ):
@@ -601,8 +602,10 @@ class SplitCellGame(Game):
         if not self.board.is_cell_split(coord):
             small_cells = self.board.get_cells_in_unsplit(coord)
             if any(self.mf.cell_contains_mine(c) for c in small_cells):
-                logger.debug("Mine hit")
-                self._set_large_cell(coord, CellContents.HitMine(1))
+                logger.debug("Mine hit in large cell containing %s", coord)
+                for c in small_cells:
+                    if self.mf[c] > 0:
+                        self._set_cell(c, CellContents.HitMine(self.mf[c]))
                 self._finalise_lost_game()
             else:
                 logger.debug("Regular cell revealed")
@@ -618,11 +621,28 @@ class SplitCellGame(Game):
             logger.debug("Regular cell revealed")
             self._set_cell(coord, CellContents.Num(self._calc_nbr_mines(coord)))
 
+    def select_cell(self, coord: Coord_T) -> Dict[Coord_T, CellContents]:
+        if self.board.is_cell_split(coord):
+            if self.board[coord] is not CellContents.Unclicked:
+                return {}
+        else:
+            if (
+                self.board.large_cells[(coord[0] // 2, coord[1] // 2)]
+                is not CellContents.Unclicked
+            ):
+                return {}
+        return super().select_cell(coord)
+
     @_check_coord
     @_ignore_if_not(
         game_state=GameState.ACTIVE, cell_state=CellContents.Unclicked,
     )
     def split_cell(self, coord: Coord_T) -> Iterable[Coord_T]:
+        if (
+            self.board.large_cells[(coord[0] // 2, coord[1] // 2)]
+            is not CellContents.Unclicked
+        ):
+            return
         small_cells = self.board.get_cells_in_unsplit(coord)
         if not any(self.mf.cell_contains_mine(c) for c in small_cells):
             logger.debug("Incorrect cell split %s", coord)

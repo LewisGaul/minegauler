@@ -441,6 +441,7 @@ class MinefieldWidget(QGraphicsView):
         self._both_mouse_buttons_pressed = False
         self._await_release_all_buttons = False
         self._was_double_left_click = False
+        self._unflag_on_right_drag = False
 
     # --------------------------------------------------------------------------
     # Other methods
@@ -595,15 +596,16 @@ class SplitCellMinefieldWidget(MinefieldWidget):
         Right mouse button was pressed. Change display and call callback
         functions as appropriate.
         """
-        if not self._board.is_cell_split(coord):
-            self._ctrlr.split_cell(coord)
-            self._right_click_action = RightClickAction.SPLIT
-        else:
+        if self._board.is_cell_split(coord):
             self._ctrlr.flag_cell(coord)
             if self._board[coord] is CellContents.Unclicked:
                 self._right_click_action = RightClickAction.UNFLAG
             else:
                 self._right_click_action = RightClickAction.FLAG
+        else:
+            self._ctrlr.split_cell(coord)
+            if self._board.is_cell_split(coord):
+                self._right_click_action = RightClickAction.SPLIT
 
     def right_button_move(self, coord: Optional[Coord_T]) -> None:
         """
@@ -617,7 +619,9 @@ class SplitCellMinefieldWidget(MinefieldWidget):
             elif self._right_click_action is RightClickAction.FLAG:
                 self._ctrlr.flag_cell(coord, flag_only=True)
             else:
-                assert False
+                # The right-button down had no effect, so treat the move like
+                # a first click.
+                self.right_button_down(coord)
 
     # --------------------------------------------------------------------------
     # Other public methods
@@ -641,6 +645,10 @@ class SplitCellMinefieldWidget(MinefieldWidget):
                 self._set_large_cell_image(
                     overlay_coord, self._board.large_cells[overlay_coord]
                 )
+
+    def all_buttons_release(self) -> None:
+        super().all_buttons_release()
+        self._right_click_action = None
 
     # --------------------------------------------------------------------------
     # Helpers
