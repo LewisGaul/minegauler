@@ -15,43 +15,101 @@ Exports
 
 __all__ = ("Board", "Minefield", "SplitCellBoard")
 
+import abc
 import random as rnd
 from typing import Any, Collection, Dict, Iterable, List, Optional, Union
 
 from ..shared import utils
-from ..shared.types import CellContents, Coord_T
+from ..shared.types import CellContents, Coord_T, RegularCoord, SplitCellCoord
 
 
-class Board(utils.Grid):
-    """
-    Representation of a minesweeper board. To be filled with instances of
-    CellContents.
-    """
+class Board(metaclass=abc.ABCMeta):
+    """Base board class."""
+
+    all_coords: List[Coord_T]
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    @abc.abstractmethod
+    def __getitem__(self, coord: Coord_T) -> CellContents:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __setitem__(self, coord: Coord_T, value: CellContents):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __contains__(self, coord: Coord_T) -> bool:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_nbrs(self, coord: Coord_T, *, include_origin=False) -> Iterable[Coord_T]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def reset(self) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_coord_at(self, x: int, y: int) -> Coord_T:
+        raise NotImplementedError
+
+
+class RegularBoard(Board):
+    """Representation of a regular minesweeper board as a grid."""
 
     def __init__(self, x_size: int, y_size: int):
-        """
-        Arguments:
-        x_size (int > 0)
-            The number of columns.
-        y_size (int > 0)
-            The number of rows.
-        """
-        super().__init__(x_size, y_size, fill=CellContents.Unclicked)
+        self._grid = utils.Grid(x_size, y_size, fill=CellContents.Unclicked)
 
     def __repr__(self):
         return f"<{self.x_size}x{self.y_size} board>"
 
     def __str__(self):
-        return super().__str__(mapping={CellContents.Num(0): "."})
+        return self._grid.__str__(mapping={CellContents.Num(0): "."})
 
-    def __getitem__(self, item: Coord_T) -> CellContents:
-        return super().__getitem__(item)
+    def __getitem__(self, coord: Coord_T) -> CellContents:
+        return self._grid[coord]
 
-    def __setitem__(self, key: Coord_T, value: CellContents):
+    def __setitem__(self, coord: RegularCoord, value: CellContents):
         if not isinstance(value, CellContents):
             raise TypeError("Board can only contain CellContents instances")
+        self._grid[coord] = value
+
+    def __contains__(self, coord: RegularCoord) -> bool:
+        return coord in self.all_coords
+
+    @property
+    def x_size(self):
+        return self._grid.x_size
+
+    @property
+    def y_size(self):
+        return self._grid.y_size
+
+    @property
+    def all_coords(self) -> List[RegularCoord]:
+        return [RegularCoord(*c) for c in self._grid.all_coords]
+
+    def fill(self, value: CellContents) -> None:
+        for c in self.all_coords:
+            self[c] = value
+
+    def get_nbrs(
+        self, coord: RegularCoord, *, include_origin=False
+    ) -> Iterable[RegularCoord]:
+        return self._grid.get_nbrs(coord, include_origin=include_origin)
+
+    def reset(self):
+        """Reset the board to the initial state."""
+        for c in self.all_coords:
+            self[c] = CellContents.Unclicked
+
+    def get_coord_at(self, x: int, y: int) -> RegularCoord:
+        if RegularCoord(x, y) in self:
+            return RegularCoord(x, y)
         else:
-            super().__setitem__(key, value)
+            raise ValueError("Coord out of bounds")
 
     @classmethod
     def from_2d_array(cls, array: List[List[Union[str, int]]]) -> "Board":
@@ -84,74 +142,88 @@ class Board(utils.Grid):
                 )
         return board
 
-    def reset(self):
-        """Reset the board to the initial state."""
-        for c in self.all_coords:
-            self[c] = CellContents.Unclicked
-
 
 class SplitCellBoard(Board):
     def __init__(self, x_size: int, y_size: int):
         if x_size % 2 or y_size % 2:
             raise ValueError("Split cell board must have an even number of sub-cells")
-        super().__init__(x_size, y_size)
-        self.fill(None)
-        self.large_cells = utils.Grid(
-            x_size // 2, y_size // 2, fill=CellContents.Unclicked
-        )
+        self.x_size = x_size
+        self.y_size = y_size
+        self._state: Dict[SplitCellCoord, CellContents]
+        self.reset()
 
     def __repr__(self):
         return f"<{self.x_size}x{self.y_size} split cell board>"
 
-    def get_nbrs(self, coord: Coord_T, *, include_origin=False) -> Iterable[Coord_T]:
-        """
-        Get small-cell coordinates of neighbouring cells (for large or small
-        cell).
-        """
-        try:
-            check_nbrs = self.get_cells_in_unsplit(coord)
-        except ValueError:
-            check_nbrs = [coord]
-        small_nbrs = set(check_nbrs)
-        for c in check_nbrs:
-            small_nbrs.update(super().get_nbrs(c))
-        for c in small_nbrs.copy():
-            if not self.is_cell_split(c):
-                small_nbrs.update(self.get_cells_in_unsplit(c))
+    def __str__(self):
+        grid = utils.Grid(self.x_size, self.y_size, fill="")
+        for c in self.all_coords:
+            grid[c] = self[c]
+        return grid.__str__(mapping={CellContents.Num(0): "."})
+
+    def __getitem__(self, coord: SplitCellCoord) -> CellContents:
+        return self._state[coord]
+
+    def __setitem__(self, coord: SplitCellCoord, value: CellContents):
+        if not isinstance(value, CellContents):
+            raise TypeError("Board can only contain CellContents instances")
+        # if coord not in self._state:
+        #     raise KeyError(f"Coord not present in board: {coord}")
+        self._state[coord] = value
+
+    def __contains__(self, coord: SplitCellCoord) -> bool:
+        return coord in self._state
+
+    @property
+    def all_coords(self) -> List[SplitCellCoord]:
+        return list(self._state)
+
+    def get_nbrs(
+        self, coord: SplitCellCoord, *, include_origin=False
+    ) -> Iterable[SplitCellCoord]:
+        x_min = max(0, coord.x - 1)
+        y_min = max(0, coord.y - 1)
+        if coord.is_split:
+            x_max = min(self.x_size - 1, coord.x + 1)
+            y_max = min(self.y_size - 1, coord.y + 1)
+        else:
+            x_max = min(self.x_size - 1, coord.x + 2)
+            y_max = min(self.y_size - 1, coord.y + 2)
+
+        nbrs = set()
+        for x in range(x_min, x_max + 1):
+            for y in range(y_min, y_max + 1):
+                nbrs.add(self.get_coord_at(x, y))
+
         if not include_origin:
-            for c in check_nbrs:
-                small_nbrs.remove(c)
-        return small_nbrs
+            nbrs.remove(coord)
 
-    def get_cells_in_unsplit(self, coord: Coord_T) -> Iterable[Coord_T]:
-        """
-        Given the coord of a small cell, return all small-cell coords contained
-        withing the large unsplit cell.
-        """
-        if self.is_cell_split(coord):
-            raise ValueError(f"Cell {coord} is split")
+        return nbrs
 
-        overlay_coord = (coord[0] // 2, coord[1] // 2)
-        return [
-            (x, y)
-            for x in range(2 * overlay_coord[0], 2 * (overlay_coord[0] + 1))
-            for y in range(2 * overlay_coord[1], 2 * (overlay_coord[1] + 1))
-        ]
+    def reset(self) -> None:
+        """Reset the board to the initial state."""
+        self._state = {
+            SplitCellCoord(x, y, False): CellContents.Unclicked
+            for x in range(0, self.x_size, 2)
+            for y in range(0, self.y_size, 2)
+        }
 
-    def is_cell_split(self, coord: Coord_T) -> bool:
-        return self[coord] is not None
+    def get_coord_at(self, x: int, y: int) -> SplitCellCoord:
+        if SplitCellCoord(x, y, True) in self:
+            return SplitCellCoord(x, y, True)
+        elif SplitCellCoord((x // 2) * 2, (y // 2) * 2, False) in self:
+            return SplitCellCoord((x // 2) * 2, (y // 2) * 2, False)
+        else:
+            raise ValueError("Coord out of bounds")
 
-    def split_cell(self, coord: Coord_T) -> Iterable[Coord_T]:
-        """
-        Split a large cell at the coordinate of a small cell, returning coords
-        of all small cells included in the large cell.
-        """
-        overlay_coord = (coord[0] // 2, coord[1] // 2)
-        self.large_cells[overlay_coord] = None
-        small_coords = self.get_cells_in_unsplit(coord)
-        for c in small_coords:
-            self[c] = CellContents.Unclicked
-        return small_coords
+    def split_cell(self, coord: SplitCellCoord) -> Iterable[SplitCellCoord]:
+        """Split a large cell, returning coords of the new small cells."""
+        if coord.is_split:
+            raise ValueError(f"Unable to split cell {coord}")
+        self._state.pop(coord)
+        new_coords = coord.split()
+        self._state.update({c: CellContents.Unclicked for c in new_coords})
+        return new_coords
 
 
 class Minefield(utils.Grid):
@@ -357,12 +429,12 @@ class Minefield(utils.Grid):
         """
         return self[coord] > 0
 
-    def _calc_completed_board(self) -> Board:
+    def _calc_completed_board(self) -> RegularBoard:
         """
         Create the completed board with the flags and numbers that should be
         seen upon game completion.
         """
-        completed_board = Board(self.x_size, self.y_size)
+        completed_board = RegularBoard(self.x_size, self.y_size)
         completed_board.fill(CellContents.Num(0))
         for c in self.all_coords:
             mines = self[c]

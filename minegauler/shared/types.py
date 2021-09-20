@@ -36,9 +36,11 @@ Exports
 
 __all__ = (
     "CellContents",
-    "CellContents_T",
     "CellImageType",
+    "Coord",
     "Coord_T",
+    "SplitCellCoord",
+    "RegularCoord",
     "Difficulty",
     "FaceState",
     "GameState",
@@ -46,15 +48,89 @@ __all__ = (
     "UIMode",
 )
 
+import abc
 import enum
 import functools
 import os
-from typing import Tuple, Type, Union
+from typing import Iterable, Tuple, Union
 
 
 PathLike = Union[str, bytes, os.PathLike]
-Coord_T = Tuple[int, int]
-CellContents_T = Union[Type["CellContents"], "CellContents"]
+
+
+# ------------------------------------------------------------------------------
+# Coordinate types
+# ------------------------------------------------------------------------------
+
+
+class Coord(metaclass=abc.ABCMeta):
+    fields = ("x", "y")
+
+    x: int
+    y: int
+
+    def __repr__(self):
+        return "{}({})".format(
+            type(self).__name__,
+            ", ".join(f"{x}={getattr(self, x)}" for x in self.fields),
+        )
+
+    def __eq__(self, other):
+        try:
+            return all(getattr(self, x) == getattr(other, x) for x in self.fields)
+        except AttributeError:
+            return False
+
+    def __hash__(self):
+        return hash(tuple(getattr(self, x) for x in self.fields))
+
+
+class RegularCoord(Tuple[int, int], Coord):
+    def __new__(cls, x: int, y: int):
+        self = super().__new__(cls, (x, y))
+        self.x = x
+        self.y = y
+        return self
+
+
+class SplitCellCoord(Coord):
+    fields = ("x", "y", "is_split")
+    __slots__ = fields
+
+    def __init__(self, x: int, y: int, is_split: bool):
+        """
+        :param x:
+            The x coord of the underlying small cell (top-left for large cells).
+        :param y:
+            The y coord of the underlying small cell (top-left for large cells).
+        :param is_split:
+            Whether the coord corresponds to a small cell.
+        """
+        if not is_split and (x % 2 or y % 2):
+            raise ValueError("Unsplit coords must have even values of x and y")
+        self.x = x
+        self.y = y
+        self.is_split = is_split
+
+    def get_small_cell_coords(self) -> Iterable[Tuple[int, int]]:
+        if self.is_split:
+            return ((self.x, self.y),)
+        else:
+            return (
+                (self.x, self.y),
+                (self.x + 1, self.y),
+                (self.x, self.y + 1),
+                (self.x + 1, self.y + 1),
+            )
+
+    def split(self) -> Iterable["SplitCellCoord"]:
+        if self.is_split:
+            raise TypeError(f"Not able to split coord {(self.x, self.y)}")
+        return [SplitCellCoord(x, y, True) for (x, y) in self.get_small_cell_coords()]
+
+
+# TODO: This is a temporary bring-up alias.
+Coord_T = Coord
 
 
 # ------------------------------------------------------------------------------
@@ -117,14 +193,14 @@ class CellContents:
         return self.char
 
     @staticmethod
-    def from_char(char: str) -> CellContents_T:
+    def from_char(char: str) -> "CellContents":
         return NotImplemented  # Implemented below, after subclasses
 
     @staticmethod
     def from_str(string: str) -> "CellContents":
         return NotImplemented  # Implemented below, after subclasses
 
-    def is_type(self, item: CellContents_T) -> bool:
+    def is_type(self, item: "CellContents") -> bool:
         if item in [self.Unclicked]:
             return self is item
         elif item in self.items:
@@ -215,7 +291,7 @@ CellContents.items = [
 ]
 
 
-def _from_char(char: str) -> CellContents_T:
+def _from_char(char: str) -> CellContents:
     """
     Get the class of mine-like cell contents using the character
     representation.
@@ -350,3 +426,4 @@ class UIMode(enum.Enum):
 
     GAME = enum.auto()
     CREATE = enum.auto()
+    SPLIT_CELL = enum.auto()

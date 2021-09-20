@@ -26,6 +26,8 @@ from ..shared.types import (
     Difficulty,
     GameState,
     PathLike,
+    RegularCoord,
+    SplitCellCoord,
     UIMode,
 )
 from ..shared.utils import GameOptsStruct, Grid
@@ -91,7 +93,7 @@ class BaseController(api.AbstractController):
     def __init__(self, opts: GameOptsStruct):
         super().__init__(opts)
         self._mode = UIMode.GAME
-        self._active_ctrlr: _AbstractSubController = _SplitCellGameController(
+        self._active_ctrlr: _AbstractSubController = _GameController(
             self._opts, notif=self._notif
         )
 
@@ -105,6 +107,8 @@ class BaseController(api.AbstractController):
             self._active_ctrlr = _GameController(self._opts, notif=self._notif)
         elif mode is UIMode.CREATE:
             self._active_ctrlr = _CreateController(self._opts, notif=self._notif)
+        elif mode is UIMode.SPLIT_CELL:
+            self._active_ctrlr = _SplitCellGameController(self._opts, notif=self._notif)
         else:
             raise ValueError(f"Unrecognised UI mode: {mode}")
         self._mode = mode
@@ -163,7 +167,7 @@ class BaseController(api.AbstractController):
             self._notif.ui_mode_changed(UIMode.GAME)
         self._active_ctrlr.load_minefield(file)
 
-    def split_cell(self, coord: Coord_T) -> None:
+    def split_cell(self, coord: SplitCellCoord) -> None:
         # TODO: Check the sub controller can do this...
         self._active_ctrlr.split_cell(coord)
 
@@ -265,13 +269,13 @@ class _GameController(_AbstractSubController):
         self._game = self.game_cls(minefield=self._game.mf, lives=self._opts.lives)
         self._send_reset_update()
 
-    def select_cell(self, coord: Coord_T) -> None:
+    def select_cell(self, coord: RegularCoord) -> None:
         """See AbstractController."""
         super().select_cell(coord)
         cells = self._game.select_cell(coord)
         self._send_updates(cells)
 
-    def flag_cell(self, coord: Coord_T, *, flag_only: bool = False) -> None:
+    def flag_cell(self, coord: RegularCoord, *, flag_only: bool = False) -> None:
         """See AbstractController."""
         super().flag_cell(coord)
 
@@ -288,13 +292,13 @@ class _GameController(_AbstractSubController):
 
         self._send_updates({coord: self.board[coord]})
 
-    def remove_cell_flags(self, coord: Coord_T) -> None:
+    def remove_cell_flags(self, coord: RegularCoord) -> None:
         """See AbstractController."""
         super().remove_cell_flags(coord)
         self._game.set_cell_flags(coord, 0)
         self._send_updates({coord: self.board[coord]})
 
-    def chord_on_cell(self, coord: Coord_T) -> None:
+    def chord_on_cell(self, coord: RegularCoord) -> None:
         """See AbstractController."""
         super().chord_on_cell(coord)
         cells = self._game.chord_on_cell(coord)
@@ -448,17 +452,41 @@ class _SplitCellGameController(_GameController):
     def board(self) -> SplitCellBoard:
         return self._game.board
 
-    def split_cell(self, coord: Coord_T) -> None:
-        if not self.board.is_cell_split(coord):
-            self._send_updates(self._game.split_cell(coord))
+    def get_game_info(self) -> api.GameInfo:
+        ret = api.GameInfo(
+            game_state=self._game.state,
+            x_size=self._game.x_size,
+            y_size=self._game.y_size,
+            mines=self._game.mines,
+            difficulty=self._game.difficulty,
+            per_cell=self._game.per_cell,
+            first_success=self._game.first_success,
+            minefield_known=self._game.minefield_known,
+        )
+        if self._game.state.started():
+            ret.started_info = api.GameInfo.StartedInfo(
+                start_time=self._game.start_time,
+                elapsed=self._game.get_elapsed(),
+                bbbv=None,
+                rem_bbbv=None,
+                bbbvps=None,
+                prop_complete=None,
+                prop_flagging=None,
+            )
+        return ret
 
-    def flag_cell(self, coord: Coord_T, *, flag_only: bool = False) -> None:
-        if not self.board.is_cell_split(coord):
+    def split_cell(self, coord: SplitCellCoord) -> None:
+        if coord.is_split:
+            return
+        self._send_updates(self._game.split_cell(coord))
+
+    def flag_cell(self, coord: SplitCellCoord, *, flag_only: bool = False) -> None:
+        if not coord.is_split:
             return
         super().flag_cell(coord, flag_only=flag_only)
 
-    def remove_cell_flags(self, coord: Coord_T) -> None:
-        if not self.board.is_cell_split(coord):
+    def remove_cell_flags(self, coord: SplitCellCoord) -> None:
+        if not coord.is_split:
             return
         super().remove_cell_flags(coord)
 
