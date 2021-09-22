@@ -16,7 +16,7 @@ import abc
 import json
 import logging
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, Type
 
 import attr
 
@@ -92,10 +92,26 @@ class BaseController(api.AbstractController):
 
     def __init__(self, opts: GameOptsStruct):
         super().__init__(opts)
-        self._mode = UIMode.GAME
-        self._active_ctrlr: _AbstractSubController = _GameController(
+        # TODO: Get mode from opts.
+        # self._mode = UIMode.GAME
+        # self._active_ctrlr: _AbstractSubController = _GameController(
+        #     self._opts, notif=self._notif
+        # )
+        self._mode = UIMode.SPLIT_CELL
+        self._active_ctrlr: _AbstractSubController = _SplitCellGameController(
             self._opts, notif=self._notif
         )
+
+    @staticmethod
+    def _ctrlr_cls_from_mode(mode: UIMode) -> Type[_AbstractSubController]:
+        if mode is UIMode.GAME:
+            return _GameController
+        elif mode is UIMode.CREATE:
+            return _CreateController
+        elif mode is UIMode.SPLIT_CELL:
+            return _SplitCellGameController
+        else:
+            raise ValueError(f"Unrecognised UI mode: {mode}")
 
     def switch_mode(self, mode: UIMode) -> None:
         """Switch the mode of the UI, e.g. into 'create' mode."""
@@ -103,14 +119,9 @@ class BaseController(api.AbstractController):
         if mode is self._mode:
             logger.debug("Ignore switch mode request because mode is already %s", mode)
             return
-        if mode is UIMode.GAME:
-            self._active_ctrlr = _GameController(self._opts, notif=self._notif)
-        elif mode is UIMode.CREATE:
-            self._active_ctrlr = _CreateController(self._opts, notif=self._notif)
-        elif mode is UIMode.SPLIT_CELL:
-            self._active_ctrlr = _SplitCellGameController(self._opts, notif=self._notif)
-        else:
-            raise ValueError(f"Unrecognised UI mode: {mode}")
+        self._active_ctrlr = self._ctrlr_cls_from_mode(mode)(
+            self._opts, notif=self._notif
+        )
         self._mode = mode
         self._notif.reset()
 
@@ -162,7 +173,7 @@ class BaseController(api.AbstractController):
             The location of the file to load from. Should have the extension
             ".mgb".
         """
-        if self._mode is UIMode.CREATE:
+        if self._opts.mode is UIMode.CREATE:
             self.switch_mode(UIMode.GAME)
             self._notif.ui_mode_changed(UIMode.GAME)
         self._active_ctrlr.load_minefield(file)
