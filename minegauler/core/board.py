@@ -13,7 +13,7 @@ Exports
 
 """
 
-__all__ = ("Board", "Minefield", "SplitCellBoard")
+__all__ = ("Board", "Minefield", "RegularBoard", "SplitCellBoard")
 
 import abc
 import random as rnd
