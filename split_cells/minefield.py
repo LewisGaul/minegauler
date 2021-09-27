@@ -6,18 +6,19 @@
 # The responsibility of calculating properties of the minefield (e.g. 3bv, final
 # board, ...) can go in mode-specific implementations (e.g. subclasses).
 
-__all__ = ("Minefield", "RegularMinefield")
+__all__ = ("Minefield", "RegularMinefield", "SplitCellMinefield")
 
+import abc
 import random
 from typing import Generic, Iterable, List, Optional, Set
 
-from minegauler.core.board import RegularBoard
+from minegauler.core.board import Board, RegularBoard, SplitCellBoard
 from minegauler.shared.types import CellContents
 
 from .coord import Coord, RegularCoord
 
 
-class Minefield(Generic[Coord]):
+class Minefield(Generic[Coord], metaclass=abc.ABCMeta):
     """Representation of a minesweeper minefield."""
 
     def __init__(
@@ -37,6 +38,8 @@ class Minefield(Generic[Coord]):
         self.mines: int = mines
         self.per_cell: int = per_cell
         self.mine_coords: List[Coord] = []
+        self._bbbv: Optional[int] = None
+        self._completed_board: Optional[Board] = None
 
         # Perform some checks on the args.
         if self.per_cell < 1:
@@ -88,6 +91,22 @@ class Minefield(Generic[Coord]):
             raise ValueError(f"Invalid coord '{coord}'")
         return self.mine_coords.count(coord)
 
+    @property
+    def bbbv(self) -> int:
+        if not self.mine_coords:
+            raise AttributeError("Unitialised minefield has no 3bv")
+        if self._bbbv is None:
+            self._bbbv = self._calc_3bv()
+        return self._bbbv
+
+    @property
+    def completed_board(self) -> Board:
+        if not self.mine_coords:
+            raise AttributeError("Unitialised minefield has no openings")
+        if self._completed_board is None:
+            self._completed_board = self._calc_completed_board()
+        return self._completed_board
+
     def populate(self, safe_coords: Optional[Iterable[Coord]] = None) -> None:
         """
         Randomly place mines in the available coordinates.
@@ -121,17 +140,25 @@ class Minefield(Generic[Coord]):
         random.shuffle(avble_coords)
         self.mine_coords = avble_coords[: self.mines]
 
+    @abc.abstractmethod
+    def _calc_3bv(self) -> int:
+        """Calculate the 3bv of the board."""
 
-class RegularMinefield(Minefield[RegularCoord]):
-    """A regular minesweeper minefield."""
+    @abc.abstractmethod
+    def _calc_completed_board(self) -> Board:
+        """
+        Create the completed board with the flags and numbers that should be
+        seen upon game completion.
+        """
+
+
+class _RegularMinefieldBase(Minefield[RegularCoord]):
+    """The base for a minefield with regular coords."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.x_size: int = max({c[0] for c in self.all_coords}) + 1
         self.y_size: int = max({c[1] for c in self.all_coords}) + 1
-        self._bbbv: Optional[int] = None
-        self._openings: Optional[List[List[RegularCoord]]] = None
-        self._completed_board: Optional[RegularBoard] = None
 
     def __str__(self):
         max_nr_mines = max(self[c] for c in self.all_coords)
@@ -151,7 +178,7 @@ class RegularMinefield(Minefield[RegularCoord]):
     @classmethod
     def from_dimensions(
         cls, x_size: int, y_size: int, *, mines: int, per_cell: int = 1
-    ) -> "RegularMinefield":
+    ) -> "_RegularMinefieldBase":
         """
         :param x_size:
             Number of columns in the grid.
@@ -169,13 +196,13 @@ class RegularMinefield(Minefield[RegularCoord]):
         ]
         return cls(all_coords, mines=mines, per_cell=per_cell)
 
-    @property
-    def bbbv(self) -> int:
-        if not self.mine_coords:
-            raise AttributeError("Unitialised minefield has no 3bv")
-        if self._bbbv is None:
-            self._bbbv = self._calc_3bv()
-        return self._bbbv
+
+class RegularMinefield(_RegularMinefieldBase):
+    """A regular minesweeper minefield."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._openings: Optional[List[List[RegularCoord]]] = None
 
     @property
     def openings(self) -> List[List[RegularCoord]]:
@@ -184,14 +211,6 @@ class RegularMinefield(Minefield[RegularCoord]):
         if self._openings is None:
             self._openings = self._find_openings()
         return self._openings
-
-    @property
-    def completed_board(self) -> RegularBoard:
-        if not self.mine_coords:
-            raise AttributeError("Unitialised minefield has no openings")
-        if self._completed_board is None:
-            self._completed_board = self._find_completed_board()
-        return self._completed_board
 
     def _get_nbrs(
         self, coord: RegularCoord, *, include_origin=False
@@ -208,7 +227,14 @@ class RegularMinefield(Minefield[RegularCoord]):
             nbrs.remove(coord)
         return nbrs
 
-    def _find_completed_board(self) -> RegularBoard:
+    def _calc_3bv(self) -> int:
+        """Calculate the 3bv of the board."""
+        clicks = len(self.openings)
+        exposed = len({c for opening in self.openings for c in opening})
+        clicks += self.x_size * self.y_size - len(set(self.mine_coords)) - exposed
+        return clicks
+
+    def _calc_completed_board(self) -> RegularBoard:
         """
         Create the completed board with the flags and numbers that should be
         seen upon game completion.
@@ -257,9 +283,22 @@ class RegularMinefield(Minefield[RegularCoord]):
             blanks_to_check -= opening
         return openings
 
+
+class SplitCellMinefield(_RegularMinefieldBase):
+    """A split-cell minefield."""
+
+    # Note: Properties like openings are dependent on the state of the board
+    #  (whether cells are split). However, a minefield does still have the
+    #  concept of 'minimum left clicks' (i.e. a variant of 3bv) and completed
+    #  board - these are just more complex to compute!
+
     def _calc_3bv(self) -> int:
         """Calculate the 3bv of the board."""
-        clicks = len(self.openings)
-        exposed = len({c for opening in self.openings for c in opening})
-        clicks += self.x_size * self.y_size - len(set(self.mine_coords)) - exposed
-        return clicks
+        raise NotImplementedError  # TODO
+
+    def _calc_completed_board(self) -> SplitCellBoard:
+        """
+        Create the completed board with the flags and numbers that should be
+        seen upon game completion.
+        """
+        raise NotImplementedError  # TODO
