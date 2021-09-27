@@ -15,7 +15,7 @@ from typing import Generic, Iterable, List, Optional, Set, TypeVar
 from minegauler.shared.types import CellContents
 
 from .board import Board, RegularBoard, SplitCellBoard
-from .coord import RegularCoord
+from .types import RegularCoord
 
 
 C = TypeVar("C")

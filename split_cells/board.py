@@ -13,8 +13,7 @@ else:
 from minegauler.shared import utils
 from minegauler.shared.types import CellContents
 
-from .coord import RegularCoord
-from .game import GameMode
+from .types import GameMode, RegularCoord
 
 
 M = TypeVar("M", bound=GameMode)
