@@ -1,19 +1,30 @@
 __all__ = ("Board", "RegularBoard", "SplitCellBoard")
 
 import abc
-from typing import Iterable, List
+import sys
+from typing import Generic, Iterable, List, TypeVar
+
+
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
 
 from minegauler.shared import utils
 from minegauler.shared.types import CellContents
 
 from .coord import RegularCoord
+from .game import GameMode
 
 
-class Board(metaclass=abc.ABCMeta):
+M = TypeVar("M", bound=GameMode)
+
+
+class Board(Generic[M], metaclass=abc.ABCMeta):
     """Representation of a minesweeper board, generic over the game mode."""
 
 
-class RegularBoard(Board):
+class RegularBoard(Board[Literal[GameMode.REGULAR]]):
     """A regular minesweeper board."""
 
     def __init__(self, x_size: int, y_size: int):
@@ -72,5 +83,5 @@ class RegularBoard(Board):
             raise ValueError("Coord out of bounds")
 
 
-class SplitCellBoard(Board):
+class SplitCellBoard(Board[Literal[GameMode.SPLIT_CELL]]):
     """A split-cell minesweeper board."""

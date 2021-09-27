@@ -338,49 +338,13 @@ class Difficulty(str, enum.Enum):
     CUSTOM = "C"
 
     @classmethod
-    def from_str(cls, value: Union[str, "Difficulty"]) -> "Difficulty":
+    def from_str(cls, value: str) -> "Difficulty":
         """Create an instance from a string representation."""
         if value.upper() in [x.name for x in cls]:
             value = value[0].upper()
         elif value.upper() in [x.value for x in cls]:
             value = value.upper()
         return cls(value)
-
-    @classmethod
-    def from_board_values(cls, x_size: int, y_size: int, mines: int) -> "Difficulty":
-        """Get the difficulty based on the board dimensions and mines."""
-        if x_size == 8 and y_size == 8 and mines == 10:
-            return cls.BEGINNER
-        elif x_size == 16 and y_size == 16 and mines == 40:
-            return cls.INTERMEDIATE
-        elif x_size == 30 and y_size == 16 and mines == 99:
-            return cls.EXPERT
-        elif x_size == 30 and y_size == 30 and mines == 200:
-            return cls.MASTER
-        elif x_size == 50 and y_size == 50 and mines == 625:
-            return cls.LUDICROUS
-        else:
-            return cls.CUSTOM
-
-    def get_board_values(self) -> Tuple[int, int, int]:
-        """
-        Get the board dimensions and number of mines for the difficulty.
-
-        :return:
-            A tuple containing (x_size, y_size, mines).
-        """
-        if self is self.BEGINNER:
-            return 8, 8, 10
-        elif self is self.INTERMEDIATE:
-            return 16, 16, 40
-        elif self is self.EXPERT:
-            return 30, 16, 99
-        elif self is self.MASTER:
-            return 30, 30, 200
-        elif self is self.LUDICROUS:
-            return 50, 50, 625
-        else:
-            raise ValueError("Custom difficulty has no corresponding board values")
 
 
 class GameState(str, enum.Enum):
