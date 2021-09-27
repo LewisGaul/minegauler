@@ -10,19 +10,23 @@ __all__ = ("Minefield", "RegularMinefield", "SplitCellMinefield")
 
 import abc
 import random
-from typing import Generic, Iterable, List, Optional, Set
+from typing import Generic, Iterable, List, Optional, Set, TypeVar
 
-from minegauler.core.board import Board, RegularBoard, SplitCellBoard
 from minegauler.shared.types import CellContents
 
-from .coord import Coord, RegularCoord
+from .board import Board, RegularBoard, SplitCellBoard
+from .coord import RegularCoord
 
 
-class Minefield(Generic[Coord], metaclass=abc.ABCMeta):
-    """Representation of a minesweeper minefield."""
+C = TypeVar("C")
+B = TypeVar("B", bound=Board)
+
+
+class Minefield(Generic[C, B], metaclass=abc.ABCMeta):
+    """Representation of a minesweeper minefield, generic over the coord type."""
 
     def __init__(
-        self, all_coords: Iterable[Coord], *, mines: int, per_cell: int = 1,
+        self, all_coords: Iterable[C], *, mines: int, per_cell: int = 1,
     ):
         """
         :param all_coords:
@@ -34,12 +38,12 @@ class Minefield(Generic[Coord], metaclass=abc.ABCMeta):
         :raise ValueError:
             If the number of mines is too high.
         """
-        self.all_coords: Set[Coord] = set(all_coords)
+        self.all_coords: Set[C] = set(all_coords)
         self.mines: int = mines
         self.per_cell: int = per_cell
-        self.mine_coords: List[Coord] = []
+        self.mine_coords: List[C] = []
         self._bbbv: Optional[int] = None
-        self._completed_board: Optional[Board] = None
+        self._completed_board: Optional[B] = None
 
         # Perform some checks on the args.
         if self.per_cell < 1:
@@ -57,11 +61,7 @@ class Minefield(Generic[Coord], metaclass=abc.ABCMeta):
 
     @classmethod
     def from_coords(
-        cls,
-        all_coords: Iterable[Coord],
-        *,
-        mine_coords: Iterable[Coord],
-        per_cell: int = 1,
+        cls, all_coords: Iterable[C], *, mine_coords: Iterable[C], per_cell: int = 1,
     ) -> "Minefield":
         """
         :param all_coords:
@@ -77,7 +77,9 @@ class Minefield(Generic[Coord], metaclass=abc.ABCMeta):
         if any(mine_coords.count(c) > per_cell for c in mine_coords):
             raise ValueError(
                 f"Max number of mines per cell is {per_cell}, too many in: "
-                + ", ".join(c for c in mine_coords if mine_coords.count(c) > per_cell)
+                + ", ".join(
+                    str(c) for c in mine_coords if mine_coords.count(c) > per_cell
+                )
             )
         self = cls(all_coords, mines=len(mine_coords), per_cell=per_cell)
         self.mine_coords = mine_coords
@@ -86,7 +88,7 @@ class Minefield(Generic[Coord], metaclass=abc.ABCMeta):
     def __repr__(self):
         return f"<Minefield with {len(self.all_coords)} coords, {self.mines} mines>"
 
-    def __getitem__(self, coord: Coord) -> int:
+    def __getitem__(self, coord: C) -> int:
         if coord not in self.all_coords:
             raise ValueError(f"Invalid coord '{coord}'")
         return self.mine_coords.count(coord)
@@ -100,14 +102,14 @@ class Minefield(Generic[Coord], metaclass=abc.ABCMeta):
         return self._bbbv
 
     @property
-    def completed_board(self) -> Board:
+    def completed_board(self) -> B:
         if not self.mine_coords:
             raise AttributeError("Unitialised minefield has no openings")
         if self._completed_board is None:
             self._completed_board = self._calc_completed_board()
         return self._completed_board
 
-    def populate(self, safe_coords: Optional[Iterable[Coord]] = None) -> None:
+    def populate(self, safe_coords: Optional[Iterable[C]] = None) -> None:
         """
         Randomly place mines in the available coordinates.
 
@@ -130,29 +132,29 @@ class Minefield(Generic[Coord], metaclass=abc.ABCMeta):
 
         # Get a list of coordinates which can have mines placed in them.
         # Make sure there is at least one safe cell.
-        avble_coords = set(self.all_coords)
+        avble_set = set(self.all_coords)
         if safe_coords:
-            avble_coords -= safe_coords
+            avble_set -= safe_coords
         else:
-            avble_coords.remove(random.choice(tuple(avble_coords)))
+            avble_set.remove(random.choice(tuple(avble_set)))
 
-        avble_coords = list(avble_coords) * self.per_cell
-        random.shuffle(avble_coords)
-        self.mine_coords = avble_coords[: self.mines]
+        avble_list = list(avble_set) * self.per_cell
+        random.shuffle(avble_list)
+        self.mine_coords = avble_list[: self.mines]
 
     @abc.abstractmethod
     def _calc_3bv(self) -> int:
         """Calculate the 3bv of the board."""
 
     @abc.abstractmethod
-    def _calc_completed_board(self) -> Board:
+    def _calc_completed_board(self) -> B:
         """
         Create the completed board with the flags and numbers that should be
         seen upon game completion.
         """
 
 
-class _RegularMinefieldBase(Minefield[RegularCoord]):
+class _RegularMinefieldBase(Minefield[RegularCoord, B], metaclass=abc.ABCMeta):
     """The base for a minefield with regular coords."""
 
     def __init__(self, *args, **kwargs):
@@ -168,7 +170,7 @@ class _RegularMinefieldBase(Minefield[RegularCoord]):
         ret = ""
         for y in range(self.y_size):
             for x in range(self.x_size):
-                ret += cell.format(self[RegularCoord((x, y))]) + " "
+                ret += cell.format(self[RegularCoord(x, y)]) + " "
             ret = ret[:-1]  # Remove trailing space
             ret += "\n"
         ret = ret[:-1]  # Remove trailing newline
@@ -191,13 +193,11 @@ class _RegularMinefieldBase(Minefield[RegularCoord]):
         :raise ValueError:
             If the number of mines is too high.
         """
-        all_coords = [
-            RegularCoord((x, y)) for x in range(x_size) for y in range(y_size)
-        ]
+        all_coords = [RegularCoord(x, y) for x in range(x_size) for y in range(y_size)]
         return cls(all_coords, mines=mines, per_cell=per_cell)
 
 
-class RegularMinefield(_RegularMinefieldBase):
+class RegularMinefield(_RegularMinefieldBase[RegularBoard]):
     """A regular minesweeper minefield."""
 
     def __init__(self, *args, **kwargs):
@@ -222,7 +222,7 @@ class RegularMinefield(_RegularMinefieldBase):
         nbrs = []
         for i in range(max(0, x - 1), min(self.x_size, x + 2)):
             for j in range(max(0, y - 1), min(self.y_size, y + 2)):
-                nbrs.append(RegularCoord((i, j)))
+                nbrs.append(RegularCoord(i, j))
         if not include_origin:
             nbrs.remove(coord)
         return nbrs
@@ -284,7 +284,7 @@ class RegularMinefield(_RegularMinefieldBase):
         return openings
 
 
-class SplitCellMinefield(_RegularMinefieldBase):
+class SplitCellMinefield(_RegularMinefieldBase[SplitCellBoard]):
     """A split-cell minefield."""
 
     # Note: Properties like openings are dependent on the state of the board

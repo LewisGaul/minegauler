@@ -1,8 +1,10 @@
-__all__ = ("Coord", "RegularCoord")
+__all__ = ("RegularCoord",)
 
-from typing import NewType, Tuple, TypeVar
+from typing import NamedTuple
 
 
-Coord = TypeVar("Coord")
+class RegularCoord(NamedTuple):
+    """Regular coord, an (x, y) tuple."""
 
-RegularCoord = NewType("RegularCoord", Tuple[int, int])
+    x: int
+    y: int
