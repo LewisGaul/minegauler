@@ -16,7 +16,7 @@ import logging
 import pathlib
 import textwrap
 import traceback
-from typing import Callable, Dict, Mapping, Optional, Type
+from typing import Callable, Dict, Mapping, Optional
 
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QFocusEvent, QFont, QIcon, QKeyEvent
@@ -59,9 +59,9 @@ from ..shared.types import (
     PathLike,
     UIMode,
 )
-from ..shared.utils import GUIOptsStruct, format_timestamp
+from ..shared.utils import GUIOptsStruct, difficulty_to_values, format_timestamp
 from . import highscores, simulate, state, utils
-from .minefield import MinefieldWidget, SplitCellMinefieldWidget
+from .minefield.regular import MinefieldWidget
 from .panel import PanelWidget
 from .utils import FILES_DIR, HIGHSCORES_DIR, read_highscore_file
 
@@ -219,8 +219,8 @@ class MinegaulerGUI(
         self._populate_menubars()
         self._menubar.setFixedHeight(self._menubar.sizeHint().height())
         self._panel_widget = PanelWidget(self, self._state)
-        # self._mf_widget = MinefieldWidget(self, self._ctrlr, self._state)
-        self._mf_widget = SplitCellMinefieldWidget(self, self._ctrlr, self._state)
+        self._mf_widget = MinefieldWidget(self, self._ctrlr, self._state)
+        # self._mf_widget = SplitCellMinefieldWidget(self, self._ctrlr, self._state)
         self.set_panel_widget(self._panel_widget)
         self.set_body_widget(self._mf_widget)
         self._name_entry_widget = _NameEntryBar(self, self._state.name)
@@ -572,7 +572,7 @@ class MinegaulerGUI(
             self._open_custom_board_modal()
             return
         else:
-            x, y, m = diff.get_board_values()
+            x, y, m = difficulty_to_values(self._state.mode, diff)
             self._ctrlr.resize_board(x_size=x, y_size=y, mines=m)
 
     def _set_name(self, name: str) -> None:

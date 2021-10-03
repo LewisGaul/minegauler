@@ -17,16 +17,17 @@ from typing import Callable, Dict, Iterable, List, Optional
 
 import attr
 
-from ..core import board as brd
 from ..shared.types import (
     CellContents,
     Coord_T,
     Difficulty,
+    GameMode,
     GameState,
     PathLike,
     UIMode,
 )
 from ..shared.utils import GameOptsStruct
+from .board import BoardBase
 
 
 @attr.attrs(auto_attribs=True, kw_only=True)
@@ -67,7 +68,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         """
         Called to indicate the state should be reset.
         """
-        return NotImplemented
+        raise NotImplementedError
 
     @abc.abstractmethod
     def resize_minefield(self, x_size: int, y_size: int) -> None:
@@ -79,14 +80,14 @@ class AbstractListener(metaclass=abc.ABCMeta):
         :param y_size:
             The number of rows.
         """
-        return NotImplemented
+        raise NotImplementedError
 
     @abc.abstractmethod
     def set_mines(self, mines: int) -> None:
         """
         Called to indicate the number of mines at reset has changed.
         """
-        return NotImplemented
+        raise NotImplementedError
 
     @abc.abstractmethod
     def update_cells(self, cell_updates: Dict[Coord_T, CellContents]) -> None:
@@ -96,7 +97,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         :param cell_updates:
             Mapping of coordinates that were changed to the new cell state.
         """
-        return NotImplemented
+        raise NotImplementedError
 
     @abc.abstractmethod
     def update_game_state(self, game_state: GameState) -> None:
@@ -106,7 +107,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         :param game_state:
             The new game state.
         """
-        return NotImplemented
+        raise NotImplementedError
 
     @abc.abstractmethod
     def update_mines_remaining(self, mines_remaining: int) -> None:
@@ -116,7 +117,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         :param mines_remaining:
             The new number of mines remaining.
         """
-        return NotImplemented
+        raise NotImplementedError
 
     @abc.abstractmethod
     def ui_mode_changed(self, mode: UIMode) -> None:
@@ -126,7 +127,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         :param mode:
             The mode to change to.
         """
-        return NotImplemented
+        raise NotImplementedError
 
     @abc.abstractmethod
     def handle_exception(self, method: str, exc: Exception) -> None:
@@ -140,7 +141,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         :param exc:
             The caught exception.
         """
-        return NotImplemented
+        raise NotImplementedError
 
 
 class _Notifier(AbstractListener):
@@ -279,7 +280,7 @@ class _Notifier(AbstractListener):
         """
         Not used in this class - provided only to satisfy the ABC.
         """
-        return NotImplemented
+        raise NotImplementedError
 
 
 class AbstractController(metaclass=abc.ABCMeta):
@@ -333,13 +334,13 @@ class AbstractController(metaclass=abc.ABCMeta):
     # --------------------------------------------------------------------------
     @property
     @abc.abstractmethod
-    def board(self) -> brd.Board:
-        return NotImplemented
+    def board(self) -> BoardBase:
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_game_info(self) -> GameInfo:
         """Get information about the current game."""
-        return NotImplemented
+        raise NotImplementedError
 
     def get_game_options(self) -> GameOptsStruct:
         return self._opts
@@ -435,7 +436,7 @@ class AbstractController(metaclass=abc.ABCMeta):
         self._logger.debug("Loading minefield from file: %s", file)
 
     @abc.abstractmethod
-    def switch_mode(self, mode: UIMode) -> None:
+    def switch_mode(self, mode: GameMode) -> None:
         """
         Switch the mode of the UI, e.g. into 'create' mode.
         """

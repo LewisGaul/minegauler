@@ -4,8 +4,6 @@ __all__ = (
     "GameBase",
     "GameNotStartedError",
     "check_game_started",
-    "difficulty_from_values",
-    "difficulty_to_values",
 )
 
 import abc
@@ -13,19 +11,10 @@ import functools
 import logging
 import math
 import time
-from typing import (
-    Callable,
-    Generic,
-    Iterable,
-    Mapping,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Callable, Iterable, Optional, Type, Union
 
 from ..shared.types import CellContents, Coord_T, Difficulty, GameMode, GameState
+from ..shared.utils import difficulty_from_values
 from .board import BoardBase
 from .minefield import MinefieldBase
 
@@ -143,50 +132,6 @@ def check_game_started(method: Callable) -> Callable:
         return method(self, *args, **kwargs)
 
     return wrapped
-
-
-_difficulty_pairs: Mapping[
-    GameMode, Iterable[Tuple[Difficulty, Tuple[int, int, int]]]
-] = {
-    GameMode.REGULAR: [
-        (Difficulty.BEGINNER, (8, 8, 10)),
-        (Difficulty.INTERMEDIATE, (16, 16, 40)),
-        (Difficulty.EXPERT, (30, 16, 99)),
-        (Difficulty.MASTER, (30, 30, 200)),
-        (Difficulty.LUDICROUS, (50, 50, 625)),
-    ],
-    GameMode.SPLIT_CELL: [
-        (Difficulty.BEGINNER, (4, 4, 5)),
-        (Difficulty.INTERMEDIATE, (8, 8, 20)),
-        (Difficulty.EXPERT, (15, 8, 49)),
-        (Difficulty.MASTER, (15, 15, 100)),
-        (Difficulty.LUDICROUS, (25, 25, 400)),
-    ],
-}
-
-
-def difficulty_to_values(mode: GameMode, diff: Difficulty) -> Tuple[int, int, int]:
-    try:
-        mapping = dict(_difficulty_pairs[mode])
-    except KeyError:
-        raise ValueError(f"Unknown game mode: {mode}") from None
-    try:
-        return mapping[diff]
-    except KeyError:
-        raise ValueError(f"Unknown difficulty: {diff}") from None
-
-
-def difficulty_from_values(
-    mode: GameMode, x_size: int, y_size: int, mines: int
-) -> Difficulty:
-    try:
-        mapping = dict((x[1], x[0]) for x in _difficulty_pairs[mode])
-    except KeyError:
-        raise ValueError(f"Unknown game mode: {mode}") from None
-    try:
-        return mapping[(x_size, y_size, mines)]
-    except KeyError:
-        return Difficulty.CUSTOM
 
 
 class GameNotStartedError(Exception):

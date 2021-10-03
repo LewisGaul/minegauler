@@ -28,7 +28,7 @@ from PyQt5.QtWidgets import (
 )
 
 from ..shared.types import CellContents, CellImageType, Coord_T
-from .minefield import _update_cell_images
+from .minefield.base import _update_cell_images
 from .utils import CellUpdate_T
 
 

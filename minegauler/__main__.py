@@ -41,7 +41,7 @@ logger.debug("GUI options: %s", gui_opts)
 logger.info("Starting up")
 
 # Create core controller.
-ctrlr = core.BaseController(game_opts)
+ctrlr = core.UberController(game_opts)
 # Init frontend and create controller.
 frontend.init_app()
 gui = frontend.MinegaulerGUI(ctrlr, frontend.state.State.from_opts(game_opts, gui_opts))

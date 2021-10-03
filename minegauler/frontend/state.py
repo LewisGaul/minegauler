@@ -24,8 +24,13 @@ from typing import Dict, Optional
 import attr
 
 from ..shared import HighscoreStruct
-from ..shared.types import CellImageType, Difficulty, GameState, UIMode
-from ..shared.utils import GameOptsStruct, GUIOptsStruct, StructConstructorMixin
+from ..shared.types import CellImageType, Difficulty, GameMode, GameState, UIMode
+from ..shared.utils import (
+    GameOptsStruct,
+    GUIOptsStruct,
+    StructConstructorMixin,
+    difficulty_from_values,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -42,10 +47,11 @@ class PerGameState(StructConstructorMixin):
     per_cell: int = 1
     lives: int = 1
     drag_select: bool = False
+    mode: GameMode = GameMode.REGULAR
 
     @property
     def difficulty(self) -> Difficulty:
-        return Difficulty.from_board_values(self.x_size, self.y_size, self.mines)
+        return difficulty_from_values(self.mode, self.x_size, self.y_size, self.mines)
 
 
 class HighscoreWindowState(StructConstructorMixin):
@@ -198,6 +204,21 @@ class State:
             return self.pending_game_state.drag_select
         else:
             return self._current_game_state.drag_select
+
+    @property
+    def mode(self):
+        return self._current_game_state.mode
+
+    @mode.setter
+    def mode(self, value):
+        self._update_game_state("mode", value)
+
+    @property
+    def pending_mode(self):
+        if self.has_pending_game_state():
+            return self.pending_game_state.mode
+        else:
+            return self._current_game_state.mode
 
     @property
     def current_game_state(self) -> PerGameState:
