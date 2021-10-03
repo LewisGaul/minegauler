@@ -12,7 +12,7 @@ from typing import Any, Mapping
 
 from ..shared.types import Coord_T, GameMode, PathLike, SplitCellCoord, UIMode
 from ..shared.utils import GameOptsStruct
-from . import api, regular, split_cells
+from . import api, regular, split_cell
 from .board import BoardBase
 from .controller import ControllerBase
 
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 GAME_MODE_IMPL: Mapping[GameMode, Any] = {
     GameMode.REGULAR: regular,
-    GameMode.SPLIT_CELL: split_cells,
+    GameMode.SPLIT_CELL: split_cell,
 }
 
 

@@ -64,7 +64,7 @@ class Controller(ControllerBase):
             )
             self._opts.mines = self._opts.x_size * self._opts.y_size - 1
             self._notif.set_mines(self._opts.mines)
-        self._game = self.game_cls(
+        self.game = self.game_cls(
             x_size=self._opts.x_size,
             y_size=self._opts.y_size,
             mines=self._opts.mines,
@@ -76,16 +76,16 @@ class Controller(ControllerBase):
 
     def restart_game(self) -> None:
         """See AbstractController."""
-        if not self._game.mf:
+        if not self.game.mf:
             return
         super().restart_game()
-        self._game = self.game_cls(minefield=self._game.mf, lives=self._opts.lives)
+        self.game = self.game_cls(minefield=self.game.mf, lives=self._opts.lives)
         self._send_reset_update()
 
     def select_cell(self, coord: Coord) -> None:
         """See AbstractController."""
         super().select_cell(coord)
-        cells = self._game.select_cell(coord)
+        cells = self.game.select_cell(coord)
         self._send_updates(cells)
 
     def flag_cell(self, coord: Coord, *, flag_only: bool = False) -> None:
@@ -94,27 +94,27 @@ class Controller(ControllerBase):
 
         cell_state = self.board[coord]
         if cell_state is CellContents.Unclicked:
-            self._game.set_cell_flags(coord, 1)
+            self.game.set_cell_flags(coord, 1)
         elif isinstance(cell_state, CellContents.Flag):
-            if cell_state.num >= self._game.per_cell:
+            if cell_state.num >= self.game.per_cell:
                 if flag_only:
                     return
-                self._game.set_cell_flags(coord, 0)
+                self.game.set_cell_flags(coord, 0)
             else:
-                self._game.set_cell_flags(coord, cell_state.num + 1)
+                self.game.set_cell_flags(coord, cell_state.num + 1)
 
         self._send_updates({coord: self.board[coord]})
 
     def remove_cell_flags(self, coord: Coord) -> None:
         """See AbstractController."""
         super().remove_cell_flags(coord)
-        self._game.set_cell_flags(coord, 0)
+        self.game.set_cell_flags(coord, 0)
         self._send_updates({coord: self.board[coord]})
 
     def chord_on_cell(self, coord: Coord) -> None:
         """See AbstractController."""
         super().chord_on_cell(coord)
-        cells = self._game.chord_on_cell(coord)
+        cells = self.game.chord_on_cell(coord)
         self._send_updates(cells)
 
     def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
@@ -144,7 +144,7 @@ class Controller(ControllerBase):
         self._opts.y_size = y_size
         self._opts.mines = mines
 
-        self._game = self.game_cls(
+        self.game = self.game_cls(
             x_size=self._opts.x_size,
             y_size=self._opts.y_size,
             mines=self._opts.mines,
@@ -160,8 +160,8 @@ class Controller(ControllerBase):
         """
         super().set_first_success(value)
         self._opts.first_success = value
-        if not self._game.state.started():
-            self._game.first_success = value
+        if not self.game.state.started():
+            self.game.first_success = value
 
     def set_per_cell(self, value: int) -> None:
         """
@@ -176,7 +176,7 @@ class Controller(ControllerBase):
         # If the game is not started and the minefiels is not known then the
         # new per-cell value should be picked up immediately, and the board
         # cleared of any flags (e.g. 3-flag cells may no longer be allowed!).
-        if not (self._game.state.started() or self._game.minefield_known):
+        if not (self.game.state.started() or self.game.minefield_known):
             self.new_game()
 
     def save_current_minefield(self, file: PathLike) -> None:
@@ -192,9 +192,9 @@ class Controller(ControllerBase):
             If saving to file fails.
         """
         super().save_current_minefield(file)
-        if not self._game.state.finished():
+        if not self.game.state.finished():
             raise RuntimeError("Can only save minefields when the game is completed")
-        _save_minefield(self._game.mf, file)
+        _save_minefield(self.game.mf, file)
 
     def load_minefield(self, file: PathLike) -> None:
         """
@@ -216,7 +216,7 @@ class Controller(ControllerBase):
         self._opts.x_size = mf.x_size
         self._opts.y_size = mf.y_size
         self._opts.mines = mf.nr_mines
-        self._game = self.game_cls(minefield=mf, lives=self._opts.lives)
+        self.game = self.game_cls(minefield=mf, lives=self._opts.lives)
         self._send_resize_update()
 
     # --------------------------------------------------------------------------

@@ -88,6 +88,11 @@ class Board(BoardBase):
             Coord(*c) for c in self._grid.get_nbrs(coord, include_origin=include_origin)
         ]
 
+    def get_coord_at(self, x: int, y: int) -> Coord:
+        if x < 0 or x >= self.x_size or y < 0 or y >= self.y_size:
+            raise ValueError(f"Position out of bounds: ({x}, {y})")
+        return Coord(x, y)
+
     def reset(self):
         """Reset the board to the initial state."""
         for c in self.all_coords:

@@ -61,6 +61,7 @@ from ..shared.types import (
 )
 from ..shared.utils import GUIOptsStruct, difficulty_to_values, format_timestamp
 from . import highscores, simulate, state, utils
+from .minefield import split_cell
 from .minefield.regular import MinefieldWidget
 from .panel import PanelWidget
 from .utils import FILES_DIR, HIGHSCORES_DIR, read_highscore_file
@@ -1055,7 +1056,9 @@ class _AdvancedOptionsModal(QDialog):
 
         from unittest import mock
 
-        with mock.patch.dict(globals(), {"MinefieldWidget": SplitCellMinefieldWidget}):
+        with mock.patch.dict(
+            globals(), {"MinefieldWidget": split_cell.MinefieldWidget}
+        ):
             win = MinegaulerGUI(ctrlr, win._state)
         ctrlr.register_listener(win)
         win.show()

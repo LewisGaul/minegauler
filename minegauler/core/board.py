@@ -10,7 +10,7 @@ __all__ = ("BoardBase",)
 import abc
 from typing import Iterable, List
 
-from ..shared.types import GameMode
+from ..shared.types import Coord_T, GameMode
 
 
 class BoardBase(metaclass=abc.ABCMeta):
@@ -29,4 +29,8 @@ class BoardBase(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_nbrs(self, coord, *, include_origin: bool = False) -> Iterable:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_coord_at(self, x: int, y: int) -> Coord_T:
         raise NotImplementedError

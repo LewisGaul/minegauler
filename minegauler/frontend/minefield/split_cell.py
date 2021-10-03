@@ -3,9 +3,11 @@
 __all__ = ("MinefieldWidget",)
 
 import enum
-from typing import Any, Mapping, Optional
+from typing import Any, Dict, Mapping, Optional
 
-import minegauler.core.split_cells as backend
+from PyQt5.QtGui import QPixmap
+
+import minegauler.core.split_cell as backend
 from minegauler.shared.types import CellContents, CellImageType
 
 from .base import MinefieldWidgetBase
