@@ -43,6 +43,7 @@ __all__ = (
     "RegularCoord",
     "Difficulty",
     "FaceState",
+    "GameMode",
     "GameState",
     "PathLike",
     "UIMode",
@@ -360,6 +361,13 @@ class GameState(str, enum.Enum):
 
     def finished(self) -> bool:
         return self in [self.WON, self.LOST]
+
+
+class GameMode(enum.Enum):
+    """Minesweeper game mode."""
+
+    REGULAR = enum.auto()
+    SPLIT_CELL = enum.auto()
 
 
 # ------------------------------------------------------------------------------

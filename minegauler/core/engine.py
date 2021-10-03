@@ -3,11 +3,6 @@
 """
 The core game logic.
 
-Exports
--------
-.. class:: BaseController
-    Implementation of game logic.
-
 """
 
 __all__ = ("BaseController",)
@@ -31,7 +26,7 @@ from ..shared.types import (
     UIMode,
 )
 from ..shared.utils import GameOptsStruct, Grid
-from . import api, game
+from . import GAME_MODE_IMPL, api, game
 from .board import Board, Minefield, SplitCellBoard
 
 

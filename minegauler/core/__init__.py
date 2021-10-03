@@ -1,20 +1,18 @@
 # April 2018, Lewis Gaul
 
-"""
-Available package imports.
+__all__ = ("GAME_MODE_IMPL",)
 
-"""
+from typing import Any, Mapping
 
-__all__ = (
-    "BaseController",
-    "Board",
-    "Minefield",
-    "api",
-    "board",
-    "engine",
-    "game",
-)
+from ..shared.types import GameMode
+from . import board, game, minefield, regular, split_cells
 
-from . import api, board, engine, game
-from .board import Board, Minefield
-from .engine import BaseController
+
+# TODO: Re-add imports when fixed
+# from . import api, board, engine, game, minefield, regular, split_cells
+
+
+GAME_MODE_IMPL: Mapping[GameMode, Any] = {
+    GameMode.REGULAR: regular,
+    GameMode.SPLIT_CELL: split_cells,
+}
