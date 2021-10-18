@@ -265,6 +265,7 @@ class GameOptsStruct(StructConstructorMixin):
     first_success: bool = True
     per_cell: int = 1
     lives: int = 1
+    mode: GameMode = GameMode.REGULAR
 
 
 @attr.attrs(auto_attribs=True)
@@ -276,7 +277,7 @@ class GUIOptsStruct(StructConstructorMixin):
     btn_size: int = 16
     drag_select: bool = False
     name: str = ""
-    styles: Dict[CellImageType, str] = {
+    styles: Mapping[CellImageType, str] = {
         CellImageType.BUTTONS: "Standard",
         CellImageType.NUMBERS: "Standard",
         CellImageType.MARKERS: "Standard",

@@ -17,11 +17,26 @@ from ._version import __version__
 
 logger = logging.getLogger(__name__)
 
-logging.basicConfig(
-    filename="runtime.log",
-    level=logging.DEBUG,
-    format="%(asctime)s[%(levelname)s](%(name)s) %(message)s",
-)
+
+def setup_logging():
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+    # Create file handler which logs debug messages.
+    fh = logging.FileHandler("runtime.log")
+    fh.setLevel(logging.DEBUG)
+    # Create console handler with a higher log level.
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.WARNING)
+    # Create formatter and add it to the handlers.
+    formatter = logging.Formatter("%(asctime)s[%(levelname)s](%(name)s) %(message)s")
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    # Add the handlers to the logger.
+    root.addHandler(fh)
+    root.addHandler(ch)
+
+
+setup_logging()
 
 
 read_settings = shared.read_settings_from_file()

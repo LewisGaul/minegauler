@@ -85,6 +85,7 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
             difficulty=self.game.difficulty,
             per_cell=self.game.per_cell,
             first_success=self.game.first_success,
+            mode=self.mode,
             minefield_known=self.game.minefield_known,
         )
         if self.game.state.started():

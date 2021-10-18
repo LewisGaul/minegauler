@@ -51,6 +51,7 @@ class GameInfo:
     difficulty: Difficulty
     per_cell: int
     first_success: bool
+    mode: GameMode
 
     minefield_known: bool
     started_info: Optional[StartedInfo] = None
@@ -295,7 +296,7 @@ class AbstractController(metaclass=abc.ABCMeta):
         # The registered functions to be called with updates.
         self._notif = _Notifier()
         self._logger = logging.getLogger(
-            ".".join([self.__class__.__module__, self.__class__.__name__])
+            f"{self.__class__.__module__}.{self.__class__.__name__}"
         )
 
     def register_listener(self, listener: AbstractListener) -> None:
@@ -438,6 +439,6 @@ class AbstractController(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def switch_mode(self, mode: GameMode) -> None:
         """
-        Switch the mode of the UI, e.g. into 'create' mode.
+        Switch the game mode, e.g. into 'split cells' mode.
         """
         self._logger.info("Requested switch to mode %s", mode)

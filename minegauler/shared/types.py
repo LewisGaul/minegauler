@@ -363,11 +363,11 @@ class GameState(str, enum.Enum):
         return self in [self.WON, self.LOST]
 
 
-class GameMode(enum.Enum):
+class GameMode(str, enum.Enum):
     """Minesweeper game mode."""
 
-    REGULAR = enum.auto()
-    SPLIT_CELL = enum.auto()
+    REGULAR = "REGULAR"
+    SPLIT_CELL = "SPLIT_CELL"
 
 
 # ------------------------------------------------------------------------------

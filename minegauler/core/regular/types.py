@@ -1,3 +1,5 @@
+# October 2021, Lewis Gaul
+
 __all__ = ("Coord",)
 
 from typing import NamedTuple

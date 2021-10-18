@@ -31,23 +31,24 @@ class UberController(api.AbstractController):
 
     def __init__(self, opts: GameOptsStruct):
         super().__init__(opts)
-        # TODO: Get mode from opts.
-        self._mode = GameMode.REGULAR
-        # self._mode = UIMode.SPLIT_CELL
-        self._active_ctrlr: ControllerBase = GAME_MODE_IMPL[self._mode].Controller(
+        self._active_ctrlr: ControllerBase = GAME_MODE_IMPL[self.mode].Controller(
             self._opts, notif=self._notif
         )
+
+    @property
+    def mode(self) -> GameMode:
+        return self._opts.mode
 
     def switch_mode(self, mode: GameMode) -> None:
         """Switch the game mode."""
         super().switch_mode(mode)
-        if mode is self._mode:
+        if mode is self.mode:
             logger.debug("Ignore switch mode request because mode is already %s", mode)
             return
+        self._opts.mode = mode
         self._active_ctrlr = GAME_MODE_IMPL[mode].Controller(
             self._opts, notif=self._notif
         )
-        self._mode = mode
         self._notif.reset()
 
     # ----------------------------------
