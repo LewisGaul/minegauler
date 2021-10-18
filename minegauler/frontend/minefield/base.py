@@ -12,7 +12,6 @@ Exports
 
 __all__ = ("MinefieldWidgetBase",)
 
-import abc
 import functools
 import logging
 import time
@@ -22,11 +21,11 @@ from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QMouseEvent, QPainter, QPixmap
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QSizePolicy, QWidget
 
-from minegauler.core import api
 from minegauler.core.board import BoardBase
 from minegauler.core.controller import ControllerBase
 from minegauler.shared.types import CellContents, CellImageType, Coord_T
 
+from ... import api
 from ..state import State
 from ..utils import IMG_DIR, CellUpdate_T, MouseMove
 

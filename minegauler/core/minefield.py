@@ -9,7 +9,7 @@ __all__ = ("MinefieldBase",)
 
 import abc
 import random
-from typing import Generic, Iterable, List, Optional, Set, TypeVar
+from typing import Any, Generic, Iterable, List, Mapping, Optional, Set, TypeVar
 
 from .board import BoardBase
 
@@ -159,3 +159,12 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
         Create the completed board with the flags and numbers that should be
         seen upon game completion.
         """
+
+    @abc.abstractmethod
+    def to_json(self) -> Mapping[str, Any]:
+        raise NotImplementedError
+
+    @classmethod
+    @abc.abstractmethod
+    def from_json(self, obj: Mapping[str, Any]) -> "MinefieldBase":
+        raise NotImplementedError

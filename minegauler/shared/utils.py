@@ -40,8 +40,6 @@ __all__ = (
     "GameOptsStruct",
     "Grid",
     "StructConstructorMixin",
-    "difficulty_from_values",
-    "difficulty_to_values",
     "format_timestamp",
     "is_flagging_threshold",
     "read_settings_from_file",
@@ -335,47 +333,3 @@ def write_settings_to_file(settings: AllOptsStruct) -> None:
 
 def format_timestamp(timestamp: float) -> str:
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp))
-
-
-_difficulty_pairs: Mapping[
-    GameMode, Iterable[Tuple[Difficulty, Tuple[int, int, int]]]
-] = {
-    GameMode.REGULAR: [
-        (Difficulty.BEGINNER, (8, 8, 10)),
-        (Difficulty.INTERMEDIATE, (16, 16, 40)),
-        (Difficulty.EXPERT, (30, 16, 99)),
-        (Difficulty.MASTER, (30, 30, 200)),
-        (Difficulty.LUDICROUS, (50, 50, 625)),
-    ],
-    GameMode.SPLIT_CELL: [
-        (Difficulty.BEGINNER, (4, 4, 5)),
-        (Difficulty.INTERMEDIATE, (8, 8, 20)),
-        (Difficulty.EXPERT, (15, 8, 49)),
-        (Difficulty.MASTER, (15, 15, 100)),
-        (Difficulty.LUDICROUS, (25, 25, 400)),
-    ],
-}
-
-
-def difficulty_to_values(mode: GameMode, diff: Difficulty) -> Tuple[int, int, int]:
-    try:
-        mapping = dict(_difficulty_pairs[mode])
-    except KeyError:
-        raise ValueError(f"Unknown game mode: {mode}") from None
-    try:
-        return mapping[diff]
-    except KeyError:
-        raise ValueError(f"Unknown difficulty: {diff}") from None
-
-
-def difficulty_from_values(
-    mode: GameMode, x_size: int, y_size: int, mines: int
-) -> Difficulty:
-    try:
-        mapping = dict((x[1], x[0]) for x in _difficulty_pairs[mode])
-    except KeyError:
-        raise ValueError(f"Unknown game mode: {mode}") from None
-    try:
-        return mapping[(x_size, y_size, mines)]
-    except KeyError:
-        return Difficulty.CUSTOM

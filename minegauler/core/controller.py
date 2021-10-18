@@ -1,18 +1,42 @@
 # October 2021, Lewis Gaul
 
-__all__ = ("ControllerBase", "SharedInfo")
+__all__ = ("ControllerBase", "GameControllerBase", "CreateControllerBase", "SharedInfo")
 
 import abc
+import json
+import logging
+import os.path
+from os import PathLike
 from typing import Dict, Optional, Type
 
 import attr
 
+from .. import api
 from ..shared import GameOptsStruct
-from ..shared.types import CellContents, Coord_T, GameMode, GameState
-from . import api
+from ..shared.types import CellContents, Coord_T, Difficulty, GameMode, GameState
 from .board import BoardBase
 from .game import GameBase
 from .minefield import MinefieldBase
+
+
+logger = logging.getLogger(__name__)
+
+
+def _save_minefield(mf: MinefieldBase, file: PathLike) -> None:
+    """
+    Save a minefield to file.
+
+    :param mf:
+        The minefield to save.
+    :param file:
+        The path of the file to save at.
+    :raises OSError:
+        If saving to file fails.
+    """
+    if os.path.isfile(file):
+        logger.warning("Overwriting file at %s", file)
+    with open(file, "w") as f:
+        json.dump(mf.to_json(), f)  # TODO
 
 
 @attr.attrs(auto_attribs=True, kw_only=True)
@@ -43,7 +67,9 @@ class SharedInfo:
 class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
     """Base controller class, generic over game mode."""
 
-    switch_mode = None  # Remove abstractmethod
+    # Remove abstractmethods.
+    switch_game_mode = None
+    switch_ui_mode = None
 
     mode: GameMode
     minefield_cls: Type[MinefieldBase]
@@ -63,6 +89,26 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
         # Use a reference to the given opts rather than a copy.
         self._opts = opts
         self._notif = notif
+
+    @property
+    @abc.abstractmethod
+    def difficulty(self) -> Difficulty:
+        raise NotImplementedError
+
+
+class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
+    """Base game controller class, generic over game mode."""
+
+    def __init__(
+        self, opts: GameOptsStruct, *, notif: api.AbstractListener,
+    ):
+        """
+        :param opts:
+            Game options.
+        :param notif:
+            A notifier defining callbacks.
+        """
+        super().__init__(opts, notif=notif)
         self.game = self.game_cls(
             x_size=self._opts.x_size,
             y_size=self._opts.y_size,
@@ -101,6 +147,10 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
         return ret
 
     @property
+    def difficulty(self) -> Difficulty:
+        return self.game.difficulty
+
+    @property
     def board(self) -> BoardBase:
         return self.game.board
 
@@ -126,3 +176,93 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
             self._notif.update_game_state(update.game_state)
 
         self._last_update = update
+
+    def save_current_minefield(self, file: PathLike) -> None:
+        """
+        Save the current minefield to file.
+
+        :param file:
+            The location of the file to save to. Should have the extension
+            ".mgb".
+        :raises RuntimeError:
+            If the game is not finished.
+        :raises OSError:
+            If saving to file fails.
+        """
+        super().save_current_minefield(file)
+        if not self.game.state.finished():
+            raise RuntimeError("Can only save minefields when the game is completed")
+        _save_minefield(self.game.mf, file)
+
+
+class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
+    """Base create controller class, generic over game mode."""
+
+    # Remove abstractmethod.
+    load_minefield = None
+
+    def __init__(
+        self, opts: GameOptsStruct, *, notif: api.AbstractListener,
+    ):
+        """
+        :param opts:
+            Game options.
+        :param notif:
+            A notifier defining callbacks.
+        """
+        super().__init__(opts, notif=notif)
+        self._board: BoardBase = self._make_board()
+        self._flags: int = 0
+        self._notif.set_mines(self._flags)
+
+    @property
+    def board(self) -> BoardBase:
+        return self._board
+
+    @abc.abstractmethod
+    def _make_board(self) -> BoardBase:
+        raise NotImplementedError
+
+    def get_game_info(self) -> api.GameInfo:
+        return api.GameInfo(
+            game_state=GameState.ACTIVE,
+            x_size=self._opts.x_size,
+            y_size=self._opts.y_size,
+            mines=self._flags,
+            difficulty=self.difficulty,
+            per_cell=self._opts.per_cell,
+            first_success=self._opts.first_success,
+            minefield_known=True,
+        )
+
+    def new_game(self) -> None:
+        """See AbstractController."""
+        super().new_game()
+        self._board = self._make_board()
+        self._flags = 0
+        self._notif.reset()
+
+    def restart_game(self) -> None:
+        """See AbstractController."""
+        super().restart_game()
+        self.new_game()
+
+    def save_current_minefield(self, file: PathLike) -> None:
+        """
+        Save the current created minefield to file.
+
+        :param file:
+            The location of the file to save to. Should have the extension
+            ".mgb".
+        :raises OSError:
+            If saving to file fails.
+        """
+        super().save_current_minefield(file)
+        coords = []
+        for c in self.board.all_coords:
+            if type(self.board[c]) is CellContents.Mine:
+                coords.extend([c] * self.board[c].num)
+        mf = self.minefield_cls.from_coords(
+            self.board.all_coords, mine_coords=coords, per_cell=self._opts.per_cell
+        )
+        _save_minefield(mf, file)

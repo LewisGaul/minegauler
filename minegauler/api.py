@@ -17,7 +17,8 @@ from typing import Callable, Dict, Iterable, List, Optional
 
 import attr
 
-from ..shared.types import (
+from .core.board import BoardBase
+from .shared.types import (
     CellContents,
     Coord_T,
     Difficulty,
@@ -26,8 +27,7 @@ from ..shared.types import (
     PathLike,
     UIMode,
 )
-from ..shared.utils import GameOptsStruct
-from .board import BoardBase
+from .shared.utils import GameOptsStruct
 
 
 @attr.attrs(auto_attribs=True, kw_only=True)
@@ -401,6 +401,13 @@ class AbstractController(metaclass=abc.ABCMeta):
         )
 
     @abc.abstractmethod
+    def set_difficulty(self, difficulty: Difficulty) -> None:
+        """
+        Set the size of the board and the number of mines for the given difficulty.
+        """
+        self._logger.info("Changing the board to difficulty %s", difficulty.name)
+
+    @abc.abstractmethod
     def set_first_success(self, value: bool) -> None:
         """
         Set whether the first click should be a guaranteed success.
@@ -437,8 +444,15 @@ class AbstractController(metaclass=abc.ABCMeta):
         self._logger.debug("Loading minefield from file: %s", file)
 
     @abc.abstractmethod
-    def switch_mode(self, mode: GameMode) -> None:
+    def switch_game_mode(self, mode: GameMode) -> None:
         """
         Switch the game mode, e.g. into 'split cells' mode.
         """
-        self._logger.info("Requested switch to mode %s", mode)
+        self._logger.info("Requested switch to game mode %s", mode)
+
+    @abc.abstractmethod
+    def switch_ui_mode(self, mode: UIMode) -> None:
+        """
+        Switch the UI mode, e.g. into 'create' mode.
+        """
+        self._logger.info("Requested switch to UI mode %s", mode)

@@ -3,7 +3,7 @@
 __all__ = ("Minefield", "RegularMinefieldBase")
 
 import abc
-from typing import Iterable, List, Optional, TypeVar
+from typing import Any, Iterable, List, Mapping, Optional, TypeVar
 
 from ...shared import utils
 from ...shared.types import CellContents
@@ -80,6 +80,40 @@ class RegularMinefieldBase(MinefieldBase[Coord, B], metaclass=abc.ABCMeta):
             (Coord(*c) for c in grid.all_coords),
             mine_coords=mine_coords,
             per_cell=per_cell,
+        )
+
+    @classmethod
+    def from_json(cls, obj: Mapping[str, Any]) -> "RegularMinefieldBase":
+        """
+        Create a minefield instance from a JSON encoding.
+
+        :param obj:
+            The dictionary obtained from decoding JSON. Must contain the
+            following fields: 'x_size', 'y_size', 'mine_coords'.
+        :raise ValueError:
+            If the dictionary is missing required fields.
+        """
+        try:
+            return cls.from_coords(
+                (
+                    Coord(x, y)
+                    for x in range(obj["x_size"],)
+                    for y in range(obj["y_size"],)
+                ),
+                mine_coords=[Coord(*c) for c in obj["mine_coords"]],
+                per_cell=obj.get("per_cell", 1),
+            )
+        except KeyError as e:
+            raise ValueError(
+                "Missing key in dictionary when trying to create minefield"
+            ) from e
+
+    def to_json(self) -> Mapping[str, Any]:
+        return dict(
+            x_size=self.x_size,
+            y_size=self.y_size,
+            mine_coords=self.mine_coords,
+            per_cell=self.per_cell,
         )
 
 

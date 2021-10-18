@@ -12,7 +12,7 @@ from unittest import mock
 
 import pytest
 
-from minegauler.core import api
+from minegauler import api
 from minegauler.core.board import Board, Minefield
 from minegauler.core.engine import BaseController, _CreateController, _GameController
 from minegauler.core.game import Game
@@ -1146,23 +1146,23 @@ class TestBaseController:
         assert ctrlr._active_ctrlr is game_ctrlr
 
         # No op.
-        ctrlr.switch_mode(UIMode.GAME)
+        ctrlr.switch_game_mode(UIMode.GAME)
         assert ctrlr._mode is UIMode.GAME
         assert ctrlr._active_ctrlr is game_ctrlr
 
         # Switch.
-        ctrlr.switch_mode(UIMode.CREATE)
+        ctrlr.switch_game_mode(UIMode.CREATE)
         assert ctrlr._mode is UIMode.CREATE
         assert ctrlr._active_ctrlr is create_ctrlr
 
         # Switch back.
-        ctrlr.switch_mode(UIMode.GAME)
+        ctrlr.switch_game_mode(UIMode.GAME)
         assert ctrlr._mode is UIMode.GAME
         assert ctrlr._active_ctrlr is game_ctrlr
 
         # Invalid mode.
         with pytest.raises(ValueError):
-            ctrlr.switch_mode(None)
+            ctrlr.switch_game_mode(None)
 
     def test_load_minefield(self, game_ctrlr, create_ctrlr):
         """Test the method to load a minefield."""
@@ -1175,7 +1175,7 @@ class TestBaseController:
         game_ctrlr.reset_mock()
 
         # In create mode, the mode is switched first.
-        ctrlr.switch_mode(UIMode.CREATE)
+        ctrlr.switch_game_mode(UIMode.CREATE)
         assert ctrlr._active_ctrlr is create_ctrlr
         ctrlr.load_minefield("file")
         assert ctrlr._mode is UIMode.GAME

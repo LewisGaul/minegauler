@@ -9,7 +9,8 @@ from unittest import mock
 
 import pytest
 
-from minegauler.core import api, board
+from minegauler import api
+from minegauler.core import board
 from minegauler.shared import utils
 
 

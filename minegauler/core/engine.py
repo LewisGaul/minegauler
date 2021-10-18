@@ -8,11 +8,26 @@ The core game engine.
 __all__ = ("UberController",)
 
 import logging
-from typing import Any, Mapping
+import sys
+from typing import Mapping, Type
 
-from ..shared.types import Coord_T, GameMode, PathLike, SplitCellCoord, UIMode
+
+if sys.version_info < (3, 8):
+    from typing_extensions import Protocol
+else:
+    from typing import Protocol
+
+from .. import api
+from ..shared.types import (
+    Coord_T,
+    Difficulty,
+    GameMode,
+    PathLike,
+    SplitCellCoord,
+    UIMode,
+)
 from ..shared.utils import GameOptsStruct
-from . import api, regular, split_cell
+from . import board, controller, game, minefield, regular, split_cell
 from .board import BoardBase
 from .controller import ControllerBase
 
@@ -20,7 +35,18 @@ from .controller import ControllerBase
 logger = logging.getLogger(__name__)
 
 
-GAME_MODE_IMPL: Mapping[GameMode, Any] = {
+class GameModeImplementation(Protocol):
+    """Protocol for game mode implementations to satisfy."""
+
+    Minefield: Type[minefield.MinefieldBase]
+    Board: Type[board.BoardBase]
+    Game: Type[game.GameBase]
+    GameController: Type[controller.ControllerBase]
+    CreateController: Type[controller.ControllerBase]
+    mode: GameMode
+
+
+GAME_MODE_IMPL: Mapping[GameMode, GameModeImplementation] = {
     GameMode.REGULAR: regular,
     GameMode.SPLIT_CELL: split_cell,
 }
@@ -31,22 +57,49 @@ class UberController(api.AbstractController):
 
     def __init__(self, opts: GameOptsStruct):
         super().__init__(opts)
-        self._active_ctrlr: ControllerBase = GAME_MODE_IMPL[self.mode].Controller(
-            self._opts, notif=self._notif
-        )
+        self._ui_mode: UIMode = UIMode.GAME
+        self._active_ctrlr: ControllerBase = self._get_ctrlr_cls(
+            self.mode, self._ui_mode
+        )(self._opts, notif=self._notif)
 
     @property
     def mode(self) -> GameMode:
         return self._opts.mode
 
-    def switch_mode(self, mode: GameMode) -> None:
+    @staticmethod
+    def _get_ctrlr_cls(game_mode: GameMode, ui_mode: UIMode) -> Type[ControllerBase]:
+        """Get the controller class for given modes."""
+        if ui_mode is UIMode.GAME:
+            return GAME_MODE_IMPL[game_mode].GameController
+        elif ui_mode is UIMode.CREATE:
+            return GAME_MODE_IMPL[game_mode].CreateController
+        else:
+            raise ValueError(f"Unsupported UI mode {ui_mode}")
+
+    def switch_game_mode(self, mode: GameMode) -> None:
         """Switch the game mode."""
-        super().switch_mode(mode)
+        super().switch_game_mode(mode)
         if mode is self.mode:
-            logger.debug("Ignore switch mode request because mode is already %s", mode)
+            logger.debug(
+                "Ignore switch game mode request because mode is already %s", mode
+            )
             return
         self._opts.mode = mode
-        self._active_ctrlr = GAME_MODE_IMPL[mode].Controller(
+        self._active_ctrlr = self._get_ctrlr_cls(mode, self._ui_mode)(
+            self._opts, notif=self._notif
+        )
+        self._notif.reset()
+
+    def switch_ui_mode(self, ui_mode: UIMode) -> None:
+        """Switch the UI mode."""
+        super().switch_ui_mode(ui_mode)
+        if ui_mode is self._ui_mode:
+            logger.debug(
+                "Ignore switch UI mode request because mode is already %s", ui_mode
+            )
+            return
+        self._ui_mode = ui_mode
+        self._active_ctrlr = self._get_ctrlr_cls(self.mode, ui_mode)(
             self._opts, notif=self._notif
         )
         self._notif.reset()
@@ -82,6 +135,9 @@ class UberController(api.AbstractController):
     def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
         self._active_ctrlr.resize_board(x_size, y_size, mines)
 
+    def set_difficulty(self, difficulty: Difficulty) -> None:
+        self._active_ctrlr.set_difficulty(difficulty)
+
     def set_first_success(self, value: bool) -> None:
         self._active_ctrlr.set_first_success(value)
 
@@ -96,11 +152,10 @@ class UberController(api.AbstractController):
         Load a minefield from file.
 
         :param file:
-            The location of the file to load from. Should have the extension
-            ".mgb".
+            The location of the file to load from.
         """
         if self._opts.mode is UIMode.CREATE:
-            self.switch_mode(UIMode.GAME)
+            self.switch_ui_mode(UIMode.GAME)
             self._notif.ui_mode_changed(UIMode.GAME)
         self._active_ctrlr.load_minefield(file)
 

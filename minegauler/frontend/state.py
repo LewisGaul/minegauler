@@ -25,12 +25,7 @@ import attr
 
 from ..shared import HighscoreStruct
 from ..shared.types import CellImageType, Difficulty, GameMode, GameState, UIMode
-from ..shared.utils import (
-    GameOptsStruct,
-    GUIOptsStruct,
-    StructConstructorMixin,
-    difficulty_from_values,
-)
+from ..shared.utils import GameOptsStruct, GUIOptsStruct, StructConstructorMixin
 
 
 logger = logging.getLogger(__name__)
@@ -43,15 +38,12 @@ class PerGameState(StructConstructorMixin):
     x_size: int = 8
     y_size: int = 8
     mines: int = 10
+    difficulty: Difficulty = Difficulty.BEGINNER
     first_success: bool = True
     per_cell: int = 1
     lives: int = 1
     drag_select: bool = False
     mode: GameMode = GameMode.REGULAR
-
-    @property
-    def difficulty(self) -> Difficulty:
-        return difficulty_from_values(self.mode, self.x_size, self.y_size, self.mines)
 
 
 class HighscoreWindowState(StructConstructorMixin):
@@ -135,15 +127,26 @@ class State:
         self._update_game_state("mines", value)
 
     @property
-    def difficulty(self) -> Difficulty:
-        return self._current_game_state.difficulty
-
-    @property
     def pending_mines(self):
         if self.has_pending_game_state():
             return self.pending_game_state.mines
         else:
             return self._current_game_state.mines
+
+    @property
+    def difficulty(self) -> Difficulty:
+        return self._current_game_state.difficulty
+
+    @difficulty.setter
+    def difficulty(self, value):
+        self._update_game_state("difficulty", value)
+
+    @property
+    def pending_difficulty(self):
+        if self.has_pending_game_state():
+            return self.pending_game_state.difficulty
+        else:
+            return self._current_game_state.difficulty
 
     @property
     def first_success(self):

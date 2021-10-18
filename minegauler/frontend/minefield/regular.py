@@ -2,7 +2,7 @@
 
 __all__ = ("MinefieldWidget",)
 
-from minegauler.core.regular import Controller
+from minegauler.core.regular import GameController
 
 from .base import MinefieldWidgetBase
 
@@ -12,4 +12,4 @@ class MinefieldWidget(MinefieldWidgetBase):
     Minefield widget for regular game.
     """
 
-    ctrlr_cls = Controller
+    ctrlr_cls = GameController

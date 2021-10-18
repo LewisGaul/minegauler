@@ -14,7 +14,6 @@ import time
 from typing import Callable, Iterable, Optional, Type, Union
 
 from ..shared.types import CellContents, Coord_T, Difficulty, GameMode, GameState
-from ..shared.utils import difficulty_from_values
 from .board import BoardBase
 from .minefield import MinefieldBase
 
@@ -198,10 +197,6 @@ class GameBase(metaclass=abc.ABCMeta):
     @property
     def per_cell(self) -> int:
         return self.mf.per_cell
-
-    @property
-    def difficulty(self) -> Difficulty:
-        return difficulty_from_values(self.mode, self.x_size, self.y_size, self.mines)
 
     def get_prop_complete(self) -> float:
         """Calculate the progress of solving the board using 3bv."""

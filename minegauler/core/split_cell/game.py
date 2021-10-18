@@ -1,12 +1,12 @@
 # October 2021, Lewis Gaul
 
-__all__ = ("Game",)
+__all__ = ("Game", "difficulty_from_values", "difficulty_to_values")
 
 import logging
 import time
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Tuple
 
-from ...shared.types import CellContents, GameMode, GameState
+from ...shared.types import CellContents, Difficulty, GameMode, GameState
 from ..game import GameBase, _check_coord, _ignore_if_not
 from .board import Board
 from .minefield import Minefield
@@ -14,6 +14,30 @@ from .types import Coord
 
 
 logger = logging.getLogger(__name__)
+
+
+_diff_pairs = [
+    (Difficulty.BEGINNER, (4, 4, 5)),
+    (Difficulty.INTERMEDIATE, (8, 8, 20)),
+    (Difficulty.EXPERT, (15, 8, 49)),
+    (Difficulty.MASTER, (15, 15, 100)),
+    (Difficulty.LUDICROUS, (25, 25, 400)),
+]
+
+
+def difficulty_to_values(diff: Difficulty) -> Tuple[int, int, int]:
+    try:
+        return dict(_diff_pairs)[diff]
+    except KeyError:
+        raise ValueError(f"Unknown difficulty: {diff}") from None
+
+
+def difficulty_from_values(x_size: int, y_size: int, mines: int) -> Difficulty:
+    mapping = dict((x[1], x[0]) for x in _diff_pairs)
+    try:
+        return mapping[(x_size, y_size, mines)]
+    except KeyError:
+        return Difficulty.CUSTOM
 
 
 # TODO:
@@ -37,6 +61,10 @@ class Game(GameBase):
     # ---------------------
     # Abstract methods
     # ---------------------
+    @property
+    def difficulty(self) -> Difficulty:
+        return difficulty_from_values(self.mode, self.x_size, self.y_size, self.mines)
+
     def _make_board(self) -> Board:
         return Board(self.x_size, self.y_size)
 

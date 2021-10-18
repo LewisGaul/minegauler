@@ -1,19 +1,15 @@
 # October 2021, Lewis Gaul
 
-__all__ = ("Controller",)
+__all__ = ("GameController", "CreateController")
 
 import json
 import logging
 import os.path
 
-import minegauler.shared.utils
-
-from ...shared import GameOptsStruct, utils
-from ...shared.types import CellContents, GameMode, GameState, PathLike
-from .. import api, game
-from ..controller import ControllerBase
+from ...shared.types import CellContents, Difficulty, GameMode, PathLike
+from ..controller import CreateControllerBase, GameControllerBase
 from .board import Board
-from .game import Game
+from .game import Game, difficulty_from_values, difficulty_to_values
 from .minefield import Minefield
 from .types import Coord
 
@@ -21,30 +17,21 @@ from .types import Coord
 logger = logging.getLogger(__name__)
 
 
-def _save_minefield(mf: Minefield, file: PathLike) -> None:
-    """
-    Save a minefield to file.
-
-    :param mf:
-        The minefield to save.
-    :param file:
-        The path of the file to save at.
-    :raises OSError:
-        If saving to file fails.
-    """
-    if os.path.isfile(file):
-        logger.warning("Overwriting file at %s", file)
-    with open(file, "w") as f:
-        json.dump(mf.to_json(), f)
-
-
-class Controller(ControllerBase):
-    """Controller for a regular minesweeper game."""
+class _ControllerMixin:
+    """Mixin for the controller classes."""
 
     mode = GameMode.REGULAR
     minefield_cls = Minefield
     board_cls = Board
     game_cls = Game
+
+    def set_difficulty(self, difficulty: Difficulty) -> None:
+        x, y, m = difficulty_to_values(difficulty)
+        self.resize_board(x, y, m)
+
+
+class GameController(_ControllerMixin, GameControllerBase):
+    """GameController for a regular minesweeper game."""
 
     # --------------------------------------------------------------------------
     # Methods triggered by user interaction
@@ -79,7 +66,12 @@ class Controller(ControllerBase):
         if not self.game.mf:
             return
         super().restart_game()
-        self.game = self.game_cls(minefield=self.game.mf, lives=self._opts.lives)
+        self.game = self.game_cls.from_minefield(
+            self.game.mf,
+            x_size=self.game.x_size,
+            y_size=self.game.y_size,
+            lives=self._opts.lives,
+        )
         self._send_reset_update()
 
     def select_cell(self, coord: Coord) -> None:
@@ -179,23 +171,6 @@ class Controller(ControllerBase):
         if not (self.game.state.started() or self.game.minefield_known):
             self.new_game()
 
-    def save_current_minefield(self, file: PathLike) -> None:
-        """
-        Save the current minefield to file.
-
-        :param file:
-            The location of the file to save to. Should have the extension
-            ".mgb".
-        :raises RuntimeError:
-            If the game is not finished.
-        :raises OSError:
-            If saving to file fails.
-        """
-        super().save_current_minefield(file)
-        if not self.game.state.finished():
-            raise RuntimeError("Can only save minefields when the game is completed")
-        _save_minefield(self.game.mf, file)
-
     def load_minefield(self, file: PathLike) -> None:
         """
         Load a minefield from file.
@@ -211,12 +186,14 @@ class Controller(ControllerBase):
             "Loaded minefield from file (%d x %d, %d mines)",
             mf.x_size,
             mf.y_size,
-            mf.nr_mines,
+            mf.mines,
         )
         self._opts.x_size = mf.x_size
         self._opts.y_size = mf.y_size
-        self._opts.mines = mf.nr_mines
-        self.game = self.game_cls(minefield=mf, lives=self._opts.lives)
+        self._opts.mines = mf.mines
+        self.game = self.game_cls.from_minefield(
+            mf, x_size=mf.x_size, y_size=mf.y_size, lives=self._opts.lives
+        )
         self._send_resize_update()
 
     # --------------------------------------------------------------------------
@@ -234,46 +211,15 @@ class Controller(ControllerBase):
         self._send_updates()
 
 
-class CreateController(ControllerBase):
+class CreateController(_ControllerMixin, CreateControllerBase):
     """A controller for creating boards."""
 
-    def __init__(self, opts: GameOptsStruct, *, notif: api.AbstractListener):
-        super().__init__(opts)
-        # Use a reference to the given opts rather than a copy.
-        self._opts = opts
-        self._notif = notif
-        self._board = Board(self._opts.x_size, self._opts.y_size)
-        self._flags: int = 0
-        self._notif.set_mines(self._flags)
-
     @property
-    def board(self) -> Board:
-        return self._board
+    def difficulty(self) -> Difficulty:
+        return difficulty_from_values(self._opts.x_size, self._opts.y_size, self._flags)
 
-    def get_game_info(self) -> api.GameInfo:
-        return api.GameInfo(
-            game_state=GameState.ACTIVE,
-            x_size=self._opts.x_size,
-            y_size=self._opts.y_size,
-            mines=self._flags,
-            difficulty=minegauler.shared.utils.difficulty_from_values(
-                GameMode.REGULAR, self._opts.x_size, self._opts.x_size, self._flags
-            ),
-            per_cell=self._opts.per_cell,
-            first_success=self._opts.first_success,
-            minefield_known=True,
-        )
-
-    def new_game(self) -> None:
-        """See AbstractController."""
-        super().new_game()
-        self._board = self.board_cls(self._opts.x_size, self._opts.y_size)
-        self._flags = 0
-        self._notif.reset()
-
-    def restart_game(self) -> None:
-        super().restart_game()
-        self.new_game()
+    def _make_board(self) -> Board:
+        return Board(self._opts.x_size, self._opts.y_size)
 
     def select_cell(self, coord: Coord) -> None:
         super().select_cell(coord)
@@ -351,24 +297,3 @@ class CreateController(ControllerBase):
     def set_per_cell(self, value: int) -> None:
         super().set_per_cell(value)
         self._opts.per_cell = value
-
-    def save_current_minefield(self, file: PathLike) -> None:
-        """
-        Save the current created minefield to file.
-
-        :param file:
-            The location of the file to save to. Should have the extension
-            ".mgb".
-        :raises OSError:
-            If saving to file fails.
-        """
-        super().save_current_minefield(file)
-        mines_grid = utils.Grid(self._opts.x_size, self._opts.y_size)
-        for c in self._board.all_coords:
-            if type(self._board[c]) is CellContents.Mine:
-                mines_grid[c] = self._board[c].num
-        mf = Minefield.from_grid(mines_grid, per_cell=self._opts.per_cell)
-        _save_minefield(mf, file)
-
-    def load_minefield(self, file: PathLike) -> None:
-        return NotImplemented

@@ -43,8 +43,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from .. import ROOT_DIR, shared
-from ..core import api
+from .. import ROOT_DIR, api, shared
 from ..shared.highscores import (
     HighscoreSettingsStruct,
     HighscoreStruct,
@@ -55,11 +54,12 @@ from ..shared.types import (
     CellImageType,
     Coord_T,
     Difficulty,
+    GameMode,
     GameState,
     PathLike,
     UIMode,
 )
-from ..shared.utils import GUIOptsStruct, difficulty_to_values, format_timestamp
+from ..shared.utils import GUIOptsStruct, format_timestamp
 from . import highscores, simulate, state, utils
 from .minefield import split_cell
 from .minefield.regular import MinefieldWidget
@@ -261,6 +261,7 @@ class MinegaulerGUI(
             self.reset()
         self._state.x_size = x_size
         self._state.y_size = y_size
+        self._state.difficulty = self._ctrlr.get_game_info().difficulty
         self._mf_widget.reshape(x_size, y_size)
         self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
@@ -382,7 +383,7 @@ class MinegaulerGUI(
         # Create board
         def switch_create_mode(checked: bool):
             mode = UIMode.CREATE if checked else UIMode.GAME
-            self.switch_mode(mode)
+            self.switch_ui_mode(mode)
 
         self._create_menu_action = create_act = QAction(
             "Create board",
@@ -573,8 +574,7 @@ class MinegaulerGUI(
             self._open_custom_board_modal()
             return
         else:
-            x, y, m = difficulty_to_values(self._state.mode, diff)
-            self._ctrlr.resize_board(x_size=x, y_size=y, mines=m)
+            self._ctrlr.set_difficulty(diff)
 
     def _set_name(self, name: str) -> None:
         self._state.name = name
@@ -838,9 +838,9 @@ class MinegaulerGUI(
         self._state.btn_size = size
         self._mf_widget.update_btn_size(size)
 
-    def switch_mode(self, mode: UIMode) -> None:
+    def switch_ui_mode(self, mode: UIMode) -> None:
         self._state.ui_mode = mode
-        self._ctrlr.switch_mode(mode)
+        self._ctrlr.switch_ui_mode(mode)
 
 
 class _CurrentInfoModal(QDialog):
@@ -1051,7 +1051,7 @@ class _AdvancedOptionsModal(QDialog):
         win = self._main_window
         ctrlr = win._ctrlr
         ctrlr._notif._listeners.clear()
-        ctrlr.switch_mode(UIMode.SPLIT_CELL)
+        ctrlr.switch_game_mode(GameMode.SPLIT_CELL)
         win.destroy()
 
         from unittest import mock

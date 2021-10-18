@@ -1,6 +1,6 @@
 # October 2021, Lewis Gaul
 
-__all__ = ("Controller",)
+__all__ = ("GameController",)
 
 from ...shared.types import GameMode
 from ..controller import ControllerBase
@@ -10,8 +10,8 @@ from .minefield import Minefield
 from .types import Coord
 
 
-class Controller(ControllerBase):
-    """Controller for a split-cells minesweeper game."""
+class GameController(ControllerBase):
+    """GameController for a split-cells minesweeper game."""
 
     mode = GameMode.SPLIT_CELL
     minefield_cls = Minefield
