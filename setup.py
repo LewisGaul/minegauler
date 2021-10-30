@@ -58,7 +58,7 @@ Alternatively, feel free to [open an issue](https://github.com/LewisGaul/minegau
 """
 
 # Should be a release version, e.g. "4.0.1"
-version = "4.0.6-a1"
+version = "4.0.6"
 if "-" in version:
     print("WARNING: Version is not a release version", file=sys.stderr)
 
