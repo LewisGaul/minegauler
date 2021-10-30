@@ -24,6 +24,11 @@ The latest release for version 4.0 includes:
  - Ability to fetch local highscores from another app installation
 
 
+### 4.0.6 (2021-10-31)
+ - Add option to customise number or marker image styles
+ - Add Halloween style images
+
+
 ### 4.0.5 (2020-07-02)
  - Fix crash when clicking multiple mouse buttons off the board
 
