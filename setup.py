@@ -19,7 +19,7 @@ long_description = """
 
 A perfect clone of the classic Minesweeper game, with many added features.
 
-Read more about the project history on [my website](https://www.lewisgaul.co.uk/minegauler.html).
+Read more about the project history on [the project homepage](https://github.com/LewisGaul/minegauler).
 
 
 ![img1](https://raw.githubusercontent.com/LewisGaul/minegauler/26fbc3d0fad5c70e5e9f9a1c37114da1d92507e5/img/screenshots/beginner_start.png)
