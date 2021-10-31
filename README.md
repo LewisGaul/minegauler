@@ -8,7 +8,7 @@
 
 Remake of the classic Minesweeper game, written in Python.
 
-Read more about the project history on [my website](https://www.lewisgaul.co.uk/minegauler.html).
+Read more about the project history in [my blog post](https://www.lewisgaul.co.uk/blog/coding/2020/02/12/minegauler/).
 
 
 ![img1](img/screenshots/beginner_start.png)
