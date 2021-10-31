@@ -154,7 +154,7 @@ class UberController(api.AbstractController):
         :param file:
             The location of the file to load from.
         """
-        if self._opts.mode is UIMode.CREATE:
+        if self._ui_mode is UIMode.CREATE:
             self.switch_ui_mode(UIMode.GAME)
             self._notif.ui_mode_changed(UIMode.GAME)
         self._active_ctrlr.load_minefield(file)
