@@ -6,6 +6,7 @@ dist/
 *.egg-info/
 target/
 Cargo.lock
+bot/users.json
 
 # Test-generated
 coverage/

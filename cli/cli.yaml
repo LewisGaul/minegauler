@@ -1,0 +1,80 @@
+help: |
+  The all-in-one Minegauler CLI!
+
+  Run the app by simply passing in no arguments...
+command: "run"
+
+subtree:
+  - keyword: venv
+    help: "Virtual environment commands"
+    command: "make-venv"
+
+  - keyword: tests
+    help: "Run tests"
+    command: "run-tests"
+    args:
+      - name: pytest-help
+        help: "Print help from pytest"
+        type: flag
+      - name: args
+        help: "Args to pass through to pytest (separate args with '--' if needed)"
+        positional: true
+        type: text
+
+  - keyword: dev
+    help: "Developer commands"
+    subtree:
+      - keyword: bumpversion
+        help: "Bump version"
+        command: "bump-version"
+        args:
+          - name: part
+            help: "The part to bump, one of 'major', 'minor', 'patch', 'build'"
+            positional: true
+            enum:
+              - major
+              - minor
+              - patch
+              - build
+
+      - keyword: server
+        help: "Server commands"
+        subtree:
+          - keyword: start
+            help: "Start the server"
+            command: "start-server"
+            args:
+              - name: port
+                help: "The port to run on"
+                default: 80
+                type: integer
+              - name: host
+                help: "The bind address"
+                default: "0.0.0.0"
+
+  - keyword: bot
+    help: "Bot CLI"
+    command: "bot"
+    args:
+      - name: command
+        help: "Bot command (separate with '--' if needed)"
+        positional: true
+        type: text  # Must be the last arg
+    subtree:
+      - keyword: user
+        help: "Manage tracked users (add, remove, ...)"
+        subtree:
+          - keyword: add
+            help: "Add a player to the bot"
+            command: "bot-add-player"
+            args:
+              - name: player-name
+                help: "The in-game name of the player"
+                positional: true
+          - keyword: remove
+            help: "Remove a player from the bot"
+            command: "bot-remove-player"
+            args:
+              - name: player-name
+                help: "The in-game name of the player"
+                positional: true

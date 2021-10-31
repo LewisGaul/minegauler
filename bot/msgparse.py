@@ -1,7 +1,8 @@
-"""
-msgparse.py - Parse bot messages
+# February 2020, Lewis Gaul
 
-February 2020, Lewis Gaul
+"""
+Parse bot messages.
+
 """
 
 __all__ = ("GENERAL_INFO", "RoomType", "parse_msg")
@@ -293,7 +294,7 @@ GENERAL_INFO = """\
 Welcome to the Minegauler bot!
 
 Instructions for downloading Minegauler can be found in the \
-[GitHub repo](https://github.com/LewisGaul/minegauler/blob/master/README.md).
+[GitHub repo](https://github.com/LewisGaul/minegauler/blob/main/README.md).
 
 The bot provides the ability to check highscores and matchups for games of \
 Minegauler, and also gives notifications whenever anyone in the group sets a \
@@ -438,8 +439,7 @@ def player(args, username: str, allow_markdown=False, **kwargs):
     if args.username == "me":
         args.username = username
 
-    highscores = hs.get_highscores(
-        hs.HighscoresDatabases.REMOTE,
+    highscores = utils.get_highscores(
         name=utils.USER_NAMES[args.username],
         difficulty=args.difficulty,
         drag_select=args.drag_select,
@@ -496,7 +496,7 @@ def ranks(args, **kwargs) -> str:
 
 
 @helpstring("Get stats for played games")
-@schema(
+@schema(  # @@@ This is bad because it requires knowledge of sub-commands.
     "stats [players ...] [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
     "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
 )
@@ -797,7 +797,8 @@ def parse_msg(
 
 def main(argv):
     try:
-        resp = parse_msg(" ".join(argv), RoomType.GROUP, username="dummy-user")
+        # TODO: Need to not join argv, since player names can contain spaces.
+        resp = parse_msg(" ".join(argv), RoomType.DIRECT, username="dummy-user")
     except InvalidArgsError as e:
         resp = str(e)
     print(resp)

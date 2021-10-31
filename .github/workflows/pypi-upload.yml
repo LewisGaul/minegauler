@@ -1,8 +1,8 @@
 name: Workflow for uploading to PyPI
 on:
-  # Only published to Test-PyPI in response to push to master.
+  # Only published to Test-PyPI in response to push to main.
   push:
-    branches: [master]
+    branches: [main]
   release:
     types: [published]
 jobs:

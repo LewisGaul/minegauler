@@ -1,15 +1,14 @@
-attrs==19.3.0
-certifi==2019.11.28
-chardet==3.0.4
-dnspython==1.16.0
-idna==2.8
+attrs==21.2.0
+certifi==2021.5.30
+charset-normalizer==2.0.4
+idna==3.2
 # TODO: Prevent mysql-connector-python from installing its own libcrypto.so and
 # libssl.so, see https://bugs.mysql.com/bug.php?id=89889.
 #--install-option='--no-deps' --install-option='--only-binary=:all:'
-mysql-connector-python==8.0.19
-protobuf==3.6.1
-PyQt5==5.14.0
-PyQt5-sip==12.7.0
-requests==2.22.0
-six==1.13.0
-urllib3==1.25.7
+mysql-connector-python==8.0.26
+protobuf==3.17.3
+PyQt5==5.14.2
+PyQt5-sip==12.9.0
+requests==2.26.0
+six==1.16.0
+urllib3==1.26.6

@@ -1,7 +1,7 @@
 [tool.black]
 line-length = 88
 target-version = ['py36']
-exclude = '.*venv.*'
+exclude = '.*venv.*|bootstrap'
 
 [tool.isort]
 # Make compatible with Black
@@ -13,3 +13,4 @@ use_parentheses = true
 # Other options
 order_by_type = true
 lines_after_imports = 2
+skip_glob = ['bootstrap', '*venv*']

@@ -1,20 +1,22 @@
-"""
-utils.py - Bot utilities
+# February 2020, Lewis Gaul
 
-February 2020, Lewis Gaul
+"""
+Bot utilities.
+
 """
 
 __all__ = (
     "BOT_NAME",
     "NO_TAG_USERS",
     "USER_NAMES",
-    "USER_NAMES_FILE",
     "Matchup",
     "PlayerInfo",
+    "get_highscores",
     "get_matchups",
     "get_message",
     "get_highscore_times",
     "get_player_info",
+    "is_highscore_new_best",
     "send_group_message",
     "send_message",
     "send_new_best_message",
@@ -41,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 
 USER_NAMES = dict()
-USER_NAMES_FILE = pathlib.Path(__file__).parent / "users.json"
+_USER_NAMES_FILE = pathlib.Path(__file__).parent / "users.json"
 NO_TAG_USERS = {"_paula", "_felix", "_kunz", "esinghal"}
 
 BOT_NAME = "minegaulerbot"
@@ -50,6 +52,8 @@ _BOT_EMAIL = f"{BOT_NAME}@webex.bot"
 _WEBEX_GROUP_ROOM_ID = (
     "Y2lzY29zcGFyazovL3VzL1JPT00vNzYyNjI4NTAtMzg3Ni0xMWVhLTlhM2ItODMyNzMyZDlkZTg3"
 )
+
+_API_BASEURL = "http://minegauler.lewisgaul.co.uk/api/v1/highscores"
 
 
 # ------------------------------------------------------------------------------
@@ -110,6 +114,20 @@ def send_new_best_message(h: hs.HighscoreStruct) -> None:
     )
 
 
+def read_users_file():
+    global USER_NAMES
+    try:
+        with open(_USER_NAMES_FILE) as f:
+            USER_NAMES = json.load(f)
+    except FileNotFoundError:
+        logger.info("%s file not found", _USER_NAMES_FILE)
+
+
+def save_users_file():
+    with open(_USER_NAMES_FILE, "w") as f:
+        json.dump(USER_NAMES, f)
+
+
 def user_from_email(email: str) -> str:
     return email.split("@", maxsplit=1)[0]
 
@@ -127,8 +145,7 @@ def tag_user(user: str) -> str:
 
 def set_user_nickname(user: str, nickname: str) -> None:
     USER_NAMES[user] = nickname
-    with open(USER_NAMES_FILE, "w") as f:
-        json.dump(USER_NAMES, f)
+    save_users_file()
 
 
 def get_highscore_times(
@@ -145,8 +162,10 @@ def get_highscore_times(
 
     if difficulty:
         highscores = hs.filter_and_sort(
-            _get_highscores(
-                difficulty=difficulty, drag_select=drag_select, per_cell=per_cell,
+            get_highscores(
+                difficulty=difficulty,
+                drag_select=drag_select,
+                per_cell=per_cell,
             )
         )
         times = {
@@ -195,13 +214,54 @@ PlayerInfo = collections.namedtuple(
 
 def get_player_info(username: str) -> PlayerInfo:
     name = USER_NAMES[username]
-    highscores = _get_highscores(name=name)
+    highscores = get_highscores(name=name)
     combined_time = _get_combined_highscore(name)
     last_highscore = max(h.timestamp for h in highscores) if highscores else None
     hs_types = len(
         {(h.difficulty.lower(), h.drag_select, h.per_cell) for h in highscores}
     )
     return PlayerInfo(username, name, combined_time, hs_types, last_highscore)
+
+
+def is_highscore_new_best(h: hs.HighscoreStruct) -> Optional[str]:
+    all_highscores = get_highscores(settings=h, name=h.name)
+    return hs.is_highscore_new_best(h, all_highscores)
+
+
+def get_highscores(
+    *,
+    settings: Optional[hs.HighscoreSettingsStruct] = None,
+    difficulty: Optional[Difficulty] = None,
+    per_cell: Optional[int] = None,
+    drag_select: Optional[bool] = None,
+    name: Optional[str] = None,
+) -> Iterable[hs.HighscoreStruct]:
+    """
+    Get highscores using the REST API.
+
+    :param settings:
+        Highscore filter to apply.
+    :raises Exception:
+        If the HTTP request fails or returns bad data.
+    :return:
+        Matching highscores.
+    """
+    if settings is not None:
+        difficulty = settings.difficulty
+        per_cell = settings.per_cell
+        drag_select = settings.drag_select
+    args = []
+    if difficulty:
+        args.append(f"difficulty={difficulty.name[0]}")
+    if per_cell:
+        args.append(f"per_cell={per_cell}")
+    if drag_select:
+        args.append(f"drag_select={int(drag_select)}")
+    if name:
+        args.append(f"name={name}")
+    url = _API_BASEURL + "?" + "&".join(args)
+    response = requests.get(url)
+    return [hs.HighscoreStruct.from_dict(h) for h in response.json()]
 
 
 # ------------------------------------------------------------------------------
@@ -213,17 +273,15 @@ def _strbool(b: bool) -> str:
     return "True" if b else "False"
 
 
-def _get_highscores(*args, **kwargs) -> Iterable[hs.HighscoreStruct]:
-    return hs.get_highscores(hs.HighscoresDatabases.REMOTE, *args, **kwargs)
-
-
 def _get_combined_highscore(
     name: str, *, per_cell: Optional[int] = None, drag_select: Optional[bool] = None
 ) -> float:
     total = 0
     for diff in ["b", "i", "e"]:
-        all_highscores = _get_highscores(
-            name=name, drag_select=drag_select, per_cell=per_cell,
+        all_highscores = get_highscores(
+            name=name,
+            drag_select=drag_select,
+            per_cell=per_cell,
         )
         highscores = [h.elapsed for h in all_highscores if h.difficulty.lower() == diff]
         total += min(highscores) if highscores else 1000

@@ -93,9 +93,15 @@ class TestLocalHighscoreDatabase:
         exp_highscores = [h for h in highscores if h.name == "NAME1"]
         assert db.get_highscores(name="NAME1") == exp_highscores
 
-        assert db.get_highscores(
-            difficulty=Difficulty.BEGINNER, per_cell=1, drag_select=False, name="NAME1",
-        ) == [HighscoreStruct("B", 1, False, "NAME1", 1234, 3, 5, 1.56, 0)]
+        assert (
+            db.get_highscores(
+                difficulty=Difficulty.BEGINNER,
+                per_cell=1,
+                drag_select=False,
+                name="NAME1",
+            )
+            == [HighscoreStruct("B", 1, False, "NAME1", 1234, 3, 5, 1.56, 0)]
+        )
 
         # Case insensitive name match.
         assert db.get_highscores(name="SIWel g") == [my_hs]
@@ -187,5 +193,8 @@ class TestModuleAPIs:
             name="BAR",
         )
         mock_get_hs.assert_called_once_with(
-            difficulty=Difficulty.BEGINNER, per_cell=1, drag_select=False, name="BAR",
+            difficulty=Difficulty.BEGINNER,
+            per_cell=1,
+            drag_select=False,
+            name="BAR",
         )

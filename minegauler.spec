@@ -21,8 +21,8 @@ def _get_data() -> List[Tuple[str, str]]:
 
 
 a = Analysis(
-    ["run.py"],
-    pathex=["."],
+    [".pyinstaller_main.py"],
+    pathex=[str(_PROJECT_PATH)],
     binaries=[],
     datas=_get_data(),
     hiddenimports=[],

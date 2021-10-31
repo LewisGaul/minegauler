@@ -1,3 +1,10 @@
+# January 2020, Lewis Gaul
+
+"""
+Server utils.
+
+"""
+
 __all__ = ("is_highscore_new_best", "multiple_contexts")
 
 import contextlib
@@ -11,6 +18,7 @@ def is_highscore_new_best(h: hs.HighscoreStruct) -> Optional[str]:
     return hs.is_highscore_new_best(h, all_highscores)
 
 
+# TODO: Move to super-shared location.
 @contextlib.contextmanager
 def multiple_contexts(*contexts):
     """

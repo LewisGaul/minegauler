@@ -461,7 +461,11 @@ class MinegaulerGUI(
 
         styles_menu = QMenu("Styles", self)
         self._game_menu.addMenu(styles_menu)
-        for img_group in [CellImageType.BUTTONS]:
+        for img_group in [
+            CellImageType.BUTTONS,
+            CellImageType.MARKERS,
+            CellImageType.NUMBERS,
+        ]:
             img_group_name = img_group.name.capitalize()
             submenu = QMenu(img_group_name, self)
             styles_menu.addMenu(submenu)

@@ -96,6 +96,7 @@ class CellContents:
     char: str
 
     Unclicked = NotImplemented
+    UnclickedSunken = NotImplemented
     Num = NotImplemented
     Mine = NotImplemented
     HitMine = NotImplemented
@@ -125,7 +126,7 @@ class CellContents:
         return NotImplemented  # Implemented below, after subclasses
 
     def is_type(self, item: CellContents_T) -> bool:
-        if item in [self.Unclicked]:
+        if item in [self.Unclicked, self.UnclickedSunken]:
             return self is item
         elif item in self.items:
             return type(self) is item
@@ -140,6 +141,10 @@ class _CellUnclicked(CellContents):
     """Unclicked cell on a minesweeper board."""
 
     char = "#"
+
+
+class _CellUnclickedSunken(_CellUnclicked):
+    """Unclicked sunken cell on a minesweeper board."""
 
 
 class _CellNum(_NumericCellContentsMixin, CellContents):
@@ -199,6 +204,7 @@ class _CellWrongFlag(_CellFlag):
 
 # Make the base class act like an ADT, serving as the only external API.
 CellContents.Unclicked = _CellUnclicked()
+CellContents.UnclickedSunken = _CellUnclickedSunken()
 CellContents.Num = _CellNum
 CellContents.Mine = _CellMine
 CellContents.HitMine = _CellHitMine
@@ -207,6 +213,7 @@ CellContents.WrongFlag = _CellWrongFlag
 
 CellContents.items = [
     CellContents.Unclicked,
+    CellContents.UnclickedSunken,
     CellContents.Num,
     CellContents.Mine,
     CellContents.HitMine,

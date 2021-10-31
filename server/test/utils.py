@@ -4,7 +4,7 @@ import flask
 import requests
 
 import server
-from server.bot import routes
+from bot import routes
 
 
 app = flask.Flask(__name__)

@@ -1,7 +1,8 @@
-"""
-__init__.py - Bot package
+# February 2020, Lewis Gaul
 
-February 2020, Lewis Gaul
+"""
+Bot package.
+
 """
 
 __all__ = ("init_route_handling",)
@@ -13,8 +14,9 @@ import sys
 
 import flask
 
-from .. import add_new_highscore_hook
-from . import routes, utils
+from server import add_new_highscore_hook
+
+from . import msgparse, routes, utils
 
 
 logger = logging.getLogger(__name__)
@@ -31,11 +33,7 @@ def init_route_handling(app: flask.app.Flask):
         sys.exit(1)
     utils.set_bot_access_token(os.environ["BOT_ACCESS_TOKEN"])
 
-    try:
-        with open(utils.USER_NAMES_FILE) as f:
-            utils.USER_NAMES = json.load(f)
-    except FileNotFoundError:
-        logger.warning("%s file not found", utils.USER_NAMES_FILE)
+    utils.read_users_file()
 
     routes.activate_bot_msg_handling(app)
 
