@@ -36,106 +36,99 @@ _RAISED_CELL = CellContents.Unclicked
 def _update_cell_images(
     cell_images: Dict[CellContents, QPixmap],
     size: int,
-    styles: Dict[CellImageType, str],
+    styles: Mapping[CellImageType, str],
     required: CellImageType = CellImageType.ALL,
 ) -> None:
     """
     Initialise or update the pixmap images for the minefield cells.
 
-    Arguments:
-    cell_images (dict)
-        The dictionary to fill with the images.
-    size (int)
+    :param cell_images:
+        The dictionary to fill with the created pixmap images.
+    :param size:
         The size in pixels to make the image (square).
-    required (CellImageType)
-        Which images types require updating.
+    :param styles:
+        The image styles to use.
+    :param required:
+        Which image types require updating.
     """
-    # Currently only allows setting button styles.
+
+    def get_path(subdir: str, style: str, fname: str) -> str:
+        base_path = IMG_DIR / subdir
+        full_path = base_path / style / fname
+        if not full_path.exists():
+            logger.warning(f"Missing image file at {full_path}, using standard style")
+            full_path = base_path / "Standard" / fname
+        return str(full_path)
+
     btn_style = styles[CellImageType.BUTTONS]
-    marker_style = styles[CellImageType.MARKERS]
-    number_style = styles[CellImageType.NUMBERS]
+    mkr_style = styles[CellImageType.MARKERS]
+    num_style = styles[CellImageType.NUMBERS]
+
     if required & CellImageType.BUTTONS:
         cell_images[_RAISED_CELL] = _make_pixmap(
-            size, "buttons", btn_style, "btn_up.png",
+            size, get_path("buttons", btn_style, "btn_up.png")
         )
         cell_images[_SUNKEN_CELL] = _make_pixmap(
-            size, "buttons", btn_style, "btn_down.png",
+            size, get_path("buttons", btn_style, "btn_down.png")
         )
     if required & (CellImageType.BUTTONS | CellImageType.NUMBERS):
         for i in range(1, 19):
             cell_images[CellContents.Num(i)] = _make_pixmap(
                 size,
-                "numbers",
-                btn_style,
-                "btn_down.png",
-                number_style,
-                "num%d.png" % i,
+                get_path("buttons", btn_style, "btn_down.png"),
+                get_path("numbers", num_style, f"num{i}.png"),
                 propn=7 / 8,
             )
     if required & (CellImageType.BUTTONS | CellImageType.MARKERS):
         for i in range(1, 4):
             cell_images[CellContents.Flag(i)] = _make_pixmap(
                 size,
-                "markers",
-                btn_style,
-                "btn_up.png",
-                marker_style,
-                "flag%d.png" % i,
-                5 / 8,
+                get_path("buttons", btn_style, "btn_up.png"),
+                get_path("markers", mkr_style, f"flag{i}.png"),
+                propn=5 / 8,
             )
             cell_images[CellContents.WrongFlag(i)] = _make_pixmap(
                 size,
-                "markers",
-                btn_style,
-                "btn_up.png",
-                marker_style,
-                "cross%d.png" % i,
-                5 / 8,
+                get_path("buttons", btn_style, "btn_up.png"),
+                get_path("markers", mkr_style, f"cross{i}.png"),
+                propn=5 / 8,
             )
             cell_images[CellContents.Mine(i)] = _make_pixmap(
                 size,
-                "markers",
-                btn_style,
-                "btn_down.png",
-                marker_style,
-                "mine%d.png" % i,
-                7 / 8,
+                get_path("buttons", btn_style, "btn_down.png"),
+                get_path("markers", mkr_style, f"mine{i}.png"),
+                propn=7 / 8,
             )
             cell_images[CellContents.HitMine(i)] = _make_pixmap(
                 size,
-                "markers",
-                btn_style,
-                "btn_down_hit.png",
-                marker_style,
-                "mine%d.png" % i,
-                7 / 8,
+                get_path("buttons", btn_style, "btn_down_hit.png"),
+                get_path("markers", mkr_style, f"mine{i}.png"),
+                propn=7 / 8,
             )
 
 
 def _make_pixmap(
-    size: int,
-    img_subdir: str,
-    bg_style: str,
-    bg_fname: str,
-    fg_style: str = "Standard",
-    fg_fname: Optional[str] = None,
-    propn: float = 1.0,
+    size: int, bg_path: str, fg_path: Optional[str] = None, *, propn: float = 1.0,
 ) -> QPixmap:
-    def get_path(subdir, fname, style) -> str:
-        base_path = IMG_DIR / subdir
-        full_path = base_path / style / fname
-        if not full_path.exists():
-            logger.warning(f"Missing image file at {full_path}, using standard style")
-            full_path = base_path / "standard" / fname
-        return str(full_path)
+    """
+    Create a compound pixmap image, superimposing a foreground over a background.
 
-    bg_path = get_path("buttons", bg_fname, bg_style)
-    if fg_fname:
+    :param size:
+        The size to create the pixmap.
+    :param bg_path:
+        Path to background image.
+    :param fg_path:
+        Path to foreground image, if any.
+    :param propn:
+        Proportion of the foreground image over the background image.
+    :return:
+        The created pixmap image.
+    """
+    if fg_path:
         image = QImage(bg_path).scaled(
             size, size, transformMode=Qt.SmoothTransformation
         )
         fg_size = int(propn * size)
-        fg_path = get_path(img_subdir, fg_fname, fg_style)
         overlay = QPixmap(fg_path).scaled(
             fg_size, fg_size, transformMode=Qt.SmoothTransformation
         )
