@@ -14,6 +14,7 @@ __all__ = ("MinefieldWidget",)
 
 import functools
 import logging
+import os.path
 import time
 from typing import Callable, Dict, Iterable, List, Mapping, Optional, Set
 
@@ -29,8 +30,8 @@ from .utils import IMG_DIR, CellUpdate_T, MouseMove
 
 logger = logging.getLogger(__name__)
 
-_SUNKEN_CELL = CellContents.Num(0)
 _RAISED_CELL = CellContents.Unclicked
+_SUNKEN_CELL = CellContents.UnclickedSunken
 
 
 def _update_cell_images(
@@ -52,10 +53,10 @@ def _update_cell_images(
         Which image types require updating.
     """
 
-    def get_path(subdir: str, style: str, fname: str) -> str:
+    def get_path(subdir: str, style: str, fname: str, *, fallback: bool = True) -> str:
         base_path = IMG_DIR / subdir
         full_path = base_path / style / fname
-        if not full_path.exists():
+        if not full_path.exists() and fallback:
             logger.warning(f"Missing image file at {full_path}, using standard style")
             full_path = base_path / "Standard" / fname
         return str(full_path)
@@ -79,6 +80,16 @@ def _update_cell_images(
                 get_path("numbers", num_style, f"num{i}.png"),
                 propn=7 / 8,
             )
+        num0_path = get_path("numbers", num_style, f"num0.png", fallback=False)
+        if os.path.exists(num0_path):
+            cell_images[CellContents.Num(0)] = _make_pixmap(
+                size,
+                get_path("buttons", btn_style, "btn_down.png"),
+                num0_path,
+                propn=7 / 8,
+            )
+        else:
+            cell_images[CellContents.Num(0)] = cell_images[_SUNKEN_CELL]
     if required & (CellImageType.BUTTONS | CellImageType.MARKERS):
         for i in range(1, 4):
             cell_images[CellContents.Flag(i)] = _make_pixmap(
@@ -579,6 +590,7 @@ class MinefieldWidget(QGraphicsView):
         _update_cell_images(
             self._cell_images, self.btn_size, self._state.styles, img_type
         )
+        self._scene.clear()
         for coord in self._board.all_coords:
             self._set_cell_image(coord, self._board[coord])
 
