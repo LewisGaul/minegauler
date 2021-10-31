@@ -14,6 +14,7 @@ __all__ = ("MinefieldWidgetBase",)
 
 import functools
 import logging
+import os.path
 import time
 from typing import Callable, Dict, Iterable, List, Mapping, Optional, Set, Type
 
@@ -32,80 +33,116 @@ from ..utils import IMG_DIR, CellUpdate_T, MouseMove
 
 logger = logging.getLogger(__name__)
 
-_SUNKEN_CELL = CellContents.Num(0)
 _RAISED_CELL = CellContents.Unclicked
+_SUNKEN_CELL = CellContents.UnclickedSunken
 
 
 def _update_cell_images(
     cell_images: Dict[CellContents, QPixmap],
     size: int,
-    styles: Dict[CellImageType, str],
+    styles: Mapping[CellImageType, str],
     required: CellImageType = CellImageType.ALL,
 ) -> None:
     """
     Initialise or update the pixmap images for the minefield cells.
 
-    Arguments:
-    cell_images (dict)
-        The dictionary to fill with the images.
-    size (int)
+    :param cell_images:
+        The dictionary to fill with the created pixmap images.
+    :param size:
         The size in pixels to make the image (square).
-    required (CellImageType)
-        Which images types require updating.
+    :param styles:
+        The image styles to use.
+    :param required:
+        Which image types require updating.
     """
-    # Currently only allows setting button styles.
+
+    def get_path(subdir: str, style: str, fname: str, *, fallback: bool = True) -> str:
+        base_path = IMG_DIR / subdir
+        full_path = base_path / style / fname
+        if not full_path.exists() and fallback:
+            logger.warning(f"Missing image file at {full_path}, using standard style")
+            full_path = base_path / "Standard" / fname
+        return str(full_path)
+
     btn_style = styles[CellImageType.BUTTONS]
+    mkr_style = styles[CellImageType.MARKERS]
+    num_style = styles[CellImageType.NUMBERS]
+
     if required & CellImageType.BUTTONS:
         cell_images[_RAISED_CELL] = _make_pixmap(
-            "buttons", btn_style, "btn_up.png", size
+            size, get_path("buttons", btn_style, "btn_up.png")
         )
         cell_images[_SUNKEN_CELL] = _make_pixmap(
-            "buttons", btn_style, "btn_down.png", size
+            size, get_path("buttons", btn_style, "btn_down.png")
         )
     if required & (CellImageType.BUTTONS | CellImageType.NUMBERS):
         for i in range(1, 19):
             cell_images[CellContents.Num(i)] = _make_pixmap(
-                "numbers", btn_style, "btn_down.png", size, "num%d.png" % i, 7 / 8
+                size,
+                get_path("buttons", btn_style, "btn_down.png"),
+                get_path("numbers", num_style, f"num{i}.png"),
+                propn=7 / 8,
             )
+        num0_path = get_path("numbers", num_style, f"num0.png", fallback=False)
+        if os.path.exists(num0_path):
+            cell_images[CellContents.Num(0)] = _make_pixmap(
+                size,
+                get_path("buttons", btn_style, "btn_down.png"),
+                num0_path,
+                propn=7 / 8,
+            )
+        else:
+            cell_images[CellContents.Num(0)] = cell_images[_SUNKEN_CELL]
     if required & (CellImageType.BUTTONS | CellImageType.MARKERS):
         for i in range(1, 4):
             cell_images[CellContents.Flag(i)] = _make_pixmap(
-                "markers", btn_style, "btn_up.png", size, "flag%d.png" % i, 5 / 8
+                size,
+                get_path("buttons", btn_style, "btn_up.png"),
+                get_path("markers", mkr_style, f"flag{i}.png"),
+                propn=5 / 8,
             )
             cell_images[CellContents.WrongFlag(i)] = _make_pixmap(
-                "markers", btn_style, "btn_up.png", size, "cross%d.png" % i, 5 / 8
+                size,
+                get_path("buttons", btn_style, "btn_up.png"),
+                get_path("markers", mkr_style, f"cross{i}.png"),
+                propn=5 / 8,
             )
             cell_images[CellContents.Mine(i)] = _make_pixmap(
-                "markers", btn_style, "btn_down.png", size, "mine%d.png" % i, 7 / 8
+                size,
+                get_path("buttons", btn_style, "btn_down.png"),
+                get_path("markers", mkr_style, f"mine{i}.png"),
+                propn=7 / 8,
             )
             cell_images[CellContents.HitMine(i)] = _make_pixmap(
-                "markers", btn_style, "btn_down_hit.png", size, "mine%d.png" % i, 7 / 8
+                size,
+                get_path("buttons", btn_style, "btn_down_hit.png"),
+                get_path("markers", mkr_style, f"mine{i}.png"),
+                propn=7 / 8,
             )
 
 
 def _make_pixmap(
-    img_subdir: str,
-    style: str,
-    bg_fname: str,
-    size: int,
-    fg_fname: Optional[str] = None,
-    propn: float = 1.0,
+    size: int, bg_path: str, fg_path: Optional[str] = None, *, propn: float = 1.0,
 ) -> QPixmap:
-    def get_path(subdir, fname, style) -> str:
-        base_path = IMG_DIR / subdir
-        full_path = base_path / style / fname
-        if not full_path.exists():
-            logger.warning(f"Missing image file at {full_path}, using standard style")
-            full_path = base_path / "standard" / fname
-        return str(full_path)
+    """
+    Create a compound pixmap image, superimposing a foreground over a background.
 
-    bg_path = get_path("buttons", bg_fname, style)
-    if fg_fname:
+    :param size:
+        The size to create the pixmap.
+    :param bg_path:
+        Path to background image.
+    :param fg_path:
+        Path to foreground image, if any.
+    :param propn:
+        Proportion of the foreground image over the background image.
+    :return:
+        The created pixmap image.
+    """
+    if fg_path:
         image = QImage(bg_path).scaled(
             size, size, transformMode=Qt.SmoothTransformation
         )
         fg_size = int(propn * size)
-        fg_path = get_path(img_subdir, fg_fname, "Standard")
         overlay = QPixmap(fg_path).scaled(
             fg_size, fg_size, transformMode=Qt.SmoothTransformation
         )
@@ -527,6 +564,7 @@ class MinefieldWidgetBase(QGraphicsView):
         )
 
     def _redraw_cells(self) -> None:
+        self._scene.clear()
         for coord in self._board.all_coords:
             self._set_cell_image(coord, self._board[coord])
 
