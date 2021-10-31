@@ -24,6 +24,10 @@ The latest release for version 4.0 includes:
  - Ability to fetch local highscores from another app installation
 
 
+### 4.0.7 (2021-10-31)
+ - Minor fix: add missing images, fix PyPI upload link
+
+
 ### 4.0.6 (2021-10-31)
  - Add option to customise number or marker image styles
  - Add Halloween style images
