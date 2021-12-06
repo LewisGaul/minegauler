@@ -10,7 +10,7 @@ Exports
 
 """
 
-__all__ = ("MinefieldWidgetBase",)
+__all__ = ("MinefieldWidgetBase", "update_cell_images")
 
 import functools
 import logging
@@ -37,7 +37,7 @@ _RAISED_CELL = CellContents.Unclicked
 _SUNKEN_CELL = CellContents.UnclickedSunken
 
 
-def _update_cell_images(
+def update_cell_images(
     cell_images: Dict[CellContents, QPixmap],
     size: int,
     styles: Mapping[CellImageType, str],
@@ -122,7 +122,11 @@ def _update_cell_images(
 
 
 def _make_pixmap(
-    size: int, bg_path: str, fg_path: Optional[str] = None, *, propn: float = 1.0,
+    size: int,
+    bg_path: str,
+    fg_path: Optional[str] = None,
+    *,
+    propn: float = 1.0,
 ) -> QPixmap:
     """
     Create a compound pixmap image, superimposing a foreground over a background.
@@ -195,7 +199,10 @@ class MinefieldWidgetBase(QGraphicsView):
     size_changed = pyqtSignal()
 
     def __init__(
-        self, parent: Optional[QWidget], ctrlr: ControllerBase, state: State,
+        self,
+        parent: Optional[QWidget],
+        ctrlr: ControllerBase,
+        state: State,
     ):
         super().__init__(parent)
         logger.info("Initialising minefield widget")
@@ -559,7 +566,7 @@ class MinefieldWidgetBase(QGraphicsView):
         self.size_changed.emit()
 
     def _update_cell_images(self, img_type: CellImageType = CellImageType.ALL) -> None:
-        _update_cell_images(
+        update_cell_images(
             self._cell_images, self.btn_size, self._state.styles, img_type
         )
 

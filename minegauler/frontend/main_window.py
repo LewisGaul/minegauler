@@ -60,9 +60,10 @@ from ..shared.types import (
     UIMode,
 )
 from ..shared.utils import GUIOptsStruct, format_timestamp
-from . import highscores, simulate, state, utils
-from .minefield import split_cell
-from .minefield.regular import MinefieldWidget
+from . import highscores, state, utils
+from .minefield.regular import MinefieldWidget as RegularMinefieldWidget
+from .minefield.simulate import MinefieldWidget as SimulationMinefieldWidget
+from .minefield.split_cell import MinefieldWidget as SplitCellMinefieldWidget
 from .panel import PanelWidget
 from .utils import FILES_DIR, HIGHSCORES_DIR, read_highscore_file
 
@@ -220,7 +221,7 @@ class MinegaulerGUI(
         self._populate_menubars()
         self._menubar.setFixedHeight(self._menubar.sizeHint().height())
         self._panel_widget = PanelWidget(self, self._state)
-        self._mf_widget = MinefieldWidget(self, self._ctrlr, self._state)
+        self._mf_widget = RegularMinefieldWidget(self, self._ctrlr, self._state)
         # self._mf_widget = SplitCellMinefieldWidget(self, self._ctrlr, self._state)
         self.set_panel_widget(self._panel_widget)
         self.set_body_widget(self._mf_widget)
@@ -790,7 +791,7 @@ class MinegaulerGUI(
         try:
             hs, cell_updates = read_highscore_file(hs_file)
             x_size, y_size, _ = hs.difficulty.get_board_values()
-            win = simulate.SimulationMinefieldWidget(self, x_size, y_size, cell_updates)
+            win = SimulationMinefieldWidget(self, x_size, y_size, cell_updates)
         except Exception as e:
             logger.exception("Error reading highscore file")
             _msg_popup(
@@ -1060,9 +1061,7 @@ class _AdvancedOptionsModal(QDialog):
 
         from unittest import mock
 
-        with mock.patch.dict(
-            globals(), {"MinefieldWidget": split_cell.MinefieldWidget}
-        ):
+        with mock.patch.dict(globals(), {"MinefieldWidget": SplitCellMinefieldWidget}):
             win = MinegaulerGUI(ctrlr, win._state)
         ctrlr.register_listener(win)
         win.show()

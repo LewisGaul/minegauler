@@ -10,7 +10,7 @@ from PyQt5.QtGui import QPixmap
 import minegauler.core.split_cell as backend
 from minegauler.shared.types import CellContents, CellImageType
 
-from .base import MinefieldWidgetBase
+from ._base import MinefieldWidgetBase, update_cell_images
 
 
 RightClickAction = enum.Enum("RightClickAction", ["FLAG", "UNFLAG", "SPLIT"])
@@ -106,9 +106,9 @@ class MinefieldWidget(MinefieldWidgetBase):
                 self._set_large_cell_image(coord, self._board[coord])
 
     def _update_cell_images(self, img_type: CellImageType = CellImageType.ALL) -> None:
-        _update_cell_images(
+        update_cell_images(
             self._cell_images, self.btn_size, self._state.styles, img_type
         )
-        _update_cell_images(
+        update_cell_images(
             self._large_cell_images, self.btn_size * 2, self._state.styles, img_type
         )

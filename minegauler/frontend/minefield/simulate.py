@@ -2,15 +2,9 @@
 
 """
 Simulate played games.
-
-Exports
--------
-.. class:: SimulationMinefieldWidget
-    The simulation minefield widget class.
-
 """
 
-__all__ = ("SimulationMinefieldWidget",)
+__all__ = ("MinefieldWidget",)
 
 import logging
 from typing import Dict, List, Mapping, Optional
@@ -27,15 +21,17 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from ..shared.types import CellContents, CellImageType, Coord_T
-from .minefield.base import _update_cell_images
-from .utils import CellUpdate_T
+from minegauler.shared.types import CellContents, CellImageType, Coord_T
+
+from ..utils import CellUpdate_T
+from ._base import update_cell_images
 
 
 logger = logging.getLogger(__name__)
 
 
-class SimulationMinefieldWidget(QDialog):
+# TODO: Inherit from MinefieldWidgetBase
+class MinefieldWidget(QDialog):
     def __init__(
         self,
         parent: Optional[QWidget],
