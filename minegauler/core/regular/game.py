@@ -50,10 +50,6 @@ class Game(GameBase):
     mf: Minefield
     board: Board
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._cell_updates: Dict[Coord, CellContents] = dict()
-
     # ---------------------
     # Abstract methods
     # ---------------------

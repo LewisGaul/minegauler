@@ -21,8 +21,8 @@ class RegularMinefieldBase(MinefieldBase[Coord, B], metaclass=abc.ABCMeta):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.x_size: int = max({c[0] for c in self.all_coords}) + 1
-        self.y_size: int = max({c[1] for c in self.all_coords}) + 1
+        self.x_size: int = max({c.x for c in self.all_coords}) + 1
+        self.y_size: int = max({c.y for c in self.all_coords}) + 1
 
     def __repr__(self):
         return f"<{self.x_size}x{self.y_size} minefield with {self.mines} mines>"
@@ -97,8 +97,12 @@ class RegularMinefieldBase(MinefieldBase[Coord, B], metaclass=abc.ABCMeta):
             return cls.from_coords(
                 (
                     Coord(x, y)
-                    for x in range(obj["x_size"],)
-                    for y in range(obj["y_size"],)
+                    for x in range(
+                        obj["x_size"],
+                    )
+                    for y in range(
+                        obj["y_size"],
+                    )
                 ),
                 mine_coords=[Coord(*c) for c in obj["mine_coords"]],
                 per_cell=obj.get("per_cell", 1),

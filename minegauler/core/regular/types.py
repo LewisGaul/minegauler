@@ -2,11 +2,14 @@
 
 __all__ = ("Coord",)
 
-from typing import NamedTuple
+from typing import Tuple
+
+from ...shared.types import Coord as CoordBase
 
 
-class Coord(NamedTuple):
-    """Regular coordinate, an (x, y) tuple."""
-
-    x: int
-    y: int
+class Coord(Tuple[int, int], CoordBase):
+    def __new__(cls, x: int, y: int):
+        self = super().__new__(cls, (x, y))
+        self.x = x
+        self.y = y
+        return self

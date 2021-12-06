@@ -11,9 +11,9 @@ import functools
 import logging
 import math
 import time
-from typing import Callable, Iterable, Optional, Type, Union
+from typing import Callable, Dict, Iterable, Optional, Type, Union
 
-from ..shared.types import CellContents, Coord_T, Difficulty, GameMode, GameState
+from ..shared.types import CellContents, Coord_T, GameMode, GameState
 from .board import BoardBase
 from .minefield import MinefieldBase
 
@@ -137,11 +137,6 @@ class GameNotStartedError(Exception):
     """Game has not been started, so no minefield has been created."""
 
 
-# ------------------------------------------------------------------------------
-# Game class
-# ------------------------------------------------------------------------------
-
-
 class GameBase(metaclass=abc.ABCMeta):
     """Representation of a minesweeper game, generic on the game mode."""
 
@@ -174,6 +169,8 @@ class GameBase(metaclass=abc.ABCMeta):
         self.mines_remaining: int = self.mines
         self.lives_remaining: int = self.lives
         self._num_flags: int = 0
+
+        self._cell_updates: Dict[Coord_T, CellContents] = dict()
 
     @classmethod
     def from_minefield(cls, mf: MinefieldBase, **kwargs) -> "GameBase":

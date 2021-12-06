@@ -35,13 +35,6 @@ class GameController(_ControllerMixin, GameControllerBase):
     # --------------------------------------------------------------------------
     # Methods triggered by user interaction
     # --------------------------------------------------------------------------
-    def new_game(self) -> None:
-        super().new_game()
-
-    def restart_game(self) -> None:
-        """See AbstractController."""
-        super().restart_game()
-
     def select_cell(self, coord: Coord) -> None:
         """See AbstractController."""
         super().select_cell(coord)

@@ -39,8 +39,6 @@ __all__ = (
     "CellImageType",
     "Coord",
     "Coord_T",
-    "SplitCellCoord",
-    "RegularCoord",
     "Difficulty",
     "FaceState",
     "GameMode",
@@ -53,7 +51,7 @@ import abc
 import enum
 import functools
 import os
-from typing import Iterable, Tuple, Union
+from typing import Union
 
 
 PathLike = Union[str, bytes, os.PathLike]
@@ -85,49 +83,10 @@ class Coord(metaclass=abc.ABCMeta):
     def __hash__(self):
         return hash(tuple(getattr(self, x) for x in self.fields))
 
-
-class RegularCoord(Tuple[int, int], Coord):
-    def __new__(cls, x: int, y: int):
-        self = super().__new__(cls, (x, y))
-        self.x = x
-        self.y = y
-        return self
-
-
-class SplitCellCoord(Coord):
-    fields = ("x", "y", "is_split")
-    __slots__ = fields
-
-    def __init__(self, x: int, y: int, is_split: bool):
-        """
-        :param x:
-            The x coord of the underlying small cell (top-left for large cells).
-        :param y:
-            The y coord of the underlying small cell (top-left for large cells).
-        :param is_split:
-            Whether the coord corresponds to a small cell.
-        """
-        if not is_split and (x % 2 or y % 2):
-            raise ValueError("Unsplit coords must have even values of x and y")
-        self.x = x
-        self.y = y
-        self.is_split = is_split
-
-    def get_small_cell_coords(self) -> Iterable[Tuple[int, int]]:
-        if self.is_split:
-            return ((self.x, self.y),)
-        else:
-            return (
-                (self.x, self.y),
-                (self.x + 1, self.y),
-                (self.x, self.y + 1),
-                (self.x + 1, self.y + 1),
-            )
-
-    def split(self) -> Iterable["SplitCellCoord"]:
-        if self.is_split:
-            raise TypeError(f"Not able to split coord {(self.x, self.y)}")
-        return [SplitCellCoord(x, y, True) for (x, y) in self.get_small_cell_coords()]
+    def __lt__(self, other):
+        if not isinstance(other, Coord):
+            return NotImplemented
+        return (self.x, self.y) < (other.x, other.y)
 
 
 # TODO: This is a temporary bring-up alias.

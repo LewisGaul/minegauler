@@ -18,14 +18,7 @@ else:
     from typing import Protocol
 
 from .. import api
-from ..shared.types import (
-    Coord_T,
-    Difficulty,
-    GameMode,
-    PathLike,
-    SplitCellCoord,
-    UIMode,
-)
+from ..shared.types import Coord_T, Difficulty, GameMode, PathLike, UIMode
 from ..shared.utils import GameOptsStruct
 from . import board, controller, game, minefield, regular, split_cell
 from .board import BoardBase
@@ -160,6 +153,6 @@ class UberController(api.AbstractController):
             self._notif.ui_mode_changed(UIMode.GAME)
         self._active_ctrlr.load_minefield(file)
 
-    def split_cell(self, coord: SplitCellCoord) -> None:
+    def split_cell(self, coord: Coord_T) -> None:
         # TODO: Check the sub controller can do this...
         self._active_ctrlr.split_cell(coord)

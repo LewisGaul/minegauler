@@ -3,6 +3,7 @@
 __all__ = ("MinefieldWidget",)
 
 import enum
+import logging
 from typing import Any, Dict, Mapping, Optional
 
 from PyQt5.QtGui import QPixmap
@@ -11,6 +12,9 @@ import minegauler.core.split_cell as backend
 from minegauler.shared.types import CellContents, CellImageType
 
 from ._base import MinefieldWidgetBase, update_cell_images
+
+
+logger = logging.getLogger(__name__)
 
 
 RightClickAction = enum.Enum("RightClickAction", ["FLAG", "UNFLAG", "SPLIT"])

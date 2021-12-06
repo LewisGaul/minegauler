@@ -47,7 +47,7 @@ class GameController(_ControllerMixin, GameControllerBase):
     def split_cell(self, coord: Coord) -> None:
         if coord.is_split:
             return
-        self._send_updates(self._game.split_cell(coord))
+        self._send_updates(self.game.split_cell(coord))
 
     def flag_cell(self, coord: Coord, *, flag_only: bool = False) -> None:
         if not coord.is_split:
