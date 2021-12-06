@@ -77,7 +77,10 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
     game_cls: Type[GameBase]
 
     def __init__(
-        self, opts: GameOptsStruct, *, notif: api.AbstractListener,
+        self,
+        opts: GameOptsStruct,
+        *,
+        notif: api.AbstractListener,
     ):
         """
         :param opts:
@@ -100,7 +103,10 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
     """Base game controller class, generic over game mode."""
 
     def __init__(
-        self, opts: GameOptsStruct, *, notif: api.AbstractListener,
+        self,
+        opts: GameOptsStruct,
+        *,
+        notif: api.AbstractListener,
     ):
         """
         :param opts:
@@ -120,6 +126,14 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
         self._last_update = SharedInfo()
         self._send_updates()
         self._notif.set_mines(self._opts.mines)
+
+    @property
+    def difficulty(self) -> Difficulty:
+        return self.game.difficulty
+
+    @property
+    def board(self) -> BoardBase:
+        return self.game.board
 
     def get_game_info(self) -> api.GameInfo:
         """Get info about the current game."""
@@ -146,14 +160,67 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
             )
         return ret
 
-    @property
-    def difficulty(self) -> Difficulty:
-        return self.game.difficulty
+    # --------------------------------------------------------------------------
+    # Methods triggered by user interaction
+    # --------------------------------------------------------------------------
+    def new_game(self) -> None:
+        """See AbstractController."""
+        super().new_game()
+        if self._opts.mines > self._opts.per_cell * (
+            self._opts.x_size * self._opts.y_size - 1
+        ):
+            # This is needed since it's possible to create a board with more
+            # mines than is normally allowed.
+            logger.debug(
+                "Reducing number of mines from %d to %d because they don't fit",
+                self._opts.mines,
+                self._opts.x_size * self._opts.y_size - 1,
+            )
+            self._opts.mines = self._opts.x_size * self._opts.y_size - 1
+            self._notif.set_mines(self._opts.mines)
+        self.game = self.game_cls(
+            x_size=self._opts.x_size,
+            y_size=self._opts.y_size,
+            mines=self._opts.mines,
+            per_cell=self._opts.per_cell,
+            lives=self._opts.lives,
+            first_success=self._opts.first_success,
+        )
+        self._send_reset_update()
 
-    @property
-    def board(self) -> BoardBase:
-        return self.game.board
+    def restart_game(self) -> None:
+        """See AbstractController."""
+        if not self.game.mf:
+            return
+        super().restart_game()
+        self.game = self.game_cls.from_minefield(
+            self.game.mf,
+            x_size=self.game.x_size,
+            y_size=self.game.y_size,
+            lives=self._opts.lives,
+        )
+        self._send_reset_update()
 
+    def save_current_minefield(self, file: PathLike) -> None:
+        """
+        Save the current minefield to file.
+
+        :param file:
+            The location of the file to save to. Should have the extension
+            ".mgb".
+        :raises RuntimeError:
+            If the game is not finished.
+        :raises OSError:
+            If saving to file fails.
+        """
+        super().save_current_minefield(file)
+        if not self.game.state.finished():
+            raise RuntimeError("Can only save minefields when the game is completed")
+        _save_minefield(self.game.mf, file)
+
+    # --------------------------------------------------------------------------
+    # Helper methods
+    # --------------------------------------------------------------------------
     def _send_updates(
         self, cells_updated: Optional[Dict[Coord_T, CellContents]] = None
     ) -> None:
@@ -177,22 +244,16 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
 
         self._last_update = update
 
-    def save_current_minefield(self, file: PathLike) -> None:
-        """
-        Save the current minefield to file.
+    def _send_reset_update(self) -> None:
+        """Send an update to reset the board."""
+        self._notif.reset()
+        self._send_updates()
 
-        :param file:
-            The location of the file to save to. Should have the extension
-            ".mgb".
-        :raises RuntimeError:
-            If the game is not finished.
-        :raises OSError:
-            If saving to file fails.
-        """
-        super().save_current_minefield(file)
-        if not self.game.state.finished():
-            raise RuntimeError("Can only save minefields when the game is completed")
-        _save_minefield(self.game.mf, file)
+    def _send_resize_update(self) -> None:
+        """Send an update to change the dimensions and number of mines."""
+        self._notif.resize_minefield(self._opts.x_size, self._opts.y_size)
+        self._notif.set_mines(self._opts.mines)
+        self._send_updates()
 
 
 class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
@@ -202,7 +263,10 @@ class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
     load_minefield = None
 
     def __init__(
-        self, opts: GameOptsStruct, *, notif: api.AbstractListener,
+        self,
+        opts: GameOptsStruct,
+        *,
+        notif: api.AbstractListener,
     ):
         """
         :param opts:

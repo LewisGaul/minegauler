@@ -4,7 +4,6 @@ __all__ = ("GameController", "CreateController")
 
 import json
 import logging
-import os.path
 
 from ...shared.types import CellContents, Difficulty, GameMode, PathLike
 from ..controller import CreateControllerBase, GameControllerBase
@@ -37,42 +36,11 @@ class GameController(_ControllerMixin, GameControllerBase):
     # Methods triggered by user interaction
     # --------------------------------------------------------------------------
     def new_game(self) -> None:
-        """See AbstractController."""
         super().new_game()
-        if self._opts.mines > self._opts.per_cell * (
-            self._opts.x_size * self._opts.y_size - 1
-        ):
-            # This is needed since it's possible to create a board with more
-            # mines than is normally allowed.
-            logger.debug(
-                "Reducing number of mines from %d to %d because they don't fit",
-                self._opts.mines,
-                self._opts.x_size * self._opts.y_size - 1,
-            )
-            self._opts.mines = self._opts.x_size * self._opts.y_size - 1
-            self._notif.set_mines(self._opts.mines)
-        self.game = self.game_cls(
-            x_size=self._opts.x_size,
-            y_size=self._opts.y_size,
-            mines=self._opts.mines,
-            per_cell=self._opts.per_cell,
-            lives=self._opts.lives,
-            first_success=self._opts.first_success,
-        )
-        self._send_reset_update()
 
     def restart_game(self) -> None:
         """See AbstractController."""
-        if not self.game.mf:
-            return
         super().restart_game()
-        self.game = self.game_cls.from_minefield(
-            self.game.mf,
-            x_size=self.game.x_size,
-            y_size=self.game.y_size,
-            lives=self._opts.lives,
-        )
-        self._send_reset_update()
 
     def select_cell(self, coord: Coord) -> None:
         """See AbstractController."""
@@ -195,20 +163,6 @@ class GameController(_ControllerMixin, GameControllerBase):
             mf, x_size=mf.x_size, y_size=mf.y_size, lives=self._opts.lives
         )
         self._send_resize_update()
-
-    # --------------------------------------------------------------------------
-    # Helper methods
-    # --------------------------------------------------------------------------
-    def _send_reset_update(self) -> None:
-        """Send an update to reset the board."""
-        self._notif.reset()
-        self._send_updates()
-
-    def _send_resize_update(self) -> None:
-        """Send an update to change the dimensions and number of mines."""
-        self._notif.resize_minefield(self._opts.x_size, self._opts.y_size)
-        self._notif.set_mines(self._opts.mines)
-        self._send_updates()
 
 
 class CreateController(_ControllerMixin, CreateControllerBase):
