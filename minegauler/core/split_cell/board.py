@@ -49,3 +49,8 @@ class Board(BoardBase):
             coord = Coord(x // 2 * 2, y // 2 * 2, False)
             assert coord in self._unsplit_coords
             return coord
+
+    def split_coord(self, coord: Coord) -> None:
+        self._unsplit_coords.pop(coord)
+        self._split_coords.update({c: CellContents.Unclicked for c in coord.split()})
+        # TODO: Recalculate numbers in surrounding cells

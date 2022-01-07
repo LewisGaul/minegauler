@@ -171,7 +171,8 @@ class Game(GameBase):
 
     @_check_coord
     @_ignore_if_not(
-        game_state=GameState.ACTIVE, cell_state=CellContents.Unclicked,
+        game_state=GameState.ACTIVE,
+        cell_state=CellContents.Unclicked,
     )
     def split_cell(self, coord: Coord) -> Iterable[Coord]:
         if self.board[coord] is not CellContents.Unclicked:
@@ -183,8 +184,7 @@ class Game(GameBase):
             self._finalise_lost_game()
         else:
             logger.debug("Splitting cell %s", coord)
-            for c in self.board.split_cell(coord):
-                self._cell_updates[c] = CellContents.Unclicked
+            self.board.split_coord(coord)
             self._update_board_numbers()
         try:
             return self._cell_updates
