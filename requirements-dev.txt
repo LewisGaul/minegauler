@@ -12,7 +12,6 @@ click==8.0.1
 colorama==0.4.4
 coverage==5.5
 cryptography==3.4.8
-dataclasses==0.8
 docutils==0.17.1
 Flask==2.0.1
 idna==3.2
