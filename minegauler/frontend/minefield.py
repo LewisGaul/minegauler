@@ -119,7 +119,11 @@ def _update_cell_images(
 
 
 def _make_pixmap(
-    size: int, bg_path: str, fg_path: Optional[str] = None, *, propn: float = 1.0,
+    size: int,
+    bg_path: str,
+    fg_path: Optional[str] = None,
+    *,
+    propn: float = 1.0,
 ) -> QPixmap:
     """
     Create a compound pixmap image, superimposing a foreground over a background.
@@ -190,7 +194,10 @@ class MinefieldWidget(QGraphicsView):
     size_changed = pyqtSignal()
 
     def __init__(
-        self, parent: Optional[QWidget], ctrlr: api.AbstractController, state: State,
+        self,
+        parent: Optional[QWidget],
+        ctrlr: api.AbstractController,
+        state: State,
     ):
         super().__init__(parent)
         logger.info("Initialising minefield widget")

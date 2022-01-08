@@ -84,6 +84,9 @@ class _AbstractSubController(api.AbstractController, metaclass=abc.ABCMeta):
     def switch_mode(self, mode: UIMode) -> None:
         return NotImplemented
 
+    def reset_settings(self) -> None:
+        return NotImplemented
+
 
 class BaseController(api.AbstractController):
     """Base controller implementing all user interaction methods."""
@@ -108,6 +111,13 @@ class BaseController(api.AbstractController):
         else:
             raise ValueError(f"Unrecognised UI mode: {mode}")
         self._mode = mode
+        self._notif.reset()
+
+    def reset_settings(self) -> None:
+        super().reset_settings()
+        self._opts = GameOptsStruct()
+        self.resize_board(self._opts.x_size, self._opts.y_size, self._opts.mines)
+        self.switch_mode(UIMode.GAME)
         self._notif.reset()
 
     # ----------------------------------
