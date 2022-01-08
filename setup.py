@@ -82,12 +82,12 @@ setuptools.setup(
         "Natural Language :: English",
         "Topic :: Games/Entertainment :: Puzzle Games",
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     install_requires=[
         "attrs",
         "mysql-connector-python==8.*",
         "PyQt5",
-        "requests==2.*",
+        "requests",
     ],
     package_data={
         "minegauler": [
