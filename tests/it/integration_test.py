@@ -206,27 +206,6 @@ class Test:
         self._mf_widget.mouseMoveEvent(event)
         self._mouse_down_pos = pos
 
-    def assert_cell_sank(self, coord):
-        self._mf_widget._set_cell_image.assert_any_call(coord, _SUNKEN_CELL)
-
-    def assert_cell_rose(self, coord):
-        self._mf_widget._set_cell_image.assert_any_call(coord, _RAISED_CELL)
-
-    def assert_num_cells_changed(self, num):
-        """
-        Assert on the number of cells that had their image changed.
-        """
-        assert self._mf_widget._set_cell_image.call_count == num
-
-    def assert_cells_unchanged(self):
-        self._mf_widget._set_cell_image.assert_not_called()
-
-    def reset_mocks(self):
-        self._mf_widget._set_cell_image.reset_mock()
-        self._mf_widget._ctrlr.reset_mock()
-        self.at_risk_signal_cb.reset_mock()
-        self.no_risk_signal_cb.reset_mock()
-
     def _mouse_press(self, button, coord=None, **kwargs):
         """
         Arguments:
