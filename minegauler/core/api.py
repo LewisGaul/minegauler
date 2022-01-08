@@ -440,3 +440,10 @@ class AbstractController(metaclass=abc.ABCMeta):
         Switch the mode of the UI, e.g. into 'create' mode.
         """
         self._logger.info("Requested switch to mode %s", mode)
+
+    @abc.abstractmethod
+    def reset_settings(self) -> None:
+        """
+        Reset all settings to the defaults.
+        """
+        self._logger.info("Requested reset of settings")

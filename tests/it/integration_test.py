@@ -25,6 +25,7 @@ from pytestqt.qtbot import QtBot
 import minegauler
 from minegauler import frontend
 from minegauler.frontend import QApplication
+from minegauler.shared.types import CellImageType
 from minegauler.shared.utils import AllOptsStruct
 
 
@@ -45,7 +46,7 @@ def _run_minegauler__main__() -> types.ModuleType:
 
 
 def create_gui(settings: Optional[AllOptsStruct] = None) -> frontend.MinegaulerGUI:
-    """@@@ TODO"""
+    """Create a minegauler GUI instance via the main entrypoint."""
     if settings is None:
         settings = AllOptsStruct()
 
@@ -72,14 +73,58 @@ def create_gui(settings: Optional[AllOptsStruct] = None) -> frontend.MinegaulerG
 
 class Test:
     """
-    @@@ TODO
+    Main class of integration tests.
+
+    Uses a shared GUI which is factory reset after each testcase.
     """
+
+    gui: frontend.MinegaulerGUI
+
+    # Stored for convenience in helper functions.
+    _qtbot = None
+    _mf_widget = None
+    _mouse_buttons_down = Qt.NoButton
+    _mouse_down_pos = None
+
+    @pytest.fixture(scope="class", autouse=True)
+    def class_setup(self):
+        cls = type(self)
+        cls.gui = create_gui()
+        cls._mf_widget = cls.gui._mf_widget
+
+        yield
+
+        QApplication.quit()
+
+    @pytest.fixture(scope="function", autouse=True)
+    def setup(self, qtbot):
+        self._qtbot = qtbot
+        self._mouse_buttons_down = Qt.NoButton
+        self._mouse_down_pos = None
+
+        yield
+
+        self._mouse_down_pos = None
+        self._mouse_buttons_down = Qt.NoButton
+        self._qtbot = None
+        self.gui.factory_reset()
 
     # --------------------------------------------------------------------------
     # Testcases
     # --------------------------------------------------------------------------
     def test_create(self):
-        gui = create_gui()
+        self._process_events()
+
+    def test_change_style(self):
+        self._process_events()
+        self.right_press((0, 0))
+        self.right_release()
+        self.left_press((2, 2))
+        self.left_release()
+        self._process_events()
+        self.gui._change_style(CellImageType.BUTTONS, "Halloween")
+        self.gui._change_style(CellImageType.MARKERS, "Halloween")
+        self.gui._change_style(CellImageType.NUMBERS, "Halloween")
         self._process_events()
 
     # --------------------------------------------------------------------------
@@ -99,7 +144,7 @@ class Test:
             The QPoint corresponding to the passed-in coordinate.
         """
         if not btn_size:
-            btn_size = self.btn_size
+            btn_size = self._mf_widget.btn_size
         if not pos:
             pos = (btn_size // 2, btn_size // 2)
 

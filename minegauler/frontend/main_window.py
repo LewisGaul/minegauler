@@ -12,6 +12,7 @@ Exports
 
 __all__ = ("MinegaulerGUI",)
 
+import functools
 import logging
 import os
 import pathlib
@@ -452,13 +453,6 @@ class MinegaulerGUI(
         # - Buttons
         # - Images
         # - Numbers
-        def get_change_style_func(grp, style):
-            def change_style():
-                self._state.styles[grp] = style
-                self._mf_widget.update_style(grp, style)
-
-            return change_style
-
         styles_menu = QMenu("Styles", self)
         self._game_menu.addMenu(styles_menu)
         for img_group in [
@@ -477,7 +471,9 @@ class MinegaulerGUI(
                 if style == self._state.styles[img_group]:
                     style_act.setChecked(True)
                 group.addAction(style_act)
-                style_act.triggered.connect(get_change_style_func(img_group, style))
+                style_act.triggered.connect(
+                    functools.partial(self._change_style, img_group, style)
+                )
                 submenu.addAction(style_act)
 
         # Advanced options
@@ -485,7 +481,10 @@ class MinegaulerGUI(
 
         self._game_menu.addSeparator()
 
-        # Exit (F4)
+        # Factory reset
+        self._game_menu.addAction("Factory reset", self.factory_reset)
+
+        # Exit (Alt+F4)
         self._game_menu.addAction("Exit", self.close, shortcut="Alt+F4")
 
         # ----------
@@ -577,6 +576,10 @@ class MinegaulerGUI(
         else:
             x, y, m = diff.get_board_values()
             self._ctrlr.resize_board(x_size=x, y_size=y, mines=m)
+
+    def _change_style(self, grp: CellImageType, style: str) -> None:
+        self._state.styles[grp] = style
+        self._mf_widget.update_style(grp, style)
 
     def _set_name(self, name: str) -> None:
         self._state.name = name
@@ -839,6 +842,17 @@ class MinegaulerGUI(
         """Set the cell size in pixels."""
         self._state.btn_size = size
         self._mf_widget.update_btn_size(size)
+
+    def factory_reset(self) -> None:
+        """
+        Reset to original state.
+        """
+        self._ctrlr.reset_settings()
+        self._state.reset()
+        for img_group in CellImageType:
+            if img_group is not CellImageType.ALL:
+                self._change_style(img_group, self._state.styles[img_group])
+        self._name_entry_widget.setText("")
 
 
 class _CurrentInfoModal(QDialog):

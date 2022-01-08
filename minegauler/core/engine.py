@@ -84,6 +84,9 @@ class _AbstractSubController(api.AbstractController, metaclass=abc.ABCMeta):
     def switch_mode(self, mode: UIMode) -> None:
         return NotImplemented
 
+    def reset_settings(self) -> None:
+        return NotImplemented
+
 
 class BaseController(api.AbstractController):
     """Base controller implementing all user interaction methods."""
@@ -162,6 +165,12 @@ class BaseController(api.AbstractController):
             self.switch_mode(UIMode.GAME)
             self._notif.ui_mode_changed(UIMode.GAME)
         self._active_ctrlr.load_minefield(file)
+
+    def reset_settings(self) -> None:
+        self._opts = GameOptsStruct()
+        self.resize_board(self._opts.x_size, self._opts.y_size, self._opts.mines)
+        self.switch_mode(UIMode.GAME)
+        self._notif.reset()
 
 
 class _GameController(_AbstractSubController):
