@@ -482,7 +482,9 @@ class MinegaulerGUI(
         self._game_menu.addSeparator()
 
         # Factory reset
-        self._game_menu.addAction("Factory reset", self.factory_reset)
+        # TODO : Factory reset should also reset files such as highscores, settings
+        # boards, so this menu button is disabled until that is implemented.
+        # self._game_menu.addAction("Factory reset", self.factory_reset)
 
         # Exit (Alt+F4)
         self._game_menu.addAction("Exit", self.close, shortcut="Alt+F4")
