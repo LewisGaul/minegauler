@@ -113,6 +113,13 @@ class BaseController(api.AbstractController):
         self._mode = mode
         self._notif.reset()
 
+    def reset_settings(self) -> None:
+        super().reset_settings()
+        self._opts = GameOptsStruct()
+        self.resize_board(self._opts.x_size, self._opts.y_size, self._opts.mines)
+        self.switch_mode(UIMode.GAME)
+        self._notif.reset()
+
     # ----------------------------------
     # Delegated abstractmethods
     # ----------------------------------
@@ -165,12 +172,6 @@ class BaseController(api.AbstractController):
             self.switch_mode(UIMode.GAME)
             self._notif.ui_mode_changed(UIMode.GAME)
         self._active_ctrlr.load_minefield(file)
-
-    def reset_settings(self) -> None:
-        self._opts = GameOptsStruct()
-        self.resize_board(self._opts.x_size, self._opts.y_size, self._opts.mines)
-        self.switch_mode(UIMode.GAME)
-        self._notif.reset()
 
 
 class _GameController(_AbstractSubController):
