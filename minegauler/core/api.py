@@ -69,7 +69,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         """
         Called to indicate the state should be reset.
         """
-        raise NotImplementedError
+        return NotImplemented
 
     @abc.abstractmethod
     def resize_minefield(self, x_size: int, y_size: int) -> None:
@@ -81,14 +81,14 @@ class AbstractListener(metaclass=abc.ABCMeta):
         :param y_size:
             The number of rows.
         """
-        raise NotImplementedError
+        return NotImplemented
 
     @abc.abstractmethod
     def set_mines(self, mines: int) -> None:
         """
         Called to indicate the number of mines at reset has changed.
         """
-        raise NotImplementedError
+        return NotImplemented
 
     @abc.abstractmethod
     def update_cells(self, cell_updates: Dict[Coord_T, CellContents]) -> None:
@@ -98,7 +98,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         :param cell_updates:
             Mapping of coordinates that were changed to the new cell state.
         """
-        raise NotImplementedError
+        return NotImplemented
 
     @abc.abstractmethod
     def update_game_state(self, game_state: GameState) -> None:
@@ -108,7 +108,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         :param game_state:
             The new game state.
         """
-        raise NotImplementedError
+        return NotImplemented
 
     @abc.abstractmethod
     def update_mines_remaining(self, mines_remaining: int) -> None:
@@ -118,7 +118,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         :param mines_remaining:
             The new number of mines remaining.
         """
-        raise NotImplementedError
+        return NotImplemented
 
     @abc.abstractmethod
     def ui_mode_changed(self, mode: UIMode) -> None:
@@ -128,7 +128,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         :param mode:
             The mode to change to.
         """
-        raise NotImplementedError
+        return NotImplemented
 
     @abc.abstractmethod
     def handle_exception(self, method: str, exc: Exception) -> None:
@@ -142,7 +142,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         :param exc:
             The caught exception.
         """
-        raise NotImplementedError
+        return NotImplemented
 
 
 class _Notifier(AbstractListener):
@@ -281,7 +281,7 @@ class _Notifier(AbstractListener):
         """
         Not used in this class - provided only to satisfy the ABC.
         """
-        raise NotImplementedError
+        return NotImplemented
 
 
 class AbstractController(metaclass=abc.ABCMeta):
@@ -336,12 +336,12 @@ class AbstractController(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def board(self) -> BoardBase:
-        raise NotImplementedError
+        return NotImplemented
 
     @abc.abstractmethod
     def get_game_info(self) -> GameInfo:
         """Get information about the current game."""
-        raise NotImplementedError
+        return NotImplemented
 
     def get_game_options(self) -> GameOptsStruct:
         return self._opts

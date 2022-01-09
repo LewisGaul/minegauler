@@ -191,7 +191,7 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
 
     def restart_game(self) -> None:
         """See AbstractController."""
-        if not self.game.mf:
+        if not self.game.mf.populated:
             return
         super().restart_game()
         self.game = self.game_cls.from_minefield(

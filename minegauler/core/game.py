@@ -176,6 +176,8 @@ class GameBase(metaclass=abc.ABCMeta):
     def from_minefield(cls, mf: MinefieldBase, **kwargs) -> "GameBase":
         self = cls(mines=mf.mines, per_cell=mf.per_cell, **kwargs)
         self.mf = mf
+        if mf.populated:
+            self.minefield_known = True
         return self
 
     @abc.abstractmethod

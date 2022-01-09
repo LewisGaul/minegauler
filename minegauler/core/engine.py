@@ -72,16 +72,16 @@ class UberController(api.AbstractController):
     def switch_game_mode(self, mode: GameMode) -> None:
         """Switch the game mode."""
         super().switch_game_mode(mode)
-        if mode is self.mode:
-            logger.debug(
-                "Ignore switch game mode request because mode is already %s", mode
-            )
-            return
-        self._opts.mode = mode
-        self._active_ctrlr = self._get_ctrlr_cls(mode, self._ui_mode)(
-            self._opts, notif=self._notif
-        )
-        self._notif.reset()
+        # if mode is self.mode:
+        #     logger.debug(
+        #         "Ignore switch game mode request because mode is already %s", mode
+        #     )
+        #     return
+        # self._opts.mode = mode
+        # self._active_ctrlr = self._get_ctrlr_cls(mode, self._ui_mode)(
+        #     self._opts, notif=self._notif
+        # )
+        # self._notif.reset()
 
     def switch_ui_mode(self, ui_mode: UIMode) -> None:
         """Switch the UI mode."""

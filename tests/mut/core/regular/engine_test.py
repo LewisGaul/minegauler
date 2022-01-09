@@ -82,8 +82,9 @@ class TestGameController:
         """Test the getter methods."""
         ctrlr = self.create_ctrlr()
 
-        # Board is a proxy to the game's board.
+        # Proxies to underlying game.
         assert ctrlr.board is ctrlr.game.board
+        assert ctrlr.difficulty is ctrlr.game.difficulty
 
         # Unstarted game info.
         exp_game_info = api.GameInfo(

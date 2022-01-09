@@ -60,7 +60,8 @@ class Game(GameBase):
             **kwargs,
         )
         self.mf = mf
-        self.minefield_known = True
+        if mf.populated:
+            self.minefield_known = True
         return self
 
     # ---------------------

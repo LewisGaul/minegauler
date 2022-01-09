@@ -140,6 +140,7 @@ class GameController(_ControllerMixin, GameControllerBase):
             The location of the file to load from. Should have the extension
             ".mgb".
         """
+        super().load_minefield(file)
         with open(file) as f:
             mf = Minefield.from_json(json.load(f))
 
