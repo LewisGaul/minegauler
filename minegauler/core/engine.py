@@ -20,7 +20,7 @@ else:
 from .. import api
 from ..shared.types import Coord_T, Difficulty, GameMode, PathLike, UIMode
 from ..shared.utils import GameOptsStruct
-from . import board, controller, game, minefield, regular, split_cell
+from . import board, controller, game, minefield, regular
 from .board import BoardBase
 from .controller import ControllerBase
 
@@ -41,7 +41,7 @@ class GameModeImplementation(Protocol):
 
 GAME_MODE_IMPL: Mapping[GameMode, GameModeImplementation] = {
     GameMode.REGULAR: regular,
-    GameMode.SPLIT_CELL: split_cell,
+    # GameMode.SPLIT_CELL: split_cell,
 }
 
 
@@ -51,7 +51,7 @@ class UberController(api.AbstractController):
     def __init__(self, opts: GameOptsStruct):
         super().__init__(opts)
         self._ui_mode: UIMode = UIMode.GAME
-        self._opts.mode = GameMode.SPLIT_CELL  # TODO: temporary
+        self._opts.mode = GameMode.REGULAR
         self._active_ctrlr: ControllerBase = self._get_ctrlr_cls(
             self.mode, self._ui_mode
         )(self._opts, notif=self._notif)

@@ -333,7 +333,7 @@ class GameMode(str, enum.Enum):
     """Minesweeper game mode."""
 
     REGULAR = "REGULAR"
-    SPLIT_CELL = "SPLIT_CELL"
+    # SPLIT_CELL = "SPLIT_CELL"
 
 
 # ------------------------------------------------------------------------------
@@ -364,4 +364,3 @@ class UIMode(enum.Enum):
 
     GAME = enum.auto()
     CREATE = enum.auto()
-    SPLIT_CELL = enum.auto()

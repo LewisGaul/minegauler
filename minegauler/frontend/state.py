@@ -209,15 +209,15 @@ class State:
             return self._current_game_state.drag_select
 
     @property
-    def mode(self):
-        return self._current_game_state.mode
+    def game_mode(self):
+        return self._current_game_state.game_mode
 
-    @mode.setter
-    def mode(self, value):
+    @game_mode.setter
+    def game_mode(self, value):
         self._update_game_state("mode", value)
 
     @property
-    def pending_mode(self):
+    def pending_game_mode(self):
         if self.has_pending_game_state():
             return self.pending_game_state.mode
         else:

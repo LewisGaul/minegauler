@@ -10,25 +10,23 @@ Exports
 
 """
 
-__all__ = ("MinefieldWidgetBase", "update_cell_images")
+__all__ = ("MinefieldWidget",)
 
 import functools
 import logging
 import os.path
 import time
-from typing import Callable, Dict, Iterable, List, Mapping, Optional, Set, Type
+from typing import Callable, Dict, Iterable, List, Mapping, Optional, Set
 
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QMouseEvent, QPainter, QPixmap
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QSizePolicy, QWidget
 
-from minegauler.core.board import BoardBase
-from minegauler.core.controller import ControllerBase
-from minegauler.shared.types import CellContents, CellImageType, Coord_T
-
-from ... import api
-from ..state import State
-from ..utils import IMG_DIR, CellUpdate_T, MouseMove
+from .. import api
+from ..core.regular import Board
+from ..shared.types import CellContents, CellImageType, Coord_T
+from .state import State
+from .utils import IMG_DIR, CellUpdate_T, MouseMove
 
 
 logger = logging.getLogger(__name__)
@@ -37,7 +35,7 @@ _RAISED_CELL = CellContents.Unclicked
 _SUNKEN_CELL = CellContents.UnclickedSunken
 
 
-def update_cell_images(
+def _update_cell_images(
     cell_images: Dict[CellContents, QPixmap],
     size: int,
     styles: Mapping[CellImageType, str],
@@ -187,12 +185,10 @@ def _filter_left_and_right(mouse_event_func: Callable):
     return wrapper
 
 
-class MinefieldWidgetBase(QGraphicsView):
+class MinefieldWidget(QGraphicsView):
     """
     The minefield widget.
     """
-
-    ctrlr_cls: Type[ControllerBase]
 
     at_risk_signal = pyqtSignal()
     no_risk_signal = pyqtSignal()
@@ -201,7 +197,7 @@ class MinefieldWidgetBase(QGraphicsView):
     def __init__(
         self,
         parent: Optional[QWidget],
-        ctrlr: ControllerBase,
+        ctrlr: api.AbstractController,
         state: State,
     ):
         super().__init__(parent)
@@ -209,7 +205,7 @@ class MinefieldWidgetBase(QGraphicsView):
         self._ctrlr: api.AbstractController = ctrlr
         self._state: State = state
         self._cell_images: Dict[CellContents, QPixmap] = {}
-        self._update_cell_images()
+        _update_cell_images(self._cell_images, self.btn_size, self._state.styles)
 
         self._scene = QGraphicsScene()
         self.setScene(self._scene)
@@ -235,7 +231,7 @@ class MinefieldWidgetBase(QGraphicsView):
         self.reset()
 
     @property
-    def _board(self) -> BoardBase:
+    def _board(self) -> Board:
         return self._ctrlr.board
 
     @property
@@ -453,7 +449,7 @@ class MinefieldWidgetBase(QGraphicsView):
         Both left and right mouse buttons were pressed. Change display and call
         callback functions as appropriate.
         """
-        if True or not self._board[coord].is_mine_type():
+        if not self._board[coord].is_mine_type():
             self._sink_unclicked_cells(self._board.get_nbrs(coord, include_origin=True))
         if self._state.drag_select:
             self.at_risk_signal.emit()
@@ -488,7 +484,6 @@ class MinefieldWidgetBase(QGraphicsView):
         self._both_mouse_buttons_pressed = False
         self._await_release_all_buttons = False
         self._was_double_left_click = False
-        self._unflag_on_right_drag = False
 
     # --------------------------------------------------------------------------
     # Other methods
@@ -503,7 +498,6 @@ class MinefieldWidgetBase(QGraphicsView):
             The cell coordinate, or None if outside the board.
         """
         pos = self.mapToScene(event.pos())
-
         try:
             return self._board.get_coord_at(
                 int(pos.x()) // self.btn_size, int(pos.y()) // self.btn_size
@@ -555,8 +549,9 @@ class MinefieldWidgetBase(QGraphicsView):
         if state not in self._cell_images:
             logger.error("Missing cell image for state: %s", state)
             return
+        x, y = coord
         b = self._scene.addPixmap(self._cell_images[state])
-        b.setPos(coord.x * self.btn_size, coord.y * self.btn_size)
+        b.setPos(x * self.btn_size, y * self.btn_size)
 
     def _update_size(self) -> None:
         self.setMaximumSize(self.sizeHint())
@@ -565,20 +560,12 @@ class MinefieldWidgetBase(QGraphicsView):
         )
         self.size_changed.emit()
 
-    def _update_cell_images(self, img_type: CellImageType = CellImageType.ALL) -> None:
-        update_cell_images(
-            self._cell_images, self.btn_size, self._state.styles, img_type
-        )
-
-    def _redraw_cells(self) -> None:
-        self._scene.clear()
-        for coord in self._board.all_coords:
-            self._set_cell_image(coord, self._board[coord])
-
     def reset(self) -> None:
         """Reset all cell images and other state for a new game."""
         logger.info("Resetting minefield widget")
-        self._redraw_cells()
+        self._scene.clear()
+        for c in self._board.all_coords:
+            self._set_cell_image(c, CellContents.Unclicked)
         self._mouse_coord = None
         self._both_mouse_buttons_pressed = False
         self._await_release_all_buttons = True
@@ -600,19 +587,25 @@ class MinefieldWidgetBase(QGraphicsView):
     def reshape(self, x_size: int, y_size: int) -> None:
         logger.info("Resizing minefield to %sx%s", x_size, y_size)
         self._update_size()
-        self._redraw_cells()
+        for c in [(i, j) for i in range(self.x_size) for j in range(self.y_size)]:
+            self._set_cell_image(c, CellContents.Unclicked)
 
     def update_style(self, img_type: CellImageType, style: str) -> None:
         """Update the cell images."""
         logger.info("Updating %s style to '%s'", img_type.name, style)
-        self._update_cell_images(img_type)
-        self._redraw_cells()
+        _update_cell_images(
+            self._cell_images, self.btn_size, self._state.styles, img_type
+        )
+        self._scene.clear()
+        for coord in self._board.all_coords:
+            self._set_cell_image(coord, self._board[coord])
 
     def update_btn_size(self, size: int) -> None:
         """Update the size of the cells."""
         assert size == self._state.btn_size
-        self._update_cell_images()
-        self._redraw_cells()
+        _update_cell_images(self._cell_images, self.btn_size, self._state.styles)
+        for coord in self._board.all_coords:
+            self._set_cell_image(coord, self._board[coord])
         self._update_size()
 
     def get_mouse_events(self) -> List[CellUpdate_T]:

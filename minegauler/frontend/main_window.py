@@ -55,16 +55,13 @@ from ..shared.types import (
     CellImageType,
     Coord_T,
     Difficulty,
-    GameMode,
     GameState,
     PathLike,
     UIMode,
 )
 from ..shared.utils import GUIOptsStruct, format_timestamp
 from . import highscores, state, utils
-from .minefield.regular import MinefieldWidget as RegularMinefieldWidget
-from .minefield.simulate import MinefieldWidget as SimulationMinefieldWidget
-from .minefield.split_cell import MinefieldWidget as SplitCellMinefieldWidget
+from .minefield import MinefieldWidget
 from .panel import PanelWidget
 from .utils import FILES_DIR, HIGHSCORES_DIR, read_highscore_file
 
@@ -222,8 +219,7 @@ class MinegaulerGUI(
         self._populate_menubars()
         self._menubar.setFixedHeight(self._menubar.sizeHint().height())
         self._panel_widget = PanelWidget(self, self._state)
-        # self._mf_widget = RegularMinefieldWidget(self, self._ctrlr, self._state)
-        self._mf_widget = SplitCellMinefieldWidget(self, self._ctrlr, self._state)
+        self._mf_widget = MinefieldWidget(self, self._ctrlr, self._state)
         self.set_panel_widget(self._panel_widget)
         self.set_body_widget(self._mf_widget)
         self._name_entry_widget = _NameEntryBar(self, self._state.name)
@@ -385,7 +381,8 @@ class MinegaulerGUI(
         # Create board
         def switch_create_mode(checked: bool):
             mode = UIMode.CREATE if checked else UIMode.GAME
-            self.switch_ui_mode(mode)
+            self._state.ui_mode = mode
+            self._ctrlr.switch_ui_mode(mode)
 
         self._create_menu_action = create_act = QAction(
             "Create board",
@@ -848,10 +845,6 @@ class MinegaulerGUI(
         self._state.btn_size = size
         self._mf_widget.update_btn_size(size)
 
-    def switch_ui_mode(self, mode: UIMode) -> None:
-        self._state.ui_mode = mode
-        self._ctrlr.switch_ui_mode(mode)
-
     def factory_reset(self) -> None:
         """
         Reset to original state.
@@ -1048,7 +1041,6 @@ class _AdvancedOptionsModal(QDialog):
             hlayout.addWidget(button)
 
         add_opt("Enable main window maximising", self._enable_maximise)
-        add_opt("Split cell mode", self._switch_to_split_cell_mode)
 
     def _enable_maximise(self):
         """Enable maximising the main window."""
@@ -1066,20 +1058,6 @@ class _AdvancedOptionsModal(QDialog):
         win._mf_widget.size_changed.disconnect(win._update_size)
         win._update_size = update_size
         win._mf_widget.size_changed.connect(win._update_size)
-        win.show()
-
-    def _switch_to_split_cell_mode(self):
-        win = self._main_window
-        ctrlr = win._ctrlr
-        ctrlr._notif._listeners.clear()
-        ctrlr.switch_game_mode(GameMode.SPLIT_CELL)
-        win.destroy()
-
-        from unittest import mock
-
-        with mock.patch.dict(globals(), {"MinefieldWidget": SplitCellMinefieldWidget}):
-            win = MinegaulerGUI(ctrlr, win._state)
-        ctrlr.register_listener(win)
         win.show()
 
 
