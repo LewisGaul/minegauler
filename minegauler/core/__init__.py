@@ -2,5 +2,5 @@
 
 __all__ = ("UberController",)
 
-from . import board, controller, engine, game, minefield, regular
+from . import api, board, controller, engine, game, minefield, regular
 from .engine import UberController

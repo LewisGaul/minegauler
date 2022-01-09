@@ -22,7 +22,8 @@ from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QMouseEvent, QPainter, QPixmap
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QSizePolicy, QWidget
 
-from .. import api, paths
+from .. import paths
+from ..core import api
 from ..core.regular import Board  # TODO: Shouldn't have this dependency
 from ..shared.types import CellContents, CellImageType, Coord_T
 from .state import State

@@ -17,8 +17,7 @@ from typing import Callable, Dict, Iterable, List, Optional
 
 import attr
 
-from .core.board import BoardBase
-from .shared.types import (
+from ..shared.types import (
     CellContents,
     Coord_T,
     Difficulty,
@@ -27,7 +26,8 @@ from .shared.types import (
     PathLike,
     UIMode,
 )
-from .shared.utils import GameOptsStruct
+from ..shared.utils import GameOptsStruct
+from .board import BoardBase
 
 
 @attr.attrs(auto_attribs=True, kw_only=True)

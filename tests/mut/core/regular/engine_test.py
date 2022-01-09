@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 
-from minegauler import api
+from minegauler.core import api
 from minegauler.core.regular import (
     Board,
     CreateController,

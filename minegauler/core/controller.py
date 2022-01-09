@@ -11,9 +11,9 @@ from typing import Dict, Optional, Type
 
 import attr
 
-from .. import api
 from ..shared import GameOptsStruct
 from ..shared.types import CellContents, Coord_T, Difficulty, GameMode, GameState
+from . import api
 from .board import BoardBase
 from .game import GameBase
 from .minefield import MinefieldBase

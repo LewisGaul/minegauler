@@ -17,10 +17,9 @@ if sys.version_info < (3, 8):
 else:
     from typing import Protocol
 
-from .. import api
 from ..shared.types import Coord_T, Difficulty, GameMode, PathLike, UIMode
 from ..shared.utils import GameOptsStruct
-from . import board, controller, game, minefield, regular
+from . import api, board, controller, game, minefield, regular
 from .board import BoardBase
 from .controller import ControllerBase
 

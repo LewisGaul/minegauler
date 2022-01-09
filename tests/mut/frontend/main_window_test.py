@@ -10,7 +10,8 @@ from unittest import mock
 import pytest
 from pytestqt.qtbot import QtBot
 
-from minegauler import api, shared
+from minegauler import shared
+from minegauler.core import api
 from minegauler.frontend import main_window, minefield, panel, state
 from minegauler.frontend.main_window import MinegaulerGUI
 from minegauler.shared import HighscoreStruct
