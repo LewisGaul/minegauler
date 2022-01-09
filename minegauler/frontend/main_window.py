@@ -60,11 +60,7 @@ from ..shared.types import (
     UIMode,
 )
 from ..shared.utils import GUIOptsStruct, format_timestamp
-from . import highscores, state
-from .minefield import MinefieldWidget
-from .panel import PanelWidget
-from .simulate import SimulationMinefieldWidget
-from .utils import read_highscore_file
+from . import highscores, minefield, panel, simulate, state, utils
 
 
 logger = logging.getLogger(__name__)
@@ -217,8 +213,8 @@ class MinegaulerGUI(
         self._diff_menu_actions: Dict[Difficulty, QAction] = dict()
         self._populate_menubars()
         self._menubar.setFixedHeight(self._menubar.sizeHint().height())
-        self._panel_widget = PanelWidget(self, self._state)
-        self._mf_widget = MinefieldWidget(self, self._ctrlr, self._state)
+        self._panel_widget = panel.PanelWidget(self, self._state)
+        self._mf_widget = minefield.MinefieldWidget(self, self._ctrlr, self._state)
         self.set_panel_widget(self._panel_widget)
         self.set_body_widget(self._mf_widget)
         self._name_entry_widget = _NameEntryBar(self, self._state.name)
@@ -790,9 +786,9 @@ class MinegaulerGUI(
 
         hs_file = pathlib.Path(hs_file)
         try:
-            hs, cell_updates = read_highscore_file(hs_file)
+            hs, cell_updates = utils.read_highscore_file(hs_file)
             x_size, y_size, _ = hs.difficulty.get_board_values()
-            win = SimulationMinefieldWidget(self, x_size, y_size, cell_updates)
+            win = simulate.SimulationMinefieldWidget(self, x_size, y_size, cell_updates)
         except Exception as e:
             logger.exception("Error reading highscore file")
             _msg_popup(
