@@ -17,21 +17,9 @@ Exports
 .. function:: read_highscore_file
     Read data from a highscore file.
 
-.. data:: FILES_DIR
-    The directory containing files.
-
-.. data:: HIGHSCORES_DIR
-    The directory containing highscore files.
-
-.. data:: IMG_DIR
-    The directory containing images.
-
 """
 
 __all__ = (
-    "FILES_DIR",
-    "HIGHSCORES_DIR",
-    "IMG_DIR",
     "CellUpdate_T",
     "MouseMove",
     "read_highscore_file",
@@ -47,18 +35,13 @@ from typing import Iterable, List, Mapping, Tuple
 
 import attr
 
-from .. import ROOT_DIR
+from .. import paths
 from ..shared import HighscoreStruct
 from ..shared.types import CellContents, Coord_T, PathLike
 from ..shared.utils import format_timestamp
 
 
 logger = logging.getLogger(__name__)
-
-IMG_DIR: pathlib.Path = ROOT_DIR / "images"
-FILES_DIR: pathlib.Path = ROOT_DIR / "files"
-HIGHSCORES_DIR: pathlib.Path = ROOT_DIR / "highscores"
-
 
 CellUpdate_T = Tuple[float, Mapping[Coord_T, CellContents]]
 
@@ -98,10 +81,10 @@ def save_highscore_file(
             for t, updates in cell_updates
         ],
     }
-    HIGHSCORES_DIR.mkdir(exist_ok=True)
-    with gzip.open(HIGHSCORES_DIR / fname, "wt") as f:
+    paths.DATA_DIR.mkdir(exist_ok=True)
+    with gzip.open(paths.DATA_DIR / fname, "wt") as f:
         json.dump(data, f)
-    return HIGHSCORES_DIR / fname
+    return paths.DATA_DIR / fname
 
 
 def read_highscore_file(

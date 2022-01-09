@@ -18,9 +18,9 @@ from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QColor, QFont, QPalette, QPixmap
 from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QWidget
 
+from .. import paths
 from ..shared.types import FaceState, GameState
 from . import state
-from .utils import IMG_DIR
 
 
 class PanelWidget(QWidget):
@@ -108,7 +108,7 @@ class PanelWidget(QWidget):
             pass
         life = 1
         fname = f"face{life}{state}.png"
-        pixmap = QPixmap(str(IMG_DIR / "faces" / fname))
+        pixmap = QPixmap(str(paths.IMG_DIR / "faces" / fname))
         self._face_button.setPixmap(
             pixmap.scaled(26, 26, transformMode=Qt.SmoothTransformation)
         )

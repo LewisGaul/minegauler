@@ -22,11 +22,11 @@ from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QMouseEvent, QPainter, QPixmap
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QSizePolicy, QWidget
 
-from .. import api
-from ..core.regular import Board
+from .. import api, paths
+from ..core.regular import Board  # TODO: Shouldn't have this dependency
 from ..shared.types import CellContents, CellImageType, Coord_T
 from .state import State
-from .utils import IMG_DIR, CellUpdate_T, MouseMove
+from .utils import CellUpdate_T, MouseMove
 
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ def _update_cell_images(
     """
 
     def get_path(subdir: str, style: str, fname: str, *, fallback: bool = True) -> str:
-        base_path = IMG_DIR / subdir
+        base_path = paths.IMG_DIR / subdir
         full_path = base_path / style / fname
         if not full_path.exists() and fallback:
             logger.warning(f"Missing image file at {full_path}, using standard style")

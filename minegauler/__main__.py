@@ -11,7 +11,7 @@ import mysql.connector  # isort:skip
 import logging
 import sys
 
-from . import core, frontend, shared
+from . import core, frontend, paths, shared
 from ._version import __version__
 
 
@@ -39,7 +39,7 @@ def setup_logging():
 setup_logging()
 
 
-read_settings = shared.read_settings_from_file()
+read_settings = shared.read_settings_from_file(paths.SETTINGS_FILE)
 
 if read_settings:
     game_opts = shared.GameOptsStruct.from_structs(read_settings)
@@ -72,7 +72,7 @@ logger.debug("Exiting event loop")
 persist_settings = shared.AllOptsStruct.from_structs(
     ctrlr.get_game_options(), gui.get_gui_opts()
 )
-shared.write_settings_to_file(persist_settings)
+shared.write_settings_to_file(persist_settings, paths.SETTINGS_FILE)
 
 
 logger.info("Exiting with exit code %d", rc)

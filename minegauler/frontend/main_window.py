@@ -44,7 +44,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from .. import ROOT_DIR, api, shared
+from .. import api, paths, shared
 from ..shared.highscores import (
     HighscoreSettingsStruct,
     HighscoreStruct,
@@ -60,15 +60,14 @@ from ..shared.types import (
     UIMode,
 )
 from ..shared.utils import GUIOptsStruct, format_timestamp
-from . import highscores, state, utils
+from . import highscores, state
 from .minefield import MinefieldWidget
 from .panel import PanelWidget
-from .utils import FILES_DIR, HIGHSCORES_DIR, read_highscore_file
+from .simulate import SimulationMinefieldWidget
+from .utils import read_highscore_file
 
 
 logger = logging.getLogger(__name__)
-
-BOARD_DIR = ROOT_DIR / "boards"
 
 
 def _msg_popup(
@@ -109,7 +108,7 @@ class _BaseMainWindow(QMainWindow):
         self._panel_widget: Optional[QWidget]
         self._body_widget: Optional[QWidget]
         self._footer_widget: Optional[QWidget]
-        self._icon: QIcon = QIcon(str(utils.IMG_DIR / "icon.ico"))
+        self._icon: QIcon = QIcon(str(paths.IMG_DIR / "icon.ico"))
         self.setWindowTitle(title)
         self.setWindowIcon(self._icon)
         # Disable maximise button
@@ -466,7 +465,7 @@ class MinegaulerGUI(
             styles_menu.addMenu(submenu)
             group = QActionGroup(self)
             group.setExclusive(True)
-            for folder in (utils.IMG_DIR / img_group_name).glob("*"):
+            for folder in (paths.IMG_DIR / img_group_name).glob("*"):
                 style = folder.name
                 style_act = QAction(style, self, checkable=True)
                 if style == self._state.styles[img_group]:
@@ -540,13 +539,13 @@ class MinegaulerGUI(
         rules_act = QAction("Rules", self)
         self._help_menu.addAction(rules_act)
         rules_act.triggered.connect(
-            lambda: self._open_text_popup("Rules", FILES_DIR / "rules.txt")
+            lambda: self._open_text_popup("Rules", paths.FILES_DIR / "rules.txt")
         )
 
         tips_act = QAction("Tips", self)
         self._help_menu.addAction(tips_act)
         tips_act.triggered.connect(
-            lambda: self._open_text_popup("Tips", FILES_DIR / "tips.txt")
+            lambda: self._open_text_popup("Tips", paths.FILES_DIR / "tips.txt")
         )
 
         retrieve_act = QAction("Retrieve highscores", self)
@@ -558,7 +557,7 @@ class MinegaulerGUI(
         about_act = QAction("About", self)
         self._help_menu.addAction(about_act)
         about_act.triggered.connect(
-            lambda: self._open_text_popup("About", FILES_DIR / "about.txt")
+            lambda: self._open_text_popup("About", paths.FILES_DIR / "about.txt")
         )
         about_act.setShortcut("F1")
 
@@ -645,7 +644,7 @@ class MinegaulerGUI(
         file, _ = QFileDialog.getSaveFileName(
             self,
             caption="Save board",
-            directory=str(BOARD_DIR),
+            directory=str(paths.BOARDS_DIR),
             filter="Minegauler boards (*.mgb)",
         )
         if not file:
@@ -663,7 +662,7 @@ class MinegaulerGUI(
         file, _ = QFileDialog.getOpenFileName(
             self,
             caption="Load board",
-            directory=str(BOARD_DIR),
+            directory=str(paths.BOARDS_DIR),
             filter="Minegauler boards (*.mgb)",
         )
         if not file:
@@ -782,7 +781,7 @@ class MinegaulerGUI(
         hs_file, _ = QFileDialog.getOpenFileName(
             parent=self,
             caption="Play highscore",
-            directory=str(HIGHSCORES_DIR),
+            directory=str(paths.DATA_DIR),
             filter="Minegauler highscores (*.mgh)",
         )
         logger.debug("Selected file: %s", hs_file)

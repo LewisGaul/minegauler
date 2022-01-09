@@ -48,13 +48,14 @@ __all__ = (
 
 import json
 import logging
+import os
 import time
-from typing import Any, Dict, Iterable, List, Mapping, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
 import attr
 
-from .. import SETTINGS_FILE
-from .types import CellImageType, Difficulty, GameMode
+from .. import paths
+from .types import CellImageType, GameMode
 
 
 logger = logging.getLogger(__name__)
@@ -306,10 +307,14 @@ def is_flagging_threshold(proportion: float) -> bool:
     return proportion > 0.1
 
 
-def read_settings_from_file():
+def read_settings_from_file(
+    file: os.PathLike,
+) -> Optional[AllOptsStruct]:
+    logger.info("Reading settings from file: %s", file)
+
     read_settings = None
     try:
-        with open(SETTINGS_FILE, "r") as f:
+        with open(file, "r") as f:
             read_settings = AllOptsStruct.decode_from_json(json.load(f))
     except FileNotFoundError:
         logger.info("Settings file not found")
@@ -321,11 +326,11 @@ def read_settings_from_file():
     return read_settings
 
 
-def write_settings_to_file(settings: AllOptsStruct) -> None:
-    logger.info("Saving settings to file: %s", SETTINGS_FILE)
+def write_settings_to_file(settings: AllOptsStruct, file: os.PathLike) -> None:
+    logger.info("Saving settings to file: %s", file)
     logger.debug("%s", settings)
     try:
-        with open(SETTINGS_FILE, "w") as f:
+        with open(file, "w") as f:
             json.dump(settings.encode_to_json(), f, indent=2)
     except Exception:
         logger.exception("Unexpected error writing settings to file")

@@ -7,7 +7,6 @@ Available imports from the package.
 
 __all__ = ("MinegaulerGUI", "init_app", "run_app", "state")
 
-
 import signal
 import sys
 
