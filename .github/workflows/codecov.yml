@@ -20,7 +20,7 @@ jobs:
         python-version: 3.9
 
     - name: Install Python requirements
-      run: pip install pytest pytest-qt coverage -r requirements.txt
+      run: pip install pytest pytest-qt pytest-benchmark coverage -r requirements.txt
 
     - name: Set up X-server
       run: |

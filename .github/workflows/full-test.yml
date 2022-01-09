@@ -27,7 +27,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Python requirements
-        run: pip install pytest pytest-qt -r requirements.txt
+        run: pip install pytest pytest-qt pytest-benchmark -r requirements.txt
 
       - name: Set up X-server (Linux)
         if: matrix.os == 'ubuntu-latest'
