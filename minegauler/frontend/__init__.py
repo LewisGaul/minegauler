@@ -23,8 +23,12 @@ _timer = None
 
 
 def init_app() -> None:
+    """Initialise the GUI application. This function is idempotent."""
     global _app
-    _app = QApplication(sys.argv)
+    if not QApplication.instance():
+        _app = QApplication(sys.argv)
+    else:
+        _app = QApplication.instance()
     pyqtRemoveInputHook()
 
 

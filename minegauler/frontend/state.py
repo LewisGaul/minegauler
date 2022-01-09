@@ -257,6 +257,10 @@ class State:
             )
             self._activate_pending_game_state()
 
+    def reset(self) -> None:
+        for name, field in attr.fields_dict(type(self)).items():
+            setattr(self, name, field.default)
+
     # ---------------------------------
     # Methods for instance creation
     # ---------------------------------

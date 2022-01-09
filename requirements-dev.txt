@@ -12,7 +12,6 @@ click==8.0.1
 colorama==0.4.4
 coverage==5.5
 cryptography==3.4.8
-dataclasses==0.8; python_version<'3.7'
 docutils==0.17.1
 Flask==2.0.1
 idna==3.2
@@ -32,6 +31,7 @@ platformdirs==2.3.0
 pluggy==1.0.0
 protobuf==3.17.3
 py==1.10.0
+py-cpuinfo==8.0.0
 pycparser==2.20
 Pygments==2.10.0
 pyinstaller==4.5.1
@@ -40,6 +40,7 @@ pyparsing==2.4.7
 PyQt5==5.14.2
 PyQt5-sip==12.9.0
 pytest==6.2.5
+pytest-benchmark==3.4.1
 pytest-cov==2.12.1
 pytest-qt==4.0.2
 pytz==2021.1

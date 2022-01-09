@@ -98,6 +98,13 @@ class UberController(api.AbstractController):
         )
         self._notif.reset()
 
+    def reset_settings(self) -> None:
+        super().reset_settings()
+        self._opts = GameOptsStruct()
+        self.resize_board(self._opts.x_size, self._opts.y_size, self._opts.mines)
+        self.switch_mode(UIMode.GAME)
+        self._notif.reset()
+
     # ----------------------------------
     # Delegated abstractmethods
     # ----------------------------------

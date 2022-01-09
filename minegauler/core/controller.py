@@ -70,6 +70,7 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
     # Remove abstractmethods.
     switch_game_mode = None
     switch_ui_mode = None
+    reset_settings = None
 
     mode: GameMode
     minefield_cls: Type[MinefieldBase]
