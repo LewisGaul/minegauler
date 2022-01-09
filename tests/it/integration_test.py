@@ -15,7 +15,7 @@ import pytest
 from PyQt5.QtCore import QEvent, QPoint, Qt
 from PyQt5.QtGui import QMouseEvent
 
-from minegauler import frontend
+from minegauler import core, frontend
 from minegauler.shared.types import CellImageType
 from minegauler.shared.utils import AllOptsStruct
 

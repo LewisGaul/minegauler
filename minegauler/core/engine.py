@@ -102,7 +102,7 @@ class UberController(api.AbstractController):
         super().reset_settings()
         self._opts = GameOptsStruct()
         self.resize_board(self._opts.x_size, self._opts.y_size, self._opts.mines)
-        self.switch_mode(UIMode.GAME)
+        self.switch_ui_mode(UIMode.GAME)
         self._notif.reset()
 
     # ----------------------------------
