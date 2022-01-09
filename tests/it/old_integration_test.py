@@ -11,16 +11,12 @@ TODO: Should be moved to be considered unit testing of the backend, with the
 """
 
 import logging
-import os
-import time
 import types
 from unittest import mock
 
-from PyQt5.QtWidgets import QApplication
-
 from minegauler import core, frontend
 
-from . import run_main_entrypoint
+from . import process_events, run_main_entrypoint
 
 
 logger = logging.getLogger(__name__)
@@ -57,33 +53,13 @@ class TestMain:
 
     def test_play_game(self):
         """Test basic playing of a game."""
-        self._process_events()
+        process_events()
         self.ctrlr.select_cell((1, 2))
-        self._process_events()
+        process_events()
         self.ctrlr.select_cell((6, 4))
-        self._process_events()
+        process_events()
 
     def test_change_board(self):
         """Test changing the board."""
         self.ctrlr.resize_board(40, 1, 1)
-        self._process_events()
-
-    # -------------------------------------------
-    # Helper methods
-    # -------------------------------------------
-    @staticmethod
-    def _process_events() -> None:
-        """
-        Manually process Qt events (normally taken care of by the event loop).
-
-        The environment variable TEST_IT_EVENT_WAIT can be used to set the
-        amount of time to spend processing events (in seconds).
-        """
-        start_time = time.time()
-        if os.environ.get("TEST_IT_EVENT_WAIT"):
-            wait = float(os.environ["TEST_IT_EVENT_WAIT"])
-        else:
-            wait = 0
-        QApplication.processEvents()
-        while time.time() < start_time + wait:
-            QApplication.processEvents()
+        process_events()

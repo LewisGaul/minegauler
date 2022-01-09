@@ -8,21 +8,18 @@ Integration tests. Simulates interactions by calling frontend APIs only.
 import contextlib
 import json
 import logging
-import os
-import time
 from typing import Optional
 from unittest import mock
 
 import pytest
 from PyQt5.QtCore import QEvent, QPoint, Qt
 from PyQt5.QtGui import QMouseEvent
-from PyQt5.QtWidgets import QApplication
 
 from minegauler import frontend
 from minegauler.shared.types import CellImageType
 from minegauler.shared.utils import AllOptsStruct
 
-from . import run_main_entrypoint
+from . import process_events, run_main_entrypoint
 
 
 logger = logging.getLogger(__name__)
@@ -95,19 +92,19 @@ class Test:
     # Testcases
     # --------------------------------------------------------------------------
     def test_create(self):
-        self._process_events()
+        process_events()
 
     def test_change_style(self):
-        self._process_events()
+        process_events()
         self.right_press((0, 0))
         self.right_release()
         self.left_press((2, 2))
         self.left_release()
-        self._process_events()
+        process_events()
         self.gui._change_style(CellImageType.BUTTONS, "Halloween")
         self.gui._change_style(CellImageType.MARKERS, "Halloween")
         self.gui._change_style(CellImageType.NUMBERS, "Halloween")
-        self._process_events()
+        process_events()
 
     # --------------------------------------------------------------------------
     # Helper functions
@@ -226,20 +223,3 @@ class Test:
         self._mouse_buttons_down &= ~button
         if self._mouse_buttons_down == Qt.NoButton:
             self._mouse_down_pos = None
-
-    @staticmethod
-    def _process_events() -> None:
-        """
-        Manually process Qt events (normally taken care of by the event loop).
-
-        The environment variable TEST_IT_EVENT_WAIT can be used to set the
-        amount of time to spend processing events (in seconds).
-        """
-        start_time = time.time()
-        if os.environ.get("TEST_IT_EVENT_WAIT"):
-            wait = float(os.environ["TEST_IT_EVENT_WAIT"])
-        else:
-            wait = 0
-        QApplication.processEvents()
-        while time.time() < start_time + wait:
-            QApplication.processEvents()
