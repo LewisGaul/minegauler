@@ -66,7 +66,7 @@ def sandbox(tmpdir_factory: pytest.TempdirFactory):
 
         ctxs.enter_context(
             mock.patch.object(
-                minegauler.shared.highscores.HighscoresDatabases.REMOTE, "value"
+                minegauler.shared.highscores.HighscoresDatabases.REMOTE, "_value_"
             )
         )
 
