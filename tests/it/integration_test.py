@@ -6,13 +6,10 @@ Integration tests. Simulates interactions by calling frontend APIs only.
 """
 
 import contextlib
-import functools
 import json
 import logging
 import os
 import time
-import types
-from importlib.util import find_spec
 from typing import Optional
 from unittest import mock
 
@@ -20,29 +17,18 @@ import pytest
 from PyQt5.QtCore import QEvent, QPoint, Qt
 from PyQt5.QtGui import QMouseEvent
 from PyQt5.QtWidgets import QApplication
-from pytestqt.qtbot import QtBot
 
-import minegauler
 from minegauler import frontend
-from minegauler.frontend import QApplication
 from minegauler.shared.types import CellImageType
 from minegauler.shared.utils import AllOptsStruct
+
+from . import run_main_entrypoint
 
 
 logger = logging.getLogger(__name__)
 
 
-def _run_minegauler__main__() -> types.ModuleType:
-    """
-    Run minegauler via the __main__ module.
-
-    :return:
-        The __main__ module namespace.
-    """
-    module = types.ModuleType("minegauler.__main__")
-    spec = find_spec("minegauler.__main__")
-    spec.loader.exec_module(module)
-    return module
+# TODO: Take care to mock out highscores etc.
 
 
 def create_gui(settings: Optional[AllOptsStruct] = None) -> frontend.MinegaulerGUI:
@@ -66,7 +52,7 @@ def create_gui(settings: Optional[AllOptsStruct] = None) -> frontend.MinegaulerG
                 mock.mock_open(read_data=json.dumps(settings.encode_to_json())),
             )
         )
-        main_module = _run_minegauler__main__()
+        main_module = run_main_entrypoint()
 
     return main_module.gui
 
@@ -91,10 +77,6 @@ class Test:
         cls = type(self)
         cls.gui = create_gui()
         cls._mf_widget = cls.gui._mf_widget
-
-        yield
-
-        QApplication.quit()
 
     @pytest.fixture(scope="function", autouse=True)
     def setup(self, qtbot):

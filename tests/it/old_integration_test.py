@@ -1,9 +1,12 @@
 # December 2019, Lewis Gaul
 
 """
-Integration tests.
+Old integration tests.
 
-Aims to cover all mainline code.  # TODO - incomplete
+Exercises logic via core controller APIs.
+
+TODO: Should be moved to be considered unit testing of the backend, with the
+      new IT taking over this responsibility.
 
 """
 
@@ -11,28 +14,16 @@ import logging
 import os
 import time
 import types
-from importlib.util import find_spec
 from unittest import mock
 
 from PyQt5.QtWidgets import QApplication
 
 from minegauler import core, frontend
 
+from . import run_main_entrypoint
+
 
 logger = logging.getLogger(__name__)
-
-
-def _run_minegauler__main__() -> types.ModuleType:
-    """
-    Run minegauler via the __main__ module.
-
-    :return:
-        The __main__ module namespace.
-    """
-    module = types.ModuleType("minegauler.__main__")
-    spec = find_spec("minegauler.__main__")
-    spec.loader.exec_module(module)
-    return module
 
 
 class TestMain:
@@ -53,14 +44,10 @@ class TestMain:
 
         logger.info("Executing __main__ without starting app event loop")
         with mock.patch("minegauler.frontend.run_app", run_app), mock.patch("sys.exit"):
-            cls.main_module = _run_minegauler__main__()
+            cls.main_module = run_main_entrypoint()
 
         cls.ctrlr = cls.main_module.ctrlr
         cls.gui = cls.main_module.gui
-
-    @classmethod
-    def teardown_class(cls):
-        """Undo class setup."""
 
     def test_setup(self):
         """Test the setup is sane."""
