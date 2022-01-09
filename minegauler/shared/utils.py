@@ -55,7 +55,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 import attr
 
 from .. import paths
-from .types import CellImageType, GameMode
+from .types import CellImageType, GameMode, PathLike
 
 
 logger = logging.getLogger(__name__)
@@ -307,9 +307,7 @@ def is_flagging_threshold(proportion: float) -> bool:
     return proportion > 0.1
 
 
-def read_settings_from_file(
-    file: os.PathLike,
-) -> Optional[AllOptsStruct]:
+def read_settings_from_file(file: os.PathLike) -> Optional[AllOptsStruct]:
     logger.info("Reading settings from file: %s", file)
 
     read_settings = None
@@ -326,7 +324,7 @@ def read_settings_from_file(
     return read_settings
 
 
-def write_settings_to_file(settings: AllOptsStruct, file: os.PathLike) -> None:
+def write_settings_to_file(settings: AllOptsStruct, file: PathLike) -> None:
     logger.info("Saving settings to file: %s", file)
     logger.debug("%s", settings)
     try:
