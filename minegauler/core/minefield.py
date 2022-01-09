@@ -30,7 +30,11 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
     # final board, ...) can go in mode-specific implementations (e.g. subclasses).
 
     def __init__(
-        self, all_coords: Iterable[C], *, mines: int, per_cell: int = 1,
+        self,
+        all_coords: Iterable[C],
+        *,
+        mines: int,
+        per_cell: int = 1,
     ):
         """
         :param all_coords:
@@ -66,7 +70,11 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
 
     @classmethod
     def from_coords(
-        cls, all_coords: Iterable[C], *, mine_coords: Iterable[C], per_cell: int = 1,
+        cls,
+        all_coords: Iterable[C],
+        *,
+        mine_coords: Iterable[C],
+        per_cell: int = 1,
     ) -> "MinefieldBase":
         """
         :param all_coords:
@@ -98,6 +106,12 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
         if coord not in self.all_coords:
             raise IndexError(f"Invalid coord '{coord}'")
         return self.mine_coords.count(coord)
+
+    def __eq__(self, other):
+        if type(other) is not type(self):
+            return False
+        fields = ("all_coords", "mines", "mine_coords", "per_cell")
+        return all(getattr(self, f) == getattr(other, f) for f in fields)
 
     @property
     def bbbv(self) -> int:

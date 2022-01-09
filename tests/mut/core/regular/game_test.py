@@ -109,7 +109,7 @@ class TestGame:
                 # fmt: on
             ],
         )
-        game = Game.from_minefield(mf, x_size=mf.x_size, y_size=mf.y_size)
+        game = Game.from_minefield(mf)
         assert game.mf.bbbv == 3
 
         # Not started game.
@@ -190,7 +190,12 @@ class TestGame:
 
     def test_empty_minefield(self):
         """Test game methods with an empty minefield."""
-        game = Game(x_size=4, y_size=5, mines=0, first_success=False,)
+        game = Game(
+            x_size=4,
+            y_size=5,
+            mines=0,
+            first_success=False,
+        )
         game.mf.populate()
         assert game.mf.bbbv == 1
 
@@ -218,7 +223,3 @@ class TestGame:
         assert game.get_elapsed() == 0
         assert game.get_3bvps() == math.inf
         assert game.get_flag_proportion() == 0
-
-    def test_full_minefield(self):
-        """Test game methods with completely full minefield."""
-        # TODO: Make this possible.

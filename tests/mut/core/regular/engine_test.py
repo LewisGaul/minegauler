@@ -7,6 +7,7 @@ import pytest
 from minegauler.core import api
 from minegauler.core.regular import (
     Board,
+    Coord,
     CreateController,
     Game,
     GameController,
@@ -46,22 +47,43 @@ class TestGameController:
     )
 
     # --------------------------------------------------------------------------
+    # Helper methods
+    # --------------------------------------------------------------------------
+    @classmethod
+    def create_ctrlr(cls, opts=None, *, set_mf=True):
+        """
+        Convenience method for creating a controller instance. Uses the test
+        class options and minefield by default.
+
+        :param opts:
+            Optionally override the default options.
+        :param set_mf:
+            Whether to set the minefield or leave it not being created.
+        """
+        if opts is None:
+            opts = cls.opts.copy()
+        ctrlr = GameController(opts, notif=mock.Mock())
+        if set_mf:
+            ctrlr.game.mf = cls.mf
+        return ctrlr
+
+    # --------------------------------------------------------------------------
     # Test cases
     # --------------------------------------------------------------------------
-    def test_create_controller(self):
+    def test_basic_init(self):
         """Test basic creation of a controller."""
         ctrlr = GameController(self.opts, notif=mock.Mock())
         assert ctrlr._opts is self.opts
         assert ctrlr.game.state is GameState.READY
-        assert ctrlr.game.mf is None
+        assert not ctrlr.game.mf.populated
         assert ctrlr.game.board == Board(self.opts.x_size, self.opts.y_size)
 
     def test_getters(self):
         """Test the getter methods."""
-        ctrlr = self.create_controller()
+        ctrlr = self.create_ctrlr()
 
         # Board is a proxy to the game's board.
-        assert ctrlr.board == ctrlr.game.board
+        assert ctrlr.board is ctrlr.game.board
 
         # Unstarted game info.
         exp_game_info = api.GameInfo(
@@ -79,7 +101,7 @@ class TestGameController:
 
         # Started game info.
         with mock.patch.object(ctrlr.game, "get_elapsed", return_value=5):
-            ctrlr.select_cell((0, 0))
+            ctrlr.select_cell(Coord(0, 0))
             exp_game_info = api.GameInfo(
                 game_state=GameState.ACTIVE,
                 x_size=self.opts.x_size,
@@ -104,16 +126,16 @@ class TestGameController:
 
     def test_cell_interaction(self):
         """Test various basic cell interaction."""
-        coord = (2, 2)
+        coord = Coord(2, 2)
 
         # Setup.
         opts = GameOptsStruct(per_cell=2, first_success=False)
-        ctrlr = self.create_controller(opts=opts, set_mf=False)
+        ctrlr = self.create_ctrlr(opts=opts, set_mf=False)
 
         # Flag a cell.
         ctrlr.flag_cell(coord)
         assert ctrlr.game.board[coord] is CellContents.Flag(1)
-        assert not ctrlr.game.mf
+        assert not ctrlr.game.mf.populated
         assert ctrlr.game.state is GameState.READY
         assert ctrlr.game.mines_remaining == ctrlr._opts.mines - 1
 
@@ -132,7 +154,7 @@ class TestGameController:
         # Flag a cell that is at max flags to reset it.
         ctrlr.flag_cell(coord)
         assert ctrlr.game.board[coord] is CellContents.Unclicked
-        assert not ctrlr.game.mf
+        assert not ctrlr.game.mf.populated
         assert ctrlr.game.state is GameState.READY
         assert ctrlr.game.mines_remaining == ctrlr._opts.mines
 
@@ -148,7 +170,7 @@ class TestGameController:
         assert isinstance(
             ctrlr.game.board[coord], (CellContents.HitMine, CellContents.Num)
         )
-        assert ctrlr.game.mf
+        assert ctrlr.game.mf.populated
         assert ctrlr.game.state in {GameState.ACTIVE, GameState.LOST}
         assert ctrlr.game.mines_remaining == ctrlr._opts.mines
 
@@ -171,13 +193,13 @@ class TestGameController:
             ]
         )
         # Select a cell to trigger the opening.
-        ctrlr = self.create_controller()
-        ctrlr.select_cell((0, 0))
+        ctrlr = self.create_ctrlr()
+        ctrlr.select_cell(Coord(0, 0))
         assert ctrlr.game.board == exp_board
 
         # Select the edge of an opening.
-        ctrlr = self.create_controller()
-        ctrlr.select_cell((1, 3))
+        ctrlr = self.create_ctrlr()
+        ctrlr.select_cell(Coord(1, 3))
         assert ctrlr.game.board == Board.from_2d_array(
             [
                 # fmt: off
@@ -191,11 +213,11 @@ class TestGameController:
         )
 
         # Select a different cell to trigger the same opening as above.
-        ctrlr.select_cell((1, 2))
+        ctrlr.select_cell(Coord(1, 2))
         assert ctrlr.game.board == exp_board
 
         # Select another cell to trigger the other opening.
-        ctrlr.select_cell((3, 4))
+        ctrlr.select_cell(Coord(3, 4))
         assert ctrlr.game.board == Board.from_2d_array(
             [
                 # fmt: off
@@ -209,9 +231,9 @@ class TestGameController:
         )
 
         # Trigger opening with incorrect flag blocking the way.
-        ctrlr = self.create_controller()
-        ctrlr.flag_cell((0, 1))
-        ctrlr.select_cell((0, 0))
+        ctrlr = self.create_ctrlr()
+        ctrlr.flag_cell(Coord(0, 1))
+        ctrlr.select_cell(Coord(0, 0))
         assert ctrlr.game.board == Board.from_2d_array(
             [
                 # fmt: off
@@ -225,8 +247,8 @@ class TestGameController:
         )
 
         # Select doesn't trigger remainder of opening on revealed opening.
-        ctrlr.remove_cell_flags((0, 1))
-        ctrlr.select_cell((0, 0))
+        ctrlr.remove_cell_flags(Coord(0, 1))
+        ctrlr.select_cell(Coord(0, 0))
         assert ctrlr.game.board == Board.from_2d_array(
             [
                 # fmt: off
@@ -241,9 +263,9 @@ class TestGameController:
 
         # Chording does trigger remainder of opening on revealed opening. Also
         # test other invalid flags blocking the opening.
-        ctrlr.flag_cell((0, 3))
-        ctrlr.flag_cell((0, 2))
-        ctrlr.chord_on_cell((0, 0))
+        ctrlr.flag_cell(Coord(0, 3))
+        ctrlr.flag_cell(Coord(0, 2))
+        ctrlr.chord_on_cell(Coord(0, 0))
         assert ctrlr.game.board == Board.from_2d_array(
             [
                 # fmt: off
@@ -259,15 +281,15 @@ class TestGameController:
     def test_chording(self):
         """Test chording in various situations."""
         # Use the same controller throughout the test.
-        ctrlr = self.create_controller()
+        ctrlr = self.create_ctrlr()
 
         # No-op chording - game not started.
-        ctrlr.chord_on_cell((0, 0))
+        ctrlr.chord_on_cell(Coord(0, 0))
         assert ctrlr.game.state is GameState.READY
 
         # No-op chording - no flags.
-        ctrlr.select_cell((0, 4))
-        ctrlr.chord_on_cell((0, 4))
+        ctrlr.select_cell(Coord(0, 4))
+        ctrlr.chord_on_cell(Coord(0, 4))
         assert ctrlr.game.board == Board.from_2d_array(
             [
                 # fmt: off
@@ -281,8 +303,8 @@ class TestGameController:
         )
 
         # Basic successful chording.
-        ctrlr.flag_cell((1, 4))
-        ctrlr.chord_on_cell((0, 4))
+        ctrlr.flag_cell(Coord(1, 4))
+        ctrlr.chord_on_cell(Coord(0, 4))
         assert ctrlr.game.board == Board.from_2d_array(
             [
                 # fmt: off
@@ -296,7 +318,7 @@ class TestGameController:
         )
 
         # Successful chording triggering opening.
-        ctrlr.chord_on_cell((1, 3))
+        ctrlr.chord_on_cell(Coord(1, 3))
         assert ctrlr.game.board == Board.from_2d_array(
             [
                 # fmt: off
@@ -311,21 +333,21 @@ class TestGameController:
 
         # No-op - repeated chording.
         prev_board = ctrlr.game.board
-        ctrlr.chord_on_cell((1, 3))
+        ctrlr.chord_on_cell(Coord(1, 3))
         assert ctrlr.game.board == prev_board
 
         # No-op - chording on flagged cell.
-        ctrlr.chord_on_cell((1, 4))
+        ctrlr.chord_on_cell(Coord(1, 4))
         assert ctrlr.game.board == prev_board
 
         # No-op - wrong number of flags.
-        ctrlr.flag_cell((3, 0))
-        ctrlr.flag_cell((3, 0))
-        ctrlr.chord_on_cell((2, 1))
+        ctrlr.flag_cell(Coord(3, 0))
+        ctrlr.flag_cell(Coord(3, 0))
+        ctrlr.chord_on_cell(Coord(2, 1))
 
         # Incorrect flags cause hitting a mine.
-        ctrlr.flag_cell((3, 2))
-        ctrlr.chord_on_cell((2, 2))
+        ctrlr.flag_cell(Coord(3, 2))
+        ctrlr.chord_on_cell(Coord(2, 2))
         assert ctrlr.game.board == Board.from_2d_array(
             [
                 # fmt: off
@@ -343,7 +365,7 @@ class TestGameController:
         # First click should hit an opening with first_success set.
         opts = GameOptsStruct(first_success=True)
         ctrlr = GameController(opts, notif=mock.Mock())
-        coord = (1, 5)
+        coord = Coord(1, 5)
         ctrlr.select_cell(coord)
         assert ctrlr.game.state is GameState.ACTIVE
         assert ctrlr.game.board[coord] is CellContents.Num(0)
@@ -351,8 +373,8 @@ class TestGameController:
             assert type(ctrlr.game.board[c]) is CellContents.Num
 
         # Check first success is ignored when using created minefield.
-        ctrlr = self.create_controller()
-        coord = (3, 0)
+        ctrlr = self.create_ctrlr()
+        coord = Coord(3, 0)
         ctrlr.select_cell(coord)
         assert ctrlr.game.state is GameState.LOST
         assert ctrlr.game.board[coord] is CellContents.HitMine(2)
@@ -362,7 +384,7 @@ class TestGameController:
             x_size=4, y_size=4, mines=15, per_cell=1, first_success=True
         )
         ctrlr = GameController(opts, notif=mock.Mock())
-        coord = (1, 2)
+        coord = Coord(1, 2)
         ctrlr.select_cell(coord)
         assert ctrlr.game.board[coord] is CellContents.Num(8)
 
@@ -383,8 +405,8 @@ class TestGameController:
 
     def test_losing(self):
         # Lose straight away.
-        ctrlr = self.create_controller()
-        ctrlr.select_cell((3, 0))
+        ctrlr = self.create_ctrlr()
+        ctrlr.select_cell(Coord(3, 0))
         assert ctrlr.game.state is GameState.LOST
         assert ctrlr.game.end_time is not None
         assert ctrlr.game.board == Board.from_2d_array(
@@ -400,10 +422,10 @@ class TestGameController:
         )
 
         # Lose after game has been started with incorrect flag.
-        ctrlr = self.create_controller()
-        ctrlr.select_cell((1, 0))
-        ctrlr.flag_cell((1, 1))
-        ctrlr.select_cell((2, 0))
+        ctrlr = self.create_ctrlr()
+        ctrlr.select_cell(Coord(1, 0))
+        ctrlr.flag_cell(Coord(1, 1))
+        ctrlr.select_cell(Coord(2, 0))
         assert ctrlr.game.state is GameState.LOST
         assert ctrlr.game.board == Board.from_2d_array(
             [
@@ -426,10 +448,10 @@ class TestGameController:
         assert ctrlr.game.state is GameState.LOST
 
         # Check losing via chording works.
-        ctrlr = self.create_controller()
-        ctrlr.select_cell((1, 0))
-        ctrlr.flag_cell((1, 1))
-        ctrlr.chord_on_cell((1, 0))
+        ctrlr = self.create_ctrlr()
+        ctrlr.select_cell(Coord(1, 0))
+        ctrlr.flag_cell(Coord(1, 1))
+        ctrlr.chord_on_cell(Coord(1, 0))
         assert ctrlr.game.state is GameState.LOST
         assert ctrlr.game.board == Board.from_2d_array(
             [
@@ -446,19 +468,19 @@ class TestGameController:
     def test_winning(self):
         # Test winning in one click.
         opts = GameOptsStruct(x_size=2, y_size=1, mines=1, first_success=True)
-        ctrlr = self.create_controller(opts=opts, set_mf=False)
-        ctrlr.select_cell((0, 0))
+        ctrlr = self.create_ctrlr(opts=opts, set_mf=False)
+        ctrlr.select_cell(Coord(0, 0))
         assert ctrlr.game.state is GameState.WON
         assert ctrlr.game.end_time is not None
         assert ctrlr.game.mines_remaining == 0
         assert ctrlr.game.board == ctrlr.game.mf.completed_board
 
         # Check winning via chording and hitting an opening works.
-        ctrlr = self.create_controller()
-        ctrlr.select_cell((0, 0))
-        ctrlr.select_cell((0, 4))
-        ctrlr.flag_cell((3, 1))
-        ctrlr.chord_on_cell((2, 2))
+        ctrlr = self.create_ctrlr()
+        ctrlr.select_cell(Coord(0, 0))
+        ctrlr.select_cell(Coord(0, 4))
+        ctrlr.flag_cell(Coord(3, 1))
+        ctrlr.chord_on_cell(Coord(2, 2))
         assert ctrlr.game.state is GameState.WON
         assert (
             ctrlr.game.board
@@ -487,17 +509,17 @@ class TestGameController:
     def test_new_game(self):
         """Test starting new games."""
         # Start a new game before doing anything else with minefield.
-        ctrlr = self.create_controller()
+        ctrlr = self.create_ctrlr()
         ctrlr.new_game()
         assert ctrlr.game.state is GameState.READY
         assert ctrlr.game.board == Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
-        assert not ctrlr.game.mf
+        assert not ctrlr.game.mf.populated
 
         # Start a new game that isn't started but has flags.
-        ctrlr = self.create_controller()
-        ctrlr.flag_cell((0, 0))
-        ctrlr.flag_cell((1, 0))
-        ctrlr.flag_cell((1, 0))
+        ctrlr = self.create_ctrlr()
+        ctrlr.flag_cell(Coord(0, 0))
+        ctrlr.flag_cell(Coord(1, 0))
+        ctrlr.flag_cell(Coord(1, 0))
         assert ctrlr.game.board != Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
         ctrlr.new_game()
         assert ctrlr.game.state is GameState.READY
@@ -505,35 +527,35 @@ class TestGameController:
         assert ctrlr.game.board == Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
 
         # Start a new game mid-game.
-        ctrlr = self.create_controller()
-        ctrlr.select_cell((0, 0))
-        ctrlr.select_cell((0, 1))
+        ctrlr = self.create_ctrlr()
+        ctrlr.select_cell(Coord(0, 0))
+        ctrlr.select_cell(Coord(0, 1))
         assert ctrlr.game.state is GameState.ACTIVE
-        assert ctrlr.game.mf
+        assert ctrlr.game.mf.populated
         assert ctrlr.game.board != Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
         ctrlr.new_game()
         assert ctrlr.game.state is GameState.READY
-        assert not ctrlr.game.mf
+        assert not ctrlr.game.mf.populated
         assert ctrlr.game.start_time is None
         assert ctrlr.game.mines_remaining == ctrlr._opts.mines
         assert ctrlr.game.board == Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
 
         # Start a new game on lost game.
-        ctrlr = self.create_controller()
+        ctrlr = self.create_ctrlr()
         ctrlr.game.mf = self.mf
-        ctrlr.select_cell((3, 0))
+        ctrlr.select_cell(Coord(3, 0))
         assert ctrlr.game.state is GameState.LOST
-        assert ctrlr.game.mf
+        assert ctrlr.game.mf.populated
         assert ctrlr.game.board != Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
         ctrlr.new_game()
         assert ctrlr.game.state is GameState.READY
-        assert not ctrlr.game.mf
+        assert not ctrlr.game.mf.populated
         assert ctrlr.game.start_time is ctrlr.game.end_time is None
         assert ctrlr.game.mines_remaining == ctrlr._opts.mines
         assert ctrlr.game.board == Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
 
         # Start a new game when the number of mines is too high.
-        ctrlr = self.create_controller()
+        ctrlr = self.create_ctrlr()
         ctrlr.game = Game.from_minefield(
             Minefield.from_grid(
                 Grid(self.opts.x_size, self.opts.y_size, fill=2), per_cell=3
@@ -552,13 +574,13 @@ class TestGameController:
     def test_restart_game(self):
         """Test restarting games."""
         # Only require a single controller.
-        ctrlr = self.create_controller(set_mf=False)
+        ctrlr = self.create_ctrlr(set_mf=False)
 
         # Replay before doing anything else, without minefield.
         ctrlr.restart_game()
         assert ctrlr.game.state is GameState.READY
         assert ctrlr.game.board == Board(ctrlr._opts.x_size, ctrlr._opts.y_size)
-        assert not ctrlr.game.mf
+        assert not ctrlr.game.mf.populated
 
         # Replay before doing anything else, with minefield.
         ctrlr.game.mf = self.mf
@@ -568,9 +590,9 @@ class TestGameController:
         assert ctrlr.game.mf == self.mf
 
         # Restart a game that isn't started but has flags.
-        ctrlr.flag_cell((0, 0))
-        ctrlr.flag_cell((1, 0))
-        ctrlr.flag_cell((1, 0))
+        ctrlr.flag_cell(Coord(0, 0))
+        ctrlr.flag_cell(Coord(1, 0))
+        ctrlr.flag_cell(Coord(1, 0))
         ctrlr.restart_game()
         assert ctrlr.game.state is GameState.READY
         assert ctrlr.game.mines_remaining == ctrlr._opts.mines
@@ -578,7 +600,7 @@ class TestGameController:
         assert ctrlr.game.mf == self.mf
 
         # Restart game mid-game.
-        ctrlr.select_cell((0, 0))
+        ctrlr.select_cell(Coord(0, 0))
         assert ctrlr.game.state is GameState.ACTIVE
         ctrlr.restart_game()
         assert ctrlr.game.state is GameState.READY
@@ -587,7 +609,7 @@ class TestGameController:
         assert ctrlr.game.mf == self.mf
 
         # Restart finished game (lost game).
-        ctrlr.select_cell((3, 0))
+        ctrlr.select_cell(Coord(3, 0))
         assert ctrlr.game.state is GameState.LOST
         ctrlr.restart_game()
         assert ctrlr.game.state is GameState.READY
@@ -599,9 +621,9 @@ class TestGameController:
     def test_resize_board(self):
         """Test resizing the board in various situations."""
         # Setup, including start a game.
-        ctrlr = self.create_controller()
-        ctrlr.select_cell((0, 0))
-        ctrlr.flag_cell((2, 0))
+        ctrlr = self.create_ctrlr()
+        ctrlr.select_cell(Coord(0, 0))
+        ctrlr.flag_cell(Coord(2, 0))
         assert ctrlr.game.state is not GameState.READY
         assert ctrlr.game.mines_remaining == self.opts.mines - 1
 
@@ -612,24 +634,24 @@ class TestGameController:
         assert ctrlr._opts == opts
         assert ctrlr.game.state is GameState.READY
         assert ctrlr.game.mines_remaining == ctrlr._opts.mines
-        assert not ctrlr.game.mf
+        assert not ctrlr.game.mf.populated
         assert ctrlr.game.board == Board(opts.x_size, opts.y_size)
 
         # Resize without changing values starts new game.
-        ctrlr.select_cell((0, 0))
+        ctrlr.select_cell(Coord(0, 0))
         assert ctrlr.game.state is not GameState.READY
         ctrlr.resize_board(x_size=opts.x_size, y_size=opts.y_size, mines=opts.mines)
         assert ctrlr.game.state is GameState.READY
-        assert not ctrlr.game.mf
+        assert not ctrlr.game.mf.populated
         assert ctrlr.game.board == Board(opts.x_size, opts.y_size)
 
     def test_lives(self):
         opts = self.opts.copy()
         opts.lives = 3
-        ctrlr = self.create_controller(opts=opts)
+        ctrlr = self.create_ctrlr(opts=opts)
 
         # Lose first life on single mine.
-        ctrlr.select_cell((2, 0))
+        ctrlr.select_cell(Coord(2, 0))
         assert ctrlr.game.state is GameState.ACTIVE
         assert ctrlr.game.lives_remaining == 2
         assert ctrlr.game.mines_remaining == ctrlr._opts.mines - 1
@@ -647,7 +669,7 @@ class TestGameController:
         )
 
         # Lose second life on double mine.
-        ctrlr.select_cell((3, 0))
+        ctrlr.select_cell(Coord(3, 0))
         assert ctrlr.game.state is GameState.ACTIVE
         assert ctrlr.game.lives_remaining == 1
         assert ctrlr.game.mines_remaining == ctrlr._opts.mines - 3
@@ -665,7 +687,7 @@ class TestGameController:
         )
 
         # Lose final life.
-        ctrlr.select_cell((3, 1))
+        ctrlr.select_cell(Coord(3, 1))
         assert ctrlr.game.state is GameState.LOST
         assert ctrlr.game.lives_remaining == 0
         assert ctrlr.game.mines_remaining == ctrlr._opts.mines - 3  # unchanged
@@ -686,7 +708,7 @@ class TestGameController:
         """Test the method to set the 'first success' option."""
         opts = self.opts.copy()
         opts.first_success = False
-        ctrlr = self.create_controller(opts)
+        ctrlr = self.create_ctrlr(opts)
         assert ctrlr._opts is opts
         assert ctrlr.game.first_success is False
 
@@ -701,7 +723,7 @@ class TestGameController:
         assert ctrlr.game.first_success is True
 
         # During game.
-        ctrlr.select_cell((0, 0))
+        ctrlr.select_cell(Coord(0, 0))
         ctrlr.set_first_success(False)
         assert ctrlr._opts.first_success is False
         assert ctrlr.game.first_success is True
@@ -715,7 +737,7 @@ class TestGameController:
         """Test the method to set the 'per cell' option."""
         opts = self.opts.copy()
         opts.per_cell = 1
-        ctrlr = self.create_controller(opts, set_mf=False)
+        ctrlr = self.create_ctrlr(opts, set_mf=False)
         assert ctrlr._opts is opts
         assert ctrlr.game.per_cell == 1
 
@@ -730,7 +752,7 @@ class TestGameController:
         assert ctrlr.game.per_cell == 2
 
         # During game.
-        ctrlr.select_cell((0, 0))
+        ctrlr.select_cell(Coord(0, 0))
         ctrlr.set_per_cell(3)
         assert ctrlr._opts.per_cell == 3
         assert ctrlr.game.per_cell == 2
@@ -741,7 +763,7 @@ class TestGameController:
         assert ctrlr.game.per_cell == 3
 
         # Known minefield.
-        ctrlr.select_cell((0, 0))
+        ctrlr.select_cell(Coord(0, 0))
         ctrlr.restart_game()
         ctrlr.set_per_cell(4)
         assert ctrlr._opts.per_cell == 4
@@ -754,7 +776,7 @@ class TestGameController:
     @mock.patch("builtins.open")
     def test_save_minefield(self, mock_open):
         """Test the method to save the current minefield."""
-        ctrlr = self.create_controller()
+        ctrlr = self.create_ctrlr()
 
         # Game must be completed.
         with pytest.raises(RuntimeError):
@@ -770,8 +792,9 @@ class TestGameController:
     @mock.patch("builtins.open")
     def test_load_minefield(self, mock_open):
         """Test the method to load a minefield from file."""
-        ctrlr = self.create_controller()
-        mf = Minefield(11, 12, mines=10)
+        ctrlr = self.create_ctrlr()
+        mf = Minefield.from_dimensions(11, 12, mines=10)
+        mf.populate()
 
         with mock.patch("json.load", return_value=mf.to_json()):
             ctrlr.load_minefield("file")
@@ -780,28 +803,7 @@ class TestGameController:
         assert ctrlr._opts.y_size == 12
         assert ctrlr._opts.mines == 10
         assert ctrlr.game.mf == mf
-        assert ctrlr.game.minefield_known is True
-
-    # --------------------------------------------------------------------------
-    # Helper methods
-    # --------------------------------------------------------------------------
-    @classmethod
-    def create_controller(cls, opts=None, *, set_mf=True):
-        """
-        Convenience method for creating a controller instance. Uses the test
-        class options and minefield by default.
-
-        :param opts:
-            Optionally override the default options.
-        :param set_mf:
-            Whether to set the minefield or leave it not being created.
-        """
-        if opts is None:
-            opts = cls.opts.copy()
-        ctrlr = GameController(opts, notif=mock.Mock())
-        if set_mf:
-            ctrlr.game.mf = cls.mf
-        return ctrlr
+        assert ctrlr.game.minefield_known
 
 
 class TestCreateController:
@@ -815,9 +817,25 @@ class TestCreateController:
     opts = GameOptsStruct()
 
     # --------------------------------------------------------------------------
+    # Helper methods
+    # --------------------------------------------------------------------------
+    @classmethod
+    def create_ctrlr(cls, opts=None) -> CreateController:
+        """
+        Convenience method for creating a controller instance. Uses the test
+        class optionsby default.
+
+        :param opts:
+            Optionally override the default options.
+        """
+        if opts is None:
+            opts = cls.opts.copy()
+        return CreateController(opts, notif=mock.Mock())
+
+    # --------------------------------------------------------------------------
     # Test cases
     # --------------------------------------------------------------------------
-    def test_create_controller(self):
+    def test_basic_init(self):
         """Test basic creation of a controller."""
         ctrlr = CreateController(self.opts, notif=mock.Mock())
         assert ctrlr._opts is self.opts
@@ -827,7 +845,7 @@ class TestCreateController:
     def test_get_game_info(self):
         """Test get_game_info() method."""
         opts = self.opts.copy()
-        ctrlr = self.create_controller(opts)
+        ctrlr = self.create_ctrlr(opts)
 
         # Initial creation.
         exp_game_info = api.GameInfo(
@@ -862,9 +880,9 @@ class TestCreateController:
     def test_cell_interaction(self):
         """Test various basic cell interaction."""
         # Setup.
-        coord = (2, 2)
+        coord = Coord(2, 2)
         opts = GameOptsStruct(per_cell=2)
-        ctrlr = self.create_controller(opts)
+        ctrlr = self.create_ctrlr(opts)
 
         # Flag a cell.
         ctrlr.flag_cell(coord)
@@ -914,16 +932,16 @@ class TestCreateController:
 
     def test_chording(self):
         """Test chording."""
-        ctrlr = self.create_controller()
+        ctrlr = self.create_ctrlr()
         # Chording does nothing in the backend.
-        ctrlr.chord_on_cell((0, 0))
+        ctrlr.chord_on_cell(Coord(0, 0))
         assert ctrlr.board[(0, 0)] is CellContents.Unclicked
         assert ctrlr.get_game_info().mines == 0
 
     def test_new_game(self):
         """Test starting new games."""
         opts = GameOptsStruct(per_cell=3)
-        ctrlr = self.create_controller(opts)
+        ctrlr = self.create_ctrlr(opts)
         base_game_info = ctrlr.get_game_info()
 
         # Start a new game before doing anything else.
@@ -931,12 +949,12 @@ class TestCreateController:
         assert ctrlr.get_game_info() == base_game_info
 
         # Start a new game with various cells selected/flagged.
-        ctrlr.flag_cell((0, 0))
-        ctrlr.flag_cell((1, 0))
-        ctrlr.flag_cell((1, 0))
-        ctrlr.select_cell((1, 1))
-        ctrlr.select_cell((1, 1))
-        ctrlr.select_cell((2, 1))
+        ctrlr.flag_cell(Coord(0, 0))
+        ctrlr.flag_cell(Coord(1, 0))
+        ctrlr.flag_cell(Coord(1, 0))
+        ctrlr.select_cell(Coord(1, 1))
+        ctrlr.select_cell(Coord(1, 1))
+        ctrlr.select_cell(Coord(2, 1))
         assert ctrlr.get_game_info().mines == 3
         assert ctrlr.board[(0, 0)] is CellContents.Mine(1)
         assert ctrlr.board[(1, 0)] is CellContents.Mine(2)
@@ -948,16 +966,16 @@ class TestCreateController:
 
     def test_restart_game(self):
         """Test restart game just calls new game."""
-        ctrlr = self.create_controller()
+        ctrlr = self.create_ctrlr()
         with mock.patch.object(ctrlr, "new_game") as mock_new_game:
             ctrlr.restart_game()
             mock_new_game.assert_called_once()
 
     def test_resize_board(self):
         """Test resizing the board."""
-        ctrlr = self.create_controller()
-        ctrlr.select_cell((0, 0))
-        ctrlr.flag_cell((1, 1))
+        ctrlr = self.create_ctrlr()
+        ctrlr.select_cell(Coord(0, 0))
+        ctrlr.flag_cell(Coord(1, 1))
         assert ctrlr.get_game_info().x_size == 8
         assert ctrlr.get_game_info().y_size == 8
         assert ctrlr.get_game_info().mines == 1
@@ -972,8 +990,8 @@ class TestCreateController:
         assert ctrlr.board == Board(2, 3)
 
         # Resize without changing values starts new game.
-        ctrlr.select_cell((0, 0))
-        ctrlr.flag_cell((1, 1))
+        ctrlr.select_cell(Coord(0, 0))
+        ctrlr.flag_cell(Coord(1, 1))
         ctrlr.resize_board(2, 3, 4)
         assert ctrlr.get_game_info().x_size == 2
         assert ctrlr.get_game_info().y_size == 3
@@ -983,7 +1001,7 @@ class TestCreateController:
     def test_set_first_success(self):
         """Test the method to set the 'first success' option."""
         opts = GameOptsStruct(first_success=False)
-        ctrlr = self.create_controller(opts)
+        ctrlr = self.create_ctrlr(opts)
         assert ctrlr.get_game_info().first_success is False
 
         # Normal toggle.
@@ -1001,7 +1019,7 @@ class TestCreateController:
     def test_set_per_cell(self):
         """Test the method to set the 'per cell' option."""
         opts = GameOptsStruct(per_cell=1)
-        ctrlr = self.create_controller(opts)
+        ctrlr = self.create_ctrlr(opts)
         assert ctrlr.get_game_info().per_cell == 1
 
         # Normal change.
@@ -1015,13 +1033,13 @@ class TestCreateController:
     @mock.patch("builtins.open")
     def test_save_minefield(self, mock_open):
         """Test the method to save the current minefield."""
-        ctrlr = self.create_controller(GameOptsStruct(x_size=3, y_size=3, per_cell=3))
-        ctrlr.select_cell((0, 0))
-        ctrlr.select_cell((0, 0))
-        ctrlr.select_cell((0, 1))
-        ctrlr.flag_cell((1, 2))
-        ctrlr.flag_cell((1, 2))
-        ctrlr.flag_cell((2, 2))
+        ctrlr = self.create_ctrlr(GameOptsStruct(x_size=3, y_size=3, per_cell=3))
+        ctrlr.select_cell(Coord(0, 0))
+        ctrlr.select_cell(Coord(0, 0))
+        ctrlr.select_cell(Coord(0, 1))
+        ctrlr.flag_cell(Coord(1, 2))
+        ctrlr.flag_cell(Coord(1, 2))
+        ctrlr.flag_cell(Coord(2, 2))
         mf = Minefield.from_2d_array(
             [
                 # fmt: off
@@ -1037,19 +1055,3 @@ class TestCreateController:
             ctrlr.save_current_minefield("file")
         mock_open.assert_called_once_with("file", "w")
         mock_json_dump.assert_called_once_with(mf.to_json(), mock.ANY)
-
-    # --------------------------------------------------------------------------
-    # Helper methods
-    # --------------------------------------------------------------------------
-    @classmethod
-    def create_controller(cls, opts=None) -> CreateController:
-        """
-        Convenience method for creating a controller instance. Uses the test
-        class optionsby default.
-
-        :param opts:
-            Optionally override the default options.
-        """
-        if opts is None:
-            opts = cls.opts.copy()
-        return CreateController(opts, notif=mock.Mock())

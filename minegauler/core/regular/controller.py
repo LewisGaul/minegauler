@@ -126,7 +126,7 @@ class GameController(_ControllerMixin, GameControllerBase):
                 f"Max number of mines per cell must be at least 1, got {value}"
             )
         self._opts.per_cell = value
-        # If the game is not started and the minefiels is not known then the
+        # If the game is not started and the minefield is not known then the
         # new per-cell value should be picked up immediately, and the board
         # cleared of any flags (e.g. 3-flag cells may no longer be allowed!).
         if not (self.game.state.started() or self.game.minefield_known):
@@ -152,9 +152,7 @@ class GameController(_ControllerMixin, GameControllerBase):
         self._opts.x_size = mf.x_size
         self._opts.y_size = mf.y_size
         self._opts.mines = mf.mines
-        self.game = self.game_cls.from_minefield(
-            mf, x_size=mf.x_size, y_size=mf.y_size, lives=self._opts.lives
-        )
+        self.game = self.game_cls.from_minefield(mf, lives=self._opts.lives)
         self._send_resize_update()
 
 

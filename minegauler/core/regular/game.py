@@ -50,6 +50,19 @@ class Game(GameBase):
     mf: Minefield
     board: Board
 
+    @classmethod
+    def from_minefield(cls, mf: Minefield, **kwargs) -> "Game":
+        self = cls(
+            x_size=mf.x_size,
+            y_size=mf.y_size,
+            mines=mf.mines,
+            per_cell=mf.per_cell,
+            **kwargs,
+        )
+        self.mf = mf
+        self.minefield_known = True
+        return self
+
     # ---------------------
     # Abstract methods
     # ---------------------

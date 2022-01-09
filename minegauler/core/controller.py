@@ -196,8 +196,6 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
         super().restart_game()
         self.game = self.game_cls.from_minefield(
             self.game.mf,
-            x_size=self.game.x_size,
-            y_size=self.game.y_size,
             lives=self._opts.lives,
         )
         self._send_reset_update()
@@ -297,6 +295,7 @@ class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
             difficulty=self.difficulty,
             per_cell=self._opts.per_cell,
             first_success=self._opts.first_success,
+            mode=self.mode,
             minefield_known=True,
         )
 
