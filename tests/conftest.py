@@ -8,6 +8,7 @@ from unittest import mock
 import pytest
 
 import minegauler
+import minegauler.shared.highscores
 
 from . import PKG_DIR
 
@@ -47,7 +48,7 @@ def sandbox(tmpdir_factory: pytest.TempdirFactory):
     Must run before importing any minegauler submodules.
     """
     tmpdir = tmpdir_factory.mktemp("sandbox")
-    logger.info("Creating testing sandbox: %s", tmpdir)
+    logger.info("Creating testing sandbox, using tmpdir: %s", tmpdir)
     with contextlib.ExitStack() as ctxs:
         # Patch all paths relative to the root dir.
         for name, obj in vars(minegauler.paths).items():
@@ -62,5 +63,11 @@ def sandbox(tmpdir_factory: pytest.TempdirFactory):
                 ctxs.enter_context(
                     mock.patch.object(minegauler.paths, name, tmpdir / subpath)
                 )
+
+        ctxs.enter_context(
+            mock.patch.object(
+                minegauler.shared.highscores.HighscoresDatabases.REMOTE, "value"
+            )
+        )
 
         yield

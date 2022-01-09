@@ -15,7 +15,7 @@ import pytest
 from PyQt5.QtCore import QEvent, QPoint, Qt
 from PyQt5.QtGui import QMouseEvent
 
-from minegauler import core, frontend
+from minegauler import core, frontend  # TODO: Fix circular dependency
 from minegauler.shared.types import CellImageType
 from minegauler.shared.utils import AllOptsStruct
 
@@ -23,9 +23,6 @@ from . import process_events, run_main_entrypoint
 
 
 logger = logging.getLogger(__name__)
-
-
-# TODO: Take care to mock out highscores etc.
 
 
 def create_gui(settings: Optional[AllOptsStruct] = None) -> frontend.MinegaulerGUI:
