@@ -53,7 +53,7 @@ from ..shared.highscores import (
 from ..shared.types import (
     CellContents,
     CellImageType,
-    Coord_T,
+    Coord,
     Difficulty,
     GameState,
     PathLike,
@@ -268,7 +268,7 @@ class MinegaulerGUI(
         self._state.mines = mines
         self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
-    def update_cells(self, cell_updates: Mapping[Coord_T, CellContents]) -> None:
+    def update_cells(self, cell_updates: Mapping[Coord, CellContents]) -> None:
         """
         Called to indicate some cells have changed state.
 

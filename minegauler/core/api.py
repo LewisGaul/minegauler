@@ -19,7 +19,7 @@ import attr
 
 from ..shared.types import (
     CellContents,
-    Coord_T,
+    Coord,
     Difficulty,
     GameMode,
     GameState,
@@ -91,7 +91,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def update_cells(self, cell_updates: Dict[Coord_T, CellContents]) -> None:
+    def update_cells(self, cell_updates: Dict[Coord, CellContents]) -> None:
         """
         Called when one or more cells were updated.
 
@@ -239,7 +239,7 @@ class _Notifier(AbstractListener):
         """
         self._logger.debug(f"Calling set_mines() with {mines}")
 
-    def update_cells(self, cell_updates: Dict[Coord_T, CellContents]) -> None:
+    def update_cells(self, cell_updates: Dict[Coord, CellContents]) -> None:
         """
         Called when one or more cells were updated.
 
@@ -364,28 +364,28 @@ class AbstractController(metaclass=abc.ABCMeta):
         self._logger.info("Restart game requested, refreshing the board")
 
     @abc.abstractmethod
-    def select_cell(self, coord: Coord_T) -> None:
+    def select_cell(self, coord: Coord) -> None:
         """
         Select a cell for a regular click.
         """
         self._logger.debug("Cell %s selected", coord)
 
     @abc.abstractmethod
-    def flag_cell(self, coord: Coord_T, *, flag_only: bool = False) -> None:
+    def flag_cell(self, coord: Coord, *, flag_only: bool = False) -> None:
         """
         Select a cell for flagging.
         """
         self._logger.debug("Cell %s selected for flagging", coord)
 
     @abc.abstractmethod
-    def chord_on_cell(self, coord: Coord_T) -> None:
+    def chord_on_cell(self, coord: Coord) -> None:
         """
         Select a cell for chording.
         """
         self._logger.debug("Cell %s selected for chording", coord)
 
     @abc.abstractmethod
-    def remove_cell_flags(self, coord: Coord_T) -> None:
+    def remove_cell_flags(self, coord: Coord) -> None:
         """
         Remove flags in a cell, if any.
         """

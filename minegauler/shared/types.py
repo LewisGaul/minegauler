@@ -8,14 +8,11 @@ Exports
 .. class:: CellContents
     An ADT-like class providing cell contents types.
 
-.. class:: CellContents_T
-    A type alias for a `CellContents` ADT type.
-
 .. class:: CellImageType
     An enum of cell image types.
 
-.. class:: Coord_T
-    A type alias for a coordinate.
+.. class:: Coord
+    A base coordinate class.
 
 .. class:: Difficulty
     An enum of board difficulties.
@@ -25,6 +22,9 @@ Exports
 
 .. class:: GameState
     An enum of states a game can be in.
+
+.. class:: GameMode
+    An enum of game modes.
 
 .. class:: PathLike
     A more permissive version of the `os.PathLike` type alias.
@@ -38,7 +38,6 @@ __all__ = (
     "CellContents",
     "CellImageType",
     "Coord",
-    "Coord_T",
     "Difficulty",
     "FaceState",
     "GameMode",
@@ -87,10 +86,6 @@ class Coord(metaclass=abc.ABCMeta):
         if not isinstance(other, Coord):
             return NotImplemented
         return (self.x, self.y) < (other.x, other.y)
-
-
-# TODO: This is a temporary bring-up alias.
-Coord_T = Coord
 
 
 # ------------------------------------------------------------------------------

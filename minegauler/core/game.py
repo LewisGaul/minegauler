@@ -13,7 +13,7 @@ import math
 import time
 from typing import Callable, Dict, Iterable, Optional, Type, Union
 
-from ..shared.types import CellContents, Coord_T, GameMode, GameState
+from ..shared.types import CellContents, Coord, GameMode, GameState
 from .board import BoardBase
 from .minefield import MinefieldBase
 
@@ -30,7 +30,7 @@ def _check_coord(method: Callable) -> Callable:
     """
 
     @functools.wraps(method)
-    def wrapped(self: "GameBase", coord: Coord_T, *args, **kwargs):
+    def wrapped(self: "GameBase", coord: Coord, *args, **kwargs):
         if not 0 <= coord.x < self.x_size or not 0 <= coord.y < self.y_size:
             raise ValueError(
                 f"Coordinate is out of bounds, should be between (0,0) and "
@@ -60,7 +60,7 @@ def _ignore_decorator_helper(conditions_sense, game_state, cell_state) -> Callab
             cell_states = cell_state
 
         @functools.wraps(method)
-        def wrapped(game: "GameBase", coord: Coord_T = None, *args, **kwargs):
+        def wrapped(game: "GameBase", coord: Coord = None, *args, **kwargs):
             conditions = [any(game.state is s for s in game_states)]
             if cell_states:
                 conditions.append(
@@ -170,7 +170,7 @@ class GameBase(metaclass=abc.ABCMeta):
         self.lives_remaining: int = self.lives
         self._num_flags: int = 0
 
-        self._cell_updates: Dict[Coord_T, CellContents] = dict()
+        self._cell_updates: Dict[Coord, CellContents] = dict()
 
     @classmethod
     def from_minefield(cls, mf: MinefieldBase, **kwargs) -> "GameBase":

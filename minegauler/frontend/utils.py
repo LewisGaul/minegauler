@@ -37,20 +37,20 @@ import attr
 
 from .. import paths
 from ..shared import HighscoreStruct
-from ..shared.types import CellContents, Coord_T, PathLike
+from ..shared.types import CellContents, Coord, PathLike
 from ..shared.utils import format_timestamp
 
 
 logger = logging.getLogger(__name__)
 
-CellUpdate_T = Tuple[float, Mapping[Coord_T, CellContents]]
+CellUpdate_T = Tuple[float, Mapping[Coord, CellContents]]
 
 
 # TODO
 class MouseMove(namedtuple("_MouseMove", ["elapsed", "position"])):
     """A mouse move tuple."""
 
-    def __new__(cls, elapsed: float, position: Coord_T):
+    def __new__(cls, elapsed: float, position: Coord):
         return super().__new__(cls, elapsed, position)
 
 

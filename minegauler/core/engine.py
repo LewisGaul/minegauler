@@ -17,7 +17,7 @@ if sys.version_info < (3, 8):
 else:
     from typing import Protocol
 
-from ..shared.types import Coord_T, Difficulty, GameMode, PathLike, UIMode
+from ..shared.types import Coord, Difficulty, GameMode, PathLike, UIMode
 from ..shared.utils import GameOptsStruct
 from . import api, board, controller, game, minefield, regular
 from .board import BoardBase
@@ -132,16 +132,16 @@ class UberController(api.AbstractController):
     def restart_game(self) -> None:
         self._active_ctrlr.restart_game()
 
-    def select_cell(self, coord: Coord_T) -> None:
+    def select_cell(self, coord: Coord) -> None:
         self._active_ctrlr.select_cell(coord)
 
-    def flag_cell(self, coord: Coord_T, *, flag_only: bool = False) -> None:
+    def flag_cell(self, coord: Coord, *, flag_only: bool = False) -> None:
         self._active_ctrlr.flag_cell(coord, flag_only=flag_only)
 
-    def chord_on_cell(self, coord: Coord_T) -> None:
+    def chord_on_cell(self, coord: Coord) -> None:
         self._active_ctrlr.chord_on_cell(coord)
 
-    def remove_cell_flags(self, coord: Coord_T) -> None:
+    def remove_cell_flags(self, coord: Coord) -> None:
         self._active_ctrlr.remove_cell_flags(coord)
 
     def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
@@ -159,6 +159,6 @@ class UberController(api.AbstractController):
     def save_current_minefield(self, file: PathLike) -> None:
         self._active_ctrlr.save_current_minefield(file)
 
-    # def split_cell(self, coord: Coord_T) -> None:
+    # def split_cell(self, coord: Coord) -> None:
     #     # TODO: Check the sub controller can do this...
     #     self._active_ctrlr.split_cell(coord)

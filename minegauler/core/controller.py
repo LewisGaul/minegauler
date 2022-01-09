@@ -12,7 +12,7 @@ from typing import Dict, Optional, Type
 import attr
 
 from ..shared import GameOptsStruct
-from ..shared.types import CellContents, Coord_T, Difficulty, GameMode, GameState
+from ..shared.types import CellContents, Coord, Difficulty, GameMode, GameState
 from . import api
 from .board import BoardBase
 from .game import GameBase
@@ -58,7 +58,7 @@ class SharedInfo:
         The number of lives remaining.
     """
 
-    cell_updates: Optional[Dict[Coord_T, CellContents]] = None
+    cell_updates: Optional[Dict[Coord, CellContents]] = None
     game_state: GameState = GameState.READY
     mines_remaining: int = 0
     lives_remaining: int = 0
@@ -221,7 +221,7 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
     # Helper methods
     # --------------------------------------------------------------------------
     def _send_updates(
-        self, cells_updated: Optional[Dict[Coord_T, CellContents]] = None
+        self, cells_updated: Optional[Dict[Coord, CellContents]] = None
     ) -> None:
         """Send updates to registered listeners."""
         update = SharedInfo(

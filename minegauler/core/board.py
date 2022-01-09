@@ -10,7 +10,7 @@ __all__ = ("BoardBase",)
 import abc
 from typing import Iterable, List
 
-from ..shared.types import Coord_T, GameMode
+from ..shared.types import CellContents, Coord, GameMode
 
 
 class BoardBase(metaclass=abc.ABCMeta):
@@ -20,6 +20,10 @@ class BoardBase(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def __eq__(self, other) -> bool:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __getitem__(self, key: Coord) -> CellContents:
         raise NotImplementedError
 
     @property
@@ -32,5 +36,5 @@ class BoardBase(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_coord_at(self, x: int, y: int) -> Coord_T:
+    def get_coord_at(self, x: int, y: int) -> Coord:
         raise NotImplementedError
