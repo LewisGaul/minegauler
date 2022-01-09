@@ -101,9 +101,21 @@ class UberController(api.AbstractController):
     def reset_settings(self) -> None:
         super().reset_settings()
         self._opts = GameOptsStruct()
-        self.resize_board(self._opts.x_size, self._opts.y_size, self._opts.mines)
         self.switch_ui_mode(UIMode.GAME)
+        self.resize_board(self._opts.x_size, self._opts.y_size, self._opts.mines)
         self._notif.reset()
+
+    def load_minefield(self, file: PathLike) -> None:
+        """
+        Load a minefield from file.
+
+        :param file:
+            The location of the file to load from.
+        """
+        if self._ui_mode is UIMode.CREATE:
+            self.switch_ui_mode(UIMode.GAME)
+            self._notif.ui_mode_changed(UIMode.GAME)
+        self._active_ctrlr.load_minefield(file)
 
     # ----------------------------------
     # Delegated abstractmethods
@@ -148,18 +160,6 @@ class UberController(api.AbstractController):
     def save_current_minefield(self, file: PathLike) -> None:
         self._active_ctrlr.save_current_minefield(file)
 
-    def load_minefield(self, file: PathLike) -> None:
-        """
-        Load a minefield from file.
-
-        :param file:
-            The location of the file to load from.
-        """
-        if self._ui_mode is UIMode.CREATE:
-            self.switch_ui_mode(UIMode.GAME)
-            self._notif.ui_mode_changed(UIMode.GAME)
-        self._active_ctrlr.load_minefield(file)
-
-    def split_cell(self, coord: Coord_T) -> None:
-        # TODO: Check the sub controller can do this...
-        self._active_ctrlr.split_cell(coord)
+    # def split_cell(self, coord: Coord_T) -> None:
+    #     # TODO: Check the sub controller can do this...
+    #     self._active_ctrlr.split_cell(coord)

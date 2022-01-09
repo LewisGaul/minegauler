@@ -62,16 +62,17 @@ class RegularMinefieldBase(MinefieldBase[Coord, B], metaclass=abc.ABCMeta):
         return cls(all_coords, mines=mines, per_cell=per_cell)
 
     @classmethod
-    def from_2d_array(cls, array, *, per_cell: int = 1) -> "RegularMinefieldBase":
+    def from_grid(
+        cls, grid: utils.Grid, *, per_cell: int = 1
+    ) -> "RegularMinefieldBase":
         """
-        :param array:
-            2D array containing int number of mines in each cell.
+        :param grid:
+            A `Grid` instance containing int number of mines in each cell.
         :param per_cell:
             Maximum number of mines per cell.
         :raise ValueError:
             If any of the number of mines is too high.
         """
-        grid = utils.Grid.from_2d_array(array)
         mine_coords = []
         for c in grid.all_coords:
             for _ in range(grid[c]):
@@ -81,6 +82,18 @@ class RegularMinefieldBase(MinefieldBase[Coord, B], metaclass=abc.ABCMeta):
             mine_coords=mine_coords,
             per_cell=per_cell,
         )
+
+    @classmethod
+    def from_2d_array(cls, array, *, per_cell: int = 1) -> "RegularMinefieldBase":
+        """
+        :param array:
+            2D array containing int number of mines in each cell.
+        :param per_cell:
+            Maximum number of mines per cell.
+        :raise ValueError:
+            If any of the number of mines is too high.
+        """
+        return cls.from_grid(utils.Grid.from_2d_array(array), per_cell=per_cell)
 
     @classmethod
     def from_json(cls, obj: Mapping[str, Any]) -> "RegularMinefieldBase":
