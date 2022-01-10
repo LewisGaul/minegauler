@@ -41,11 +41,25 @@ class Board(BoardBase):
         else:
             return self._unsplit_coords[coord]
 
+    def __setitem__(self, coord: Coord, obj: CellContents) -> None:
+        if coord.is_split:
+            self._split_coords[coord] = obj
+        else:
+            self._unsplit_coords[coord] = obj
+
     @property
     def all_coords(self) -> List[Coord]:
         return sorted({*self._unsplit_coords, *self._split_coords})
 
-    def get_nbrs(self, coord, *, include_origin: bool = False) -> Iterable[Coord]:
+    @property
+    def all_underlying_coords(self) -> List[Coord]:
+        return [
+            Coord(x, y, True) for x in range(self.x_size) for y in range(self.y_size)
+        ]
+
+    def get_nbrs(
+        self, coord: Coord, *, include_origin: bool = False
+    ) -> Iterable[Coord]:
         return []
 
     def get_coord_at(self, x: int, y: int) -> Coord:

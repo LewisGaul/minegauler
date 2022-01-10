@@ -34,16 +34,12 @@ class GameController(_ControllerMixin, GameControllerBase):
     # --------------------------------------------------------------------------
     # Methods triggered by user interaction
     # --------------------------------------------------------------------------
-    def new_game(self) -> None:
-        super().new_game()
-
-    def restart_game(self) -> None:
-        """See AbstractController."""
-        super().restart_game()
-
     def select_cell(self, coord: Coord) -> None:
-        pass
+        super().select_cell(coord)
+        cells = self.game.select_cell(coord)
+        self._send_updates(cells)
 
+    # TODO: Remove this in favour of using 'flag_cell()'?
     def split_cell(self, coord: Coord) -> None:
         if coord.is_split:
             return

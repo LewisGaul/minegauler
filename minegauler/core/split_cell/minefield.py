@@ -16,11 +16,11 @@ class Minefield(RegularMinefieldBase[Board]):
 
     def _calc_3bv(self) -> int:
         """Calculate the 3bv of the board."""
-        raise NotImplementedError  # TODO
+        return 0  # TODO
 
     def _calc_completed_board(self) -> Board:
         """
         Create the completed board with the flags and numbers that should be
         seen upon game completion.
         """
-        raise NotImplementedError  # TODO
+        return Board(self.x_size, self.y_size)  # TODO

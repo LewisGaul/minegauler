@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 _diff_pairs = [
-    (Difficulty.BEGINNER, (4, 4, 5)),
-    (Difficulty.INTERMEDIATE, (8, 8, 20)),
-    (Difficulty.EXPERT, (15, 8, 49)),
-    (Difficulty.MASTER, (15, 15, 100)),
-    (Difficulty.LUDICROUS, (25, 25, 400)),
+    (Difficulty.BEGINNER, (8, 8, 5)),
+    (Difficulty.INTERMEDIATE, (16, 16, 20)),
+    (Difficulty.EXPERT, (30, 16, 49)),
+    (Difficulty.MASTER, (30, 30, 100)),
+    (Difficulty.LUDICROUS, (50, 50, 400)),
 ]
 
 
@@ -63,27 +63,17 @@ class Game(GameBase):
     # ---------------------
     @property
     def difficulty(self) -> Difficulty:
-        return difficulty_from_values(self.mode, self.x_size, self.y_size, self.mines)
+        return difficulty_from_values(self.x_size, self.y_size, self.mines)
 
     def _make_board(self) -> Board:
         return Board(self.x_size, self.y_size)
 
     def get_rem_3bv(self) -> int:
-        raise NotImplementedError  # TODO
+        return 0  # TODO
 
     # ---------------------
     # Other methods
     # ---------------------
-    def _set_cell(self, coord: Coord, state: CellContents) -> None:
-        """
-        Set the contents of a small cell and store the update.
-
-        :param coord:
-            The coordinate of the cell to set.
-        """
-        self.board[coord] = state
-        self._cell_updates[coord] = state
-
     def _calc_nbr_mines(self, coord: Coord) -> int:
         return sum(
             self.mf[c]
@@ -128,46 +118,41 @@ class Game(GameBase):
                     small_coord, CellContents.WrongFlag(self.board[small_coord].num)
                 )
 
-    def _select_cell_action(self, coord: Coord) -> None:
-        """
-        Implementation of the action of selecting/clicking a cell.
-        """
-        if not coord.is_split:
-            small_cells = coord.get_small_cell_coords()
-            if any(self.mf.cell_contains_mine(c) for c in small_cells):
-                logger.debug("Mine hit in large cell containing %s", coord)
-                for c in small_cells:
-                    if self.mf[c] > 0:
-                        self._set_cell(
-                            Coord(*c, True), CellContents.HitMine(self.mf[c])
-                        )
-                self._finalise_lost_game()
-            else:
-                logger.debug("Regular cell revealed")
-                cell_num = self._calc_nbr_mines(coord)
-                self._set_cell(coord, CellContents.Num(cell_num))
-            return
-
-        if self.mf.cell_contains_mine((coord.x, coord.y)):
-            logger.debug("Mine hit at %s", coord)
-            self._set_cell(coord, CellContents.HitMine(self.mf[(coord.x, coord.y)]))
-            self._finalise_lost_game()
-        else:
-            logger.debug("Regular cell revealed")
-            self._set_cell(coord, CellContents.Num(self._calc_nbr_mines(coord)))
+    # def _select_cell_action(self, coord: Coord) -> None:
+    #     """
+    #     Implementation of the action of selecting/clicking a cell.
+    #     """
+    #     if not coord.is_split:
+    #         small_cells = coord.get_small_cell_coords()
+    #         if any(self.mf.cell_contains_mine(c) for c in small_cells):
+    #             logger.debug("Mine hit in large cell containing %s", coord)
+    #             for c in small_cells:
+    #                 if self.mf[c] > 0:
+    #                     self._set_cell(
+    #                         Coord(*c, True), CellContents.HitMine(self.mf[c])
+    #                     )
+    #             self._finalise_lost_game()
+    #         else:
+    #             logger.debug("Regular cell revealed")
+    #             cell_num = self._calc_nbr_mines(coord)
+    #             self._set_cell(coord, CellContents.Num(cell_num))
+    #         return
+    #
+    #     if self.mf.cell_contains_mine((coord.x, coord.y)):
+    #         logger.debug("Mine hit at %s", coord)
+    #         self._set_cell(coord, CellContents.HitMine(self.mf[(coord.x, coord.y)]))
+    #         self._finalise_lost_game()
+    #     else:
+    #         logger.debug("Regular cell revealed")
+    #         self._set_cell(coord, CellContents.Num(self._calc_nbr_mines(coord)))
 
     def _check_for_completion(self) -> None:
         if any(
-            self.board[c] is CellContents.Unclicked and not c.is_split
+            self.board[c] is CellContents.Unclicked and c.is_split
             for c in self.board.all_coords
         ):
             return
         super()._check_for_completion()
-
-    def select_cell(self, coord: Coord) -> Dict[Coord, CellContents]:
-        if self.board[coord] is not CellContents.Unclicked:
-            return {}
-        return super().select_cell(coord)
 
     @_check_coord
     @_ignore_if_not(
@@ -190,9 +175,3 @@ class Game(GameBase):
             return self._cell_updates
         finally:
             self._cell_updates = dict()
-
-    @_check_coord
-    @_ignore_if_not(game_state=GameState.ACTIVE, cell_state=CellContents.Num)
-    def chord_on_cell(self, coord: Coord) -> Dict[Coord, CellContents]:
-        """Chord on a cell that contains a revealed number."""
-        # TODO: Implement
