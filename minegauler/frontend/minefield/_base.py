@@ -16,9 +16,8 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QPainter, QPixmap
 from PyQt5.QtWidgets import QGraphicsScene
 
-from ... import paths
+from ... import api, paths
 from ...core.board import BoardBase
-from ...core.controller import ControllerBase
 from ...shared.types import CellContents, CellImageType, Coord
 from ..state import State
 
@@ -155,9 +154,13 @@ def _make_pixmap(
 
 
 class MinefieldWidgetImplBase(metaclass=abc.ABCMeta):
-    """TODO"""
+    """
+    An implementation of the logic that's specific to the given game mode.
+    """
 
-    def __init__(self, scene: QGraphicsScene, ctrlr: ControllerBase, state: State):
+    def __init__(
+        self, scene: QGraphicsScene, ctrlr: api.AbstractController, state: State
+    ):
         self._scene = scene
         self._ctrlr = ctrlr
         self._state = state
@@ -181,9 +184,9 @@ class MinefieldWidgetImplBase(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def set_cell_image(self, coord: Coord, state: CellContents) -> None:
         """Set the image of a cell on the scene."""
-        return NotImplemented
+        raise NotImplementedError
 
     @abc.abstractmethod
     def update_cell_images(self, img_type: CellImageType = CellImageType.ALL) -> None:
         """Update the cache of cell images for current size/styles."""
-        return NotImplemented
+        raise NotImplementedError

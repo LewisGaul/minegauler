@@ -596,6 +596,7 @@ class MinegaulerGUI(
         self._mf_widget.update_style(grp, style)
 
     def _change_game_mode(self, mode: GameMode) -> None:
+        self._mf_widget.switch_mode(mode)
         self._ctrlr.switch_game_mode(mode)
 
     def _set_name(self, name: str) -> None:

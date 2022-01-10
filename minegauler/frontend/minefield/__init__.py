@@ -5,7 +5,7 @@ __all__ = ("MinefieldWidget",)
 import functools
 import logging
 import time
-from typing import Callable, Iterable, List, Mapping, Optional, Set
+from typing import Callable, Iterable, List, Mapping, Optional, Set, Type
 
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QMouseEvent
@@ -15,16 +15,16 @@ from ...core import BoardBase, api
 from ...shared.types import CellContents, CellImageType, Coord, GameMode
 from ..state import State
 from ..utils import CellUpdate_T, MouseMove
-from . import regular, simulate
+from . import regular, simulate, split_cell
 from ._base import RAISED_CELL, SUNKEN_CELL, MinefieldWidgetImplBase
 
 
 logger = logging.getLogger(__name__)
 
 
-_IMPLS: Mapping[GameMode, MinefieldWidgetImplBase] = {
+_IMPLS: Mapping[GameMode, Type[MinefieldWidgetImplBase]] = {
     GameMode.REGULAR: regular.MinefieldWidgetImpl,
-    # GameMode.SPLIT_CELL: split_cell.MinefieldWidgetImpl,
+    GameMode.SPLIT_CELL: split_cell.MinefieldWidgetImpl,
 }
 
 
@@ -426,6 +426,9 @@ class MinefieldWidget(QGraphicsView):
         self._scene.clear()
         for coord in self._board.all_coords:
             self._set_cell_image(coord, self._board[coord])
+
+    def switch_mode(self, mode: GameMode) -> None:
+        self._impl = _IMPLS[mode](self._scene, self._ctrlr, self._state)
 
     def reset(self) -> None:
         """Reset all cell images and other state for a new game."""

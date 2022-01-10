@@ -50,7 +50,6 @@ class UberController(api.AbstractController):
     def __init__(self, opts: GameOptsStruct):
         super().__init__(opts)
         self._ui_mode: UIMode = UIMode.GAME
-        self._opts.mode = GameMode.REGULAR
         self._active_ctrlr: ControllerBase = self._get_ctrlr_cls(
             self.mode, self._ui_mode
         )(self._opts, notif=self._notif)
