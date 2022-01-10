@@ -1,34 +1,26 @@
-# April 2018, Lewis Gaul
+# January 2022, Lewis Gaul
 
-"""
-Minefield widgets.
-
-Exports
--------
-.. class:: MinefieldWidget
-    The minefield widget class.
-
-"""
-
-__all__ = ("MinefieldWidget", "MinefieldWidgetImplBase", "update_cell_images")
+__all__ = (
+    "RAISED_CELL",
+    "SUNKEN_CELL",
+    "MinefieldWidgetImplBase",
+    "update_cell_images",
+)
 
 import abc
-import functools
 import logging
 import os.path
-import time
-from typing import Callable, Dict, Iterable, List, Mapping, Optional, Set
+from typing import Dict, Mapping, Optional
 
-from PyQt5.QtCore import QSize, Qt, pyqtSignal
-from PyQt5.QtGui import QImage, QMouseEvent, QPainter, QPixmap
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QSizePolicy, QWidget
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QImage, QPainter, QPixmap
+from PyQt5.QtWidgets import QGraphicsScene
 
-from ... import api, paths
+from ... import paths
 from ...core.board import BoardBase
 from ...core.controller import ControllerBase
 from ...shared.types import CellContents, CellImageType, Coord
 from ..state import State
-from ..utils import CellUpdate_T, MouseMove
 
 
 logger = logging.getLogger(__name__)

@@ -22,7 +22,7 @@ from .utils import maybe_stop_for_interaction
 
 _MockPanelWidget = make_true_mock(panel.PanelWidget)
 _MockCounterWidget = make_true_mock(panel._CounterWidget)
-_MockMinefieldWidget = make_true_mock(minefield.regular.MinefieldWidget)
+_MockMinefieldWidget = make_true_mock(minefield.MinefieldWidget)
 
 
 class TestMinegaulerGUI:
@@ -45,7 +45,7 @@ class TestMinegaulerGUI:
             "minegauler.frontend.panel.PanelWidget", side_effect=_MockPanelWidget
         ).start()
         cls._minefield_class_mock = mock.patch(
-            "minegauler.frontend.minefield.regular.MinefieldWidget",
+            "minegauler.frontend.minefield.MinefieldWidget",
             side_effect=_MockMinefieldWidget,
         ).start()
         mock.patch(

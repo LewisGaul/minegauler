@@ -1,3 +1,5 @@
+# April 2018, Lewis Gaul
+
 __all__ = ("MinefieldWidget",)
 
 import functools
@@ -317,7 +319,7 @@ class MinefieldWidget(QGraphicsView):
         Both left and right mouse buttons were pressed. Change display and call
         callback functions as appropriate.
         """
-        if True or not self._board[coord].is_mine_type():
+        if not self._board[coord].is_mine_type():
             self._sink_unclicked_cells(self._board.get_nbrs(coord, include_origin=True))
         if self._state.drag_select:
             self.at_risk_signal.emit()
