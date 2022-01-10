@@ -210,7 +210,7 @@ class State:
 
     @property
     def game_mode(self):
-        return self._current_game_state.game_mode
+        return self._current_game_state.mode
 
     @game_mode.setter
     def game_mode(self, value):
