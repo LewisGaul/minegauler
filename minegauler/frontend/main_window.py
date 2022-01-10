@@ -885,10 +885,10 @@ class _CurrentInfoModal(QDialog):
                 f"""\
 
                 Game was started at {start_time}
-                {state} after {fin_info.elapsed:.2f} seconds
+                {state} after {fin_info.elapsed + 0.005:.2f} seconds
                 The board was {fin_info.prop_flagging * 100:.1f}% flagged
                 The 3bv was: {fin_info.bbbv}
-                The 3bv/s rate was: {fin_info.bbbvps:.2f}
+                The 3bv/s rate was: {fin_info.bbbvps + 0.005:.2f}
                 """
             )
             if info.game_state is GameState.LOST:

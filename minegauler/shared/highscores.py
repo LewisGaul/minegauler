@@ -426,7 +426,7 @@ def get_highscores(
 
 def insert_highscore(highscore: HighscoreStruct) -> None:
     """Insert a highscore into DBs."""
-    LocalHighscoresDB().insert_highscore(highscore)
+    LocalHighscoresDB(paths.HIGHSCORES_FILE).insert_highscore(highscore)
 
     def _post_catch_exc():
         try:
@@ -438,7 +438,7 @@ def insert_highscore(highscore: HighscoreStruct) -> None:
 
 
 def retrieve_highscores(path: PathLike) -> int:
-    return LocalHighscoresDB().merge_highscores(path)
+    return LocalHighscoresDB(paths.HIGHSCORES_FILE).merge_highscores(path)
 
 
 def filter_and_sort(

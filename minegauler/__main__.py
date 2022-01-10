@@ -59,7 +59,9 @@ logger.info("Starting up")
 ctrlr = core.UberController(game_opts)
 # Init frontend and create controller.
 frontend.init_app()
-gui = frontend.MinegaulerGUI(ctrlr, frontend.state.State.from_opts(game_opts, gui_opts))
+frontend_state = frontend.state.State.from_opts(game_opts, gui_opts)
+frontend_state.difficulty = ctrlr.get_game_info().difficulty
+gui = frontend.MinegaulerGUI(ctrlr, frontend_state)
 # Register frontend with core controller.
 ctrlr.register_listener(gui)
 
