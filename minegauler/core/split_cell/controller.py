@@ -2,12 +2,17 @@
 
 __all__ = ("GameController",)
 
+import logging
+
 from ...shared.types import Difficulty, GameMode, PathLike
 from ..controller import GameControllerBase
 from .board import Board
 from .game import Game, difficulty_to_values
 from .minefield import Minefield
 from .types import Coord
+
+
+logger = logging.getLogger(__name__)
 
 
 class _ControllerMixin:

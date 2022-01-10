@@ -26,18 +26,18 @@ class Coord(CoordBase):
         self.y = y
         self.is_split = is_split
 
-    def get_small_cell_coords(self) -> Iterable[Tuple[int, int]]:
+    def get_small_cell_coords(self) -> Iterable["Coord"]:
         if self.is_split:
-            return ((self.x, self.y),)
+            return (self,)
         else:
             return (
-                (self.x, self.y),
-                (self.x + 1, self.y),
-                (self.x, self.y + 1),
-                (self.x + 1, self.y + 1),
+                Coord(self.x, self.y, True),
+                Coord(self.x + 1, self.y, True),
+                Coord(self.x, self.y + 1, True),
+                Coord(self.x + 1, self.y + 1, True),
             )
 
     def split(self) -> Iterable["Coord"]:
         if self.is_split:
             raise TypeError(f"Not able to split coord {(self.x, self.y)}")
-        return [Coord(x, y, True) for (x, y) in self.get_small_cell_coords()]
+        return self.get_small_cell_coords()

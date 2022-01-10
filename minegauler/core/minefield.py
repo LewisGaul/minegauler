@@ -8,10 +8,14 @@ Minesweeper minefield API.
 __all__ = ("MinefieldBase",)
 
 import abc
+import logging
 import random
 from typing import Any, Generic, Iterable, List, Mapping, Optional, Set, TypeVar
 
 from .board import BoardBase
+
+
+logger = logging.getLogger(__name__)
 
 
 C = TypeVar("C")
@@ -162,6 +166,7 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
         random.shuffle(avble_list)
         self.mine_coords = avble_list[: self.mines]
         self.populated = True
+        logger.debug("Populated minefield with %s mines", len(self.mine_coords))
 
     @abc.abstractmethod
     def _calc_3bv(self) -> int:

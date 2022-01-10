@@ -274,67 +274,6 @@ class GameBase(metaclass=abc.ABCMeta):
         self.board[coord] = state
         self._cell_updates[coord] = state
 
-    def _select_cell_action(self, coord: Coord) -> None:
-        """
-        Implementation of the action of selecting/clicking a cell.
-        """
-        if coord in self.mf.mine_coords:
-            logger.debug("Mine hit at %s", coord)
-            self._set_cell(coord, CellContents.HitMine(self.mf[coord]))
-            self.lives_remaining -= 1
-
-            if self.lives_remaining == 0:
-                logger.info("Game lost")
-                self.end_time = time.time()
-                self.state = GameState.LOST
-
-                for c in self.mf.all_coords:
-                    if (
-                        c in self.mf.mine_coords
-                        and self.board[c] is CellContents.Unclicked
-                    ):
-                        self._set_cell(c, CellContents.Mine(self.mf[c]))
-
-                    elif (
-                        type(self.board[c]) is CellContents.Flag
-                        and self.board[c] != self.mf.completed_board[c]
-                    ):
-                        self._set_cell(c, CellContents.WrongFlag(self.board[c].num))
-            else:
-                self.mines_remaining -= self.mf[coord]
-        elif self.mf.completed_board[coord] is CellContents.Num(0):
-            for full_opening in self.mf.openings:
-                if coord in full_opening:
-                    # Found the opening, quit the loop here.
-                    logger.debug("Opening hit: %s", full_opening)
-                    break
-            else:
-                raise RuntimeError(f"Coordinate {coord} not found in openings")
-
-            # Get the propagation of cells forming part of the opening.
-            opening = set()  # Coords belonging to the opening
-            check = {coord}  # Coords whose neighbours need checking
-            while check:
-                c = check.pop()
-                unclicked_nbrs = {
-                    z
-                    for z in self.board.get_nbrs(c, include_origin=True)
-                    if self.board[z] is CellContents.Unclicked
-                }
-                check |= {
-                    z
-                    for z in unclicked_nbrs - opening
-                    if self.mf.completed_board[z] is CellContents.Num(0)
-                }
-                opening |= unclicked_nbrs
-
-            logger.debug("Propagated opening: %s", list(opening))
-            for c in opening:
-                self._set_cell(c, self.mf.completed_board[c])
-        else:
-            logger.debug("Regular cell revealed")
-            self._set_cell(coord, self.mf.completed_board[coord])
-
     def _check_for_completion(self) -> None:
         """
         Check if game is complete by comparing the board to the minefield's
