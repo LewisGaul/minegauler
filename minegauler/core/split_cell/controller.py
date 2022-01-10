@@ -2,7 +2,7 @@
 
 __all__ = ("GameController",)
 
-from ...shared.types import Coord_T, Difficulty, GameMode, PathLike
+from ...shared.types import Difficulty, GameMode, PathLike
 from ..controller import GameControllerBase
 from .board import Board
 from .game import Game, difficulty_to_values
@@ -41,7 +41,7 @@ class GameController(_ControllerMixin, GameControllerBase):
         """See AbstractController."""
         super().restart_game()
 
-    def select_cell(self, coord: Coord_T) -> None:
+    def select_cell(self, coord: Coord) -> None:
         pass
 
     def split_cell(self, coord: Coord) -> None:
@@ -59,7 +59,7 @@ class GameController(_ControllerMixin, GameControllerBase):
             return
         super().remove_cell_flags(coord)
 
-    def chord_on_cell(self, coord: Coord_T) -> None:
+    def chord_on_cell(self, coord: Coord) -> None:
         pass
 
     def resize_board(self, x_size: int, y_size: int, mines: int) -> None:

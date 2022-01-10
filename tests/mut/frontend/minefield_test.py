@@ -15,7 +15,8 @@ from pytestqt.qtbot import QtBot
 
 from minegauler.core import api
 from minegauler.frontend import state
-from minegauler.frontend.minefield import _RAISED_CELL, _SUNKEN_CELL, MinefieldWidget
+from minegauler.frontend.minefield._base import _RAISED_CELL, _SUNKEN_CELL
+from minegauler.frontend.minefield.regular import MinefieldWidget
 
 from . import utils
 

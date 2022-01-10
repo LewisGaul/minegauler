@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from minegauler.shared.types import CellContents, CellImageType, Coord_T
+from minegauler.shared.types import CellContents, CellImageType, Coord
 
 from ..utils import CellUpdate_T
 from ._base import update_cell_images
@@ -45,7 +45,7 @@ class MinefieldWidget(QDialog):
         self._remaining_cell_updates = cell_updates
 
         self._cell_images: Dict[CellContents, QPixmap] = {}
-        _update_cell_images(
+        update_cell_images(
             self._cell_images, self.btn_size, {CellImageType.BUTTONS: "standard"}
         )
 
@@ -107,7 +107,7 @@ class MinefieldWidget(QDialog):
                 self._do_next_update,
             )
 
-    def _set_cell_image(self, coord: Coord_T, state: CellContents) -> None:
+    def _set_cell_image(self, coord: Coord, state: CellContents) -> None:
         """
         Set the image of a cell.
 
@@ -124,7 +124,7 @@ class MinefieldWidget(QDialog):
         b = self._scene.addPixmap(self._cell_images[state])
         b.setPos(x * self.btn_size, y * self.btn_size)
 
-    def _update_cells(self, cell_updates: Mapping[Coord_T, CellContents]) -> None:
+    def _update_cells(self, cell_updates: Mapping[Coord, CellContents]) -> None:
         """
         Called to indicate some cells have changed state.
 

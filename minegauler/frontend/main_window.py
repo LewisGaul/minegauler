@@ -60,7 +60,8 @@ from ..shared.types import (
     UIMode,
 )
 from ..shared.utils import GUIOptsStruct, format_timestamp
-from . import highscores, minefield, panel, simulate, state, utils
+from . import highscores, minefield, panel, state, utils
+from .minefield import simulate
 
 
 logger = logging.getLogger(__name__)
@@ -214,7 +215,10 @@ class MinegaulerGUI(
         self._populate_menubars()
         self._menubar.setFixedHeight(self._menubar.sizeHint().height())
         self._panel_widget = panel.PanelWidget(self, self._state)
-        self._mf_widget = minefield.MinefieldWidget(self, self._ctrlr, self._state)
+        # TODO: Check which minefield type to use.
+        self._mf_widget = minefield.regular.MinefieldWidget(
+            self, self._ctrlr, self._state
+        )
         self.set_panel_widget(self._panel_widget)
         self.set_body_widget(self._mf_widget)
         self._name_entry_widget = _NameEntryBar(self, self._state.name)

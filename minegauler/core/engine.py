@@ -19,7 +19,7 @@ else:
 
 from ..shared.types import Coord, Difficulty, GameMode, PathLike, UIMode
 from ..shared.utils import GameOptsStruct
-from . import api, board, controller, game, minefield, regular
+from . import api, board, controller, game, minefield, regular, split_cell
 from .board import BoardBase
 from .controller import ControllerBase
 
@@ -40,7 +40,7 @@ class GameModeImplementation(Protocol):
 
 GAME_MODE_IMPL: Mapping[GameMode, GameModeImplementation] = {
     GameMode.REGULAR: regular,
-    # GameMode.SPLIT_CELL: split_cell,
+    GameMode.SPLIT_CELL: split_cell,
 }
 
 
@@ -72,16 +72,16 @@ class UberController(api.AbstractController):
     def switch_game_mode(self, mode: GameMode) -> None:
         """Switch the game mode."""
         super().switch_game_mode(mode)
-        # if mode is self.mode:
-        #     logger.debug(
-        #         "Ignore switch game mode request because mode is already %s", mode
-        #     )
-        #     return
-        # self._opts.mode = mode
-        # self._active_ctrlr = self._get_ctrlr_cls(mode, self._ui_mode)(
-        #     self._opts, notif=self._notif
-        # )
-        # self._notif.reset()
+        if mode is self.mode:
+            logger.debug(
+                "Ignore switch game mode request because mode is already %s", mode
+            )
+            return
+        self._opts.mode = mode
+        self._active_ctrlr = self._get_ctrlr_cls(mode, self._ui_mode)(
+            self._opts, notif=self._notif
+        )
+        self._notif.reset()
 
     def switch_ui_mode(self, ui_mode: UIMode) -> None:
         """Switch the UI mode."""
@@ -159,6 +159,7 @@ class UberController(api.AbstractController):
     def save_current_minefield(self, file: PathLike) -> None:
         self._active_ctrlr.save_current_minefield(file)
 
+    # TODO: Should this be deleted in favour of using flag_cell()?
     # def split_cell(self, coord: Coord) -> None:
     #     # TODO: Check the sub controller can do this...
     #     self._active_ctrlr.split_cell(coord)
