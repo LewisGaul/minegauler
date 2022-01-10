@@ -292,6 +292,7 @@ class AllOptsStruct(GameOptsStruct, GUIOptsStruct):
     def encode_to_json(self) -> Dict[str, Any]:
         ret = attr.asdict(self)
         ret["styles"] = {k.name: v for k, v in self.styles.items()}
+        ret["mode"] = ret["mode"].name
         return ret
 
     @classmethod
@@ -299,6 +300,7 @@ class AllOptsStruct(GameOptsStruct, GUIOptsStruct):
         dict_["styles"] = {
             getattr(CellImageType, k): v for k, v in dict_["styles"].items()
         }
+        dict_["mode"] = getattr(GameMode, dict_["mode"])
         return cls(**dict_)
 
 

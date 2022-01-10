@@ -55,6 +55,7 @@ from ..shared.types import (
     CellImageType,
     Coord,
     Difficulty,
+    GameMode,
     GameState,
     PathLike,
     UIMode,
@@ -530,6 +531,21 @@ class MinegaulerGUI(
                 action.setChecked(True)
             action.triggered.connect(get_change_per_cell_func(i))
 
+        self._opts_menu.addSeparator()
+
+        game_mode_menu = self._opts_menu.addMenu("Game mode")
+        game_mode_group = QActionGroup(self)
+        game_mode_group.setExclusive(True)
+        for mode in GameMode:
+            action = QAction(
+                mode.name.capitalize().replace("_", " "), self, checkable=True
+            )
+            game_mode_menu.addAction(action)
+            game_mode_group.addAction(action)
+            if self._state.game_mode is mode:
+                action.setChecked(True)
+            action.triggered.connect(functools.partial(self._change_game_mode, mode))
+
         # ----------
         # Help menu
         # ----------
@@ -578,6 +594,9 @@ class MinegaulerGUI(
     def _change_style(self, grp: CellImageType, style: str) -> None:
         self._state.styles[grp] = style
         self._mf_widget.update_style(grp, style)
+
+    def _change_game_mode(self, mode: GameMode) -> None:
+        self._ctrlr.switch_game_mode(mode)
 
     def _set_name(self, name: str) -> None:
         self._state.name = name
