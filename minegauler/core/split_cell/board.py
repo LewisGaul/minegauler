@@ -13,12 +13,18 @@ class Board(BoardBase):
     mode = GameMode.SPLIT_CELL
 
     def __init__(self, x_size: int, y_size: int):
+        """
+        :param x_size:
+            Number of small cells in x direction.
+        :param y_size:
+            Number of small cells in y direction.
+        """
         self.x_size = x_size
         self.y_size = y_size
         self._unsplit_coords = {
             Coord(2 * x, 2 * y, False): CellContents.Unclicked
-            for x in range(self.x_size)
-            for y in range(self.y_size)
+            for x in range(self.x_size // 2)
+            for y in range(self.y_size // 2)
         }
         self._split_coords = {}
 
