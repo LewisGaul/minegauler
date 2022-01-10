@@ -1,20 +1,9 @@
 # April 2018, Lewis Gaul
 
-"""
-Available package imports.
+__all__ = ("BoardBase", "GameBase", "MinefieldBase", "UberController", "api", "regular")
 
-"""
-
-__all__ = (
-    "BaseController",
-    "Board",
-    "Minefield",
-    "api",
-    "board",
-    "engine",
-    "game",
-)
-
-from . import api, board, engine, game
-from .board import Board, Minefield
-from .engine import BaseController
+from . import api, regular
+from .board import BoardBase
+from .engine import UberController
+from .game import GameBase
+from .minefield import MinefieldBase

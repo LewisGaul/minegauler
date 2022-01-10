@@ -168,7 +168,7 @@ class TestMinefieldWidget:
         """
         assert mf_widget._state.drag_select is False
 
-        ## Left down before right down.
+        # TODO
 
     def test_click_out_of_bounds(self, qtbot: QtBot, mf_widget: MinefieldWidget):
         """Test clicking out of bounds of the minefield."""

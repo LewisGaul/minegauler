@@ -6,7 +6,6 @@ Integration tests. Simulates interactions by calling frontend APIs only.
 """
 
 import contextlib
-import json
 import logging
 from typing import Optional
 from unittest import mock
@@ -15,9 +14,10 @@ import pytest
 from PyQt5.QtCore import QEvent, QPoint, Qt
 from PyQt5.QtGui import QMouseEvent
 
-from minegauler import frontend
+import minegauler.paths
+from minegauler import core, frontend  # TODO: Fix circular dependency
 from minegauler.shared.types import CellImageType
-from minegauler.shared.utils import AllOptsStruct
+from minegauler.shared.utils import AllOptsStruct, write_settings_to_file
 
 from . import process_events, run_main_entrypoint
 
@@ -25,13 +25,10 @@ from . import process_events, run_main_entrypoint
 logger = logging.getLogger(__name__)
 
 
-# TODO: Take care to mock out highscores etc.
-
-
 def create_gui(settings: Optional[AllOptsStruct] = None) -> frontend.MinegaulerGUI:
     """Create a minegauler GUI instance via the main entrypoint."""
-    if settings is None:
-        settings = AllOptsStruct()
+    if settings is not None:
+        write_settings_to_file(settings, minegauler.paths.SETTINGS_FILE)
 
     def run_app(gui: frontend.MinegaulerGUI) -> int:
         logger.info("In run_app()")
@@ -42,13 +39,6 @@ def create_gui(settings: Optional[AllOptsStruct] = None) -> frontend.MinegaulerG
     with contextlib.ExitStack() as ctxs:
         ctxs.enter_context(mock.patch("minegauler.frontend.run_app", run_app))
         ctxs.enter_context(mock.patch("sys.exit"))
-        # TODO Should only mock reading from the settings file.
-        ctxs.enter_context(
-            mock.patch(
-                "builtins.open",
-                mock.mock_open(read_data=json.dumps(settings.encode_to_json())),
-            )
-        )
         main_module = run_main_entrypoint()
 
     return main_module.gui

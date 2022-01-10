@@ -5,6 +5,8 @@ Available imports from the package.
 
 """
 
+__all__ = ("MinegaulerGUI", "init_app", "run_app", "state")
+
 import signal
 import sys
 
@@ -13,9 +15,6 @@ from PyQt5.QtWidgets import QApplication, QWidget
 
 from . import state
 from .main_window import MinegaulerGUI
-
-
-__all__ = ("MinegaulerGUI", "init_app", "run_app", "state")
 
 
 _app = None
