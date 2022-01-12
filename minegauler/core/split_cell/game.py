@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 _diff_pairs = [
     (Difficulty.BEGINNER, (8, 8, 5)),
     (Difficulty.INTERMEDIATE, (16, 16, 20)),
-    (Difficulty.EXPERT, (30, 16, 49)),
+    (Difficulty.EXPERT, (30, 16, 50)),
     (Difficulty.MASTER, (30, 30, 100)),
     (Difficulty.LUDICROUS, (50, 50, 400)),
 ]
