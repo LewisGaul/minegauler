@@ -43,7 +43,7 @@ class GameController(_ControllerMixin, GameControllerBase):
 
     def flag_cell(self, coord: Coord, *, flag_only: bool = False) -> None:
         """See AbstractController."""
-        super().flag_cell(coord)
+        super().flag_cell(coord, flag_only=flag_only)
 
         cell_state = self.board[coord]
         if cell_state is CellContents.Unclicked:

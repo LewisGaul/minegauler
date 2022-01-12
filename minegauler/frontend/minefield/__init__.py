@@ -299,10 +299,11 @@ class MinefieldWidget(QGraphicsView):
         functions as appropriate.
         """
         self._ctrlr.flag_cell(coord)
-        if self._board[coord] is CellContents.Unclicked:
-            self._unflag_on_right_drag = True
-        else:
-            self._unflag_on_right_drag = False
+        # TODO: Sort this out for split cell...
+        # if self._board[coord] is CellContents.Unclicked:
+        #     self._unflag_on_right_drag = True
+        # else:
+        #     self._unflag_on_right_drag = False
 
     def right_button_move(self, coord: Optional[Coord]) -> None:
         """

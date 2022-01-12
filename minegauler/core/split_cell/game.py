@@ -4,7 +4,7 @@ __all__ = ("Game", "difficulty_from_values", "difficulty_to_values")
 
 import logging
 import time
-from typing import Iterable, Tuple
+from typing import Mapping, Tuple
 
 from ...shared.types import CellContents, Difficulty, GameMode, GameState
 from ..game import GameBase, _check_coord, _ignore_if_not
@@ -25,6 +25,9 @@ _diff_pairs = [
 ]
 
 
+# TODO: Share the implementation of these functions, using the diff_pairs mapping.
+
+
 def difficulty_to_values(diff: Difficulty) -> Tuple[int, int, int]:
     try:
         return dict(_diff_pairs)[diff]
@@ -38,11 +41,6 @@ def difficulty_from_values(x_size: int, y_size: int, mines: int) -> Difficulty:
         return mapping[(x_size, y_size, mines)]
     except KeyError:
         return Difficulty.CUSTOM
-
-
-# TODO:
-#  This whole module needs effectively rewriting from scratch, hasn't worked
-#  since stuff was moved around.
 
 
 class Game(GameBase):
@@ -142,17 +140,16 @@ class Game(GameBase):
         game_state=GameState.ACTIVE,
         cell_state=CellContents.Unclicked,
     )
-    def split_cell(self, coord: Coord) -> Iterable[Coord]:
-        if self.board[coord] is not CellContents.Unclicked:
-            return
-        small_cells = coord.get_small_cell_coords()
-        if not any(self.mf.cell_contains_mine(c) for c in small_cells):
+    def split_cell(self, coord: Coord) -> Mapping[Coord, CellContents]:
+        small_cells = coord.split()
+        if not any(c in self.mf.mine_coords for c in small_cells):
             logger.debug("Incorrect cell split %s", coord)
             self._set_cell(coord, CellContents.WrongFlag(1))
             self._finalise_lost_game()
         else:
             logger.debug("Splitting cell %s", coord)
             self.board.split_coord(coord)
+            self._cell_updates.update({c: CellContents.Unclicked for c in small_cells})
             self._update_board_numbers()
         try:
             return self._cell_updates

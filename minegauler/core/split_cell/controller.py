@@ -4,7 +4,7 @@ __all__ = ("GameController",)
 
 import logging
 
-from ...shared.types import Difficulty, GameMode, PathLike
+from ...shared.types import CellContents, Difficulty, GameMode, PathLike
 from ..controller import GameControllerBase
 from .board import Board
 from .game import Game, difficulty_to_values
@@ -44,16 +44,24 @@ class GameController(_ControllerMixin, GameControllerBase):
         cells = self.game.select_cell(coord)
         self._send_updates(cells)
 
-    # TODO: Remove this in favour of using 'flag_cell()'?
-    def split_cell(self, coord: Coord) -> None:
-        if coord.is_split:
-            return
-        self._send_updates(self.game.split_cell(coord))
-
     def flag_cell(self, coord: Coord, *, flag_only: bool = False) -> None:
-        if not coord.is_split:
-            return
         super().flag_cell(coord, flag_only=flag_only)
+        if coord.is_split:
+            cell_state = self.board[coord]
+            if cell_state is CellContents.Unclicked:
+                self.game.set_cell_flags(coord, 1)
+            elif isinstance(cell_state, CellContents.Flag):
+                if cell_state.num >= self.game.per_cell:
+                    if flag_only:
+                        return
+                    self.game.set_cell_flags(coord, 0)
+                else:
+                    self.game.set_cell_flags(coord, cell_state.num + 1)
+
+            updates = {coord: self.board[coord]}
+        else:
+            updates = self.game.split_cell(coord)
+        self._send_updates(updates)
 
     def remove_cell_flags(self, coord: Coord) -> None:
         if not coord.is_split:
