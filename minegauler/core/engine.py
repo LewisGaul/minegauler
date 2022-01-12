@@ -160,8 +160,3 @@ class UberController(api.AbstractController):
 
     def save_current_minefield(self, file: PathLike) -> None:
         self._active_ctrlr.save_current_minefield(file)
-
-    # TODO: Should this be deleted in favour of using flag_cell()?
-    # def split_cell(self, coord: Coord) -> None:
-    #     # TODO: Check the sub controller can do this...
-    #     self._active_ctrlr.split_cell(coord)
