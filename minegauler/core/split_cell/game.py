@@ -95,29 +95,15 @@ class Game(GameBase):
         logger.info("Game lost")
         self.end_time = time.time()
         self.state = GameState.LOST
-        return  # TODO
-        for c in self.mf.all_coords:
-            small_coord = c
-            board_coord = self.board.get_coord_at(small_coord.x, small_coord.y)
+        for c in self.mf.mine_coords:
+            if self.board[self.board.get_coord_at(c.x, c.y)] is CellContents.Unclicked:
+                self._set_cell(c, CellContents.Mine(self.mf[c]))
+        for c in self.board.all_coords:
             if (
-                not board_coord.is_split
-                and self.board[board_coord] is not CellContents.Unclicked
+                type(self.board[c]) is CellContents.Flag
+                and self.board[c].num != self.mf[c]
             ):
-                continue
-
-            if (
-                small_coord not in self.board
-                or self.board[small_coord] is CellContents.Unclicked
-            ) and self.mf.cell_contains_mine(c):
-                self._set_cell(small_coord, CellContents.Mine(self.mf[c]))
-            elif (
-                small_coord in self.board
-                and type(self.board[small_coord]) is CellContents.Flag
-                and self.board[small_coord] != self.mf.completed_board[c]
-            ):
-                self._set_cell(
-                    small_coord, CellContents.WrongFlag(self.board[small_coord].num)
-                )
+                self._set_cell(c, CellContents.WrongFlag(self.board[c].num))
 
     def _select_cell_action(self, coord: Coord) -> None:
         """Implementation of the action of selecting/clicking a cell."""
