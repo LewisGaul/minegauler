@@ -4,7 +4,7 @@ __all__ = ("Game", "difficulty_from_values", "difficulty_to_values")
 
 import logging
 import time
-from typing import Dict, Iterable, Tuple
+from typing import Iterable, Tuple
 
 from ...shared.types import CellContents, Difficulty, GameMode, GameState
 from ..game import GameBase, _check_coord, _ignore_if_not

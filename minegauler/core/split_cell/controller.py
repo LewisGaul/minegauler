@@ -63,14 +63,5 @@ class GameController(_ControllerMixin, GameControllerBase):
     def chord_on_cell(self, coord: Coord) -> None:
         pass
 
-    def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
-        pass
-
-    def set_first_success(self, value: bool) -> None:
-        pass
-
-    def set_per_cell(self, value: int) -> None:
-        pass
-
     def load_minefield(self, file: PathLike) -> None:
         pass
