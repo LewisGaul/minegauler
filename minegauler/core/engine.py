@@ -77,10 +77,13 @@ class UberController(api.AbstractController):
             )
             return
         self._opts.mode = mode
+        difficulty = self._active_ctrlr.difficulty
         self._active_ctrlr = self._get_ctrlr_cls(mode, self._ui_mode)(
             self._opts, notif=self._notif
         )
         self._notif.reset()
+        if difficulty is not Difficulty.CUSTOM:
+            self.set_difficulty(difficulty)
 
     def switch_ui_mode(self, ui_mode: UIMode) -> None:
         """Switch the UI mode."""
