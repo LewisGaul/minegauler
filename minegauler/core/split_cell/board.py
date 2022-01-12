@@ -1,6 +1,6 @@
 # October 2021, Lewis Gaul
 
-from typing import Iterable, List, Tuple
+from typing import Iterable, List
 
 from ...shared.types import CellContents, GameMode
 from ..board import BoardBase
@@ -60,7 +60,23 @@ class Board(BoardBase):
     def get_nbrs(
         self, coord: Coord, *, include_origin: bool = False
     ) -> Iterable[Coord]:
-        return []
+        if coord not in self.all_coords:
+            raise ValueError(f"{coord} not in board")
+        x_min = max(0, coord.x - 1)
+        y_min = max(0, coord.y - 1)
+        if coord.is_split:
+            x_max = min(self.x_size - 1, coord.x + 1)
+            y_max = min(self.y_size - 1, coord.y + 1)
+        else:
+            x_max = min(self.x_size - 1, coord.x + 2)
+            y_max = min(self.y_size - 1, coord.y + 2)
+        nbrs = set()
+        for i in range(x_min, x_max + 1):
+            for j in range(y_min, y_max + 1):
+                nbrs.add(self.get_coord_at(i, j))
+        if not include_origin:
+            nbrs.remove(coord)
+        return sorted(nbrs)
 
     def get_coord_at(self, x: int, y: int) -> Coord:
         if Coord(x, y, True) in self._split_coords:

@@ -9,8 +9,7 @@ import textwrap
 
 import pytest
 
-from minegauler.core.regular.board import Board
-from minegauler.core.regular.types import Coord
+from minegauler.core.regular import Board, Coord
 from minegauler.shared import utils
 from minegauler.shared.types import CellContents
 
