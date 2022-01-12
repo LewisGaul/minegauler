@@ -93,9 +93,29 @@ class Game(GameBase):
             )
             return partial_mf._calc_3bv() - completed_3bv
 
-    # ---------------------
-    # Other methods
-    # ---------------------
+    def _populate_minefield(self, coord: Coord) -> None:
+        """Create the minefield in response to a cell being selected."""
+        if self.first_success:
+            safe_coords = self.board.get_nbrs(coord, include_origin=True)
+            logger.debug(
+                "Trying to create minefield with the following safe coordinates: %s",
+                safe_coords,
+            )
+            try:
+                self.mf.populate(safe_coords)
+            except ValueError:
+                logger.info(
+                    "Unable to give opening on the first click, "
+                    "still ensuring a safe click"
+                )
+                # This should be guaranteed to succeed.
+                self.mf.populate(safe_coords=[coord])
+            else:
+                logger.debug("Successfully created minefield")
+        else:
+            logger.debug("Creating minefield without guaranteed first click success")
+            self.mf.populate()
+
     def _select_cell_action(self, coord: Coord) -> None:
         """
         Implementation of the action of selecting/clicking a cell.

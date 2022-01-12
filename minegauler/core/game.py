@@ -195,6 +195,14 @@ class GameBase(metaclass=abc.ABCMeta):
         """Calculate the minimum remaining number of clicks needed to solve."""
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def _populate_minefield(self, coord: Coord) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _select_cell_action(self) -> None:
+        raise NotImplementedError
+
     @property
     def mines(self) -> int:
         return self.mf.mines
@@ -235,29 +243,6 @@ class GameBase(metaclass=abc.ABCMeta):
             else:
                 return 0
         return self._num_flags / self.mines
-
-    def _populate_minefield(self, coord) -> None:
-        """Create the minefield in response to a cell being selected."""
-        if self.first_success:
-            safe_coords = self.board.get_nbrs(coord, include_origin=True)
-            logger.debug(
-                "Trying to create minefield with the following safe coordinates: %s",
-                safe_coords,
-            )
-            try:
-                self.mf.populate(safe_coords)
-            except ValueError:
-                logger.info(
-                    "Unable to give opening on the first click, "
-                    "still ensuring a safe click"
-                )
-                # This should be guaranteed to succeed.
-                self.mf.populate(safe_coords=[coord])
-            else:
-                logger.debug("Successfully created minefield")
-        else:
-            logger.debug("Creating minefield without guaranteed first click success")
-            self.mf.populate()
 
     # ---------------------
     # Other methods

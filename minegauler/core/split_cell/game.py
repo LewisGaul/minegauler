@@ -69,6 +69,57 @@ class Game(GameBase):
     def get_rem_3bv(self) -> int:
         return 0  # TODO
 
+    def _populate_minefield(self, coord: Coord) -> None:
+        """Create the minefield in response to a cell being selected."""
+        if self.first_success:
+            safe_coords = [
+                small
+                for big in self.board.get_nbrs(coord, include_origin=True)
+                for small in big.split()
+            ]
+            logger.debug(
+                "Trying to create minefield with the following safe coordinates: %s",
+                safe_coords,
+            )
+            try:
+                self.mf.populate(safe_coords)
+            except ValueError:
+                logger.info(
+                    "Unable to give opening on the first click, "
+                    "still ensuring a safe click"
+                )
+                # This should be guaranteed to succeed.  TODO
+                self.mf.populate(safe_coords=coord.split())
+            else:
+                logger.debug("Successfully created minefield")
+        else:
+            logger.debug("Creating minefield without guaranteed first click success")
+            self.mf.populate()
+
+    def _select_cell_action(self, coord: Coord) -> None:
+        """Implementation of the action of selecting/clicking a cell."""
+        if not coord.is_split:
+            small_cells = coord.split()
+            if any(c in self.mf.mine_coords for c in small_cells):
+                logger.debug("Mine hit in large cell containing %s", coord)
+                for c in small_cells:
+                    if self.mf[c] > 0:
+                        self._set_cell(c, CellContents.HitMine(self.mf[c]))
+                self._finalise_lost_game()
+            else:
+                logger.debug("Regular cell revealed")
+                cell_num = self._calc_nbr_mines(coord)
+                self._set_cell(coord, CellContents.Num(cell_num))
+            return
+
+        if coord in self.mf.mine_coords:
+            logger.debug("Mine hit at %s", coord)
+            self._set_cell(coord, CellContents.HitMine(self.mf[coord]))
+            self._finalise_lost_game()
+        else:
+            logger.debug("Regular cell revealed")
+            self._set_cell(coord, CellContents.Num(self._calc_nbr_mines(coord)))
+
     # ---------------------
     # Other methods
     # ---------------------
@@ -102,30 +153,6 @@ class Game(GameBase):
                 and self.board[c].num != self.mf[c]
             ):
                 self._set_cell(c, CellContents.WrongFlag(self.board[c].num))
-
-    def _select_cell_action(self, coord: Coord) -> None:
-        """Implementation of the action of selecting/clicking a cell."""
-        if not coord.is_split:
-            small_cells = coord.split()
-            if any(c in self.mf.mine_coords for c in small_cells):
-                logger.debug("Mine hit in large cell containing %s", coord)
-                for c in small_cells:
-                    if self.mf[c] > 0:
-                        self._set_cell(c, CellContents.HitMine(self.mf[c]))
-                self._finalise_lost_game()
-            else:
-                logger.debug("Regular cell revealed")
-                cell_num = self._calc_nbr_mines(coord)
-                self._set_cell(coord, CellContents.Num(cell_num))
-            return
-
-        if coord in self.mf.mine_coords:
-            logger.debug("Mine hit at %s", coord)
-            self._set_cell(coord, CellContents.HitMine(self.mf[coord]))
-            self._finalise_lost_game()
-        else:
-            logger.debug("Regular cell revealed")
-            self._set_cell(coord, CellContents.Num(self._calc_nbr_mines(coord)))
 
     def _check_for_completion(self) -> None:
         if any(
