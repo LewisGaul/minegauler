@@ -89,4 +89,3 @@ class Board(BoardBase):
     def split_coord(self, coord: Coord) -> None:
         self._unsplit_coords.pop(coord)
         self._split_coords.update({c: CellContents.Unclicked for c in coord.split()})
-        # TODO: Recalculate numbers in surrounding cells
