@@ -632,6 +632,7 @@ class MinegaulerGUI(
         if (
             info.game_state is GameState.WON
             and info.difficulty is not Difficulty.CUSTOM
+            and info.mode is GameMode.REGULAR
             and not info.minefield_known
         ):
             assert info.started_info.prop_complete == 1

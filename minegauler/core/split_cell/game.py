@@ -169,14 +169,6 @@ class Game(GameBase):
             ):
                 self._set_cell(c, CellContents.WrongFlag(self.board[c].num))
 
-    def _check_for_completion(self) -> None:
-        if any(
-            self.board[c] is CellContents.Unclicked and c.is_split
-            for c in self.board.all_coords
-        ):
-            return
-        super()._check_for_completion()
-
     @_check_coord
     @_ignore_if_not(
         game_state=GameState.ACTIVE,

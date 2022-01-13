@@ -276,12 +276,8 @@ class GameBase(metaclass=abc.ABCMeta):
             self.state = GameState.WON
             self.mines_remaining = 0
 
-            for c in self.board.all_coords:
-                if (
-                    c in self.mf.mine_coords
-                    and type(self.board[c]) is not CellContents.HitMine
-                ):
-                    self._set_cell(c, CellContents.Flag(self.mf[c]))
+            for c in self.mf.mine_coords:
+                self._set_cell(c, CellContents.Flag(self.mf[c]))
 
     @_check_coord
     @_ignore_if_not(
