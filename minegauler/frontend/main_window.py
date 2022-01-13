@@ -445,32 +445,48 @@ class MinegaulerGUI(
         # Zoom
         self._game_menu.addAction("Button size", self._open_zoom_modal)
 
-        # Styles
-        # - Buttons
-        # - Images
-        # - Numbers
-        styles_menu = QMenu("Styles", self)
-        self._game_menu.addMenu(styles_menu)
-        for img_group in [
-            CellImageType.BUTTONS,
-            CellImageType.MARKERS,
-            CellImageType.NUMBERS,
-        ]:
-            img_group_name = img_group.name.capitalize()
-            submenu = QMenu(img_group_name, self)
-            styles_menu.addMenu(submenu)
-            group = QActionGroup(self)
-            group.setExclusive(True)
-            for folder in (paths.IMG_DIR / img_group_name).glob("*"):
-                style = folder.name
-                style_act = QAction(style, self, checkable=True)
-                if style == self._state.styles[img_group]:
-                    style_act.setChecked(True)
-                group.addAction(style_act)
-                style_act.triggered.connect(
-                    functools.partial(self._change_style, img_group, style)
-                )
-                submenu.addAction(style_act)
+        # Themes
+        themes = {
+            "Standard": {
+                CellImageType.BUTTONS: "Standard",
+                CellImageType.MARKERS: "Standard",
+                CellImageType.NUMBERS: "Standard",
+            },
+            "Butterfly": {
+                CellImageType.BUTTONS: "Butterfly",
+                CellImageType.MARKERS: "Standard",
+                CellImageType.NUMBERS: "Standard",
+            },
+            "Halloween": {
+                CellImageType.BUTTONS: "Dark",
+                CellImageType.MARKERS: "Halloween",
+                CellImageType.NUMBERS: "Dark",
+            },
+            "Textured": {
+                CellImageType.BUTTONS: "Textured",
+                CellImageType.MARKERS: "Standard",
+                CellImageType.NUMBERS: "Standard",
+            },
+            "Christmas": {
+                CellImageType.BUTTONS: "Christmas",
+                CellImageType.MARKERS: "Christmas",
+                CellImageType.NUMBERS: "Dark",
+            },
+        }
+
+        themes_menu = QMenu("Themes", self)
+        self._game_menu.addMenu(themes_menu)
+        group = QActionGroup(self)
+        group.setExclusive(True)
+        for theme_name, theme_styles in themes.items():
+            theme_act = QAction(theme_name, self, checkable=True)
+            themes_menu.addAction(theme_act)
+            group.addAction(theme_act)
+            if theme_styles == self._state.styles:
+                theme_act.setChecked(True)
+            theme_act.triggered.connect(
+                functools.partial(self._change_styles, theme_styles)
+            )
 
         # Advanced options
         self._game_menu.addAction("Advanced options", self._open_advanced_opts_modal)
@@ -574,9 +590,10 @@ class MinegaulerGUI(
         else:
             self._ctrlr.set_difficulty(diff)
 
-    def _change_style(self, grp: CellImageType, style: str) -> None:
-        self._state.styles[grp] = style
-        self._mf_widget.update_style(grp, style)
+    def _change_styles(self, styles: Mapping[CellImageType, str]) -> None:
+        for grp in styles:
+            self._state.styles[grp] = styles[grp]
+            self._mf_widget.update_style(grp, styles[grp])
 
     def _set_name(self, name: str) -> None:
         self._state.name = name
@@ -848,7 +865,7 @@ class MinegaulerGUI(
         self._state.reset()
         for img_group in CellImageType:
             if img_group is not CellImageType.ALL:
-                self._change_style(img_group, self._state.styles[img_group])
+                self._change_styles({img_group: self._state.styles[img_group]})
         self._name_entry_widget.setText("")
 
 

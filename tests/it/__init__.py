@@ -42,5 +42,6 @@ def process_events(wait: float = _EVENT_PAUSE) -> None:
     """
     logger.debug("Processing Qt events (pause of %.2fs)", wait)
     start_time = time.time()
-    while QApplication.hasPendingEvents() or time.time() - start_time < wait:
+    QApplication.processEvents()
+    while time.time() - start_time < wait:
         QApplication.processEvents()
