@@ -69,7 +69,10 @@ class GameController(_ControllerMixin, GameControllerBase):
         super().remove_cell_flags(coord)
 
     def chord_on_cell(self, coord: Coord) -> None:
-        pass
+        """See AbstractController."""
+        super().chord_on_cell(coord)
+        cells = self.game.chord_on_cell(coord)
+        self._send_updates(cells)
 
     def load_minefield(self, file: PathLike) -> None:
         pass
