@@ -24,7 +24,7 @@ from typing import Dict, Optional
 import attr
 
 from ..shared import HighscoreStruct
-from ..shared.types import CellImageType, Difficulty, GameState, UIMode
+from ..shared.types import CellImageType, Difficulty, GameMode, GameState, UIMode
 from ..shared.utils import GameOptsStruct, GUIOptsStruct, StructConstructorMixin
 
 
@@ -38,14 +38,12 @@ class PerGameState(StructConstructorMixin):
     x_size: int = 8
     y_size: int = 8
     mines: int = 10
+    difficulty: Difficulty = Difficulty.BEGINNER
     first_success: bool = True
     per_cell: int = 1
     lives: int = 1
     drag_select: bool = False
-
-    @property
-    def difficulty(self) -> Difficulty:
-        return Difficulty.from_board_values(self.x_size, self.y_size, self.mines)
+    mode: GameMode = GameMode.REGULAR
 
 
 class HighscoreWindowState(StructConstructorMixin):
@@ -129,15 +127,26 @@ class State:
         self._update_game_state("mines", value)
 
     @property
-    def difficulty(self) -> Difficulty:
-        return self._current_game_state.difficulty
-
-    @property
     def pending_mines(self):
         if self.has_pending_game_state():
             return self.pending_game_state.mines
         else:
             return self._current_game_state.mines
+
+    @property
+    def difficulty(self) -> Difficulty:
+        return self._current_game_state.difficulty
+
+    @difficulty.setter
+    def difficulty(self, value):
+        self._update_game_state("difficulty", value)
+
+    @property
+    def pending_difficulty(self):
+        if self.has_pending_game_state():
+            return self.pending_game_state.difficulty
+        else:
+            return self._current_game_state.difficulty
 
     @property
     def first_success(self):
@@ -198,6 +207,21 @@ class State:
             return self.pending_game_state.drag_select
         else:
             return self._current_game_state.drag_select
+
+    @property
+    def game_mode(self):
+        return self._current_game_state.game_mode
+
+    @game_mode.setter
+    def game_mode(self, value):
+        self._update_game_state("mode", value)
+
+    @property
+    def pending_game_mode(self):
+        if self.has_pending_game_state():
+            return self.pending_game_state.mode
+        else:
+            return self._current_game_state.mode
 
     @property
     def current_game_state(self) -> PerGameState:

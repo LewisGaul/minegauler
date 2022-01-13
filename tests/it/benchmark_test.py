@@ -26,7 +26,7 @@ class ITBase:
     """Base class for IT, setting up the app."""
 
     main_module: ModuleType
-    ctrlr: core.BaseController
+    ctrlr: core.UberController
     gui: frontend.MinegaulerGUI
 
     @classmethod
@@ -42,7 +42,7 @@ class ITBase:
         """Undo class setup."""
         cls.gui.close()
 
-    def load_minefield(self, mf: core.board.Minefield) -> None:
+    def load_minefield(self, mf: core.MinefieldBase) -> None:
         with tempfile.TemporaryFile() as tmp_file:
             with open(tmp_file, "w") as f:
                 json.dump(mf.to_json(), f)

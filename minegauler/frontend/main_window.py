@@ -14,7 +14,6 @@ __all__ = ("MinegaulerGUI",)
 
 import functools
 import logging
-import os
 import pathlib
 import textwrap
 import traceback
@@ -45,8 +44,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from .. import ROOT_DIR, shared
-from ..core import api
+from .. import api, paths, shared
 from ..shared.highscores import (
     HighscoreSettingsStruct,
     HighscoreStruct,
@@ -55,7 +53,7 @@ from ..shared.highscores import (
 from ..shared.types import (
     CellContents,
     CellImageType,
-    Coord_T,
+    Coord,
     Difficulty,
     GameState,
     PathLike,
@@ -63,12 +61,9 @@ from ..shared.types import (
 )
 from ..shared.utils import GUIOptsStruct, format_timestamp
 from . import highscores, minefield, panel, simulate, state, utils
-from .utils import FILES_DIR, HIGHSCORES_DIR, read_highscore_file, save_highscore_file
 
 
 logger = logging.getLogger(__name__)
-
-BOARD_DIR = ROOT_DIR / "boards"
 
 
 def _msg_popup(
@@ -109,7 +104,7 @@ class _BaseMainWindow(QMainWindow):
         self._panel_widget: Optional[QWidget]
         self._body_widget: Optional[QWidget]
         self._footer_widget: Optional[QWidget]
-        self._icon: QIcon = QIcon(str(utils.IMG_DIR / "icon.ico"))
+        self._icon: QIcon = QIcon(str(paths.IMG_DIR / "icon.ico"))
         self.setWindowTitle(title)
         self.setWindowIcon(self._icon)
         # Disable maximise button
@@ -259,6 +254,7 @@ class MinegaulerGUI(
             self.reset()
         self._state.x_size = x_size
         self._state.y_size = y_size
+        self._state.difficulty = self._ctrlr.get_game_info().difficulty
         self._mf_widget.reshape(x_size, y_size)
         self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
@@ -272,7 +268,7 @@ class MinegaulerGUI(
         self._state.mines = mines
         self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
-    def update_cells(self, cell_updates: Mapping[Coord_T, CellContents]) -> None:
+    def update_cells(self, cell_updates: Mapping[Coord, CellContents]) -> None:
         """
         Called to indicate some cells have changed state.
 
@@ -381,7 +377,7 @@ class MinegaulerGUI(
         def switch_create_mode(checked: bool):
             mode = UIMode.CREATE if checked else UIMode.GAME
             self._state.ui_mode = mode
-            self._ctrlr.switch_mode(mode)
+            self._ctrlr.switch_ui_mode(mode)
 
         self._create_menu_action = create_act = QAction(
             "Create board",
@@ -555,13 +551,13 @@ class MinegaulerGUI(
         rules_act = QAction("Rules", self)
         self._help_menu.addAction(rules_act)
         rules_act.triggered.connect(
-            lambda: self._open_text_popup("Rules", FILES_DIR / "rules.txt")
+            lambda: self._open_text_popup("Rules", paths.FILES_DIR / "rules.txt")
         )
 
         tips_act = QAction("Tips", self)
         self._help_menu.addAction(tips_act)
         tips_act.triggered.connect(
-            lambda: self._open_text_popup("Tips", FILES_DIR / "tips.txt")
+            lambda: self._open_text_popup("Tips", paths.FILES_DIR / "tips.txt")
         )
 
         retrieve_act = QAction("Retrieve highscores", self)
@@ -573,7 +569,7 @@ class MinegaulerGUI(
         about_act = QAction("About", self)
         self._help_menu.addAction(about_act)
         about_act.triggered.connect(
-            lambda: self._open_text_popup("About", FILES_DIR / "about.txt")
+            lambda: self._open_text_popup("About", paths.FILES_DIR / "about.txt")
         )
         about_act.setShortcut("F1")
 
@@ -592,8 +588,7 @@ class MinegaulerGUI(
             self._open_custom_board_modal()
             return
         else:
-            x, y, m = diff.get_board_values()
-            self._ctrlr.resize_board(x_size=x, y_size=y, mines=m)
+            self._ctrlr.set_difficulty(diff)
 
     def _change_styles(self, styles: Mapping[CellImageType, str]) -> None:
         for grp in styles:
@@ -662,7 +657,7 @@ class MinegaulerGUI(
         file, _ = QFileDialog.getSaveFileName(
             self,
             caption="Save board",
-            directory=str(BOARD_DIR),
+            directory=str(paths.BOARDS_DIR),
             filter="Minegauler boards (*.mgb)",
         )
         if not file:
@@ -680,7 +675,7 @@ class MinegaulerGUI(
         file, _ = QFileDialog.getOpenFileName(
             self,
             caption="Load board",
-            directory=str(BOARD_DIR),
+            directory=str(paths.BOARDS_DIR),
             filter="Minegauler boards (*.mgb)",
         )
         if not file:
@@ -799,7 +794,7 @@ class MinegaulerGUI(
         hs_file, _ = QFileDialog.getOpenFileName(
             parent=self,
             caption="Play highscore",
-            directory=str(HIGHSCORES_DIR),
+            directory=str(paths.DATA_DIR),
             filter="Minegauler highscores (*.mgh)",
         )
         logger.debug("Selected file: %s", hs_file)
@@ -808,7 +803,7 @@ class MinegaulerGUI(
 
         hs_file = pathlib.Path(hs_file)
         try:
-            hs, cell_updates = read_highscore_file(hs_file)
+            hs, cell_updates = utils.read_highscore_file(hs_file)
             x_size, y_size, _ = hs.difficulty.get_board_values()
             win = simulate.SimulationMinefieldWidget(self, x_size, y_size, cell_updates)
         except Exception as e:
@@ -907,10 +902,10 @@ class _CurrentInfoModal(QDialog):
                 f"""\
 
                 Game was started at {start_time}
-                {state} after {fin_info.elapsed:.2f} seconds
+                {state} after {fin_info.elapsed + 0.005:.2f} seconds
                 The board was {fin_info.prop_flagging * 100:.1f}% flagged
                 The 3bv was: {fin_info.bbbv}
-                The 3bv/s rate was: {fin_info.bbbvps:.2f}
+                The 3bv/s rate was: {fin_info.bbbvps + 0.005:.2f}
                 """
             )
             if info.game_state is GameState.LOST:

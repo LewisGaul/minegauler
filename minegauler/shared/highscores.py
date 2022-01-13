@@ -30,7 +30,7 @@ import mysql.connector
 import mysql.connector.cursor
 import requests
 
-from .. import ROOT_DIR
+from .. import paths
 from . import utils
 from .types import Difficulty, PathLike
 from .utils import StructConstructorMixin
@@ -201,7 +201,7 @@ class _SQLMixin:
 class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
     """Database of local highscores."""
 
-    def __init__(self, path: pathlib.Path = ROOT_DIR / "data" / "highscores.db"):
+    def __init__(self, path: pathlib.Path):
         self._path = path
         if os.path.exists(path):
             self._conn = sqlite3.connect(str(path))
@@ -384,7 +384,10 @@ class HighscoresDatabases(enum.Enum):
     REMOTE = RemoteHighscoresDB
 
     def get_db_instance(self) -> AbstractHighscoresDB:
-        return self.value()
+        if self is HighscoresDatabases.LOCAL:
+            return self.value(paths.HIGHSCORES_FILE)
+        else:
+            return self.value()
 
 
 def get_highscores(
@@ -423,7 +426,7 @@ def get_highscores(
 
 def insert_highscore(highscore: HighscoreStruct) -> None:
     """Insert a highscore into DBs."""
-    LocalHighscoresDB().insert_highscore(highscore)
+    LocalHighscoresDB(paths.HIGHSCORES_FILE).insert_highscore(highscore)
 
     def _post_catch_exc():
         try:
@@ -435,7 +438,7 @@ def insert_highscore(highscore: HighscoreStruct) -> None:
 
 
 def retrieve_highscores(path: PathLike) -> int:
-    return LocalHighscoresDB().merge_highscores(path)
+    return LocalHighscoresDB(paths.HIGHSCORES_FILE).merge_highscores(path)
 
 
 def filter_and_sort(

@@ -11,6 +11,7 @@ exclude_lines =
     if __name__ == .__main__.:
     raise NotImplementedError
     return NotImplemented
+    from typing(_extensions)? import
 precision = 1
 
 [html]
