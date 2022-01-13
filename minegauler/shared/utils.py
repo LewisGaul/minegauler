@@ -300,7 +300,7 @@ class AllOptsStruct(GameOptsStruct, GUIOptsStruct):
         dict_["styles"] = {
             getattr(CellImageType, k): v for k, v in dict_["styles"].items()
         }
-        dict_["mode"] = getattr(GameMode, dict_["mode"])
+        dict_["mode"] = getattr(GameMode, dict_.get("mode", "REGULAR"))
         return cls(**dict_)
 
 
