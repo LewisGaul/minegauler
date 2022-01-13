@@ -84,16 +84,20 @@ class Test:
     def test_create(self):
         process_events()
 
-    def test_change_style(self):
+    def test_change_theme(self):
         process_events()
         self.right_press((0, 0))
         self.right_release()
         self.left_press((2, 2))
         self.left_release()
         process_events()
-        self.gui._change_style(CellImageType.BUTTONS, "Halloween")
-        self.gui._change_style(CellImageType.MARKERS, "Halloween")
-        self.gui._change_style(CellImageType.NUMBERS, "Halloween")
+        self.gui._change_styles(
+            {
+                CellImageType.BUTTONS: "Dark",
+                CellImageType.MARKERS: "Halloween",
+                CellImageType.NUMBERS: "Dark",
+            },
+        )
         process_events()
 
     # --------------------------------------------------------------------------
