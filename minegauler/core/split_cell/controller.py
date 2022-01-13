@@ -67,6 +67,8 @@ class GameController(_ControllerMixin, GameControllerBase):
         if not coord.is_split:
             return
         super().remove_cell_flags(coord)
+        self.game.set_cell_flags(coord, 0)
+        self._send_updates({coord: self.board[coord]})
 
     def chord_on_cell(self, coord: Coord) -> None:
         """See AbstractController."""
