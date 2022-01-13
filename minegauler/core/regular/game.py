@@ -4,10 +4,10 @@ __all__ = ("Game", "difficulty_from_values", "difficulty_to_values")
 
 import logging
 import time
-from typing import Dict, Mapping, Tuple
+from typing import Tuple
 
 from ...shared.types import CellContents, Difficulty, GameMode, GameState
-from ..game import GameBase, GameNotStartedError, _check_coord, _ignore_if_not
+from ..game import GameBase, GameNotStartedError
 from .board import Board
 from .minefield import Minefield
 from .types import Coord

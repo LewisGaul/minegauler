@@ -109,7 +109,22 @@ class Game(GameBase):
             else:
                 logger.debug("Regular cell revealed")
                 cell_num = self._calc_nbr_mines(coord)
-                self._set_cell(coord, CellContents.Num(cell_num))
+                if cell_num > 0:  # regular num revealed
+                    self._set_cell(coord, CellContents.Num(cell_num))
+                else:  # opening hit
+                    checked = set()
+                    blank_nbrs = {coord}
+                    all_nbrs = {coord}
+                    while blank_nbrs - checked:
+                        c = (blank_nbrs - checked).pop()
+                        cur_nbrs = set(self.board.get_nbrs(c))
+                        all_nbrs |= cur_nbrs
+                        blank_nbrs |= {
+                            c for c in cur_nbrs if self._calc_nbr_mines(c) == 0
+                        }
+                        checked.add(c)
+                    for c in all_nbrs:
+                        self._set_cell(c, CellContents.Num(self._calc_nbr_mines(c)))
             return
 
         if coord in self.mf.mine_coords:
