@@ -79,12 +79,14 @@ class Board(BoardBase):
         return sorted(nbrs)
 
     def get_coord_at(self, x: int, y: int) -> Coord:
-        if Coord(x, y, True) in self._split_coords:
-            return Coord(x, y, True)
+        split = Coord(x, y, True)
+        unsplit = Coord(x // 2 * 2, y // 2 * 2, False)
+        if split in self._split_coords:
+            return split
+        elif unsplit in self._unsplit_coords:
+            return unsplit
         else:
-            coord = Coord(x // 2 * 2, y // 2 * 2, False)
-            assert coord in self._unsplit_coords
-            return coord
+            raise ValueError(f"Position out of bounds: ({x}, {y})")
 
     def split_coord(self, coord: Coord) -> None:
         self._unsplit_coords.pop(coord)
