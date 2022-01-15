@@ -123,6 +123,26 @@ class AbstractListener(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def ui_mode_changed(self, mode: UIMode) -> None:
         """
+        Called to indicate the UI mode has changed.
+
+        :param mode:
+            The mode to change to.
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
+    def game_mode_about_to_change(self, mode: GameMode) -> None:
+        """
+        Called to indicate the game mode is about to change.
+
+        :param mode:
+            The mode to change to.
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
+    def game_mode_changed(self, mode: GameMode) -> None:
+        """
         Called to indicate the game mode has changed.
 
         :param mode:
@@ -210,7 +230,7 @@ class _Notifier(AbstractListener):
                     getattr(listener, func)(*args, **kwargs)
                 except Exception as e:
                     self._logger.warning(
-                        f"Error ocurred calling {func}() on {listener}"
+                        f"Error occurred calling {func}() on {listener}"
                     )
                     listener.handle_exception(func, e)
 
@@ -275,7 +295,25 @@ class _Notifier(AbstractListener):
         :param mode:
             The mode to change to.
         """
-        self._logger.debug(f"Calling ui_mode_changed() with {mode}")
+        self._logger.debug(f"Calling ui_mode_changed() with %r", mode.name)
+
+    def game_mode_about_to_change(self, mode: GameMode) -> None:
+        """
+        Called to indicate the game mode is about to change.
+
+        :param mode:
+            The mode to change to.
+        """
+        self._logger.debug(f"Calling game_mode_about_to_change() with %r", mode.name)
+
+    def game_mode_changed(self, mode: GameMode) -> None:
+        """
+        Called to indicate the game mode has changed.
+
+        :param mode:
+            The mode to change to.
+        """
+        self._logger.debug(f"Calling game_mode_changed() with %r", mode.name)
 
     def handle_exception(self, method: str, exc: Exception) -> None:
         """

@@ -260,7 +260,7 @@ class MinefieldWidget(QGraphicsView):
         Left button was double clicked. Call callback to remove any flags that
         were on the cell.
         """
-        if type(self._board[coord]) is CellContents.Flag:
+        if self._board[coord].is_mine_type():
             self._ctrlr.remove_cell_flags(coord)
         else:
             self._was_double_left_click = False

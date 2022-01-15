@@ -7,6 +7,7 @@ The core game engine.
 
 __all__ = ("UberController",)
 
+import json
 import logging
 import sys
 from typing import Mapping, Type
@@ -76,14 +77,15 @@ class UberController(api.AbstractController):
                 "Ignore switch game mode request because mode is already %s", mode
             )
             return
+        self._notif.game_mode_about_to_change(mode)
         self._opts.mode = mode
         difficulty = self._active_ctrlr.difficulty
         self._active_ctrlr = self._get_ctrlr_cls(mode, self._ui_mode)(
             self._opts, notif=self._notif
         )
-        self._notif.reset()
         if difficulty is not Difficulty.CUSTOM:
             self.set_difficulty(difficulty)
+        self._notif.game_mode_changed(mode)
 
     def switch_ui_mode(self, ui_mode: UIMode) -> None:
         """Switch the UI mode."""
@@ -107,15 +109,23 @@ class UberController(api.AbstractController):
         self._notif.reset()
 
     def load_minefield(self, file: PathLike) -> None:
-        """
-        Load a minefield from file.
+        """Load a minefield from file."""
+        super().load_minefield(file)
 
-        :param file:
-            The location of the file to load from.
-        """
         if self._ui_mode is UIMode.CREATE:
             self.switch_ui_mode(UIMode.GAME)
             self._notif.ui_mode_changed(UIMode.GAME)
+
+        with open(file) as f:
+            data = json.load(f)
+
+        try:
+            game_mode = GameMode(data.pop("type").upper())
+        except (KeyError, ValueError):
+            game_mode = GameMode.REGULAR
+        if game_mode is not self.mode:
+            self.switch_game_mode(game_mode)
+
         self._active_ctrlr.load_minefield(file)
 
     # ----------------------------------

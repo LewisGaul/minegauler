@@ -308,7 +308,19 @@ class MinegaulerGUI(
         :param mode:
             The mode to change to.
         """
+        super().ui_mode_changed(mode)
         self._create_menu_action.setChecked(mode is UIMode.CREATE)
+
+    def game_mode_about_to_change(self, mode: GameMode) -> None:
+        """Called to indicate the game mode is about to change."""
+        super().game_mode_about_to_change(mode)
+        self._mf_widget.switch_mode(mode)
+
+    def game_mode_changed(self, mode: GameMode) -> None:
+        """Called to indicate the game mode has just changed."""
+        super().game_mode_changed(mode)
+        self._state.game_mode = mode
+        # TODO: Update the game mode radiobutton
 
     def handle_exception(self, method: str, exc: Exception) -> None:
         logger.error(
@@ -613,7 +625,6 @@ class MinegaulerGUI(
             self._mf_widget.update_style(grp, styles[grp])
 
     def _change_game_mode(self, mode: GameMode) -> None:
-        self._mf_widget.switch_mode(mode)
         self._ctrlr.switch_game_mode(mode)
 
     def _set_name(self, name: str) -> None:

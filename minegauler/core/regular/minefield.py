@@ -7,16 +7,18 @@ from typing import Any, Iterable, List, Mapping, Optional, TypeVar
 
 from ...shared import utils
 from ...shared.types import CellContents
+from ...shared.types import Coord as CoordBase
 from ..board import BoardBase
 from ..minefield import MinefieldBase
 from .board import Board
 from .types import Coord
 
 
+C = TypeVar("C", bound=CoordBase)
 B = TypeVar("B", bound=BoardBase)
 
 
-class RegularMinefieldBase(MinefieldBase[Coord, B], metaclass=abc.ABCMeta):
+class RegularMinefieldBase(MinefieldBase[C, B], metaclass=abc.ABCMeta):
     """The base for a minefield with regular coords."""
 
     def __init__(self, *args, **kwargs):
@@ -95,46 +97,8 @@ class RegularMinefieldBase(MinefieldBase[Coord, B], metaclass=abc.ABCMeta):
         """
         return cls.from_grid(utils.Grid.from_2d_array(array), per_cell=per_cell)
 
-    @classmethod
-    def from_json(cls, obj: Mapping[str, Any]) -> "RegularMinefieldBase":
-        """
-        Create a minefield instance from a JSON encoding.
 
-        :param obj:
-            The dictionary obtained from decoding JSON. Must contain the
-            following fields: 'x_size', 'y_size', 'mine_coords'.
-        :raise ValueError:
-            If the dictionary is missing required fields.
-        """
-        try:
-            return cls.from_coords(
-                (
-                    Coord(x, y)
-                    for x in range(
-                        obj["x_size"],
-                    )
-                    for y in range(
-                        obj["y_size"],
-                    )
-                ),
-                mine_coords=[Coord(*c) for c in obj["mine_coords"]],
-                per_cell=obj.get("per_cell", 1),
-            )
-        except KeyError as e:
-            raise ValueError(
-                "Missing key in dictionary when trying to create minefield"
-            ) from e
-
-    def to_json(self) -> Mapping[str, Any]:
-        return dict(
-            x_size=self.x_size,
-            y_size=self.y_size,
-            mine_coords=self.mine_coords,
-            per_cell=self.per_cell,
-        )
-
-
-class Minefield(RegularMinefieldBase[Board]):
+class Minefield(RegularMinefieldBase[Coord, Board]):
     """A regular minesweeper minefield."""
 
     def __init__(self, *args, **kwargs):
@@ -148,6 +112,41 @@ class Minefield(RegularMinefieldBase[Board]):
         if self._openings is None:
             self._openings = self._find_openings()
         return self._openings
+
+    @classmethod
+    def from_json(cls, obj: Mapping[str, Any]) -> "Minefield":
+        """
+        Create a minefield instance from a JSON encoding.
+
+        :param obj:
+            The dictionary obtained from decoding JSON. Must contain the
+            following fields: 'x_size', 'y_size', 'mine_coords'.
+        :raise ValueError:
+            If the dictionary is missing required fields.
+        """
+        try:
+            return cls.from_coords(
+                (
+                    Coord(x, y)
+                    for x in range(obj["x_size"])
+                    for y in range(obj["y_size"])
+                ),
+                mine_coords=[Coord(*c) for c in obj["mine_coords"]],
+                per_cell=obj.get("per_cell", 1),
+            )
+        except KeyError as e:
+            raise ValueError(
+                "Missing key in dictionary when trying to create minefield"
+            ) from e
+
+    def to_json(self) -> Mapping[str, Any]:
+        return dict(
+            type="regular",
+            x_size=self.x_size,
+            y_size=self.y_size,
+            mine_coords=self.mine_coords,
+            per_cell=self.per_cell,
+        )
 
     def _get_nbrs(self, coord: Coord, *, include_origin=False) -> Iterable[Coord]:
         """
