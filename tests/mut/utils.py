@@ -38,15 +38,14 @@ def make_true_mock(cls: type) -> type:
             self._mock = mock.MagicMock()
             # Qt insists that the superclass's __init__() method is called...
             super().__init__(*args, **kwargs)
+            self.__setattr__ = self._mock.__setattr__
+
+        def __repr__(self):
+            return self._mock.__repr__()
 
         def __getattribute__(self, item):
             if item in ["_mock", "__init__"]:
                 return super().__getattribute__(item)
             return getattr(self._mock, item)
-
-        def __setattribute__(self, key, value):
-            if key == "_mock":
-                return super().__setattribute__(key, value)
-            setattr(self._mock, key, value)
 
     return _Tmp

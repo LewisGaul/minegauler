@@ -79,7 +79,7 @@ class MinefieldWidget(QGraphicsView):
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         self.setMaximumSize(self.sizeHint())
 
-        self._impl: MinefieldWidgetImplBase = _IMPLS[self._state.game_mode](
+        self._impl: MinefieldWidgetImplBase = _IMPLS[state.game_mode](
             self._scene, ctrlr, state
         )
 
