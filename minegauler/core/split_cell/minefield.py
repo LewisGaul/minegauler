@@ -89,7 +89,7 @@ class Minefield(RegularMinefieldBase[Coord, Board]):
             if coord not in board:
                 big_coord = board.get_coord_at(coord.x, coord.y)
                 board.split_coord(big_coord)
-            board[coord] = CellContents.Flag(self.mine_coords.count(coord))
+            board[coord] = CellContents.Flag(self[coord])
         # Now calculate numbers for all remaining cells.
         for coord in board.all_coords:
             if board[coord] is not CellContents.Unclicked:

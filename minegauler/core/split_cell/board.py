@@ -21,12 +21,11 @@ class Board(BoardBase):
         """
         self.x_size = x_size
         self.y_size = y_size
-        self._unsplit_coords = {
+        self._all_coords = {
             Coord(2 * x, 2 * y, False): CellContents.Unclicked
             for x in range(self.x_size // 2)
             for y in range(self.y_size // 2)
         }
-        self._split_coords = {}
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Board):
@@ -36,23 +35,17 @@ class Board(BoardBase):
         return self.all_coords == other.all_coords
 
     def __getitem__(self, coord: Coord) -> CellContents:
-        if coord.is_split:
-            return self._split_coords[coord]
-        else:
-            return self._unsplit_coords[coord]
+        return self._all_coords[coord]
 
     def __setitem__(self, coord: Coord, obj: CellContents) -> None:
-        if coord.is_split:
-            self._split_coords[coord] = obj
-        else:
-            self._unsplit_coords[coord] = obj
+        self._all_coords[coord] = obj
 
     def __contains__(self, coord: Coord):
-        return coord in self._split_coords or coord in self._unsplit_coords
+        return coord in self._all_coords
 
     @property
     def all_coords(self) -> List[Coord]:
-        return sorted({*self._unsplit_coords, *self._split_coords})
+        return sorted(self._all_coords)
 
     @property
     def all_underlying_coords(self) -> List[Coord]:
@@ -84,13 +77,13 @@ class Board(BoardBase):
     def get_coord_at(self, x: int, y: int) -> Coord:
         split = Coord(x, y, True)
         unsplit = Coord(x // 2 * 2, y // 2 * 2, False)
-        if split in self._split_coords:
+        if split in self._all_coords:
             return split
-        elif unsplit in self._unsplit_coords:
+        elif unsplit in self._all_coords:
             return unsplit
         else:
             raise ValueError(f"Position out of bounds: ({x}, {y})")
 
     def split_coord(self, coord: Coord) -> None:
-        self._unsplit_coords.pop(coord)
-        self._split_coords.update({c: CellContents.Unclicked for c in coord.split()})
+        self._all_coords.pop(coord)
+        self._all_coords.update({c: CellContents.Unclicked for c in coord.split()})
