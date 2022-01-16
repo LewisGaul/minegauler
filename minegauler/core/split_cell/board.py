@@ -53,6 +53,11 @@ class Board(BoardBase):
             Coord(x, y, True) for x in range(self.x_size) for y in range(self.y_size)
         ]
 
+    def copy(self) -> "Board":
+        new_board = type(self)(self.x_size, self.y_size)
+        new_board._all_coords = self._all_coords.copy()
+        return new_board
+
     def get_nbrs(
         self, coord: Coord, *, include_origin: bool = False
     ) -> Iterable[Coord]:

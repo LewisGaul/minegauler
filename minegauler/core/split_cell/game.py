@@ -38,6 +38,8 @@ class Game(GameBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Used for tracking numbers that should be revealed for performance.
+        self._revealed_board = Board(self.x_size, self.y_size)
 
     # ---------------------
     # Abstract methods
@@ -119,6 +121,10 @@ class Game(GameBase):
 
     def _select_cell_action(self, coord: Coord) -> None:
         """Implementation of the action of selecting/clicking a cell."""
+        if self._revealed_board[coord] is CellContents.Unclicked:
+            # TODO: This is a bit of a hacky place to do this...
+            self._revealed_board = self._calc_revealed_board()
+
         if not coord.is_split:
             small_cells = coord.split()
             if any(c in self.mf.mine_coords for c in small_cells):
@@ -128,24 +134,35 @@ class Game(GameBase):
                         self._set_cell(c, CellContents.HitMine(self.mf[c]))
                 self._finalise_lost_game()
             else:
-                logger.debug("Regular cell revealed")
-                cell_num = self._calc_nbr_mines(coord)
+                assert type(self._revealed_board[coord]) is CellContents.Num
+                cell_num = self._revealed_board[coord].num
                 if cell_num > 0:  # regular num revealed
-                    self._set_cell(coord, CellContents.Num(cell_num))
+                    logger.debug("Regular cell revealed")
+                    self._set_cell(coord, self._revealed_board[coord])
                 else:  # opening hit
+                    logger.debug("Opening found")
+                    # Use pre-calculated 'revealed board' for performance.
                     checked = set()
                     blank_nbrs = {coord}
                     all_nbrs = {coord}
                     while blank_nbrs - checked:
                         c = (blank_nbrs - checked).pop()
-                        cur_nbrs = set(self.board.get_nbrs(c))
+                        logger.debug("Checking neighbours of %s", c)
+                        cur_nbrs = set(
+                            c
+                            for c in self.board.get_nbrs(c)
+                            if self.board[c] is CellContents.Unclicked
+                        )
                         all_nbrs |= cur_nbrs
                         blank_nbrs |= {
-                            c for c in cur_nbrs if self._calc_nbr_mines(c) == 0
+                            c
+                            for c in cur_nbrs
+                            if self._revealed_board[c] == CellContents.Num(0)
                         }
                         checked.add(c)
+                    logger.debug("Opening cells deduced")
                     for c in all_nbrs:
-                        self._set_cell(c, CellContents.Num(self._calc_nbr_mines(c)))
+                        self._set_cell(c, self._revealed_board[c])
             return
 
         if coord in self.mf.mine_coords:
@@ -154,11 +171,26 @@ class Game(GameBase):
             self._finalise_lost_game()
         else:
             logger.debug("Regular cell revealed")
-            self._set_cell(coord, CellContents.Num(self._calc_nbr_mines(coord)))
+            self._set_cell(coord, self._revealed_board[coord])
 
     # ---------------------
     # Other methods
     # ---------------------
+    def _calc_revealed_board(self) -> Board:
+        board = Board(self.x_size, self.y_size)
+        for coord in board.all_coords:
+            mines = sum(self.mf[small] for small in coord.get_small_cell_coords())
+            if mines > 0:
+                board[coord] = CellContents.Flag(mines)
+            else:
+                num = sum(
+                    self.mf[small]
+                    for nbr in board.get_nbrs(coord)
+                    for small in nbr.get_small_cell_coords()
+                )
+                board[coord] = CellContents.Num(num)
+        return board
+
     def _calc_nbr_mines(self, coord: Coord) -> int:
         return sum(
             self.mf[c]
@@ -172,9 +204,10 @@ class Game(GameBase):
         situation.
         """
         for c in coords:
-            if type(self.board[c]) is not CellContents.Num:
-                continue
-            self._set_cell(c, CellContents.Num(self._calc_nbr_mines(c)))
+            num = CellContents.Num(self._calc_nbr_mines(c))
+            if type(self.board[c]) is CellContents.Num:
+                self._set_cell(c, num)
+            self._revealed_board[c] = num
 
     def _finalise_lost_game(self) -> None:
         logger.info("Game lost")
@@ -208,6 +241,7 @@ class Game(GameBase):
             self.state = GameState.ACTIVE
             self.start_time = time.time()
             just_started = True
+            self._revealed_board = self._calc_revealed_board()
 
         if not any(c in self.mf.mine_coords for c in small_cells):
             logger.debug("Incorrect cell split %s", coord)
@@ -219,8 +253,9 @@ class Game(GameBase):
             logger.debug("Splitting cell %s", coord)
             nbrs = self.board.get_nbrs(coord)
             self.board.split_coord(coord)
+            self._revealed_board.split_coord(coord)
             self._cell_updates.update({c: CellContents.Unclicked for c in small_cells})
-            self._update_board_numbers(nbrs)
+            self._update_board_numbers((*nbrs, *small_cells))
         try:
             return self._cell_updates
         finally:

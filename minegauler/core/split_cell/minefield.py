@@ -119,6 +119,6 @@ class Minefield(RegularMinefieldBase[Coord, Board]):
                 nbrs = set(board.get_nbrs(coord))
                 check |= {c for c in nbrs - opening if board[c] is CellContents.Num(0)}
                 opening |= nbrs
-            openings.append(opening)
+            openings.append(sorted(opening))
             blanks_to_check -= opening
         return openings
