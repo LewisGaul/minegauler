@@ -4,7 +4,7 @@ __all__ = ("Game",)
 
 import logging
 import time
-from typing import Mapping
+from typing import Iterable, Mapping
 
 from ...shared.types import CellContents, Difficulty, GameMode, GameState
 from ..game import GameBase, GameNotStartedError, _check_coord, _ignore_if_not
@@ -166,15 +166,15 @@ class Game(GameBase):
             for c in nbr.get_small_cell_coords()
         )
 
-    def _update_board_numbers(self) -> None:
+    def _update_board_numbers(self, coords: Iterable[Coord]) -> None:
         """
         Calculate the numbers contained in the board given the split cell
         situation.
         """
-        for coord in self.board.all_coords:
-            if type(self.board[coord]) is not CellContents.Num:
+        for c in coords:
+            if type(self.board[c]) is not CellContents.Num:
                 continue
-            self._set_cell(coord, CellContents.Num(self._calc_nbr_mines(coord)))
+            self._set_cell(c, CellContents.Num(self._calc_nbr_mines(c)))
 
     def _finalise_lost_game(self) -> None:
         logger.info("Game lost")
@@ -217,9 +217,10 @@ class Game(GameBase):
                 self.end_time = self.start_time
         else:
             logger.debug("Splitting cell %s", coord)
+            nbrs = self.board.get_nbrs(coord)
             self.board.split_coord(coord)
             self._cell_updates.update({c: CellContents.Unclicked for c in small_cells})
-            self._update_board_numbers()
+            self._update_board_numbers(nbrs)
         try:
             return self._cell_updates
         finally:
