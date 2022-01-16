@@ -106,7 +106,7 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
             self._opts.x_size = x_size
             self._opts.y_size = y_size
             self._opts.mines = mines
-            self._send_resize_update()
+            self._notif.resize_minefield(self._opts.x_size, self._opts.y_size)
         self.new_game()
 
     @staticmethod
@@ -125,11 +125,6 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
             logger.warning("Overwriting file at %s", file)
         with open(file, "w") as f:
             json.dump(mf.to_json(), f)
-
-    def _send_resize_update(self) -> None:
-        """Send an update to change the dimensions and number of mines."""
-        self._notif.resize_minefield(self._opts.x_size, self._opts.y_size)
-        self._notif.set_mines(self._opts.mines)
 
 
 class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
@@ -303,11 +298,8 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
             mf.y_size,
             mf.mines,
         )
-        self._opts.x_size = mf.x_size
-        self._opts.y_size = mf.y_size
-        self._opts.mines = mf.mines
+        self.resize_board(mf.x_size, mf.y_size, mf.mines)
         self.game = self.game_cls.from_minefield(mf, lives=self._opts.lives)
-        self._send_resize_update()
 
     # --------------------------------------------------------------------------
     # Helper methods
@@ -338,11 +330,6 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
     def _send_reset_update(self) -> None:
         """Send an update to reset the board."""
         self._notif.reset()
-        self._send_updates()
-
-    def _send_resize_update(self) -> None:
-        """Send an update to change the dimensions and number of mines."""
-        super()._send_resize_update()
         self._send_updates()
 
 
