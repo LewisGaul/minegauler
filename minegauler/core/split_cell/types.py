@@ -37,6 +37,12 @@ class Coord(CoordBase):
                 Coord(self.x + 1, self.y + 1, True),
             )
 
+    def get_big_cell_coord(self) -> "Coord":
+        if self.is_split:
+            return Coord(self.x // 2 * 2, self.y // 2 * 2, False)
+        else:
+            return self
+
     def split(self) -> Iterable["Coord"]:
         if self.is_split:
             raise TypeError(f"Not able to split coord {(self.x, self.y)}")

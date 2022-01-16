@@ -105,14 +105,6 @@ class Minefield(RegularMinefieldBase[Coord, Board]):
         super().__init__(*args, **kwargs)
         self._openings: Optional[List[List[Coord]]] = None
 
-    @property
-    def openings(self) -> List[List[Coord]]:
-        if not self.populated:
-            raise AttributeError("Uninitialised minefield has no openings")
-        if self._openings is None:
-            self._openings = self._find_openings()
-        return self._openings
-
     @classmethod
     def from_json(cls, obj: Mapping[str, Any]) -> "Minefield":
         """

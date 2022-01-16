@@ -192,7 +192,7 @@ class GameBase(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _select_cell_action(self) -> None:
+    def _select_cell_action(self, coord: Coord) -> None:
         raise NotImplementedError
 
     @classmethod

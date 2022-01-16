@@ -49,30 +49,32 @@ class Game(GameBase):
                 raise GameNotStartedError("Minefield not yet created") from None
         elif self.state is GameState.WON:
             return 0
-        else:
-            partial_mf = Minefield.from_coords(
-                self.mf.all_coords,
-                mine_coords=self.mf.mine_coords,
-                per_cell=self.per_cell,
-            )
-            # Replace any openings already found with normal clicks (ones).
-            for c in self.board.all_coords:
-                if type(self.board[c]) is CellContents.Num:
-                    partial_mf.completed_board[c] = CellContents.Num(1)
-            # Find the openings which remain.
-            rem_opening_coords = {c for opening in partial_mf.openings for c in opening}
-            # Count the number of essential clicks that have already been
-            # done by counting clicked cells minus the ones at the edge of
-            # an undiscovered opening.
-            completed_3bv = len(
-                {
-                    c
-                    for c in self.board.all_coords
-                    if type(self.board[c]) is CellContents.Num
-                }
-                - rem_opening_coords
-            )
-            return partial_mf._calc_3bv() - completed_3bv
+
+        # Partially completed board - do the real work!
+
+        partial_mf = Minefield.from_coords(
+            self.mf.all_coords,
+            mine_coords=self.mf.mine_coords,
+            per_cell=self.per_cell,
+        )
+        # Replace any openings already found with normal clicks (ones).
+        for c in self.board.all_coords:
+            if type(self.board[c]) is CellContents.Num:
+                partial_mf.completed_board[c] = CellContents.Num(1)
+        # Find the openings which remain.
+        rem_opening_coords = {c for opening in partial_mf.openings for c in opening}
+        # Count the number of essential clicks that have already been
+        # done by counting clicked cells minus the ones at the edge of
+        # an undiscovered opening.
+        completed_3bv = len(
+            {
+                c
+                for c in self.board.all_coords
+                if type(self.board[c]) is CellContents.Num
+            }
+            - rem_opening_coords
+        )
+        return partial_mf._calc_3bv() - completed_3bv
 
     def _populate_minefield(self, coord: Coord) -> None:
         """Create the minefield in response to a cell being selected."""

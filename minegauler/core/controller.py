@@ -445,6 +445,8 @@ class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
             if type(self.board[c]) is CellContents.Mine:
                 coords.extend([c] * self.board[c].num)
         mf = self.minefield_cls.from_coords(
-            self.board.all_coords, mine_coords=coords, per_cell=self._opts.per_cell
+            self.board.all_underlying_coords,
+            mine_coords=coords,
+            per_cell=self._opts.per_cell,
         )
         self._save_minefield(mf, file)

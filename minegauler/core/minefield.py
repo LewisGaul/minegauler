@@ -56,6 +56,7 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
         self.mine_coords: List[C] = []
         self._bbbv: Optional[int] = None
         self._completed_board: Optional[B] = None
+        self._openings: Optional[List[List[C]]] = None
         self.populated: bool = False
 
         # Perform some checks on the args.
@@ -133,6 +134,14 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
             self._completed_board = self._calc_completed_board()
         return self._completed_board
 
+    @property
+    def openings(self) -> List[List[C]]:
+        if not self.populated:
+            raise AttributeError("Uninitialised minefield has no openings")
+        if self._openings is None:
+            self._openings = self._find_openings()
+        return self._openings
+
     def populate(self, safe_coords: Optional[Iterable[C]] = None) -> None:
         """
         Randomly place mines in the available coordinates.
@@ -179,6 +188,11 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
         Create the completed board with the flags and numbers that should be
         seen upon game completion.
         """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _find_openings(self) -> List[List[C]]:
+        """Find the openings in the completed board."""
         raise NotImplementedError
 
     @abc.abstractmethod
