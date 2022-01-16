@@ -23,11 +23,15 @@ class BoardBase(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def __getitem__(self, key: Coord) -> CellContents:
+    def __getitem__(self, coord: Coord) -> CellContents:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def __setitem__(self, key: Coord, obj: CellContents) -> None:
+    def __setitem__(self, coord: Coord, contents: CellContents) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __contains__(self, coord: Coord) -> bool:
         raise NotImplementedError
 
     @property

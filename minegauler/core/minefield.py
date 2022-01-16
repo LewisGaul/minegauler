@@ -171,6 +171,7 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def _calc_3bv(self) -> int:
         """Calculate the 3bv of the board."""
+        raise NotImplementedError
 
     @abc.abstractmethod
     def _calc_completed_board(self) -> B:
@@ -178,6 +179,7 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
         Create the completed board with the flags and numbers that should be
         seen upon game completion.
         """
+        raise NotImplementedError
 
     @abc.abstractmethod
     def to_json(self) -> Mapping[str, Any]:
@@ -185,5 +187,5 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
 
     @classmethod
     @abc.abstractmethod
-    def from_json(self, obj: Mapping[str, Any]) -> "MinefieldBase":
+    def from_json(cls, obj: Mapping[str, Any]) -> "MinefieldBase":
         raise NotImplementedError

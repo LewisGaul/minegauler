@@ -149,10 +149,7 @@ class Game(GameBase):
                 self._set_cell(c, CellContents.WrongFlag(self.board[c].num))
 
     @_check_coord
-    @_ignore_if_not(
-        game_state=GameState.ACTIVE,
-        cell_state=CellContents.Unclicked,
-    )
+    @_ignore_if_not(game_state=GameState.ACTIVE, cell_state=CellContents.Unclicked)
     def split_cell(self, coord: Coord) -> Mapping[Coord, CellContents]:
         small_cells = coord.split()
         if not any(c in self.mf.mine_coords for c in small_cells):

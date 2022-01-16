@@ -149,9 +149,7 @@ class Minefield(RegularMinefieldBase[Coord, Board]):
         )
 
     def _get_nbrs(self, coord: Coord, *, include_origin=False) -> Iterable[Coord]:
-        """
-        Get coordinates of neighbouring cells.
-        """
+        """Get coordinates of neighbouring cells."""
         x, y = coord
         nbrs = []
         for i in range(max(0, x - 1), min(self.x_size, x + 2)):

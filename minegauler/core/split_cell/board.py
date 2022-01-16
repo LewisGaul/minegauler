@@ -47,6 +47,9 @@ class Board(BoardBase):
         else:
             self._unsplit_coords[coord] = obj
 
+    def __contains__(self, coord: Coord):
+        return coord in self._split_coords or coord in self._unsplit_coords
+
     @property
     def all_coords(self) -> List[Coord]:
         return sorted({*self._unsplit_coords, *self._split_coords})

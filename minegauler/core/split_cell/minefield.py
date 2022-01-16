@@ -4,6 +4,7 @@ __all__ = ("Minefield",)
 
 from typing import Any, Mapping
 
+from ...shared.types import CellContents
 from ..regular.minefield import RegularMinefieldBase
 from .board import Board
 from .types import Coord
@@ -61,4 +62,21 @@ class Minefield(RegularMinefieldBase[Coord, Board]):
         Create the completed board with the flags and numbers that should be
         seen upon game completion.
         """
-        return Board(self.x_size, self.y_size)  # TODO
+        board = Board(self.x_size, self.y_size)
+        # First mark all mines as flags, splitting the containing big cells.
+        for coord in set(self.mine_coords):
+            if coord not in board:
+                big_coord = board.get_coord_at(coord.x, coord.y)
+                board.split_coord(big_coord)
+            board[coord] = CellContents.Flag(self.mine_coords.count(coord))
+        # Now calculate numbers for all remaining cells.
+        for coord in board.all_coords:
+            if board[coord] is not CellContents.Unclicked:
+                continue
+            num = sum(
+                self[c]
+                for c in board.get_nbrs(coord)
+                if type(board[c]) is CellContents.Flag
+            )
+            board[coord] = CellContents.Num(num)
+        return board
