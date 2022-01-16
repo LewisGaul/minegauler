@@ -32,7 +32,7 @@ import requests
 
 from .. import paths
 from . import utils
-from .types import Difficulty, PathLike
+from .types import Difficulty, GameMode, PathLike
 from .utils import StructConstructorMixin
 
 
@@ -97,6 +97,7 @@ class AbstractHighscoresDB(abc.ABC):
         difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
         drag_select: Optional[bool] = None,
+        game_mode: GameMode = GameMode.REGULAR,
         name: Optional[str] = None,
     ) -> Iterable[HighscoreStruct]:
         """Fetch highscores from the database using the given filters."""
@@ -238,11 +239,18 @@ class LocalHighscoresDB(_SQLMixin, AbstractHighscoresDB):
         difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
         drag_select: Optional[bool] = None,
+        game_mode: GameMode = GameMode.REGULAR,
         name: Optional[str] = None,
     ) -> Iterable[HighscoreStruct]:
         super().get_highscores(
-            difficulty=difficulty, per_cell=per_cell, drag_select=drag_select, name=name
+            difficulty=difficulty,
+            per_cell=per_cell,
+            drag_select=drag_select,
+            game_mode=game_mode,
+            name=name,
         )
+        if game_mode is not GameMode.REGULAR:
+            return []  # TODO: support split cells mode
         self._conn.row_factory = self._highscore_row_factory
         cursor = self.execute(
             self._get_select_highscores_sql(
@@ -341,11 +349,18 @@ class RemoteHighscoresDB(_SQLMixin, AbstractHighscoresDB):
         difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
         drag_select: Optional[bool] = None,
+        game_mode: GameMode = GameMode.REGULAR,
         name: Optional[str] = None,
     ) -> Iterable[HighscoreStruct]:
         super().get_highscores(
-            difficulty=difficulty, per_cell=per_cell, drag_select=drag_select, name=name
+            difficulty=difficulty,
+            per_cell=per_cell,
+            drag_select=drag_select,
+            game_mode=game_mode,
+            name=name,
         )
+        if game_mode is not GameMode.REGULAR:
+            return []  # TODO: support split cells mode
         cursor = self.execute(
             self._get_select_highscores_sql(
                 difficulty=difficulty,
@@ -397,6 +412,7 @@ def get_highscores(
     difficulty: Optional[Difficulty] = None,
     per_cell: Optional[int] = None,
     drag_select: Optional[bool] = None,
+    game_mode: GameMode = GameMode.REGULAR,
     name: Optional[str] = None,
 ) -> Iterable[HighscoreStruct]:
     """
@@ -409,12 +425,16 @@ def get_highscores(
     :param difficulty:
         Optionally specify difficulty to filter by. Ignored if settings given.
     :param per_cell:
-        Optionally specify per_cell to filter by. Ignored if settings given.
+        Optionally specify per-cell to filter by. Ignored if settings given.
     :param drag_select:
-        Optionally specify drag_select to filter by. Ignored if settings given.
+        Optionally specify drag-select to filter by. Ignored if settings given.
+    :param game_mode:
+        Optionally specify game mode to filter by. Defaults to 'regular'.
     :param name:
         Optionally specify a name to filter by.
     """
+    if game_mode is not GameMode.REGULAR:
+        return []  # TODO: support split cell mode
     if settings is not None:
         difficulty = settings.difficulty
         per_cell = settings.per_cell

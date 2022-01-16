@@ -869,7 +869,18 @@ class MinegaulerGUI(
             Optionally specify the key to sort the highscores by. Defaults to
             the previous sort key.
         """
-        if self._state.difficulty is Difficulty.CUSTOM:
+        if (
+            self._state.difficulty is Difficulty.CUSTOM
+            or self._state.game_mode is not GameMode.REGULAR
+        ):
+            _msg_popup(
+                self,
+                QMessageBox.Warning,
+                "Highscores unavailable",
+                "No highscores available for the active settings.\n"
+                "Highscores are only stored for the standard board difficulties, "
+                "and currently only for the 'regular' game mode.",
+            )
             return
         if self._open_subwindows.get("highscores"):
             self._open_subwindows.get("highscores").close()
