@@ -106,7 +106,8 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
             self._opts.x_size = x_size
             self._opts.y_size = y_size
             self._opts.mines = mines
-            self._notif.resize_minefield(self._opts.x_size, self._opts.y_size)
+            self._notif.resize_minefield(x_size, y_size)
+            self._notif.set_mines(mines)
         self.new_game()
 
     @staticmethod
