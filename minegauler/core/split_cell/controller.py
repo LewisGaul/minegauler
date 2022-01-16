@@ -1,16 +1,13 @@
 # October 2021, Lewis Gaul
 
-__all__ = (
-    "CreateController",
-    "GameController",
-)
+__all__ = ("CreateController", "GameController")
 
 import logging
 
 from ...shared.types import CellContents, Difficulty, GameMode
 from ..controller import CreateControllerBase, GameControllerBase
 from .board import Board
-from .game import Game, difficulty_from_values, difficulty_to_values
+from .game import Game
 from .minefield import Minefield
 from .types import Coord
 
@@ -31,7 +28,7 @@ class _ControllerMixin:
         return super().board
 
     def set_difficulty(self, difficulty: Difficulty) -> None:
-        x, y, m = difficulty_to_values(difficulty)
+        x, y, m = Game.difficulty_to_values(difficulty)
         self.resize_board(x, y, m)
 
 
@@ -68,7 +65,9 @@ class CreateController(_ControllerMixin, CreateControllerBase):
 
     @property
     def difficulty(self) -> Difficulty:
-        return difficulty_from_values(self._opts.x_size, self._opts.y_size, self._flags)
+        return Game.difficulty_from_values(
+            self._opts.x_size, self._opts.y_size, self._flags
+        )
 
     def _make_board(self) -> Board:
         return Board(self._opts.x_size, self._opts.y_size)

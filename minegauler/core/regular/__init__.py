@@ -7,15 +7,13 @@ __all__ = (
     "Game",
     "GameController",
     "CreateController",
-    "difficulty_from_values",
-    "difficulty_to_values",
     "mode",
 )
 
 from ...shared.types import GameMode
 from .board import Board
 from .controller import CreateController, GameController
-from .game import Game, difficulty_from_values, difficulty_to_values
+from .game import Game
 from .minefield import Minefield
 from .types import Coord
 

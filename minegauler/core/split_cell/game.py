@@ -1,10 +1,10 @@
 # October 2021, Lewis Gaul
 
-__all__ = ("Game", "difficulty_from_values", "difficulty_to_values")
+__all__ = ("Game",)
 
 import logging
 import time
-from typing import Mapping, Tuple
+from typing import Mapping
 
 from ...shared.types import CellContents, Difficulty, GameMode, GameState
 from ..game import GameBase, _check_coord, _ignore_if_not
@@ -14,33 +14,6 @@ from .types import Coord
 
 
 logger = logging.getLogger(__name__)
-
-
-_diff_pairs = [
-    (Difficulty.BEGINNER, (8, 8, 5)),
-    (Difficulty.INTERMEDIATE, (16, 16, 20)),
-    (Difficulty.EXPERT, (30, 16, 50)),
-    (Difficulty.MASTER, (30, 30, 100)),
-    (Difficulty.LUDICROUS, (50, 50, 400)),
-]
-
-
-# TODO: Share the implementation of these functions, using the diff_pairs mapping.
-
-
-def difficulty_to_values(diff: Difficulty) -> Tuple[int, int, int]:
-    try:
-        return dict(_diff_pairs)[diff]
-    except KeyError:
-        raise ValueError(f"Unknown difficulty: {diff}") from None
-
-
-def difficulty_from_values(x_size: int, y_size: int, mines: int) -> Difficulty:
-    mapping = dict((x[1], x[0]) for x in _diff_pairs)
-    try:
-        return mapping[(x_size, y_size, mines)]
-    except KeyError:
-        return Difficulty.CUSTOM
 
 
 class Game(GameBase):
@@ -53,16 +26,22 @@ class Game(GameBase):
     mf: Minefield
     board: Board
 
+    _diff_pairs = [
+        # fmt: off
+        (Difficulty.BEGINNER,     ( 8,  8,   5)),
+        (Difficulty.INTERMEDIATE, (16, 16,  20)),
+        (Difficulty.EXPERT,       (30, 16,  50)),
+        (Difficulty.MASTER,       (30, 30, 100)),
+        (Difficulty.LUDICROUS,    (50, 50, 400)),
+        # fmt: on
+    ]
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     # ---------------------
     # Abstract methods
     # ---------------------
-    @property
-    def difficulty(self) -> Difficulty:
-        return difficulty_from_values(self.x_size, self.y_size, self.mines)
-
     def _make_board(self) -> Board:
         return Board(self.x_size, self.y_size)
 

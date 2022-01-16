@@ -11,9 +11,9 @@ import functools
 import logging
 import math
 import time
-from typing import Callable, Dict, Iterable, Mapping, Optional, Type, Union
+from typing import Callable, Dict, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
-from ..shared.types import CellContents, Coord, GameMode, GameState
+from ..shared.types import CellContents, Coord, Difficulty, GameMode, GameState
 from .board import BoardBase
 from .minefield import MinefieldBase
 
@@ -144,6 +144,8 @@ class GameBase(metaclass=abc.ABCMeta):
     minefield_cls: Type[MinefieldBase]
     board_cls: Type[BoardBase]
 
+    _diff_pairs: List[Tuple[Difficulty, Tuple[int, int, int]]]
+
     def __init__(
         self,
         *,
@@ -172,20 +174,6 @@ class GameBase(metaclass=abc.ABCMeta):
 
         self._cell_updates: Dict[Coord, CellContents] = dict()
 
-    @classmethod
-    def from_minefield(cls, mf: MinefieldBase, **kwargs) -> "GameBase":
-        self = cls(
-            x_size=mf.x_size,
-            y_size=mf.y_size,
-            mines=mf.mines,
-            per_cell=mf.per_cell,
-            **kwargs,
-        )
-        self.mf = mf
-        if mf.populated:
-            self.minefield_known = True
-        return self
-
     @abc.abstractmethod
     def _make_board(self) -> BoardBase:
         raise NotImplementedError
@@ -203,9 +191,42 @@ class GameBase(metaclass=abc.ABCMeta):
     def _select_cell_action(self) -> None:
         raise NotImplementedError
 
+    @classmethod
+    def from_minefield(cls, mf: MinefieldBase, **kwargs) -> "GameBase":
+        self = cls(
+            x_size=mf.x_size,
+            y_size=mf.y_size,
+            mines=mf.mines,
+            per_cell=mf.per_cell,
+            **kwargs,
+        )
+        self.mf = mf
+        if mf.populated:
+            self.minefield_known = True
+        return self
+
+    @classmethod
+    def difficulty_to_values(cls, diff: Difficulty) -> Tuple[int, int, int]:
+        try:
+            return dict(cls._diff_pairs)[diff]
+        except KeyError:
+            raise ValueError(f"Unknown difficulty: {diff}") from None
+
+    @classmethod
+    def difficulty_from_values(cls, x_size: int, y_size: int, mines: int) -> Difficulty:
+        mapping = dict((x[1], x[0]) for x in cls._diff_pairs)
+        try:
+            return mapping[(x_size, y_size, mines)]
+        except KeyError:
+            return Difficulty.CUSTOM
+
     @property
     def mines(self) -> int:
         return self.mf.mines
+
+    @property
+    def difficulty(self) -> Difficulty:
+        return self.difficulty_from_values(self.x_size, self.y_size, self.mines)
 
     @property
     def per_cell(self) -> int:
