@@ -70,31 +70,17 @@ class Game(GameBase):
         # Count the number of essential clicks that have already been
         # done by counting clicked cells minus the ones at the edge of
         # an undiscovered opening.
-        from pprint import pprint
-
-        print("rem_opening_coords:")
-        pprint(rem_opening_coords)
         num_coords = {
             c for c in self.board.all_coords if type(self.board[c]) is CellContents.Num
         }
-        print("num_coords:")
-        pprint(num_coords)
         completed_3bv = len(num_coords - rem_opening_coords)
-        print("completed_3bv:")
-        pprint(completed_3bv)
         # Add necessary splits that have already been done.
         big_cells_correctly_split = {
             c.get_big_cell_coord()
             for c in self.board.all_coords
             if c.is_split and c not in self.mf.mine_coords
         }
-        print("big_cells_correctly_split:")
-        pprint(big_cells_correctly_split)
         completed_3bv += len(big_cells_correctly_split)
-        print("completed_3bv:")
-        pprint(completed_3bv)
-        print("partial_mf._calc_3bv():")
-        pprint(partial_mf._calc_3bv())
         return partial_mf._calc_3bv() - completed_3bv
 
     def _populate_minefield(self, coord: Coord) -> None:
