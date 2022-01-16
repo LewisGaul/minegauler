@@ -9,7 +9,13 @@ from typing import Callable, Iterable, List, Mapping, Optional, Set, Type
 
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QMouseEvent
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QSizePolicy, QWidget
+from PyQt5.QtWidgets import (
+    QApplication,
+    QGraphicsScene,
+    QGraphicsView,
+    QSizePolicy,
+    QWidget,
+)
 
 from ...core import BoardBase, api
 from ...shared.types import CellContents, CellImageType, Coord, GameMode
@@ -452,6 +458,8 @@ class MinefieldWidget(QGraphicsView):
         self._mouse_events.append((self._elapsed, cell_updates))
         for c, state in cell_updates.items():
             self._set_cell_image(c, state)
+        # Always display cell updates as soon as possible.
+        QApplication.processEvents()
 
     def reshape(self, x_size: int, y_size: int) -> None:
         logger.info("Resizing minefield to %sx%s", x_size, y_size)

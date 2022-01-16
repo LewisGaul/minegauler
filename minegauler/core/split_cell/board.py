@@ -38,6 +38,9 @@ class Board(BoardBase):
         return self._all_coords[coord]
 
     def __setitem__(self, coord: Coord, obj: CellContents) -> None:
+        # TODO: This seems desirable, but is used for displaying hit mines...
+        # if coord not in self:
+        #     raise KeyError(f"{coord} not in board")
         self._all_coords[coord] = obj
 
     def __contains__(self, coord: Coord):

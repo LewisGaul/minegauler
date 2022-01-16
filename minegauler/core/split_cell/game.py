@@ -58,6 +58,8 @@ class Game(GameBase):
 
         # Partially completed board - do the real work!
 
+        # TODO: This is too slow!
+
         partial_mf = Minefield.from_coords(
             self.mf.all_coords,
             mine_coords=self.mf.mine_coords,
@@ -125,7 +127,15 @@ class Game(GameBase):
             # TODO: This is a bit of a hacky place to do this...
             self._revealed_board = self._calc_revealed_board()
 
-        if not coord.is_split:
+        if coord.is_split:
+            if coord in self.mf.mine_coords:
+                logger.debug("Mine hit at %s", coord)
+                self._set_cell(coord, CellContents.HitMine(self.mf[coord]))
+                self._finalise_lost_game()
+            else:
+                logger.debug("Regular cell revealed")
+                self._set_cell(coord, self._revealed_board[coord])
+        else:
             small_cells = coord.split()
             if any(c in self.mf.mine_coords for c in small_cells):
                 logger.debug("Mine hit in large cell containing %s", coord)
@@ -163,15 +173,6 @@ class Game(GameBase):
                     logger.debug("Opening cells deduced")
                     for c in all_nbrs:
                         self._set_cell(c, self._revealed_board[c])
-            return
-
-        if coord in self.mf.mine_coords:
-            logger.debug("Mine hit at %s", coord)
-            self._set_cell(coord, CellContents.HitMine(self.mf[coord]))
-            self._finalise_lost_game()
-        else:
-            logger.debug("Regular cell revealed")
-            self._set_cell(coord, self._revealed_board[coord])
 
     # ---------------------
     # Other methods

@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import (
     QWIDGETSIZE_MAX,
     QAction,
     QActionGroup,
+    QApplication,
     QDialog,
     QFileDialog,
     QFrame,
@@ -282,12 +283,7 @@ class MinegaulerGUI(
         self._mf_widget.update_cells(cell_updates)
 
     def update_game_state(self, game_state: GameState) -> None:
-        """
-        Called to indicate the game state has changed.
-
-        :param game_state:
-            The new game state.
-        """
+        """Called to indicate the game state has changed."""
         self._state.game_status = game_state
         self._state.highscores_state.current_highscore = None
         self._panel_widget.update_game_state(game_state)
@@ -636,6 +632,8 @@ class MinegaulerGUI(
 
     def _handle_finished_game(self) -> None:
         """Called once when a game ends."""
+        # TODO: Manually processing events here as getting game info can be slow...
+        QApplication.processEvents()
         info: api.GameInfo = self._ctrlr.get_game_info()
         assert info.game_state.finished()
         assert info.started_info is not None
