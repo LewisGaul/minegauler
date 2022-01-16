@@ -256,9 +256,7 @@ class MinegaulerGUI(
             self.reset()
         self._state.x_size = x_size
         self._state.y_size = y_size
-        self._state.difficulty = self._ctrlr.get_game_info().difficulty
         self._mf_widget.reshape(x_size, y_size)
-        self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
     def set_mines(self, mines: int) -> None:
         """
@@ -268,7 +266,11 @@ class MinegaulerGUI(
             The number of mines.
         """
         self._state.mines = mines
-        self._diff_menu_actions[self._state.difficulty].setChecked(True)
+
+    def set_difficulty(self, diff: Difficulty) -> None:
+        """Called to indicate the difficulty has changed."""
+        self._state.difficulty = diff
+        self._diff_menu_actions[diff].setChecked(True)
 
     def update_cells(self, cell_updates: Mapping[Coord, CellContents]) -> None:
         """
@@ -687,6 +689,13 @@ class MinegaulerGUI(
             self._state.game_status.finished() or self._state.ui_mode is UIMode.CREATE
         ):
             # TODO: The menubar option should be disabled.
+            _msg_popup(
+                self,
+                QMessageBox.Warning,
+                "Save failed",
+                "Only able to save boards for finished games, or those created "
+                "in 'create' mode.",
+            )
             return
         file, _ = QFileDialog.getSaveFileName(
             self,

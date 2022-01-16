@@ -85,9 +85,12 @@ class AbstractListener(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def set_mines(self, mines: int) -> None:
-        """
-        Called to indicate the number of mines at reset has changed.
-        """
+        """Called to indicate the number of base mines has changed."""
+        return NotImplemented
+
+    @abc.abstractmethod
+    def set_difficulty(self, diff: Difficulty) -> None:
+        """Called to indicate the difficulty has changed."""
         return NotImplemented
 
     @abc.abstractmethod
@@ -251,13 +254,13 @@ class _Notifier(AbstractListener):
         :param y_size:
             The number of columns.
         """
-        self._logger.debug(f"Calling resize_minefield() with {x_size}, {y_size}")
+        self._logger.debug(f"Calling resize_minefield() with %s, %s", x_size, y_size)
 
     def set_mines(self, mines: int) -> None:
-        """
-        Called to indicate the number of mines at reset has changed.
-        """
-        self._logger.debug(f"Calling set_mines() with {mines}")
+        self._logger.debug(f"Calling set_mines() with %d", mines)
+
+    def set_difficulty(self, diff: Difficulty) -> None:
+        self._logger.debug(f"Calling set_difficulty() with %s", diff)
 
     def update_cells(self, cell_updates: Dict[Coord, CellContents]) -> None:
         """

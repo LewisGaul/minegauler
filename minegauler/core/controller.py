@@ -82,6 +82,10 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
     def difficulty(self) -> Difficulty:
         raise NotImplementedError
 
+    def set_difficulty(self, difficulty: Difficulty) -> None:
+        x, y, m = self.game_cls.difficulty_to_values(difficulty)
+        self.resize_board(x, y, m)
+
     def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
         """See AbstractController."""
         super().resize_board(x_size=x_size, y_size=y_size, mines=mines)
@@ -93,6 +97,7 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
             logger.info(
                 "No resize required as the parameters are unchanged, starting a new game"
             )
+            self.new_game()
         else:
             logger.info(
                 "Resizing board from %sx%s with %s mines to %sx%s with %s mines",
@@ -108,7 +113,10 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
             self._opts.mines = mines
             self._notif.resize_minefield(x_size, y_size)
             self._notif.set_mines(mines)
-        self.new_game()
+            self.new_game()
+            self._notif.set_difficulty(
+                self.game_cls.difficulty_from_values(x_size, y_size, mines)
+            )
 
     @staticmethod
     def _save_minefield(mf: MinefieldBase, file: PathLike) -> None:

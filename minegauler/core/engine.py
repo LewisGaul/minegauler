@@ -79,12 +79,18 @@ class UberController(api.AbstractController):
             return
         self._notif.game_mode_about_to_change(mode)
         self._opts.mode = mode
-        difficulty = self._active_ctrlr.difficulty
+        old_difficulty = self._active_ctrlr.difficulty
         self._active_ctrlr = self._get_ctrlr_cls(mode, self._ui_mode)(
             self._opts, notif=self._notif
         )
-        if difficulty is not Difficulty.CUSTOM:
-            self.set_difficulty(difficulty)
+        if old_difficulty is not Difficulty.CUSTOM:
+            self.set_difficulty(old_difficulty)
+        else:
+            new_difficulty = self._active_ctrlr.game_cls.difficulty_from_values(
+                self._opts.x_size, self._opts.y_size, self._opts.mines
+            )
+            if new_difficulty is not Difficulty.CUSTOM:
+                self._notif.set_difficulty(new_difficulty)
         self._notif.game_mode_changed(mode)
 
     def switch_ui_mode(self, ui_mode: UIMode) -> None:

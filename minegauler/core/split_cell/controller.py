@@ -4,7 +4,7 @@ __all__ = ("CreateController", "GameController")
 
 import logging
 
-from ...shared.types import CellContents, Difficulty, GameMode
+from ...shared.types import CellContents, GameMode
 from ..controller import CreateControllerBase, GameControllerBase
 from .board import Board
 from .game import Game
@@ -26,10 +26,6 @@ class _ControllerMixin:
     @property
     def board(self) -> Board:
         return super().board
-
-    def set_difficulty(self, difficulty: Difficulty) -> None:
-        x, y, m = Game.difficulty_to_values(difficulty)
-        self.resize_board(x, y, m)
 
 
 class GameController(_ControllerMixin, GameControllerBase):
