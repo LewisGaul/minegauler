@@ -737,13 +737,22 @@ class MinegaulerGUI(
 
     def _open_custom_board_modal(self) -> None:
         """Open the modal popup to select the custom difficulty."""
-        _CustomBoardModal(
-            self,
-            self._state.x_size,
-            self._state.y_size,
-            self._state.mines,
-            self._ctrlr.resize_board,
-        ).show()
+        if self._state.game_mode is GameMode.REGULAR:
+            _CustomBoardModal(
+                self,
+                self._state.x_size,
+                self._state.y_size,
+                self._state.mines,
+                self._ctrlr.resize_board,
+            ).show()
+        elif self._state.game_mode is GameMode.SPLIT_CELL:
+            _CustomBoardModal(
+                self,
+                self._state.x_size // 2,
+                self._state.y_size // 2,
+                self._state.mines,
+                lambda x, y, m: self._ctrlr.resize_board(x * 2, y * 2, m),
+            ).show()
 
     def _open_zoom_modal(self) -> None:
         """Open the popup to set the button size."""
