@@ -126,6 +126,11 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
         with open(file, "w") as f:
             json.dump(mf.to_json(), f)
 
+    def _send_resize_update(self) -> None:
+        """Send an update to change the dimensions and number of mines."""
+        self._notif.resize_minefield(self._opts.x_size, self._opts.y_size)
+        self._notif.set_mines(self._opts.mines)
+
 
 class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
     """Base game controller class, generic over game mode."""
@@ -337,8 +342,7 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
 
     def _send_resize_update(self) -> None:
         """Send an update to change the dimensions and number of mines."""
-        self._notif.resize_minefield(self._opts.x_size, self._opts.y_size)
-        self._notif.set_mines(self._opts.mines)
+        super()._send_resize_update()
         self._send_updates()
 
 
@@ -438,8 +442,3 @@ class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
             self.board.all_coords, mine_coords=coords, per_cell=self._opts.per_cell
         )
         self._save_minefield(mf, file)
-
-    def _send_resize_update(self) -> None:
-        """Send an update to change the dimensions and number of mines."""
-        self._notif.resize_minefield(self._opts.x_size, self._opts.y_size)
-        self._notif.set_mines(self._opts.mines)
