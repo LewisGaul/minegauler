@@ -97,6 +97,12 @@ class Game(GameBase):
             logger.debug("Creating minefield without guaranteed first click success")
             self.mf.populate()
 
+    def _is_complete(self) -> bool:
+        return all(
+            type(self.board[c]) is CellContents.Num or c in self.mf.mine_coords
+            for c in self.board.all_coords
+        )
+
     def _select_cell_action(self, coord: Coord) -> None:
         """
         Implementation of the action of selecting/clicking a cell.

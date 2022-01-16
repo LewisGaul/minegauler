@@ -55,7 +55,31 @@ class Minefield(RegularMinefieldBase[Coord, Board]):
 
     def _calc_3bv(self) -> int:
         """Calculate the 3bv of the board."""
-        return 0  # TODO
+        board = self.completed_board
+        openings = []
+        blanks_to_check = {
+            c for c in board.all_coords if board[c] is CellContents.Num(0)
+        }
+        while blanks_to_check:
+            orig_coord = blanks_to_check.pop()
+            # If the coordinate is part of an opening and hasn't already been
+            # considered, start a new opening.
+            opening = {orig_coord}  # Coords belonging to the opening
+            check = {orig_coord}  # Coords whose neighbours need checking
+            while check:
+                coord = check.pop()
+                nbrs = set(board.get_nbrs(coord))
+                check |= {c for c in nbrs - opening if board[c] is CellContents.Num(0)}
+                opening |= nbrs
+            openings.append(opening)
+            blanks_to_check -= opening
+
+        clicks = len([c for c in board.all_coords if c.is_split]) // 4
+        clicks += len(openings)
+        exposed = len({c for opening in openings for c in opening})
+        clicks += len(board.all_coords) - len(set(self.mine_coords)) - exposed
+
+        return clicks
 
     def _calc_completed_board(self) -> Board:
         """

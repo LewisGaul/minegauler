@@ -75,6 +75,13 @@ class Game(GameBase):
             logger.debug("Creating minefield without guaranteed first click success")
             self.mf.populate()
 
+    def _is_complete(self) -> bool:
+        return all(
+            type(self.board[c]) is CellContents.Num
+            or all(small in self.mf.mine_coords for small in c.get_small_cell_coords())
+            for c in self.board.all_coords
+        )
+
     def _select_cell_action(self, coord: Coord) -> None:
         """Implementation of the action of selecting/clicking a cell."""
         if not coord.is_split:
@@ -149,13 +156,30 @@ class Game(GameBase):
                 self._set_cell(c, CellContents.WrongFlag(self.board[c].num))
 
     @_check_coord
-    @_ignore_if_not(game_state=GameState.ACTIVE, cell_state=CellContents.Unclicked)
+    @_ignore_if_not(
+        game_state=[GameState.READY, GameState.ACTIVE],
+        cell_state=CellContents.Unclicked,
+    )
     def split_cell(self, coord: Coord) -> Mapping[Coord, CellContents]:
         small_cells = coord.split()
+
+        just_started = False
+        if self.state is GameState.READY:
+            if not self.mf.populated:
+                logger.debug(
+                    "Creating minefield without guaranteed first click success"
+                )
+                self.mf.populate()
+            self.state = GameState.ACTIVE
+            self.start_time = time.time()
+            just_started = True
+
         if not any(c in self.mf.mine_coords for c in small_cells):
             logger.debug("Incorrect cell split %s", coord)
             self._set_cell(coord, CellContents.WrongFlag(1))
             self._finalise_lost_game()
+            if self.state.finished() and just_started:
+                self.end_time = self.start_time
         else:
             logger.debug("Splitting cell %s", coord)
             self.board.split_coord(coord)

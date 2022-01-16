@@ -188,6 +188,10 @@ class GameBase(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def _is_complete(self) -> bool:
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def _select_cell_action(self) -> None:
         raise NotImplementedError
 
@@ -285,12 +289,7 @@ class GameBase(metaclass=abc.ABCMeta):
         Check if game is complete by comparing the board to the minefield's
         completed board. If it is, display flags in remaining unclicked cells.
         """
-        is_complete = all(
-            type(self.board[c]) is CellContents.Num or c in self.mf.mine_coords
-            for c in self.board.all_coords
-        )
-
-        if is_complete:
+        if self._is_complete():
             logger.info("Game won")
 
             self.end_time = time.time()
@@ -317,8 +316,8 @@ class GameBase(metaclass=abc.ABCMeta):
         self._select_cell_action(coord)
         if not self.state.finished():
             self._check_for_completion()
-            if self.state is GameState.WON and just_started:
-                self.end_time = self.start_time
+        if self.state.finished() and just_started:
+            self.end_time = self.start_time
         try:
             return self._cell_updates
         finally:
