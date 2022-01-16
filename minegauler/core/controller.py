@@ -349,7 +349,7 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
 class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
     """Base create controller class, generic over game mode."""
 
-    # Remove abstractmethod.
+    # Remove abstractmethod - always handled by game controller.
     load_minefield = None
 
     def __init__(
@@ -369,13 +369,19 @@ class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
         self._flags: int = 0
         self._notif.set_mines(self._flags)
 
+    @abc.abstractmethod
+    def _make_board(self) -> BoardBase:
+        raise NotImplementedError
+
     @property
     def board(self) -> BoardBase:
         return self._board
 
-    @abc.abstractmethod
-    def _make_board(self) -> BoardBase:
-        raise NotImplementedError
+    @property
+    def difficulty(self) -> Difficulty:
+        return self.game_cls.difficulty_from_values(
+            self._opts.x_size, self._opts.y_size, self._flags
+        )
 
     def get_game_info(self) -> api.GameInfo:
         return api.GameInfo(

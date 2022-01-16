@@ -63,12 +63,6 @@ class GameController(_ControllerMixin, GameControllerBase):
 class CreateController(_ControllerMixin, CreateControllerBase):
     """A controller for creating split-cell boards."""
 
-    @property
-    def difficulty(self) -> Difficulty:
-        return Game.difficulty_from_values(
-            self._opts.x_size, self._opts.y_size, self._flags
-        )
-
     def _make_board(self) -> Board:
         return Board(self._opts.x_size, self._opts.y_size)
 
