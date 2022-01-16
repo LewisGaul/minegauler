@@ -984,13 +984,18 @@ class _CustomBoardModal(QDialog):
     """A popup window to select custom board dimensions."""
 
     def __init__(
-        self, parent: QWidget, cols: int, rows: int, mines: int, callback: Callable
+        self,
+        parent: QWidget,
+        cols: int,
+        rows: int,
+        mines: int,
+        callback: Callable[[int, int, int], None],
     ):
         super().__init__(parent)
         self._cols: int = cols
         self._rows: int = rows
         self._mines: int = mines
-        self._callback: Callable = callback
+        self._callback: Callable[[int, int, int], None] = callback
         self.setWindowTitle("Custom")
         self.setModal(True)
         self._setup_ui()
