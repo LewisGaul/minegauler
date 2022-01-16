@@ -321,6 +321,7 @@ class MinegaulerGUI(
         super().game_mode_changed(mode)
         self._state.game_mode = mode
         # TODO: Update the game mode radiobutton
+        self.reset()
 
     def handle_exception(self, method: str, exc: Exception) -> None:
         logger.error(

@@ -5,13 +5,31 @@ General test utils.
 
 """
 
+__all__ = ("activate_patches", "make_true_mock", "patch_open")
+
 import contextlib
+import os
 from typing import Iterable
 from unittest import mock
 
 
 @contextlib.contextmanager
-def activate_patches(patches: Iterable[mock._patch]):
+def patch_open(file: os.PathLike, read_data: str):
+    @contextlib.contextmanager
+    def mock_open(path, *args, **kwargs):
+        if path == file:
+            open_func = mock.mock_open(read_data=read_data)
+        else:
+            open_func = open
+        with open_func(path, *args, **kwargs) as f:
+            yield f
+
+    with mock.patch("builtins.open", mock_open) as m:
+        yield m
+
+
+@contextlib.contextmanager
+def activate_patches(patches: Iterable):
     """
     Context manager to activate multiple mock patches.
 

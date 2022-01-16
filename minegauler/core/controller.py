@@ -438,3 +438,8 @@ class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
             self.board.all_coords, mine_coords=coords, per_cell=self._opts.per_cell
         )
         self._save_minefield(mf, file)
+
+    def _send_resize_update(self) -> None:
+        """Send an update to change the dimensions and number of mines."""
+        self._notif.resize_minefield(self._opts.x_size, self._opts.y_size)
+        self._notif.set_mines(self._opts.mines)
