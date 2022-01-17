@@ -288,6 +288,7 @@ class MinegaulerGUI(
         self._state.highscores_state.current_highscore = None
         self._panel_widget.update_game_state(game_state)
         if game_state.finished():
+            self._mf_widget._raise_all_sunken_cells()
             self._handle_finished_game()
 
     def update_mines_remaining(self, mines_remaining: int) -> None:

@@ -3,11 +3,13 @@
 __all__ = (
     "RAISED_CELL",
     "SUNKEN_CELL",
+    "FlagAction",
     "MinefieldWidgetImplBase",
     "update_cell_images",
 )
 
 import abc
+import enum
 import logging
 import os.path
 from typing import Dict, Mapping, Optional
@@ -153,6 +155,12 @@ def _make_pixmap(
     return image
 
 
+class FlagAction(enum.Enum):
+    FLAG = enum.auto()
+    UNFLAG = enum.auto()
+    SPLIT = enum.auto()
+
+
 class MinefieldWidgetImplBase(metaclass=abc.ABCMeta):
     """
     An implementation of the logic that's specific to the given game mode.
@@ -189,4 +197,14 @@ class MinefieldWidgetImplBase(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def update_cell_images(self, img_type: CellImageType = CellImageType.ALL) -> None:
         """Update the cache of cell images for current size/styles."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def right_down_action(self, coord: Coord) -> FlagAction:
+        """Perform a right click, returning the action that was taken."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def right_drag_action(self, coord: Coord, action: FlagAction) -> None:
+        """Perform a right drag click that matches the given action."""
         raise NotImplementedError

@@ -162,6 +162,9 @@ class UberController(api.AbstractController):
     def flag_cell(self, coord: Coord, *, flag_only: bool = False) -> None:
         self._active_ctrlr.flag_cell(coord, flag_only=flag_only)
 
+    def split_cell(self, coord: Coord) -> None:
+        self._active_ctrlr.split_cell(coord)
+
     def chord_on_cell(self, coord: Coord) -> None:
         self._active_ctrlr.chord_on_cell(coord)
 

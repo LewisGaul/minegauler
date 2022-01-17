@@ -413,10 +413,12 @@ class AbstractController(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def flag_cell(self, coord: Coord, *, flag_only: bool = False) -> None:
-        """
-        Select a cell for flagging.
-        """
+        """Select a cell for flagging."""
         self._logger.debug("Cell %s selected for flagging", coord)
+
+    def split_cell(self, coord: Coord) -> None:
+        """Split a cell - only required for split-cell mode."""
+        self._logger.debug("Cell %s selected to be split", coord)
 
     @abc.abstractmethod
     def chord_on_cell(self, coord: Coord) -> None:

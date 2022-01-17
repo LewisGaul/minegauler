@@ -13,7 +13,7 @@ from ...core.split_cell import Coord
 from ...shared.types import CellContents, CellImageType
 from ..state import State
 from . import _base
-from ._base import update_cell_images
+from ._base import FlagAction, update_cell_images
 
 
 logger = logging.getLogger(__name__)
@@ -52,3 +52,26 @@ class MinefieldWidgetImpl(_base.MinefieldWidgetImplBase):
         update_cell_images(
             self._large_cell_images, self.btn_size * 2, self._state.styles, img_type
         )
+
+    def right_down_action(self, coord: Coord) -> FlagAction:
+        """Perform a right click, returning the action that was taken."""
+        if coord.is_split or self._ctrlr.board[coord] is not CellContents.Unclicked:
+            self._ctrlr.flag_cell(coord)
+            if self._ctrlr.board[coord] is CellContents.Unclicked:
+                return FlagAction.UNFLAG
+            else:
+                return FlagAction.FLAG
+        else:
+            self._ctrlr.split_cell(coord)
+            return FlagAction.SPLIT
+
+    def right_drag_action(self, coord: Coord, action: FlagAction) -> None:
+        """Perform a right drag click that matches the given action."""
+        if action is FlagAction.FLAG:
+            self._ctrlr.flag_cell(coord, flag_only=True)
+        elif action is FlagAction.UNFLAG:
+            self._ctrlr.remove_cell_flags(coord)
+        elif action is FlagAction.SPLIT:
+            self._ctrlr.split_cell(coord)
+        else:
+            assert False, f"Unexpected action {action!r}"

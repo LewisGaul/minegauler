@@ -22,7 +22,7 @@ from ...shared.types import CellContents, CellImageType, Coord, GameMode
 from ..state import State
 from ..utils import CellUpdate_T, MouseMove
 from . import regular, simulate, split_cell
-from ._base import RAISED_CELL, SUNKEN_CELL, MinefieldWidgetImplBase
+from ._base import RAISED_CELL, SUNKEN_CELL, FlagAction, MinefieldWidgetImplBase
 
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ class MinefieldWidget(QGraphicsView):
         self._both_mouse_buttons_pressed: bool = False
         self._await_release_all_buttons: bool = False
         self._was_double_left_click: bool = False
-        self._unflag_on_right_drag: bool = False
+        self._right_drag_action: FlagAction = FlagAction.FLAG
 
         # Set of coords for cells which are sunken.
         self._sunken_cells: Set[Coord] = set()
@@ -177,6 +177,9 @@ class MinefieldWidget(QGraphicsView):
             assert coord is not None
             self.right_button_down(coord)
 
+        # The underlying coord may have changed.
+        self._mouse_coord = self._coord_from_event(event)
+
     @_filter_left_and_right
     def mouseDoubleClickEvent(self, event: QMouseEvent):
         """Handle double clicks."""
@@ -191,6 +194,9 @@ class MinefieldWidget(QGraphicsView):
             self.left_button_double_down(coord)
         else:
             return self.mousePressEvent(event)
+
+        # The underlying coord may have changed.
+        self._mouse_coord = self._coord_from_event(event)
 
     @_filter_left_and_right
     def mouseMoveEvent(self, event: QMouseEvent):
@@ -220,6 +226,9 @@ class MinefieldWidget(QGraphicsView):
             if event.buttons() & Qt.RightButton:
                 self.right_button_move(coord)
 
+        # The underlying coord may have changed.
+        self._mouse_coord = self._coord_from_event(event)
+
     @_filter_left_and_right
     def mouseReleaseEvent(self, event: QMouseEvent):
         """Handle mouse release events."""
@@ -246,6 +255,9 @@ class MinefieldWidget(QGraphicsView):
         if not event.buttons():
             logger.debug("No mouse buttons down, reset variables")
             self.all_buttons_release()
+
+        # The underlying coord may have changed.
+        self._mouse_coord = self._coord_from_event(event)
 
     # --------------------------------------------------------------------------
     # Mouse click handlers
@@ -304,22 +316,14 @@ class MinefieldWidget(QGraphicsView):
         Right mouse button was pressed. Change display and call callback
         functions as appropriate.
         """
-        self._ctrlr.flag_cell(coord)
-        # TODO: Sort this out for split cell...
-        # if self._board[coord] is CellContents.Unclicked:
-        #     self._unflag_on_right_drag = True
-        # else:
-        #     self._unflag_on_right_drag = False
+        self._right_drag_action = self._impl.right_down_action(coord)
 
     def right_button_move(self, coord: Optional[Coord]) -> None:
         """
         Right mouse button was moved. Change display as appropriate.
         """
         if self._state.drag_select and coord is not None:
-            if self._unflag_on_right_drag:
-                self._ctrlr.remove_cell_flags(coord)
-            else:
-                self._ctrlr.flag_cell(coord, flag_only=True)
+            self._impl.right_drag_action(coord, self._right_drag_action)
 
     def both_buttons_down(self, coord: Coord) -> None:
         """
@@ -361,7 +365,7 @@ class MinefieldWidget(QGraphicsView):
         self._both_mouse_buttons_pressed = False
         self._await_release_all_buttons = False
         self._was_double_left_click = False
-        self._unflag_on_right_drag = False
+        self._right_drag_action = FlagAction.FLAG
 
     # --------------------------------------------------------------------------
     # Other methods
@@ -413,6 +417,12 @@ class MinefieldWidget(QGraphicsView):
             )
             for c in raise_cells:
                 self._set_cell_image(c, RAISED_CELL)
+                # TODO: HACK - fix hit mines in small cells in drag-select mode
+                #  when using chording.
+                if self._state.game_mode is GameMode.SPLIT_CELL and not c.is_split:
+                    for small in c.get_small_cell_coords():
+                        if small in self._board:
+                            self._set_cell_image(small, self._board[small])
         self._sunken_cells.clear()
 
     def _set_cell_image(self, coord: Coord, state: CellContents) -> None:
