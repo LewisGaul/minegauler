@@ -22,23 +22,6 @@ from .minefield import MinefieldBase
 logger = logging.getLogger(__name__)
 
 
-def _save_minefield(mf: MinefieldBase, file: PathLike) -> None:
-    """
-    Save a minefield to file.
-
-    :param mf:
-        The minefield to save.
-    :param file:
-        The path of the file to save at.
-    :raises OSError:
-        If saving to file fails.
-    """
-    if os.path.isfile(file):
-        logger.warning("Overwriting file at %s", file)
-    with open(file, "w") as f:
-        json.dump(mf.to_json(), f)  # TODO
-
-
 @attr.attrs(auto_attribs=True, kw_only=True)
 class SharedInfo:
     """
@@ -99,6 +82,59 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
     def difficulty(self) -> Difficulty:
         raise NotImplementedError
 
+    def set_difficulty(self, difficulty: Difficulty) -> None:
+        x, y, m = self.game_cls.difficulty_to_values(difficulty)
+        self.resize_board(x, y, m)
+
+    def resize_board(self, x_size: int, y_size: int, mines: int) -> None:
+        """See AbstractController."""
+        super().resize_board(x_size=x_size, y_size=y_size, mines=mines)
+        if (
+            x_size == self._opts.x_size
+            and y_size == self._opts.y_size
+            and mines == self._opts.mines
+        ):
+            logger.info(
+                "No resize required as the parameters are unchanged, starting a new game"
+            )
+            self.new_game()
+        else:
+            logger.info(
+                "Resizing board from %sx%s with %s mines to %sx%s with %s mines",
+                self._opts.x_size,
+                self._opts.y_size,
+                self._opts.mines,
+                x_size,
+                y_size,
+                mines,
+            )
+            self._opts.x_size = x_size
+            self._opts.y_size = y_size
+            self._opts.mines = mines
+            self._notif.resize_minefield(x_size, y_size)
+            self._notif.set_mines(mines)
+            self.new_game()
+            self._notif.set_difficulty(
+                self.game_cls.difficulty_from_values(x_size, y_size, mines)
+            )
+
+    @staticmethod
+    def _save_minefield(mf: MinefieldBase, file: PathLike) -> None:
+        """
+        Save a minefield to file.
+
+        :param mf:
+            The minefield to save.
+        :param file:
+            The path of the file to save at.
+        :raises OSError:
+            If saving to file fails.
+        """
+        if os.path.isfile(file):
+            logger.warning("Overwriting file at %s", file)
+        with open(file, "w") as f:
+            json.dump(mf.to_json(), f)
+
 
 class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
     """Base game controller class, generic over game mode."""
@@ -125,7 +161,7 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
             first_success=self._opts.first_success,
         )
         self._last_update = SharedInfo()
-        self._send_updates()
+        # self._send_updates()
         self._notif.set_mines(self._opts.mines)
 
     @property
@@ -200,6 +236,49 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
         )
         self._send_reset_update()
 
+    def select_cell(self, coord: Coord) -> None:
+        """See AbstractController."""
+        super().select_cell(coord)
+        cells = self.game.select_cell(coord)
+        self._send_updates(cells)
+
+    def chord_on_cell(self, coord: Coord) -> None:
+        """See AbstractController."""
+        super().chord_on_cell(coord)
+        cells = self.game.chord_on_cell(coord)
+        self._send_updates(cells)
+
+    def remove_cell_flags(self, coord: Coord) -> None:
+        """See AbstractController."""
+        super().remove_cell_flags(coord)
+        self.game.set_cell_flags(coord, 0)
+        self._send_updates({coord: self.board[coord]})
+
+    def set_first_success(self, value: bool) -> None:
+        """
+        Set whether the first click should be a guaranteed success.
+        """
+        super().set_first_success(value)
+        self._opts.first_success = value
+        if not self.game.state.started():
+            self.game.first_success = value
+
+    def set_per_cell(self, value: int) -> None:
+        """
+        Set the maximum number of mines per cell.
+        """
+        super().set_per_cell(value)
+        if value < 1:
+            raise ValueError(
+                f"Max number of mines per cell must be at least 1, got {value}"
+            )
+        self._opts.per_cell = value
+        # If the game is not started and the minefield is not known then the
+        # new per-cell value should be picked up immediately, and the board
+        # cleared of any flags (e.g. 3-flag cells may no longer be allowed!).
+        if not (self.game.state.started() or self.game.minefield_known):
+            self.new_game()
+
     def save_current_minefield(self, file: PathLike) -> None:
         """
         Save the current minefield to file.
@@ -215,7 +294,21 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
         super().save_current_minefield(file)
         if not self.game.state.finished():
             raise RuntimeError("Can only save minefields when the game is completed")
-        _save_minefield(self.game.mf, file)
+        self._save_minefield(self.game.mf, file)
+
+    def load_minefield(self, file: PathLike) -> None:
+        """Load a minefield from file."""
+        with open(file) as f:
+            mf = self.minefield_cls.from_json(json.load(f))
+
+        logger.debug(
+            "Loaded minefield from file (%d x %d, %d mines)",
+            mf.x_size,
+            mf.y_size,
+            mf.mines,
+        )
+        self.resize_board(mf.x_size, mf.y_size, mf.mines)
+        self.game = self.game_cls.from_minefield(mf, lives=self._opts.lives)
 
     # --------------------------------------------------------------------------
     # Helper methods
@@ -248,17 +341,11 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
         self._notif.reset()
         self._send_updates()
 
-    def _send_resize_update(self) -> None:
-        """Send an update to change the dimensions and number of mines."""
-        self._notif.resize_minefield(self._opts.x_size, self._opts.y_size)
-        self._notif.set_mines(self._opts.mines)
-        self._send_updates()
-
 
 class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
     """Base create controller class, generic over game mode."""
 
-    # Remove abstractmethod.
+    # Remove abstractmethod - always handled by game controller.
     load_minefield = None
 
     def __init__(
@@ -278,13 +365,19 @@ class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
         self._flags: int = 0
         self._notif.set_mines(self._flags)
 
+    @abc.abstractmethod
+    def _make_board(self) -> BoardBase:
+        raise NotImplementedError
+
     @property
     def board(self) -> BoardBase:
         return self._board
 
-    @abc.abstractmethod
-    def _make_board(self) -> BoardBase:
-        raise NotImplementedError
+    @property
+    def difficulty(self) -> Difficulty:
+        return self.game_cls.difficulty_from_values(
+            self._opts.x_size, self._opts.y_size, self._flags
+        )
 
     def get_game_info(self) -> api.GameInfo:
         return api.GameInfo(
@@ -311,6 +404,27 @@ class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
         super().restart_game()
         self.new_game()
 
+    def chord_on_cell(self, coord: Coord) -> None:
+        super().chord_on_cell(coord)
+
+    def remove_cell_flags(self, coord: Coord) -> None:
+        super().remove_cell_flags(coord)
+        cell = self.board[coord]
+        if not isinstance(cell, CellContents.Mine):
+            return
+        self.board[coord] = CellContents.Unclicked
+        self._flags -= cell.num
+        self._notif.update_cells({coord: self.board[coord]})
+        self._notif.update_mines_remaining(self._flags)
+
+    def set_first_success(self, value: bool) -> None:
+        super().set_first_success(value)
+        self._opts.first_success = value
+
+    def set_per_cell(self, value: int) -> None:
+        super().set_per_cell(value)
+        self._opts.per_cell = value
+
     def save_current_minefield(self, file: PathLike) -> None:
         """
         Save the current created minefield to file.
@@ -327,6 +441,8 @@ class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
             if type(self.board[c]) is CellContents.Mine:
                 coords.extend([c] * self.board[c].num)
         mf = self.minefield_cls.from_coords(
-            self.board.all_coords, mine_coords=coords, per_cell=self._opts.per_cell
+            self.board.all_underlying_coords,
+            mine_coords=coords,
+            per_cell=self._opts.per_cell,
         )
-        _save_minefield(mf, file)
+        self._save_minefield(mf, file)

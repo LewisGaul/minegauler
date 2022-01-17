@@ -328,7 +328,7 @@ class GameMode(str, enum.Enum):
     """Minesweeper game mode."""
 
     REGULAR = "REGULAR"
-    # SPLIT_CELL = "SPLIT_CELL"
+    SPLIT_CELL = "SPLIT_CELL"
 
 
 # ------------------------------------------------------------------------------

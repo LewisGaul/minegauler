@@ -7,6 +7,7 @@ The game and board modules are treated as trusted.
 
 """
 
+import json
 import logging
 from unittest import mock
 
@@ -15,6 +16,8 @@ import pytest
 from minegauler.core import engine
 from minegauler.shared.types import Difficulty, GameMode, UIMode
 from minegauler.shared.utils import GameOptsStruct
+
+from .. import utils
 
 
 logger = logging.getLogger(__name__)
@@ -173,14 +176,16 @@ class TestUberController:
 
         # Delegated in game mode.
         self.reset_mocks()
-        ctrlr.load_minefield("file")
+        with utils.patch_open("file", json.dumps({"type": "REGULAR"})):
+            ctrlr.load_minefield("file")
         game_ctrlr.load_minefield.assert_called_once_with("file")
 
         # In create mode, the mode is switched first.
         self.reset_mocks()
         ctrlr.switch_ui_mode(UIMode.CREATE)
         assert ctrlr._active_ctrlr is create_ctrlr
-        ctrlr.load_minefield("file")
+        with utils.patch_open("file", json.dumps({"type": "REGULAR"})):
+            ctrlr.load_minefield("file")
         assert ctrlr._ui_mode is UIMode.GAME
         assert ctrlr._active_ctrlr is game_ctrlr
         game_ctrlr.load_minefield.assert_called_once_with("file")

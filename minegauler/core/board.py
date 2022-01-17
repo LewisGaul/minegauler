@@ -23,16 +23,32 @@ class BoardBase(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def __getitem__(self, key: Coord) -> CellContents:
+    def __getitem__(self, coord: Coord) -> CellContents:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __setitem__(self, coord: Coord, contents: CellContents) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __contains__(self, coord: Coord) -> bool:
         raise NotImplementedError
 
     @property
     @abc.abstractmethod
-    def all_coords(self) -> List:
+    def all_coords(self) -> List[Coord]:
+        """A list of all coords currently in the board."""
         raise NotImplementedError
 
+    @property
+    def all_underlying_coords(self) -> List[Coord]:
+        """A list of all underlying coords that may contain a mine."""
+        return self.all_coords
+
     @abc.abstractmethod
-    def get_nbrs(self, coord, *, include_origin: bool = False) -> Iterable:
+    def get_nbrs(
+        self, coord: Coord, *, include_origin: bool = False
+    ) -> Iterable[Coord]:
         raise NotImplementedError
 
     @abc.abstractmethod

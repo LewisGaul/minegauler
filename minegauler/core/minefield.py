@@ -8,10 +8,14 @@ Minesweeper minefield API.
 __all__ = ("MinefieldBase",)
 
 import abc
+import logging
 import random
 from typing import Any, Generic, Iterable, List, Mapping, Optional, Set, TypeVar
 
 from .board import BoardBase
+
+
+logger = logging.getLogger(__name__)
 
 
 C = TypeVar("C")
@@ -52,6 +56,7 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
         self.mine_coords: List[C] = []
         self._bbbv: Optional[int] = None
         self._completed_board: Optional[B] = None
+        self._openings: Optional[List[List[C]]] = None
         self.populated: bool = False
 
         # Perform some checks on the args.
@@ -129,6 +134,14 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
             self._completed_board = self._calc_completed_board()
         return self._completed_board
 
+    @property
+    def openings(self) -> List[List[C]]:
+        if not self.populated:
+            raise AttributeError("Uninitialised minefield has no openings")
+        if self._openings is None:
+            self._openings = self._find_openings()
+        return self._openings
+
     def populate(self, safe_coords: Optional[Iterable[C]] = None) -> None:
         """
         Randomly place mines in the available coordinates.
@@ -162,10 +175,12 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
         random.shuffle(avble_list)
         self.mine_coords = avble_list[: self.mines]
         self.populated = True
+        logger.debug("Populated minefield with %s mines", len(self.mine_coords))
 
     @abc.abstractmethod
     def _calc_3bv(self) -> int:
         """Calculate the 3bv of the board."""
+        raise NotImplementedError
 
     @abc.abstractmethod
     def _calc_completed_board(self) -> B:
@@ -173,6 +188,12 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
         Create the completed board with the flags and numbers that should be
         seen upon game completion.
         """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _find_openings(self) -> List[List[C]]:
+        """Find the openings in the completed board."""
+        raise NotImplementedError
 
     @abc.abstractmethod
     def to_json(self) -> Mapping[str, Any]:
@@ -180,5 +201,5 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
 
     @classmethod
     @abc.abstractmethod
-    def from_json(self, obj: Mapping[str, Any]) -> "MinefieldBase":
+    def from_json(cls, obj: Mapping[str, Any]) -> "MinefieldBase":
         raise NotImplementedError

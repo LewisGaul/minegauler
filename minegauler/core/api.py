@@ -85,9 +85,12 @@ class AbstractListener(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def set_mines(self, mines: int) -> None:
-        """
-        Called to indicate the number of mines at reset has changed.
-        """
+        """Called to indicate the number of base mines has changed."""
+        return NotImplemented
+
+    @abc.abstractmethod
+    def set_difficulty(self, diff: Difficulty) -> None:
+        """Called to indicate the difficulty has changed."""
         return NotImplemented
 
     @abc.abstractmethod
@@ -122,6 +125,26 @@ class AbstractListener(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def ui_mode_changed(self, mode: UIMode) -> None:
+        """
+        Called to indicate the UI mode has changed.
+
+        :param mode:
+            The mode to change to.
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
+    def game_mode_about_to_change(self, mode: GameMode) -> None:
+        """
+        Called to indicate the game mode is about to change.
+
+        :param mode:
+            The mode to change to.
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
+    def game_mode_changed(self, mode: GameMode) -> None:
         """
         Called to indicate the game mode has changed.
 
@@ -210,7 +233,7 @@ class _Notifier(AbstractListener):
                     getattr(listener, func)(*args, **kwargs)
                 except Exception as e:
                     self._logger.warning(
-                        f"Error ocurred calling {func}() on {listener}"
+                        f"Error occurred calling {func}() on {listener}"
                     )
                     listener.handle_exception(func, e)
 
@@ -231,13 +254,13 @@ class _Notifier(AbstractListener):
         :param y_size:
             The number of columns.
         """
-        self._logger.debug(f"Calling resize_minefield() with {x_size}, {y_size}")
+        self._logger.debug(f"Calling resize_minefield() with %s, %s", x_size, y_size)
 
     def set_mines(self, mines: int) -> None:
-        """
-        Called to indicate the number of mines at reset has changed.
-        """
-        self._logger.debug(f"Calling set_mines() with {mines}")
+        self._logger.debug(f"Calling set_mines() with %d", mines)
+
+    def set_difficulty(self, diff: Difficulty) -> None:
+        self._logger.debug(f"Calling set_difficulty() with %s", diff)
 
     def update_cells(self, cell_updates: Dict[Coord, CellContents]) -> None:
         """
@@ -275,7 +298,25 @@ class _Notifier(AbstractListener):
         :param mode:
             The mode to change to.
         """
-        self._logger.debug(f"Calling ui_mode_changed() with {mode}")
+        self._logger.debug(f"Calling ui_mode_changed() with %r", mode.name)
+
+    def game_mode_about_to_change(self, mode: GameMode) -> None:
+        """
+        Called to indicate the game mode is about to change.
+
+        :param mode:
+            The mode to change to.
+        """
+        self._logger.debug(f"Calling game_mode_about_to_change() with %r", mode.name)
+
+    def game_mode_changed(self, mode: GameMode) -> None:
+        """
+        Called to indicate the game mode has changed.
+
+        :param mode:
+            The mode to change to.
+        """
+        self._logger.debug(f"Calling game_mode_changed() with %r", mode.name)
 
     def handle_exception(self, method: str, exc: Exception) -> None:
         """
@@ -372,10 +413,12 @@ class AbstractController(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def flag_cell(self, coord: Coord, *, flag_only: bool = False) -> None:
-        """
-        Select a cell for flagging.
-        """
+        """Select a cell for flagging."""
         self._logger.debug("Cell %s selected for flagging", coord)
+
+    def split_cell(self, coord: Coord) -> None:
+        """Split a cell - only required for split-cell mode."""
+        self._logger.debug("Cell %s selected to be split", coord)
 
     @abc.abstractmethod
     def chord_on_cell(self, coord: Coord) -> None:

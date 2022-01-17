@@ -1,6 +1,6 @@
 # October 2021, Lewis Gaul
 
-from typing import Iterable, List, Tuple, Union
+from typing import Iterable, List, Union
 
 from ...shared import utils
 from ...shared.types import CellContents, GameMode
@@ -54,15 +54,15 @@ class Board(BoardBase):
             return False
         return self._grid == other._grid
 
-    def __getitem__(self, coord: Tuple[int, int]) -> CellContents:
+    def __getitem__(self, coord: Coord) -> CellContents:
         return self._grid[coord]
 
-    def __setitem__(self, coord: Tuple[int, int], value: CellContents):
+    def __setitem__(self, coord: Coord, value: CellContents):
         if not isinstance(value, CellContents):
             raise TypeError("Board can only contain CellContents instances")
         self._grid[coord] = value
 
-    def __contains__(self, coord: Tuple[int, int]) -> bool:
+    def __contains__(self, coord: Coord) -> bool:
         return coord in self.all_coords
 
     @property
@@ -81,9 +81,7 @@ class Board(BoardBase):
         for c in self.all_coords:
             self[c] = value
 
-    def get_nbrs(
-        self, coord: Tuple[int, int], *, include_origin=False
-    ) -> Iterable[Coord]:
+    def get_nbrs(self, coord: Coord, *, include_origin=False) -> Iterable[Coord]:
         return [
             Coord(*c) for c in self._grid.get_nbrs(coord, include_origin=include_origin)
         ]

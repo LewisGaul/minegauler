@@ -5,13 +5,31 @@ General test utils.
 
 """
 
+__all__ = ("activate_patches", "make_true_mock", "patch_open")
+
 import contextlib
+import os
 from typing import Iterable
 from unittest import mock
 
 
 @contextlib.contextmanager
-def activate_patches(patches: Iterable[mock._patch]):
+def patch_open(file: os.PathLike, read_data: str):
+    @contextlib.contextmanager
+    def mock_open(path, *args, **kwargs):
+        if path == file:
+            open_func = mock.mock_open(read_data=read_data)
+        else:
+            open_func = open
+        with open_func(path, *args, **kwargs) as f:
+            yield f
+
+    with mock.patch("builtins.open", mock_open) as m:
+        yield m
+
+
+@contextlib.contextmanager
+def activate_patches(patches: Iterable):
     """
     Context manager to activate multiple mock patches.
 
@@ -38,15 +56,14 @@ def make_true_mock(cls: type) -> type:
             self._mock = mock.MagicMock()
             # Qt insists that the superclass's __init__() method is called...
             super().__init__(*args, **kwargs)
+            self.__setattr__ = self._mock.__setattr__
+
+        def __repr__(self):
+            return self._mock.__repr__()
 
         def __getattribute__(self, item):
             if item in ["_mock", "__init__"]:
                 return super().__getattribute__(item)
             return getattr(self._mock, item)
-
-        def __setattribute__(self, key, value):
-            if key == "_mock":
-                return super().__setattribute__(key, value)
-            setattr(self._mock, key, value)
 
     return _Tmp
