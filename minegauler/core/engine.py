@@ -77,6 +77,12 @@ class UberController(api.AbstractController):
                 "Ignore switch game mode request because mode is already %s", mode
             )
             return
+        if mode is GameMode.SPLIT_CELL and (
+            self._opts.x_size % 2 != 0 or self._opts.y_size % 2 != 0
+        ):
+            self.resize_board(
+                self._opts.x_size // 2 * 2, self._opts.y_size // 2 * 2, self._opts.mines
+            )
         self._notif.game_mode_about_to_change(mode)
         self._opts.mode = mode
         old_difficulty = self._active_ctrlr.difficulty

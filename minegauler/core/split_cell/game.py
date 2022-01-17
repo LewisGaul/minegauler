@@ -102,14 +102,17 @@ class Game(GameBase):
             try:
                 self.mf.populate(safe_coords)
             except ValueError:
-                logger.info(
-                    "Unable to give opening on the first click, "
-                    "still ensuring a safe click"
-                )
-                # This should be guaranteed to succeed.  TODO
-                self.mf.populate(safe_coords=coord.split())
+                try:
+                    logger.info(
+                        "Unable to give opening on the first click, "
+                        "trying to ensure a safe click"
+                    )
+                    self.mf.populate(safe_coords=coord.split())
+                except ValueError:
+                    logger.info("Unable to give even a single safe cell")
+                    self.mf.populate()
             else:
-                logger.debug("Successfully created minefield")
+                logger.debug("Minefield populated")
         else:
             logger.debug("Creating minefield without guaranteed first click success")
             self.mf.populate()
