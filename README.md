@@ -4,7 +4,7 @@
 [![Downloads badge](https://img.shields.io/github/downloads/LewisGaul/minegauler/total)](https://github.com/LewisGaul/minegauler/releases/)
 [![Code style badge](https://img.shields.io/badge/code%20style-black-000000.svg)](https://black.readthedocs.io/en/stable/)
 
-# Minegauler v4.0.7
+# Minegauler v4.1.0
 
 Remake of the classic Minesweeper game, written in Python.
 
