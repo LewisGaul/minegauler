@@ -4,7 +4,7 @@
 [![Downloads badge](https://img.shields.io/github/downloads/LewisGaul/minegauler/total)](https://github.com/LewisGaul/minegauler/releases/)
 [![Code style badge](https://img.shields.io/badge/code%20style-black-000000.svg)](https://black.readthedocs.io/en/stable/)
 
-# Minegauler v4.0.7
+# Minegauler v4.1.0
 
 Remake of the classic Minesweeper game, written in Python.
 
@@ -31,7 +31,7 @@ Download links available here:
 
 The Python package is also available on PyPI: https://pypi.org/project/minegauler/.
 
- 1. Python 3.6+ required
+ 1. Python 3.7+ required
  2. Install with `pip install minegauler`
  3. Run with `python -m minegauler`
 
@@ -40,7 +40,7 @@ See note on system dependencies below, or [get in touch](#Contact) if you have a
 
 ### Clone the repo
 
-You will need Python 3.6+ to run the code (see note below about known system dependencies).
+You will need Python 3.7+ to run the code (see note below about known system dependencies).
 
  1. Clone the repo: `git clone https://github.com/LewisGaul/minegauler`
  2. Consider setting up a [virtual environment](https://docs.python.org/3/tutorial/venv.html)

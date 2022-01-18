@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 See the [issues page](https://github.com/LewisGaul/minegauler/issues) for upcoming features or pending fixes.
 
+
+## 4.1
+
+Stand-out features in this release include:
+ - Split cells game mode
+ - Themes (replacing button styles)
+
+
+### 4.1.0 (2022-01-18)
+ - Initial release of split cells game mode (highscores not yet supported)
+ - Themes (replacing button styles)
+ - Pop up warning messages when menubar actions are unsupported
+
+
+
 ## 4.0
 
 The latest release for version 4.0 includes:

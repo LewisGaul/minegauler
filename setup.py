@@ -58,7 +58,7 @@ Alternatively, feel free to [open an issue](https://github.com/LewisGaul/minegau
 """
 
 # Should be a release version, e.g. "4.0.1"
-version = "4.0.7"
+version = "4.1.0"
 if "-" in version:
     print("WARNING: Version is not a release version", file=sys.stderr)
 
@@ -82,12 +82,12 @@ setuptools.setup(
         "Natural Language :: English",
         "Topic :: Games/Entertainment :: Puzzle Games",
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     install_requires=[
         "attrs",
         "mysql-connector-python==8.*",
         "PyQt5",
-        "requests==2.*",
+        "requests",
     ],
     package_data={
         "minegauler": [

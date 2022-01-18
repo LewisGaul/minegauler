@@ -10,18 +10,18 @@ from unittest import mock
 import pytest
 from pytestqt.qtbot import QtBot
 
-from minegauler import shared
-from minegauler.core import api
+from minegauler import api, shared
 from minegauler.frontend import main_window, minefield, panel, state
 from minegauler.frontend.main_window import MinegaulerGUI
 from minegauler.shared import HighscoreStruct
-from minegauler.shared.types import Difficulty, GameState
+from minegauler.shared.types import Difficulty, GameMode, GameState
 
 from ..utils import make_true_mock
 from .utils import maybe_stop_for_interaction
 
 
 _MockPanelWidget = make_true_mock(panel.PanelWidget)
+_MockCounterWidget = make_true_mock(panel._CounterWidget)
 _MockMinefieldWidget = make_true_mock(minefield.MinefieldWidget)
 
 
@@ -36,6 +36,9 @@ class TestMinegaulerGUI:
     _minefield_class_mock = None
     _name_bar_class_mock = None
 
+    # --------------------------------------------------------------------------
+    # Fixtures
+    # --------------------------------------------------------------------------
     @classmethod
     def setup_class(cls):
         cls._panel_class_mock = mock.patch(
@@ -45,8 +48,10 @@ class TestMinegaulerGUI:
             "minegauler.frontend.minefield.MinefieldWidget",
             side_effect=_MockMinefieldWidget,
         ).start()
-        mock.patch("minegauler.frontend.panel._CounterWidget").start()
-        mock.patch("minegauler.frontend.minefield._update_cell_images").start()
+        mock.patch(
+            "minegauler.frontend.panel._CounterWidget", side_effect=_MockCounterWidget
+        ).start()
+        mock.patch("minegauler.frontend.minefield._base.update_cell_images").start()
         mock.patch("minegauler.shared.highscores").start()
 
     @classmethod
@@ -59,6 +64,14 @@ class TestMinegaulerGUI:
         qtbot.addWidget(gui)
         self._reset_gui_mocks(gui)
         return gui
+
+    # --------------------------------------------------------------------------
+    # Helper methods
+    # --------------------------------------------------------------------------
+    def _reset_gui_mocks(self, gui: MinegaulerGUI) -> None:
+        """Reset mocks associated with a gui instance."""
+        gui._panel_widget.reset_mock()
+        gui._mf_widget.reset_mock()
 
     # --------------------------------------------------------------------------
     # Testcases
@@ -123,6 +136,7 @@ class TestMinegaulerGUI:
             difficulty=Difficulty.BEGINNER,
             per_cell=2,
             first_success=True,
+            mode=GameMode.REGULAR,
             minefield_known=False,
             started_info=api.GameInfo.StartedInfo(
                 start_time=1234,
@@ -141,14 +155,14 @@ class TestMinegaulerGUI:
             Difficulty.BEGINNER, 2, False, "NAME", 1234, 99.01, 123, 123 / 99.01, 0.4
         )
 
-        save_hs_mock = mock.patch("minegauler.frontend.main_window.save_highscore_file")
-        save_hs_mock.start()
-        with mock.patch.object(gui, "open_highscores_window") as mock_open:
-            gui.update_game_state(GameState.WON)
-            gui._panel_widget.timer.set_time.assert_called_once_with(100)
-            shared.highscores.insert_highscore.assert_called_once_with(exp_highscore)
-            mock_open.assert_called_once_with(mock.ANY, "3bv/s")
-        save_hs_mock.stop()
+        with mock.patch("minegauler.frontend.utils.save_highscore_file"):
+            with mock.patch.object(gui, "open_highscores_window") as mock_open:
+                gui.update_game_state(GameState.WON)
+                gui._panel_widget.timer.set_time.assert_called_once_with(100)
+                shared.highscores.insert_highscore.assert_called_once_with(
+                    exp_highscore
+                )
+                mock_open.assert_called_once_with(mock.ANY, "3bv/s")
 
         # update_mines_remaining()
         gui.update_mines_remaining(56)
@@ -157,11 +171,3 @@ class TestMinegaulerGUI:
         # handle_exception()
         with pytest.raises(RuntimeError):
             gui.handle_exception("method", ValueError())
-
-    # --------------------------------------------------------------------------
-    # Helper methods
-    # --------------------------------------------------------------------------
-    def _reset_gui_mocks(self, gui: MinegaulerGUI) -> None:
-        """Reset mocks associated with a gui instance."""
-        gui._panel_widget.reset_mock()
-        gui._mf_widget.reset_mock()

@@ -48,13 +48,14 @@ __all__ = (
 
 import json
 import logging
+import os
 import time
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
 import attr
 
-from .. import SETTINGS_FILE
-from .types import CellImageType, Coord_T
+from .. import paths
+from .types import CellImageType, GameMode, PathLike
 
 
 logger = logging.getLogger(__name__)
@@ -89,7 +90,7 @@ class Grid(list):
             self.append(row)
         self.x_size: int = x_size
         self.y_size: int = y_size
-        self.all_coords: List[Coord_T] = [
+        self.all_coords: List[Tuple[int, int]] = [
             (x, y) for x in range(x_size) for y in range(y_size)
         ]
 
@@ -135,14 +136,14 @@ class Grid(list):
         return ret
 
     def __getitem__(self, key):
-        if type(key) is tuple and len(key) == 2:
+        if isinstance(key, tuple) and len(key) == 2:
             x, y = key
             return super().__getitem__(y)[x]
         else:
             raise TypeError("Grid keys should be tuple coordinates of the form (0, 1)")
 
     def __setitem__(self, key, value):
-        if type(key) is tuple and len(key) == 2:
+        if isinstance(key, tuple) and len(key) == 2:
             x, y = key
             super().__getitem__(y)[x] = value
         else:
@@ -180,7 +181,9 @@ class Grid(list):
             for i in range(len(row)):
                 row[i] = item
 
-    def get_nbrs(self, coord: Coord_T, *, include_origin=False) -> Iterable[Coord_T]:
+    def get_nbrs(
+        self, coord: Tuple[int, int], *, include_origin=False
+    ) -> Iterable[Tuple[int, int]]:
         """
         Get a list of the coordinates of neighbouring cells.
 
@@ -208,7 +211,7 @@ class Grid(list):
             ret[coord] = self[coord]
         return ret
 
-    def is_coord_in_grid(self, coord: Coord_T) -> bool:
+    def is_coord_in_grid(self, coord: Tuple[int, int]) -> bool:
         x, y = coord
         return 0 <= x < self.x_size and 0 <= y < self.y_size
 
@@ -261,6 +264,7 @@ class GameOptsStruct(StructConstructorMixin):
     first_success: bool = True
     per_cell: int = 1
     lives: int = 1
+    mode: GameMode = GameMode.REGULAR
 
 
 @attr.attrs(auto_attribs=True)
@@ -272,7 +276,7 @@ class GUIOptsStruct(StructConstructorMixin):
     btn_size: int = 16
     drag_select: bool = False
     name: str = ""
-    styles: Dict[CellImageType, str] = {
+    styles: Mapping[CellImageType, str] = {
         CellImageType.BUTTONS: "Standard",
         CellImageType.NUMBERS: "Standard",
         CellImageType.MARKERS: "Standard",
@@ -288,6 +292,7 @@ class AllOptsStruct(GameOptsStruct, GUIOptsStruct):
     def encode_to_json(self) -> Dict[str, Any]:
         ret = attr.asdict(self)
         ret["styles"] = {k.name: v for k, v in self.styles.items()}
+        ret["mode"] = ret["mode"].name
         return ret
 
     @classmethod
@@ -295,6 +300,7 @@ class AllOptsStruct(GameOptsStruct, GUIOptsStruct):
         dict_["styles"] = {
             getattr(CellImageType, k): v for k, v in dict_["styles"].items()
         }
+        dict_["mode"] = getattr(GameMode, dict_.get("mode", "REGULAR"))
         return cls(**dict_)
 
 
@@ -303,10 +309,12 @@ def is_flagging_threshold(proportion: float) -> bool:
     return proportion > 0.1
 
 
-def read_settings_from_file():
+def read_settings_from_file(file: os.PathLike) -> Optional[AllOptsStruct]:
+    logger.info("Reading settings from file: %s", file)
+
     read_settings = None
     try:
-        with open(SETTINGS_FILE, "r") as f:
+        with open(file, "r") as f:
             read_settings = AllOptsStruct.decode_from_json(json.load(f))
     except FileNotFoundError:
         logger.info("Settings file not found")
@@ -318,11 +326,11 @@ def read_settings_from_file():
     return read_settings
 
 
-def write_settings_to_file(settings: AllOptsStruct) -> None:
-    logger.info("Saving settings to file: %s", SETTINGS_FILE)
+def write_settings_to_file(settings: AllOptsStruct, file: PathLike) -> None:
+    logger.info("Saving settings to file: %s", file)
     logger.debug("%s", settings)
     try:
-        with open(SETTINGS_FILE, "w") as f:
+        with open(file, "w") as f:
             json.dump(settings.encode_to_json(), f, indent=2)
     except Exception:
         logger.exception("Unexpected error writing settings to file")

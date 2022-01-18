@@ -7,7 +7,8 @@ idna==3.2
 #--install-option='--no-deps' --install-option='--only-binary=:all:'
 mysql-connector-python==8.0.26
 protobuf==3.17.3
-PyQt5==5.14.2
+PyQt5==5.14.2; platform_system != 'Windows'
+PyQt5==5.15.6; platform_system == 'Windows'
 PyQt5-sip==12.9.0
 requests==2.26.0
 six==1.16.0

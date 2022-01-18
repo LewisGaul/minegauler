@@ -5,6 +5,8 @@ Available imports from the package.
 
 """
 
+__all__ = ("MinegaulerGUI", "init_app", "run_app", "state")
+
 import signal
 import sys
 
@@ -15,16 +17,17 @@ from . import state
 from .main_window import MinegaulerGUI
 
 
-__all__ = ("MinegaulerGUI", "init_app", "run_app", "state")
-
-
 _app = None
 _timer = None
 
 
 def init_app() -> None:
+    """Initialise the GUI application. This function is idempotent."""
     global _app
-    _app = QApplication(sys.argv)
+    if not QApplication.instance():
+        _app = QApplication(sys.argv)
+    else:
+        _app = QApplication.instance()
     pyqtRemoveInputHook()
 
 

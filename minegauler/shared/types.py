@@ -8,14 +8,11 @@ Exports
 .. class:: CellContents
     An ADT-like class providing cell contents types.
 
-.. class:: CellContents_T
-    A type alias for a `CellContents` ADT type.
-
 .. class:: CellImageType
     An enum of cell image types.
 
-.. class:: Coord_T
-    A type alias for a coordinate.
+.. class:: Coord
+    A base coordinate class.
 
 .. class:: Difficulty
     An enum of board difficulties.
@@ -25,6 +22,9 @@ Exports
 
 .. class:: GameState
     An enum of states a game can be in.
+
+.. class:: GameMode
+    An enum of game modes.
 
 .. class:: PathLike
     A more permissive version of the `os.PathLike` type alias.
@@ -36,25 +36,56 @@ Exports
 
 __all__ = (
     "CellContents",
-    "CellContents_T",
     "CellImageType",
-    "Coord_T",
+    "Coord",
     "Difficulty",
     "FaceState",
+    "GameMode",
     "GameState",
     "PathLike",
     "UIMode",
 )
 
+import abc
 import enum
 import functools
 import os
-from typing import Tuple, Type, Union
+from typing import Union
 
 
 PathLike = Union[str, bytes, os.PathLike]
-Coord_T = Tuple[int, int]
-CellContents_T = Union[Type["CellContents"], "CellContents"]
+
+
+# ------------------------------------------------------------------------------
+# Coordinate types
+# ------------------------------------------------------------------------------
+
+
+class Coord(metaclass=abc.ABCMeta):
+    fields = ("x", "y")
+
+    x: int
+    y: int
+
+    def __repr__(self):
+        return "{}({})".format(
+            type(self).__name__,
+            ", ".join(f"{x}={getattr(self, x)}" for x in self.fields),
+        )
+
+    def __eq__(self, other):
+        try:
+            return all(getattr(self, x) == getattr(other, x) for x in self.fields)
+        except AttributeError:
+            return False
+
+    def __hash__(self):
+        return hash(tuple(getattr(self, x) for x in self.fields))
+
+    def __lt__(self, other):
+        if not isinstance(other, Coord):
+            return NotImplemented
+        return (self.x, self.y) < (other.x, other.y)
 
 
 # ------------------------------------------------------------------------------
@@ -118,14 +149,14 @@ class CellContents:
         return self.char
 
     @staticmethod
-    def from_char(char: str) -> CellContents_T:
+    def from_char(char: str) -> "CellContents":
         return NotImplemented  # Implemented below, after subclasses
 
     @staticmethod
     def from_str(string: str) -> "CellContents":
         return NotImplemented  # Implemented below, after subclasses
 
-    def is_type(self, item: CellContents_T) -> bool:
+    def is_type(self, item: "CellContents") -> bool:
         if item in [self.Unclicked, self.UnclickedSunken]:
             return self is item
         elif item in self.items:
@@ -222,7 +253,7 @@ CellContents.items = [
 ]
 
 
-def _from_char(char: str) -> CellContents_T:
+def _from_char(char: str) -> CellContents:
     """
     Get the class of mine-like cell contents using the character
     representation.
@@ -269,49 +300,13 @@ class Difficulty(str, enum.Enum):
     CUSTOM = "C"
 
     @classmethod
-    def from_str(cls, value: Union[str, "Difficulty"]) -> "Difficulty":
+    def from_str(cls, value: str) -> "Difficulty":
         """Create an instance from a string representation."""
         if value.upper() in [x.name for x in cls]:
             value = value[0].upper()
         elif value.upper() in [x.value for x in cls]:
             value = value.upper()
         return cls(value)
-
-    @classmethod
-    def from_board_values(cls, x_size: int, y_size: int, mines: int) -> "Difficulty":
-        """Get the difficulty based on the board dimensions and mines."""
-        if x_size == 8 and y_size == 8 and mines == 10:
-            return cls.BEGINNER
-        elif x_size == 16 and y_size == 16 and mines == 40:
-            return cls.INTERMEDIATE
-        elif x_size == 30 and y_size == 16 and mines == 99:
-            return cls.EXPERT
-        elif x_size == 30 and y_size == 30 and mines == 200:
-            return cls.MASTER
-        elif x_size == 50 and y_size == 50 and mines == 625:
-            return cls.LUDICROUS
-        else:
-            return cls.CUSTOM
-
-    def get_board_values(self) -> Tuple[int, int, int]:
-        """
-        Get the board dimensions and number of mines for the difficulty.
-
-        :return:
-            A tuple containing (x_size, y_size, mines).
-        """
-        if self is self.BEGINNER:
-            return 8, 8, 10
-        elif self is self.INTERMEDIATE:
-            return 16, 16, 40
-        elif self is self.EXPERT:
-            return 30, 16, 99
-        elif self is self.MASTER:
-            return 30, 30, 200
-        elif self is self.LUDICROUS:
-            return 50, 50, 625
-        else:
-            raise ValueError("Custom difficulty has no corresponding board values")
 
 
 class GameState(str, enum.Enum):
@@ -327,6 +322,13 @@ class GameState(str, enum.Enum):
 
     def finished(self) -> bool:
         return self in [self.WON, self.LOST]
+
+
+class GameMode(str, enum.Enum):
+    """Minesweeper game mode."""
+
+    REGULAR = "REGULAR"
+    SPLIT_CELL = "SPLIT_CELL"
 
 
 # ------------------------------------------------------------------------------

@@ -17,16 +17,17 @@ from typing import Callable, Dict, Iterable, List, Optional
 
 import attr
 
-from ..core import board as brd
 from ..shared.types import (
     CellContents,
-    Coord_T,
+    Coord,
     Difficulty,
+    GameMode,
     GameState,
     PathLike,
     UIMode,
 )
 from ..shared.utils import GameOptsStruct
+from .board import BoardBase
 
 
 @attr.attrs(auto_attribs=True, kw_only=True)
@@ -50,6 +51,7 @@ class GameInfo:
     difficulty: Difficulty
     per_cell: int
     first_success: bool
+    mode: GameMode
 
     minefield_known: bool
     started_info: Optional[StartedInfo] = None
@@ -83,13 +85,16 @@ class AbstractListener(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def set_mines(self, mines: int) -> None:
-        """
-        Called to indicate the number of mines at reset has changed.
-        """
+        """Called to indicate the number of base mines has changed."""
         return NotImplemented
 
     @abc.abstractmethod
-    def update_cells(self, cell_updates: Dict[Coord_T, CellContents]) -> None:
+    def set_difficulty(self, diff: Difficulty) -> None:
+        """Called to indicate the difficulty has changed."""
+        return NotImplemented
+
+    @abc.abstractmethod
+    def update_cells(self, cell_updates: Dict[Coord, CellContents]) -> None:
         """
         Called when one or more cells were updated.
 
@@ -120,6 +125,26 @@ class AbstractListener(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def ui_mode_changed(self, mode: UIMode) -> None:
+        """
+        Called to indicate the UI mode has changed.
+
+        :param mode:
+            The mode to change to.
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
+    def game_mode_about_to_change(self, mode: GameMode) -> None:
+        """
+        Called to indicate the game mode is about to change.
+
+        :param mode:
+            The mode to change to.
+        """
+        return NotImplemented
+
+    @abc.abstractmethod
+    def game_mode_changed(self, mode: GameMode) -> None:
         """
         Called to indicate the game mode has changed.
 
@@ -208,7 +233,7 @@ class _Notifier(AbstractListener):
                     getattr(listener, func)(*args, **kwargs)
                 except Exception as e:
                     self._logger.warning(
-                        f"Error ocurred calling {func}() on {listener}"
+                        f"Error occurred calling {func}() on {listener}"
                     )
                     listener.handle_exception(func, e)
 
@@ -229,15 +254,15 @@ class _Notifier(AbstractListener):
         :param y_size:
             The number of columns.
         """
-        self._logger.debug(f"Calling resize_minefield() with {x_size}, {y_size}")
+        self._logger.debug(f"Calling resize_minefield() with %s, %s", x_size, y_size)
 
     def set_mines(self, mines: int) -> None:
-        """
-        Called to indicate the number of mines at reset has changed.
-        """
-        self._logger.debug(f"Calling set_mines() with {mines}")
+        self._logger.debug(f"Calling set_mines() with %d", mines)
 
-    def update_cells(self, cell_updates: Dict[Coord_T, CellContents]) -> None:
+    def set_difficulty(self, diff: Difficulty) -> None:
+        self._logger.debug(f"Calling set_difficulty() with %s", diff)
+
+    def update_cells(self, cell_updates: Dict[Coord, CellContents]) -> None:
         """
         Called when one or more cells were updated.
 
@@ -273,7 +298,25 @@ class _Notifier(AbstractListener):
         :param mode:
             The mode to change to.
         """
-        self._logger.debug(f"Calling ui_mode_changed() with {mode}")
+        self._logger.debug(f"Calling ui_mode_changed() with %r", mode.name)
+
+    def game_mode_about_to_change(self, mode: GameMode) -> None:
+        """
+        Called to indicate the game mode is about to change.
+
+        :param mode:
+            The mode to change to.
+        """
+        self._logger.debug(f"Calling game_mode_about_to_change() with %r", mode.name)
+
+    def game_mode_changed(self, mode: GameMode) -> None:
+        """
+        Called to indicate the game mode has changed.
+
+        :param mode:
+            The mode to change to.
+        """
+        self._logger.debug(f"Calling game_mode_changed() with %r", mode.name)
 
     def handle_exception(self, method: str, exc: Exception) -> None:
         """
@@ -294,7 +337,7 @@ class AbstractController(metaclass=abc.ABCMeta):
         # The registered functions to be called with updates.
         self._notif = _Notifier()
         self._logger = logging.getLogger(
-            ".".join([self.__class__.__module__, self.__class__.__name__])
+            f"{self.__class__.__module__}.{self.__class__.__name__}"
         )
 
     def register_listener(self, listener: AbstractListener) -> None:
@@ -333,7 +376,7 @@ class AbstractController(metaclass=abc.ABCMeta):
     # --------------------------------------------------------------------------
     @property
     @abc.abstractmethod
-    def board(self) -> brd.Board:
+    def board(self) -> BoardBase:
         return NotImplemented
 
     @abc.abstractmethod
@@ -362,28 +405,30 @@ class AbstractController(metaclass=abc.ABCMeta):
         self._logger.info("Restart game requested, refreshing the board")
 
     @abc.abstractmethod
-    def select_cell(self, coord: Coord_T) -> None:
+    def select_cell(self, coord: Coord) -> None:
         """
         Select a cell for a regular click.
         """
         self._logger.debug("Cell %s selected", coord)
 
     @abc.abstractmethod
-    def flag_cell(self, coord: Coord_T, *, flag_only: bool = False) -> None:
-        """
-        Select a cell for flagging.
-        """
+    def flag_cell(self, coord: Coord, *, flag_only: bool = False) -> None:
+        """Select a cell for flagging."""
         self._logger.debug("Cell %s selected for flagging", coord)
 
+    def split_cell(self, coord: Coord) -> None:
+        """Split a cell - only required for split-cell mode."""
+        self._logger.debug("Cell %s selected to be split", coord)
+
     @abc.abstractmethod
-    def chord_on_cell(self, coord: Coord_T) -> None:
+    def chord_on_cell(self, coord: Coord) -> None:
         """
         Select a cell for chording.
         """
         self._logger.debug("Cell %s selected for chording", coord)
 
     @abc.abstractmethod
-    def remove_cell_flags(self, coord: Coord_T) -> None:
+    def remove_cell_flags(self, coord: Coord) -> None:
         """
         Remove flags in a cell, if any.
         """
@@ -397,6 +442,13 @@ class AbstractController(metaclass=abc.ABCMeta):
         self._logger.info(
             "Resizing the board to %sx%s with %s mines", x_size, y_size, mines
         )
+
+    @abc.abstractmethod
+    def set_difficulty(self, difficulty: Difficulty) -> None:
+        """
+        Set the size of the board and the number of mines for the given difficulty.
+        """
+        self._logger.info("Changing the board to difficulty %s", difficulty.name)
 
     @abc.abstractmethod
     def set_first_success(self, value: bool) -> None:
@@ -435,8 +487,22 @@ class AbstractController(metaclass=abc.ABCMeta):
         self._logger.debug("Loading minefield from file: %s", file)
 
     @abc.abstractmethod
-    def switch_mode(self, mode: UIMode) -> None:
+    def switch_game_mode(self, mode: GameMode) -> None:
         """
-        Switch the mode of the UI, e.g. into 'create' mode.
+        Switch the game mode, e.g. into 'split cells' mode.
         """
-        self._logger.info("Requested switch to mode %s", mode)
+        self._logger.info("Requested switch to game mode %s", mode)
+
+    @abc.abstractmethod
+    def switch_ui_mode(self, mode: UIMode) -> None:
+        """
+        Switch the UI mode, e.g. into 'create' mode.
+        """
+        self._logger.info("Requested switch to UI mode %s", mode)
+
+    @abc.abstractmethod
+    def reset_settings(self) -> None:
+        """
+        Reset all settings to the defaults.
+        """
+        self._logger.info("Requested reset of settings")

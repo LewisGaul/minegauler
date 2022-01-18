@@ -251,13 +251,13 @@ def get_highscores(
         per_cell = settings.per_cell
         drag_select = settings.drag_select
     args = []
-    if difficulty:
+    if difficulty is not None:
         args.append(f"difficulty={difficulty.name[0]}")
-    if per_cell:
+    if per_cell is not None:
         args.append(f"per_cell={per_cell}")
-    if drag_select:
+    if drag_select is not None:
         args.append(f"drag_select={int(drag_select)}")
-    if name:
+    if name is not None:
         args.append(f"name={name}")
     url = _API_BASEURL + "?" + "&".join(args)
     response = requests.get(url)

@@ -12,8 +12,8 @@ Exports
 
 __all__ = ("MinegaulerGUI",)
 
+import functools
 import logging
-import os
 import pathlib
 import textwrap
 import traceback
@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import (
     QWIDGETSIZE_MAX,
     QAction,
     QActionGroup,
+    QApplication,
     QDialog,
     QFileDialog,
     QFrame,
@@ -44,8 +45,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from .. import ROOT_DIR, shared
-from ..core import api
+from .. import api, paths, shared
 from ..shared.highscores import (
     HighscoreSettingsStruct,
     HighscoreStruct,
@@ -54,20 +54,19 @@ from ..shared.highscores import (
 from ..shared.types import (
     CellContents,
     CellImageType,
-    Coord_T,
+    Coord,
     Difficulty,
+    GameMode,
     GameState,
     PathLike,
     UIMode,
 )
 from ..shared.utils import GUIOptsStruct, format_timestamp
-from . import highscores, minefield, panel, simulate, state, utils
-from .utils import FILES_DIR, HIGHSCORES_DIR, read_highscore_file, save_highscore_file
+from . import highscores, minefield, panel, state, utils
+from .minefield import simulate
 
 
 logger = logging.getLogger(__name__)
-
-BOARD_DIR = ROOT_DIR / "boards"
 
 
 def _msg_popup(
@@ -108,7 +107,7 @@ class _BaseMainWindow(QMainWindow):
         self._panel_widget: Optional[QWidget]
         self._body_widget: Optional[QWidget]
         self._footer_widget: Optional[QWidget]
-        self._icon: QIcon = QIcon(str(utils.IMG_DIR / "icon.ico"))
+        self._icon: QIcon = QIcon(str(paths.IMG_DIR / "icon.ico"))
         self.setWindowTitle(title)
         self.setWindowIcon(self._icon)
         # Disable maximise button
@@ -259,7 +258,6 @@ class MinegaulerGUI(
         self._state.x_size = x_size
         self._state.y_size = y_size
         self._mf_widget.reshape(x_size, y_size)
-        self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
     def set_mines(self, mines: int) -> None:
         """
@@ -269,9 +267,13 @@ class MinegaulerGUI(
             The number of mines.
         """
         self._state.mines = mines
-        self._diff_menu_actions[self._state.difficulty].setChecked(True)
 
-    def update_cells(self, cell_updates: Mapping[Coord_T, CellContents]) -> None:
+    def set_difficulty(self, diff: Difficulty) -> None:
+        """Called to indicate the difficulty has changed."""
+        self._state.difficulty = diff
+        self._diff_menu_actions[diff].setChecked(True)
+
+    def update_cells(self, cell_updates: Mapping[Coord, CellContents]) -> None:
         """
         Called to indicate some cells have changed state.
 
@@ -281,16 +283,12 @@ class MinegaulerGUI(
         self._mf_widget.update_cells(cell_updates)
 
     def update_game_state(self, game_state: GameState) -> None:
-        """
-        Called to indicate the game state has changed.
-
-        :param game_state:
-            The new game state.
-        """
+        """Called to indicate the game state has changed."""
         self._state.game_status = game_state
         self._state.highscores_state.current_highscore = None
         self._panel_widget.update_game_state(game_state)
         if game_state.finished():
+            self._mf_widget._raise_all_sunken_cells()
             self._handle_finished_game()
 
     def update_mines_remaining(self, mines_remaining: int) -> None:
@@ -309,7 +307,20 @@ class MinegaulerGUI(
         :param mode:
             The mode to change to.
         """
+        super().ui_mode_changed(mode)
         self._create_menu_action.setChecked(mode is UIMode.CREATE)
+
+    def game_mode_about_to_change(self, mode: GameMode) -> None:
+        """Called to indicate the game mode is about to change."""
+        super().game_mode_about_to_change(mode)
+        self._mf_widget.switch_mode(mode)
+
+    def game_mode_changed(self, mode: GameMode) -> None:
+        """Called to indicate the game mode has just changed."""
+        super().game_mode_changed(mode)
+        self._state.game_mode = mode
+        # TODO: Update the game mode radiobutton
+        self.reset()
 
     def handle_exception(self, method: str, exc: Exception) -> None:
         logger.error(
@@ -380,7 +391,7 @@ class MinegaulerGUI(
         def switch_create_mode(checked: bool):
             mode = UIMode.CREATE if checked else UIMode.GAME
             self._state.ui_mode = mode
-            self._ctrlr.switch_mode(mode)
+            self._ctrlr.switch_ui_mode(mode)
 
         self._create_menu_action = create_act = QAction(
             "Create board",
@@ -448,44 +459,60 @@ class MinegaulerGUI(
         # Zoom
         self._game_menu.addAction("Button size", self._open_zoom_modal)
 
-        # Styles
-        # - Buttons
-        # - Images
-        # - Numbers
-        def get_change_style_func(grp, style):
-            def change_style():
-                self._state.styles[grp] = style
-                self._mf_widget.update_style(grp, style)
+        # Themes
+        themes = {
+            "Standard": {
+                CellImageType.BUTTONS: "Standard",
+                CellImageType.MARKERS: "Standard",
+                CellImageType.NUMBERS: "Standard",
+            },
+            "Butterfly": {
+                CellImageType.BUTTONS: "Butterfly",
+                CellImageType.MARKERS: "Standard",
+                CellImageType.NUMBERS: "Standard",
+            },
+            "Halloween": {
+                CellImageType.BUTTONS: "Dark",
+                CellImageType.MARKERS: "Halloween",
+                CellImageType.NUMBERS: "Dark",
+            },
+            "Textured": {
+                CellImageType.BUTTONS: "Textured",
+                CellImageType.MARKERS: "Standard",
+                CellImageType.NUMBERS: "Standard",
+            },
+            "Christmas": {
+                CellImageType.BUTTONS: "Christmas",
+                CellImageType.MARKERS: "Christmas",
+                CellImageType.NUMBERS: "Dark",
+            },
+        }
 
-            return change_style
-
-        styles_menu = QMenu("Styles", self)
-        self._game_menu.addMenu(styles_menu)
-        for img_group in [
-            CellImageType.BUTTONS,
-            CellImageType.MARKERS,
-            CellImageType.NUMBERS,
-        ]:
-            img_group_name = img_group.name.capitalize()
-            submenu = QMenu(img_group_name, self)
-            styles_menu.addMenu(submenu)
-            group = QActionGroup(self)
-            group.setExclusive(True)
-            for folder in (utils.IMG_DIR / img_group_name).glob("*"):
-                style = folder.name
-                style_act = QAction(style, self, checkable=True)
-                if style == self._state.styles[img_group]:
-                    style_act.setChecked(True)
-                group.addAction(style_act)
-                style_act.triggered.connect(get_change_style_func(img_group, style))
-                submenu.addAction(style_act)
+        themes_menu = QMenu("Themes", self)
+        self._game_menu.addMenu(themes_menu)
+        group = QActionGroup(self)
+        group.setExclusive(True)
+        for theme_name, theme_styles in themes.items():
+            theme_act = QAction(theme_name, self, checkable=True)
+            themes_menu.addAction(theme_act)
+            group.addAction(theme_act)
+            if theme_styles == self._state.styles:
+                theme_act.setChecked(True)
+            theme_act.triggered.connect(
+                functools.partial(self._change_styles, theme_styles)
+            )
 
         # Advanced options
         self._game_menu.addAction("Advanced options", self._open_advanced_opts_modal)
 
         self._game_menu.addSeparator()
 
-        # Exit (F4)
+        # Factory reset
+        # TODO : Factory reset should also reset files such as highscores, settings
+        # boards, so this menu button is disabled until that is implemented.
+        # self._game_menu.addAction("Factory reset", self.factory_reset)
+
+        # Exit (Alt+F4)
         self._game_menu.addAction("Exit", self.close, shortcut="Alt+F4")
 
         # ----------
@@ -532,19 +559,34 @@ class MinegaulerGUI(
                 action.setChecked(True)
             action.triggered.connect(get_change_per_cell_func(i))
 
+        self._opts_menu.addSeparator()
+
+        game_mode_menu = self._opts_menu.addMenu("Game mode")
+        game_mode_group = QActionGroup(self)
+        game_mode_group.setExclusive(True)
+        for mode in GameMode:
+            action = QAction(
+                mode.name.capitalize().replace("_", " "), self, checkable=True
+            )
+            game_mode_menu.addAction(action)
+            game_mode_group.addAction(action)
+            if self._state.game_mode is mode:
+                action.setChecked(True)
+            action.triggered.connect(functools.partial(self._change_game_mode, mode))
+
         # ----------
         # Help menu
         # ----------
         rules_act = QAction("Rules", self)
         self._help_menu.addAction(rules_act)
         rules_act.triggered.connect(
-            lambda: self._open_text_popup("Rules", FILES_DIR / "rules.txt")
+            lambda: self._open_text_popup("Rules", paths.FILES_DIR / "rules.txt")
         )
 
         tips_act = QAction("Tips", self)
         self._help_menu.addAction(tips_act)
         tips_act.triggered.connect(
-            lambda: self._open_text_popup("Tips", FILES_DIR / "tips.txt")
+            lambda: self._open_text_popup("Tips", paths.FILES_DIR / "tips.txt")
         )
 
         retrieve_act = QAction("Retrieve highscores", self)
@@ -556,7 +598,7 @@ class MinegaulerGUI(
         about_act = QAction("About", self)
         self._help_menu.addAction(about_act)
         about_act.triggered.connect(
-            lambda: self._open_text_popup("About", FILES_DIR / "about.txt")
+            lambda: self._open_text_popup("About", paths.FILES_DIR / "about.txt")
         )
         about_act.setShortcut("F1")
 
@@ -575,8 +617,15 @@ class MinegaulerGUI(
             self._open_custom_board_modal()
             return
         else:
-            x, y, m = diff.get_board_values()
-            self._ctrlr.resize_board(x_size=x, y_size=y, mines=m)
+            self._ctrlr.set_difficulty(diff)
+
+    def _change_styles(self, styles: Mapping[CellImageType, str]) -> None:
+        for grp in styles:
+            self._state.styles[grp] = styles[grp]
+            self._mf_widget.update_style(grp, styles[grp])
+
+    def _change_game_mode(self, mode: GameMode) -> None:
+        self._ctrlr.switch_game_mode(mode)
 
     def _set_name(self, name: str) -> None:
         self._state.name = name
@@ -584,6 +633,8 @@ class MinegaulerGUI(
 
     def _handle_finished_game(self) -> None:
         """Called once when a game ends."""
+        # TODO: Manually processing events here as getting game info can be slow...
+        QApplication.processEvents()
         info: api.GameInfo = self._ctrlr.get_game_info()
         assert info.game_state.finished()
         assert info.started_info is not None
@@ -594,6 +645,7 @@ class MinegaulerGUI(
         if (
             info.game_state is GameState.WON
             and info.difficulty is not Difficulty.CUSTOM
+            and info.mode is GameMode.REGULAR
             and not info.minefield_known
         ):
             assert info.started_info.prop_complete == 1
@@ -636,11 +688,18 @@ class MinegaulerGUI(
             self._state.game_status.finished() or self._state.ui_mode is UIMode.CREATE
         ):
             # TODO: The menubar option should be disabled.
+            _msg_popup(
+                self,
+                QMessageBox.Warning,
+                "Save failed",
+                "Only able to save boards for finished games, or those created "
+                "in 'create' mode.",
+            )
             return
         file, _ = QFileDialog.getSaveFileName(
             self,
             caption="Save board",
-            directory=str(BOARD_DIR),
+            directory=str(paths.BOARDS_DIR),
             filter="Minegauler boards (*.mgb)",
         )
         if not file:
@@ -658,7 +717,7 @@ class MinegaulerGUI(
         file, _ = QFileDialog.getOpenFileName(
             self,
             caption="Load board",
-            directory=str(BOARD_DIR),
+            directory=str(paths.BOARDS_DIR),
             filter="Minegauler boards (*.mgb)",
         )
         if not file:
@@ -677,13 +736,22 @@ class MinegaulerGUI(
 
     def _open_custom_board_modal(self) -> None:
         """Open the modal popup to select the custom difficulty."""
-        _CustomBoardModal(
-            self,
-            self._state.x_size,
-            self._state.y_size,
-            self._state.mines,
-            self._ctrlr.resize_board,
-        ).show()
+        if self._state.game_mode is GameMode.REGULAR:
+            _CustomBoardModal(
+                self,
+                self._state.x_size,
+                self._state.y_size,
+                self._state.mines,
+                self._ctrlr.resize_board,
+            ).show()
+        elif self._state.game_mode is GameMode.SPLIT_CELL:
+            _CustomBoardModal(
+                self,
+                self._state.x_size // 2,
+                self._state.y_size // 2,
+                self._state.mines,
+                lambda x, y, m: self._ctrlr.resize_board(x * 2, y * 2, m),
+            ).show()
 
     def _open_zoom_modal(self) -> None:
         """Open the popup to set the button size."""
@@ -777,7 +845,7 @@ class MinegaulerGUI(
         hs_file, _ = QFileDialog.getOpenFileName(
             parent=self,
             caption="Play highscore",
-            directory=str(HIGHSCORES_DIR),
+            directory=str(paths.DATA_DIR),
             filter="Minegauler highscores (*.mgh)",
         )
         logger.debug("Selected file: %s", hs_file)
@@ -786,7 +854,7 @@ class MinegaulerGUI(
 
         hs_file = pathlib.Path(hs_file)
         try:
-            hs, cell_updates = read_highscore_file(hs_file)
+            hs, cell_updates = utils.read_highscore_file(hs_file)
             x_size, y_size, _ = hs.difficulty.get_board_values()
             win = simulate.SimulationMinefieldWidget(self, x_size, y_size, cell_updates)
         except Exception as e:
@@ -818,7 +886,18 @@ class MinegaulerGUI(
             Optionally specify the key to sort the highscores by. Defaults to
             the previous sort key.
         """
-        if self._state.difficulty is Difficulty.CUSTOM:
+        if (
+            self._state.difficulty is Difficulty.CUSTOM
+            or self._state.game_mode is not GameMode.REGULAR
+        ):
+            _msg_popup(
+                self,
+                QMessageBox.Warning,
+                "Highscores unavailable",
+                "No highscores available for the active settings.\n"
+                "Highscores are only stored for the standard board difficulties, "
+                "and currently only for the 'regular' game mode.",
+            )
             return
         if self._open_subwindows.get("highscores"):
             self._open_subwindows.get("highscores").close()
@@ -839,6 +918,17 @@ class MinegaulerGUI(
         """Set the cell size in pixels."""
         self._state.btn_size = size
         self._mf_widget.update_btn_size(size)
+
+    def factory_reset(self) -> None:
+        """
+        Reset to original state.
+        """
+        self._ctrlr.reset_settings()
+        self._state.reset()
+        for img_group in CellImageType:
+            if img_group is not CellImageType.ALL:
+                self._change_styles({img_group: self._state.styles[img_group]})
+        self._name_entry_widget.setText("")
 
 
 class _CurrentInfoModal(QDialog):
@@ -874,10 +964,10 @@ class _CurrentInfoModal(QDialog):
                 f"""\
 
                 Game was started at {start_time}
-                {state} after {fin_info.elapsed:.2f} seconds
+                {state} after {fin_info.elapsed + 0.005:.2f} seconds
                 The board was {fin_info.prop_flagging * 100:.1f}% flagged
                 The 3bv was: {fin_info.bbbv}
-                The 3bv/s rate was: {fin_info.bbbvps:.2f}
+                The 3bv/s rate was: {fin_info.bbbvps + 0.005:.2f}
                 """
             )
             if info.game_state is GameState.LOST:
@@ -902,13 +992,18 @@ class _CustomBoardModal(QDialog):
     """A popup window to select custom board dimensions."""
 
     def __init__(
-        self, parent: QWidget, cols: int, rows: int, mines: int, callback: Callable
+        self,
+        parent: QWidget,
+        cols: int,
+        rows: int,
+        mines: int,
+        callback: Callable[[int, int, int], None],
     ):
         super().__init__(parent)
         self._cols: int = cols
         self._rows: int = rows
         self._mines: int = mines
-        self._callback: Callable = callback
+        self._callback: Callable[[int, int, int], None] = callback
         self.setWindowTitle("Custom")
         self.setModal(True)
         self._setup_ui()

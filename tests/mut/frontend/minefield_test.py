@@ -15,7 +15,8 @@ from pytestqt.qtbot import QtBot
 
 from minegauler.core import api
 from minegauler.frontend import state
-from minegauler.frontend.minefield import _RAISED_CELL, _SUNKEN_CELL, MinefieldWidget
+from minegauler.frontend.minefield import MinefieldWidget
+from minegauler.frontend.minefield._base import RAISED_CELL, SUNKEN_CELL
 
 from . import utils
 
@@ -168,7 +169,7 @@ class TestMinefieldWidget:
         """
         assert mf_widget._state.drag_select is False
 
-        ## Left down before right down.
+        # TODO
 
     def test_click_out_of_bounds(self, qtbot: QtBot, mf_widget: MinefieldWidget):
         """Test clicking out of bounds of the minefield."""
@@ -267,10 +268,10 @@ class TestMinefieldWidget:
         self._mouse_down_pos = pos
 
     def assert_cell_sank(self, coord):
-        self._mf_widget._set_cell_image.assert_any_call(coord, _SUNKEN_CELL)
+        self._mf_widget._set_cell_image.assert_any_call(coord, SUNKEN_CELL)
 
     def assert_cell_rose(self, coord):
-        self._mf_widget._set_cell_image.assert_any_call(coord, _RAISED_CELL)
+        self._mf_widget._set_cell_image.assert_any_call(coord, RAISED_CELL)
 
     def assert_num_cells_changed(self, num):
         """
