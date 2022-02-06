@@ -13,6 +13,8 @@ import sys
 import tempfile
 from typing import List, Optional
 
+import minegauler  # To get the version
+
 
 class Platform(enum.Enum):
     WINDOWS = enum.auto()
@@ -82,7 +84,7 @@ def create_package(
 def archive_name() -> str:
     plat = Platform.current().name.lower()
     arch = platform.machine().lower()
-    return f"minegauler-{plat}-{arch}"
+    return f"minegauler-{minegauler.__version__}-{plat}-{arch}"
 
 
 def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:

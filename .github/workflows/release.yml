@@ -30,7 +30,7 @@ jobs:
         run: pip install pyinstaller -r requirements.txt
 
       - name: Create PyInstaller package
-        run: python3 scripts/create_release.py -o artefacts/
+        run: python3 -m scripts.create_release -v -o artefacts/
 
       - name: Store artefacts
         uses: actions/upload-artifact@v2
