@@ -1,7 +1,7 @@
 # June 2020, Lewis Gaul
 
 """
-Tests for the highscores module.
+Tests for the highscores sub-package.
 
 """
 
@@ -41,14 +41,14 @@ class TestLocalHighscoreDatabase:
         """Test creating a new highscores DB."""
         db = SQLiteDB(tmp_local_db_path)
         assert db._path == tmp_local_db_path
-        assert db.get_db_version() == 0
+        assert db.get_db_version() == 1
         tables = list(
             db.execute(
                 "SELECT name FROM sqlite_master "
                 "WHERE type='table' AND name NOT LIKE 'sqlite_%'"
             )
         )
-        assert list(tables) == [("highscores",)]
+        assert list(tables) == [("regular",), ("split_cell",)]
 
     def test_insert_count_get(self, tmp_local_db_path):
         """Test inserting, counting and getting highscores."""
@@ -203,14 +203,27 @@ class TestModuleAPIs:
         result = get_highscores(database=mock_db)
         assert result == "DUMMY_RESULT"
         mock_get_hs.assert_called_once_with(
-            difficulty=None, per_cell=None, drag_select=None, name=None
+            game_mode=GameMode.REGULAR,
+            difficulty=None,
+            per_cell=None,
+            drag_select=None,
+            name=None,
         )
         mock_get_hs.reset_mock()
 
         # Pass filters through.
-        get_highscores(database=mock_db, drag_select=True, name="FOO")
+        get_highscores(
+            game_mode=GameMode.SPLIT_CELL,
+            database=mock_db,
+            drag_select=True,
+            name="FOO",
+        )
         mock_get_hs.assert_called_once_with(
-            difficulty=None, per_cell=None, drag_select=True, name="FOO"
+            game_mode=GameMode.SPLIT_CELL,
+            difficulty=None,
+            per_cell=None,
+            drag_select=True,
+            name="FOO",
         )
         mock_get_hs.reset_mock()
 
@@ -218,10 +231,12 @@ class TestModuleAPIs:
         get_highscores(
             database=mock_db,
             settings=HighscoreSettingsStruct.get_default(),
+            game_mode="NONSENSE",
             drag_select=True,
             name="BAR",
         )
         mock_get_hs.assert_called_once_with(
+            game_mode=GameMode.REGULAR,
             difficulty=Difficulty.BEGINNER,
             per_cell=1,
             drag_select=False,

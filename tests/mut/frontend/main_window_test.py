@@ -10,7 +10,7 @@ from unittest import mock
 import pytest
 from pytestqt.qtbot import QtBot
 
-from minegauler import api, highscores, shared
+from minegauler import api
 from minegauler.frontend import main_window, minefield, panel, state
 from minegauler.frontend.main_window import MinegaulerGUI
 from minegauler.highscores import HighscoreStruct
@@ -52,7 +52,7 @@ class TestMinegaulerGUI:
             "minegauler.frontend.panel._CounterWidget", side_effect=_MockCounterWidget
         ).start()
         mock.patch("minegauler.frontend.minefield._base.update_cell_images").start()
-        mock.patch("minegauler.highscores").start()
+        mock.patch.object(main_window, "highscores").start()
 
     @classmethod
     def teardown_class(cls):
@@ -148,7 +148,7 @@ class TestMinegaulerGUI:
                 prop_flagging=0.4,
             ),
         )
-        highscores.is_highscore_new_best.return_value = "3bv/s"
+        main_window.highscores.is_highscore_new_best.return_value = "3bv/s"
         gui._state.drag_select = False
         gui._state.name = "NAME"
         exp_highscore = HighscoreStruct(
@@ -168,7 +168,9 @@ class TestMinegaulerGUI:
             with mock.patch.object(gui, "open_highscores_window") as mock_open:
                 gui.update_game_state(GameState.WON)
                 gui._panel_widget.timer.set_time.assert_called_once_with(100)
-                highscores.insert_highscore.assert_called_once_with(exp_highscore)
+                main_window.highscores.insert_highscore.assert_called_once_with(
+                    exp_highscore
+                )
                 mock_open.assert_called_once_with(mock.ANY, "3bv/s")
 
         # update_mines_remaining()
