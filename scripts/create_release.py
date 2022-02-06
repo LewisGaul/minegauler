@@ -105,7 +105,7 @@ def create_package(from_dir: pathlib.Path, dest_dir: pathlib.Path, fmt: Format) 
 def archive_name() -> str:
     plat = Platform.current().name.lower()
     arch = platform.machine().lower()
-    return f"minegauler-{minegauler.__version__}-{plat}-{arch}"
+    return f"minegauler-v{minegauler.__version__}-{plat}-{arch}"
 
 
 def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
