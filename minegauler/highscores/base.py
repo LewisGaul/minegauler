@@ -35,9 +35,6 @@ class HighscoreSettingsStruct(StructConstructorMixin):
     per_cell: int
     drag_select: bool
 
-    def __getitem__(self, item):
-        return getattr(self, item)
-
     @classmethod
     def get_default(cls) -> "HighscoreSettingsStruct":
         return cls(GameMode.REGULAR, Difficulty.BEGINNER, 1, False)
