@@ -13,6 +13,10 @@ Stand-out features in this release include:
  - Improved packaging
 
 
+### 4.1.2 (???)
+ - Add highscores for split-cells game mode
+
+
 ### 4.1.1 (2022-02-06)
  - Improve the PyInstaller setup (#71)
 
