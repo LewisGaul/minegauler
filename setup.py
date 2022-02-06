@@ -85,7 +85,6 @@ setuptools.setup(
     python_requires=">=3.7",
     install_requires=[
         "attrs",
-        "mysql-connector-python==8.*",
         "PyQt5",
         "requests",
     ],
