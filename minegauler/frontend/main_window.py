@@ -642,7 +642,6 @@ class MinegaulerGUI(
         if (
             info.game_state is GameState.WON
             and info.difficulty is not Difficulty.CUSTOM
-            and info.mode is GameMode.REGULAR
             and not info.minefield_known
         ):
             assert info.started_info.prop_complete == 1
@@ -884,10 +883,7 @@ class MinegaulerGUI(
             Optionally specify the key to sort the highscores by. Defaults to
             the previous sort key.
         """
-        if (
-            self._state.difficulty is Difficulty.CUSTOM
-            or self._state.game_mode is not GameMode.REGULAR
-        ):
+        if self._state.difficulty is Difficulty.CUSTOM:
             _msg_popup(
                 self,
                 QMessageBox.Warning,
@@ -901,6 +897,7 @@ class MinegaulerGUI(
             self._open_subwindows.get("highscores").close()
         if not settings:
             settings = HighscoreSettingsStruct(
+                mode=self._state.game_mode,
                 difficulty=self._state.difficulty,
                 per_cell=self._state.per_cell,
                 drag_select=self._state.drag_select,
