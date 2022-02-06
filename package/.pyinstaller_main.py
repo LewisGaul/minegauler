@@ -5,7 +5,7 @@ Entry script to the app.
 
 The app can be run with 'python -m minegauler' or just by running this script.
 
-This file is provided primarily for use with pyinstaller.
+This file is provided for use with pyinstaller.
 
 """
 

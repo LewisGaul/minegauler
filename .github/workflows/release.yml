@@ -47,7 +47,7 @@ jobs:
 
       # Fetch artefacts from pyinstaller job. Unfortunately, the download
       # involves creating artefact folders, meaning they end up at:
-      # ./artefacts/<os>/minegauler-<version>-<os>.{tgz,zip}
+      # ./artefacts/<os>/minegauler-<version>-<os>-<arch>.<ext>
       - name: Fetch artefacts
         uses: actions/download-artifact@v2
         with:
