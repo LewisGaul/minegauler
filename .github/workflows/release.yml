@@ -2,6 +2,8 @@ name: Workflow for creating a release
 
 on:
   push:
+    branches:
+      - pyinstaller-script
     tags:
       - 'v*.*.*'
 
