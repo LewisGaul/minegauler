@@ -55,9 +55,6 @@ class HighscoreStruct(HighscoreSettingsStruct):
     flagging: float
 
 
-_highscore_fields = attr.fields_dict(HighscoreStruct).keys()
-
-
 class AbstractHighscoresDB(abc.ABC):
     """Abstract base class for a highscores database."""
 
@@ -127,6 +124,8 @@ class SQLMixin:
 
     TABLES: Mapping[GameMode, str] = {m: m.name.lower() for m in GameMode}
 
+    _table_fields = [f.name for f in attr.fields(HighscoreStruct)][1:]
+
     def _get_create_table_sql(self, table_name: str) -> str:
         return textwrap.dedent(
             f"""\
@@ -164,7 +163,7 @@ class SQLMixin:
         if name is not None:
             conditions.append(f"LOWER(name)='{name.lower()}'")
         return "SELECT {fields} FROM {table} {where} ORDER BY elapsed ASC".format(
-            fields=", ".join(_highscore_fields),
+            fields=", ".join(self._table_fields),
             table=self.TABLES[game_mode],
             where="WHERE " + " AND ".join(conditions) if conditions else "",
         )
@@ -175,8 +174,8 @@ class SQLMixin:
         """Get the SQL command to insert a highscore into a DB."""
         return "INSERT INTO {table} ({fields}) VALUES ({fmt_})".format(
             table=self.TABLES[game_mode],
-            fields=", ".join(_highscore_fields),
-            fmt_=", ".join(fmt for _ in _highscore_fields),
+            fields=", ".join(self._table_fields),
+            fmt_=", ".join(fmt for _ in self._table_fields),
         )
 
     def _get_highscores_count_sql(

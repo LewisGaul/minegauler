@@ -11,14 +11,13 @@ from unittest import mock
 
 import pytest
 
-from minegauler.shared.highscores import (
-    HighscoresDatabases,
+from minegauler.highscores import (
     HighscoreSettingsStruct,
     HighscoreStruct,
-    LocalHighscoresDB,
+    SQLiteDB,
     get_highscores,
 )
-from minegauler.shared.types import Difficulty
+from minegauler.shared.types import Difficulty, GameMode
 
 
 @pytest.fixture(scope="module")
@@ -40,7 +39,7 @@ class TestLocalHighscoreDatabase:
 
     def test_create_db(self, tmp_local_db_path):
         """Test creating a new highscores DB."""
-        db = LocalHighscoresDB(tmp_local_db_path)
+        db = SQLiteDB(tmp_local_db_path)
         assert db._path == tmp_local_db_path
         assert db.get_db_version() == 0
         tables = list(
@@ -53,14 +52,16 @@ class TestLocalHighscoreDatabase:
 
     def test_insert_count_get(self, tmp_local_db_path):
         """Test inserting, counting and getting highscores."""
-        db = LocalHighscoresDB(tmp_local_db_path)
+        db = SQLiteDB(tmp_local_db_path)
         # Empty DB
         highscores = []
         assert db.count_highscores() == 0
         assert db.get_highscores() == []
 
         # Single highscore
-        my_hs = HighscoreStruct("M", 1, True, "Siwel G", 1234, 166.49, 322, 1.94, 0.0)
+        my_hs = HighscoreStruct(
+            GameMode.REGULAR, "M", 1, True, "Siwel G", 1234, 166.49, 322, 1.94, 0.0
+        )
         db.insert_highscore(my_hs)
         highscores.append(my_hs)
         assert db.count_highscores() == 1
@@ -68,11 +69,21 @@ class TestLocalHighscoreDatabase:
 
         # Multiple highscores
         for hs in [
-            HighscoreStruct("B", 1, False, "NAME1", 1234, 3.00, 5, 1.56, 0.0),
-            HighscoreStruct("B", 1, False, "NAME2", 1234, 3.11, 5, 1.56, 0.0),
-            HighscoreStruct("B", 1, True, "NAME1", 1234, 3.22, 5, 1.56, 0.0),
-            HighscoreStruct("B", 2, False, "NAME1", 1234, 3.33, 5, 1.56, 0.0),
-            HighscoreStruct("I", 1, False, "NAME1", 1234, 3.44, 5, 1.56, 0.0),
+            HighscoreStruct(
+                GameMode.REGULAR, "B", 1, False, "NAME1", 1234, 3.00, 5, 1.56, 0.0
+            ),
+            HighscoreStruct(
+                GameMode.REGULAR, "B", 1, False, "NAME2", 1234, 3.11, 5, 1.56, 0.0
+            ),
+            HighscoreStruct(
+                GameMode.REGULAR, "B", 1, True, "NAME1", 1234, 3.22, 5, 1.56, 0.0
+            ),
+            HighscoreStruct(
+                GameMode.REGULAR, "B", 2, False, "NAME1", 1234, 3.33, 5, 1.56, 0.0
+            ),
+            HighscoreStruct(
+                GameMode.REGULAR, "I", 1, False, "NAME1", 1234, 3.44, 5, 1.56, 0.0
+            ),
         ]:
             db.insert_highscore(hs)
             highscores.append(hs)
@@ -98,7 +109,11 @@ class TestLocalHighscoreDatabase:
             per_cell=1,
             drag_select=False,
             name="NAME1",
-        ) == [HighscoreStruct("B", 1, False, "NAME1", 1234, 3, 5, 1.56, 0)]
+        ) == [
+            HighscoreStruct(
+                GameMode.REGULAR, "B", 1, False, "NAME1", 1234, 3, 5, 1.56, 0
+            )
+        ]
 
         # Case insensitive name match.
         assert db.get_highscores(name="SIWel g") == [my_hs]
@@ -106,24 +121,40 @@ class TestLocalHighscoreDatabase:
     def test_merge_db(self, tmpdir):
         """Test merging DBs together."""
         # Setup
-        base_db = LocalHighscoresDB(tmpdir / "merge-base.db")
-        merge_db = LocalHighscoresDB(tmpdir / "merge-from.db")
+        base_db = SQLiteDB(tmpdir / "merge-base.db")
+        merge_db = SQLiteDB(tmpdir / "merge-from.db")
         base_highscores = sorted(
             [
-                HighscoreStruct("B", 1, False, "NAME1", 1234, 3.00, 5, 1.56, 0.0),
-                HighscoreStruct("B", 1, False, "NAME2", 1234, 3.11, 5, 1.56, 0.0),
-                HighscoreStruct("B", 1, True, "NAME1", 1234, 3.22, 5, 1.56, 0.0),
-                HighscoreStruct("B", 2, False, "NAME1", 1234, 3.33, 5, 1.56, 0.0),
-                HighscoreStruct("I", 1, False, "NAME1", 1234, 3.44, 5, 1.56, 0.0),
+                HighscoreStruct(
+                    GameMode.REGULAR, "B", 1, False, "NAME1", 1234, 3.00, 5, 1.56, 0.0
+                ),
+                HighscoreStruct(
+                    GameMode.REGULAR, "B", 1, False, "NAME2", 1234, 3.11, 5, 1.56, 0.0
+                ),
+                HighscoreStruct(
+                    GameMode.REGULAR, "B", 1, True, "NAME1", 1234, 3.22, 5, 1.56, 0.0
+                ),
+                HighscoreStruct(
+                    GameMode.REGULAR, "B", 2, False, "NAME1", 1234, 3.33, 5, 1.56, 0.0
+                ),
+                HighscoreStruct(
+                    GameMode.REGULAR, "I", 1, False, "NAME1", 1234, 3.44, 5, 1.56, 0.0
+                ),
             ],
             key=lambda h: h.elapsed,
         )
         merge_highscores = sorted(
             [
                 *base_highscores[:3],
-                HighscoreStruct("E", 3, True, "", 1234, 4.00, 5, 1.56, 0.0),
-                HighscoreStruct("E", 3, True, "blob", 1234, 4.01, 5, 1.56, 0.0),
-                HighscoreStruct("B", 1, False, "blob", 1234, 4.11, 5, 1.56, 0.0),
+                HighscoreStruct(
+                    GameMode.REGULAR, "E", 3, True, "", 1234, 4.00, 5, 1.56, 0.0
+                ),
+                HighscoreStruct(
+                    GameMode.REGULAR, "E", 3, True, "blob", 1234, 4.01, 5, 1.56, 0.0
+                ),
+                HighscoreStruct(
+                    GameMode.REGULAR, "B", 1, False, "blob", 1234, 4.11, 5, 1.56, 0.0
+                ),
             ],
             key=lambda h: h.elapsed,
         )
@@ -149,7 +180,7 @@ class TestLocalHighscoreDatabase:
 
     def test_merge_db_into_itself_error(self, tmp_local_db_path):
         """Test error is raised when trying to merge DB into itself."""
-        db = LocalHighscoresDB(tmp_local_db_path)
+        db = SQLiteDB(tmp_local_db_path)
         with pytest.raises(ValueError):
             db.merge_highscores(db.path)
 
@@ -162,14 +193,14 @@ class TestModuleAPIs:
     correctly.
     """
 
-    @mock.patch.object(HighscoresDatabases, "get_db_instance")
-    def test_get_highscores(self, mock_get_db):
+    def test_get_highscores(self):
         """Test getting highscores."""
-        mock_get_hs = mock_get_db.return_value.get_highscores
+        mock_db = mock.MagicMock()
+        mock_get_hs = mock_db.get_highscores
         mock_get_hs.return_value = "DUMMY_RESULT"
 
         # Basic call passed onto local DB.
-        result = get_highscores()
+        result = get_highscores(database=mock_db)
         assert result == "DUMMY_RESULT"
         mock_get_hs.assert_called_once_with(
             difficulty=None, per_cell=None, drag_select=None, name=None
@@ -177,7 +208,7 @@ class TestModuleAPIs:
         mock_get_hs.reset_mock()
 
         # Pass filters through.
-        get_highscores(drag_select=True, name="FOO")
+        get_highscores(database=mock_db, drag_select=True, name="FOO")
         mock_get_hs.assert_called_once_with(
             difficulty=None, per_cell=None, drag_select=True, name="FOO"
         )
@@ -185,6 +216,7 @@ class TestModuleAPIs:
 
         # Settings take precedent.
         get_highscores(
+            database=mock_db,
             settings=HighscoreSettingsStruct.get_default(),
             drag_select=True,
             name="BAR",

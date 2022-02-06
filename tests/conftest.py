@@ -8,7 +8,7 @@ from unittest import mock
 import pytest
 
 import minegauler
-import minegauler.shared.highscores
+import minegauler.highscores
 
 from . import PKG_DIR
 
@@ -65,9 +65,7 @@ def sandbox(tmpdir_factory: pytest.TempdirFactory):
                 )
 
         ctxs.enter_context(
-            mock.patch.object(
-                minegauler.shared.highscores.HighscoresDatabases.REMOTE, "_value_"
-            )
+            mock.patch.object(minegauler.highscores, "_post_highscore_to_remote")
         )
 
         yield

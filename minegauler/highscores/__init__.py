@@ -52,7 +52,7 @@ def get_highscores(
     Fetch highscores from a database.
 
     :param database:
-        The to fetch from, defaults to the local highscores DB.
+        The database to fetch from, defaults to the local highscores DB.
     :param settings:
         Optionally specify settings to filter by.
     :param game_mode:
@@ -82,17 +82,33 @@ def get_highscores(
     )
 
 
-def insert_highscore(highscore: HighscoreStruct) -> None:
-    """Insert a highscore into DBs."""
-    _default_local_db.insert_highscore(highscore)
+def insert_highscore(
+    highscore: HighscoreStruct,
+    *,
+    database: Optional[AbstractHighscoresDB] = None,
+    post_remote: bool = True,
+) -> None:
+    """
+    Insert a highscore into a database.
 
-    def _post_catch_exc():
-        try:
-            _post_highscore_to_remote(highscore)
-        except Exception:
-            logger.exception("Failed to insert highscore into remote DB")
+    :param database:
+        The database to insert into, defaults to the local highscores DB.
+    :param post_remote:
+        Whether to post the highscore to the remote master DB.
+    """
+    if database is None:
+        database = _default_local_db
+    database.insert_highscore(highscore)
 
-    threading.Thread(target=_post_catch_exc).start()
+    if post_remote:
+
+        def _post_catch_exc():
+            try:
+                _post_highscore_to_remote(highscore)
+            except Exception:
+                logger.exception("Failed to insert highscore into remote DB")
+
+        threading.Thread(target=_post_catch_exc).start()
 
 
 def retrieve_highscores(path: PathLike) -> int:

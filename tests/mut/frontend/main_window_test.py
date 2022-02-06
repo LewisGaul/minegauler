@@ -10,10 +10,10 @@ from unittest import mock
 import pytest
 from pytestqt.qtbot import QtBot
 
-from minegauler import api, shared
+from minegauler import api, highscores, shared
 from minegauler.frontend import main_window, minefield, panel, state
 from minegauler.frontend.main_window import MinegaulerGUI
-from minegauler.shared import HighscoreStruct
+from minegauler.highscores import HighscoreStruct
 from minegauler.shared.types import Difficulty, GameMode, GameState
 
 from ..utils import make_true_mock
@@ -52,7 +52,7 @@ class TestMinegaulerGUI:
             "minegauler.frontend.panel._CounterWidget", side_effect=_MockCounterWidget
         ).start()
         mock.patch("minegauler.frontend.minefield._base.update_cell_images").start()
-        mock.patch("minegauler.shared.highscores").start()
+        mock.patch("minegauler.highscores").start()
 
     @classmethod
     def teardown_class(cls):
@@ -148,20 +148,27 @@ class TestMinegaulerGUI:
                 prop_flagging=0.4,
             ),
         )
-        shared.highscores.is_highscore_new_best.return_value = "3bv/s"
+        highscores.is_highscore_new_best.return_value = "3bv/s"
         gui._state.drag_select = False
         gui._state.name = "NAME"
         exp_highscore = HighscoreStruct(
-            Difficulty.BEGINNER, 2, False, "NAME", 1234, 99.01, 123, 123 / 99.01, 0.4
+            GameMode.REGULAR,
+            Difficulty.BEGINNER,
+            2,
+            False,
+            "NAME",
+            1234,
+            99.01,
+            123,
+            123 / 99.01,
+            0.4,
         )
 
         with mock.patch("minegauler.frontend.utils.save_highscore_file"):
             with mock.patch.object(gui, "open_highscores_window") as mock_open:
                 gui.update_game_state(GameState.WON)
                 gui._panel_widget.timer.set_time.assert_called_once_with(100)
-                shared.highscores.insert_highscore.assert_called_once_with(
-                    exp_highscore
-                )
+                highscores.insert_highscore.assert_called_once_with(exp_highscore)
                 mock_open.assert_called_once_with(mock.ANY, "3bv/s")
 
         # update_mines_remaining()

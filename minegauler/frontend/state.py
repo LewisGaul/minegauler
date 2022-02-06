@@ -23,7 +23,7 @@ from typing import Dict, Optional
 
 import attr
 
-from ..shared import HighscoreStruct
+from ..highscores import HighscoreStruct
 from ..shared.types import CellImageType, Difficulty, GameMode, GameState, UIMode
 from ..shared.utils import GameOptsStruct, GUIOptsStruct, StructConstructorMixin
 

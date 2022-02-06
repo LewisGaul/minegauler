@@ -45,12 +45,8 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from .. import api, paths, shared
-from ..shared.highscores import (
-    HighscoreSettingsStruct,
-    HighscoreStruct,
-    retrieve_highscores,
-)
+from .. import api, highscores, paths
+from ..highscores import HighscoreSettingsStruct, HighscoreStruct
 from ..shared.types import (
     CellContents,
     CellImageType,
@@ -62,7 +58,8 @@ from ..shared.types import (
     UIMode,
 )
 from ..shared.utils import GUIOptsStruct, format_timestamp
-from . import highscores, minefield, panel, state, utils
+from . import highscores as highscores_ui
+from . import minefield, panel, state, utils
 from .minefield import simulate
 
 
@@ -650,6 +647,7 @@ class MinegaulerGUI(
         ):
             assert info.started_info.prop_complete == 1
             highscore = HighscoreStruct(
+                mode=info.mode,
                 difficulty=info.difficulty,
                 per_cell=info.per_cell,
                 timestamp=int(info.started_info.start_time),
@@ -661,15 +659,15 @@ class MinegaulerGUI(
                 flagging=info.started_info.prop_flagging,
             )
             try:
-                shared.highscores.insert_highscore(highscore)
+                highscores.insert_highscore(highscore)
             except Exception:
                 logger.exception("Error inserting highscore")
             self._state.highscores_state.current_highscore = highscore
             # Check whether to pop up the highscores window.
             # TODO: This is too slow...
             try:
-                new_best = shared.highscores.is_highscore_new_best(
-                    highscore, shared.highscores.get_highscores(settings=highscore)
+                new_best = highscores.is_highscore_new_best(
+                    highscore, highscores.get_highscores(settings=highscore)
                 )
             except Exception:
                 logger.exception("Error getting highscores")
@@ -824,7 +822,7 @@ class MinegaulerGUI(
 
         try:
             logger.info("Fetching highscores from %s", file)
-            added = retrieve_highscores(file)
+            added = highscores.retrieve_highscores(file)
             _msg_popup(
                 self,
                 QMessageBox.Information,
@@ -910,7 +908,9 @@ class MinegaulerGUI(
         if sort_by:
             self._state.highscores_state.sort_by = sort_by
         self._state.highscores_state.name_hint = self._state.name
-        win = highscores.HighscoresWindow(self, settings, self._state.highscores_state)
+        win = highscores_ui.HighscoresWindow(
+            self, settings, self._state.highscores_state
+        )
         win.show()
         self._open_subwindows["highscores"] = win
 
