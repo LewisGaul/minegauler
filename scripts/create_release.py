@@ -38,6 +38,10 @@ class Format(enum.Enum):
     PLAIN = enum.auto()
 
     @classmethod
+    def from_str(cls, name: str) -> "Format":
+        return getattr(cls, name.upper())
+
+    @classmethod
     def default(cls) -> "Format":
         if Platform.current() is Platform.WINDOWS:
             return cls.ZIP
@@ -51,12 +55,12 @@ class Format(enum.Enum):
             return f".{self.name.lower()}"
 
 
-def run_pyinstaller(output_dir: os.PathLike) -> None:
+def run_pyinstaller(output_dir: pathlib.Path) -> None:
     cmd = [
         # fmt: off
         "pyinstaller",
         "--distpath", str(output_dir),
-        "minegauler.spec",
+        "package/minegauler.spec",
         # fmt: on
     ]
     logging.debug("Running command: %s", " ".join(shlex.quote(x) for x in cmd))
@@ -65,19 +69,36 @@ def run_pyinstaller(output_dir: os.PathLike) -> None:
         raise Exception(f"Pyinstaller command with exit code {proc.returncode}")
 
 
-def create_package(
-    from_dir: os.PathLike, dest_dir: pathlib.Path, format: Format
-) -> str:
+def create_package(from_dir: pathlib.Path, dest_dir: pathlib.Path, fmt: Format) -> str:
+    # Create outer files.
+    shutil.copy2("CHANGELOG.md", from_dir / "CHANGELOG.txt")
+    shutil.copy2("LICENSE.txt", from_dir)
+    if Platform.current() is Platform.WINDOWS:
+        root_filename = "minegauler.bat"
+        dist_filename = "minegauler.exe"
+        shutil.copy2("package/windows_wrapper_script.bat", from_dir / root_filename)
+    else:
+        root_filename = "minegauler.exe"
+        dist_filename = "minegauler"
+        os.symlink(os.path.join("minegauler", dist_filename), from_dir / root_filename)
+    with open("package/README.txt.template", "r") as f:
+        readme = f.read().format(
+            root_filename=root_filename, dist_filename=dist_filename
+        )
+    with open(from_dir / "README.txt", "w") as f:
+        f.write(readme)
+
+    # Copy over and archive at destination.
     os.makedirs(dest_dir, exist_ok=True)
     logging.debug("Creating package in: %s/", dest_dir)
-    dest = dest_dir / archive_name()
-    if format is Format.PLAIN:
-        shutil.copytree(from_dir, dest)
-        return str(dest)
-    if format is Format.TGZ:
+    dest = str(dest_dir / archive_name())
+    if fmt is Format.PLAIN:
+        shutil.copytree(from_dir, dest, symlinks=True)
+        return dest
+    if fmt is Format.TGZ:
         shutil_fmt = "gztar"
     else:
-        shutil_fmt = format.name.lower()
+        shutil_fmt = fmt.name.lower()
     return shutil.make_archive(dest, shutil_fmt, from_dir)
 
 
@@ -93,9 +114,9 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         "-f",
         "--format",
         metavar="FMT",
-        type=Format,
+        type=Format.from_str,
         default=Format.default(),
-        choices=[f.name.lower() for f in Format],
+        choices=Format,
         help="output format, one of {}".format(
             ", ".join(
                 f.name.lower() + (" (default)" if f is Format.default() else "")
@@ -121,6 +142,7 @@ def main(argv: List[str]) -> None:
     args = parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
     with tempfile.TemporaryDirectory(prefix="pyinstaller-") as tmpdir:
+        tmpdir = pathlib.Path(tmpdir)
         run_pyinstaller(tmpdir)
         path = create_package(tmpdir, args.output_dir, args.format)
     logging.info("Created package at %s", path)

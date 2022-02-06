@@ -10,6 +10,11 @@ See the [issues page](https://github.com/LewisGaul/minegauler/issues) for upcomi
 Stand-out features in this release include:
  - Split cells game mode
  - Themes (replacing button styles)
+ - Improved packaging
+
+
+### 4.1.1 (2022-02-06)
+ - Improve the PyInstaller setup (#71)
 
 
 ### 4.1.0 (2022-01-18)
