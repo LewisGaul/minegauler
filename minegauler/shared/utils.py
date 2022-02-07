@@ -54,7 +54,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
 import attr
 
-from .. import paths
+#from .. import paths   commented out this line because "paths" is unused
 from .types import CellImageType, GameMode, PathLike
 
 
@@ -85,7 +85,7 @@ class Grid(list):
             What to fill the grid with.
         """
         super().__init__()
-        for j in range(y_size):
+        for _ in range(y_size):
             row = x_size * [fill]
             self.append(row)
         self.x_size: int = x_size
@@ -112,10 +112,7 @@ class Grid(list):
             The size to display a grid cell as. Defaults to the maximum size of
             the representation of all the objects contained in the grid.
         """
-        # @@@LG Some attention please :)
-
-        # Use max length of object representation if no cell size given.
-        if cell_size is None:
+         if cell_size is None:
             cell_size = max([len(repr(obj)) for row in self for obj in row])
 
         cell = "{:>%d}" % cell_size
@@ -178,8 +175,8 @@ class Grid(list):
             The item to fill the grid with.
         """
         for row in self:
-            for i in range(len(row)):
-                row[i] = item
+            for column in row:
+                column = item
 
     def get_nbrs(
         self, coord: Tuple[int, int], *, include_origin=False
