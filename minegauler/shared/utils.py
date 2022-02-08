@@ -117,7 +117,7 @@ class Grid(list):
         if cell_size is None:
             cell_size = max([len(repr(obj)) for row in self for obj in row])
 
-        cell = "{:>%d}" % cell_size
+        cell = f"{{:>{cell_size}}}"
         ret = ""
         for row in self:
             for obj in row:
