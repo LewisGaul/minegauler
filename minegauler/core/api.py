@@ -232,8 +232,9 @@ class _Notifier(AbstractListener):
                 try:
                     getattr(listener, func)(*args, **kwargs)
                 except Exception as e:
+                    write=f"Error occurred calling {func}() on {listener}"
                     self._logger.warning(
-                        f"Error occurred calling {func}() on {listener}"
+                        write
                     )
                     listener.handle_exception(func, e)
 
@@ -254,13 +255,16 @@ class _Notifier(AbstractListener):
         :param y_size:
             The number of columns.
         """
-        self._logger.debug(f"Calling resize_minefield() with %s, %s", x_size, y_size)
+        write=f"Calling resize_minefield() with {x_size}, {y_size}"
+        self._logger.debug(write)
 
     def set_mines(self, mines: int) -> None:
-        self._logger.debug(f"Calling set_mines() with %d", mines)
+        write=f"Calling set_mines() with {mines}"
+        self._logger.debug(write)
 
     def set_difficulty(self, diff: Difficulty) -> None:
-        self._logger.debug(f"Calling set_difficulty() with %s", diff)
+        write=f"Calling set_difficulty() with {diff}"
+        self._logger.debug(write)
 
     def update_cells(self, cell_updates: Dict[Coord, CellContents]) -> None:
         """
@@ -269,8 +273,9 @@ class _Notifier(AbstractListener):
         :param cell_updates:
             Mapping of coordinates that were changed to the new cell state.
         """
+        write=f"Calling update_cells() with {len(cell_updates)} updated cells"
         self._logger.debug(
-            f"Calling update_cells() with {len(cell_updates)} updated cells"
+            write
         )
 
     def update_game_state(self, game_state: GameState) -> None:
@@ -280,7 +285,8 @@ class _Notifier(AbstractListener):
         :param game_state:
             The new game state.
         """
-        self._logger.debug(f"Calling update_game_state() with {game_state}")
+        write=f"Calling update_game_state() with {game_state}"
+        self._logger.debug(write)
 
     def update_mines_remaining(self, mines_remaining: int) -> None:
         """
@@ -289,7 +295,8 @@ class _Notifier(AbstractListener):
         :param mines_remaining:
             The new number of mines remaining.
         """
-        self._logger.debug(f"Calling update_mines_remaining() with {mines_remaining}")
+        write=f"Calling update_mines_remaining() with {mines_remaining}"
+        self._logger.debug(write)
 
     def ui_mode_changed(self, mode: UIMode) -> None:
         """
@@ -298,7 +305,8 @@ class _Notifier(AbstractListener):
         :param mode:
             The mode to change to.
         """
-        self._logger.debug(f"Calling ui_mode_changed() with %r", mode.name)
+        write=f"Calling ui_mode_changed() with {mode.name}"
+        self._logger.debug(write)
 
     def game_mode_about_to_change(self, mode: GameMode) -> None:
         """
@@ -307,7 +315,8 @@ class _Notifier(AbstractListener):
         :param mode:
             The mode to change to.
         """
-        self._logger.debug(f"Calling game_mode_about_to_change() with %r", mode.name)
+        write=f"Calling game_mode_about_to_change() with {mode.name}"
+        self._logger.debug(write)
 
     def game_mode_changed(self, mode: GameMode) -> None:
         """
@@ -316,7 +325,8 @@ class _Notifier(AbstractListener):
         :param mode:
             The mode to change to.
         """
-        self._logger.debug(f"Calling game_mode_changed() with %r", mode.name)
+        write=f"Calling game_mode_changed() with {mode.name}"
+        self._logger.debug(write)
 
     def handle_exception(self, method: str, exc: Exception) -> None:
         """
