@@ -263,4 +263,4 @@ class Game(GameBase):
         try:
             return self._cell_updates
         finally:
-            self._cell_updates = dict()
+            self._cell_updates = {}
