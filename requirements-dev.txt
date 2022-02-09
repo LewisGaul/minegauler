@@ -37,7 +37,8 @@ Pygments==2.10.0
 pyinstaller==4.9
 pyinstaller-hooks-contrib==2022.0
 pyparsing==2.4.7
-PyQt5==5.14.2
+PyQt5==5.14.2; platform_system != 'Windows'
+PyQt5==5.15.6; platform_system == 'Windows'
 PyQt5-sip==12.9.0
 pytest==6.2.5
 pytest-benchmark==3.4.1
