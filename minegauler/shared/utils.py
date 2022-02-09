@@ -54,7 +54,6 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
 import attr
 
-from .. import paths
 from .types import CellImageType, GameMode, PathLike
 
 
@@ -85,7 +84,7 @@ class Grid(list):
             What to fill the grid with.
         """
         super().__init__()
-        for j in range(y_size):
+        for _ in range(y_size):
             row = x_size * [fill]
             self.append(row)
         self.x_size: int = x_size
@@ -118,7 +117,7 @@ class Grid(list):
         if cell_size is None:
             cell_size = max([len(repr(obj)) for row in self for obj in row])
 
-        cell = "{:>%d}" % cell_size
+        cell = f"{{:>{cell_size}}}"
         ret = ""
         for row in self:
             for obj in row:
