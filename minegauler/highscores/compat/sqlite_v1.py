@@ -1,9 +1,9 @@
 # February 2022, Lewis Gaul
 
 """
-Compatibility with v0 SQLite highscore format.
+Compatibility with v1 SQLite highscore format.
 
-This is the initial SQLite format that comes with v4.0 minegauler.
+This version adds split-cell mode highscore support in v4.1.2 minegauler.
 
 """
 
@@ -16,27 +16,27 @@ from ...shared.types import PathLike
 from ..base import HighscoreStruct
 
 
-_TABLE_NAME = "highscores"
+_TABLE_NAMES = ["regular", "split_cell"]
 
 
 def read_highscores(path: PathLike) -> Iterable[HighscoreStruct]:
     ret = set()
     with sqlite3.connect(str(path)) as conn:
-        cursor = conn.execute(f"SELECT * FROM {_TABLE_NAME}")
-        for row in cursor:
-            # First row entry is 'index' (ignore).
-            ret.add(
-                HighscoreStruct(
-                    mode="regular",  # only mode supported
-                    difficulty=row[1],
-                    per_cell=row[2],
-                    drag_select=row[3],
-                    name=row[4],
-                    timestamp=row[5],
-                    elapsed=row[6],
-                    bbbv=row[7],
-                    bbbvps=row[8],
-                    flagging=row[9],
+        for table_name in _TABLE_NAMES:
+            cursor = conn.execute(f"SELECT * FROM {table_name}")
+            for row in cursor:
+                ret.add(
+                    HighscoreStruct(
+                        mode=table_name,
+                        difficulty=row[0],
+                        per_cell=row[1],
+                        drag_select=row[2],
+                        name=row[3],
+                        timestamp=row[4],
+                        elapsed=row[5],
+                        bbbv=row[6],
+                        bbbvps=row[7],
+                        flagging=row[8],
+                    )
                 )
-            )
     return ret
