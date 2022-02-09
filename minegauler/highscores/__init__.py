@@ -6,6 +6,7 @@ Highscores handling.
 """
 
 __all__ = (
+    "HighscoreReadError",
     "HighscoreSettingsStruct",
     "HighscoreStruct",
     "SQLiteDB",
@@ -25,7 +26,9 @@ import requests
 from .. import paths
 from ..shared import utils
 from ..shared.types import Difficulty, GameMode, PathLike
+from . import compat
 from .base import AbstractHighscoresDB, HighscoreSettingsStruct, HighscoreStruct
+from .compat import HighscoreReadError
 
 # from .mysql import MySQLDB  # Do not uncomment this without adding dependency on mysql connector
 from .sqlite import SQLiteDB
@@ -112,7 +115,19 @@ def insert_highscore(
 
 
 def retrieve_highscores(path: PathLike) -> int:
-    return _default_local_db.merge_highscores(path)
+    """
+    Insert highscores from another DB at the given path.
+
+    Handles reading in older highscore formats.
+
+    :param path:
+        Path to highscores, may be file or directory as required.
+    :return:
+        Number of inserted highscores.
+    :raise HighscoreReadError:
+        If unable to read highscores from the given path.
+    """
+    return _default_local_db.insert_highscores(compat.read_highscores(path))
 
 
 def filter_and_sort(
@@ -162,7 +177,7 @@ def filter_and_sort(
         i = 0
         while i < len(ret):
             hs = ret[i]
-            name = hs["name"].lower()
+            name = hs.name.lower()
             if name in names:
                 ret.pop(i)
             else:

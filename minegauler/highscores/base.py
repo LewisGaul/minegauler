@@ -30,10 +30,10 @@ logger = logging.getLogger(__name__)
 class HighscoreSettingsStruct(StructConstructorMixin):
     """A set of highscore settings."""
 
-    mode: GameMode
+    mode: GameMode = attr.attrib(converter=GameMode.from_str)
     difficulty: Difficulty = attr.attrib(converter=Difficulty.from_str)
     per_cell: int
-    drag_select: bool
+    drag_select: bool = attr.attrib(converter=bool)
 
     @classmethod
     def get_default(cls) -> "HighscoreSettingsStruct":
@@ -87,11 +87,10 @@ class AbstractHighscoresDB(abc.ABC):
         return NotImplemented
 
     @abc.abstractmethod
-    def insert_highscore(self, highscore: HighscoreStruct) -> None:
-        """Insert a single highscore into the database."""
-        logger.debug(
-            "%s: Inserting highscore into DB: %s", type(self).__name__, highscore
-        )
+    def insert_highscores(self, highscores: Iterable[HighscoreStruct]) -> int:
+        """Insert highscores into the database."""
+        logger.debug("%s: Inserting highscores into DB", type(self).__name__)
+        return NotImplemented
 
     def execute(self, cmd: str, params: Tuple = (), *, commit=False, **cursor_args):
         """
@@ -115,6 +114,28 @@ class AbstractHighscoresDB(abc.ABC):
             self.conn.commit()
         return cursor
 
+    def executemany(
+        self, cmd: str, params: Iterable[Tuple] = (), *, commit=False, **cursor_args
+    ):
+        """
+        Execute multiple commands on the database.
+
+        :param cmd:
+            The commands to execute.
+        :param params:
+            Parameters to pass to the command.
+        :param commit:
+            Whether to do a commit after executing the command.
+        :param cursor_args:
+            Keyword arguments to pass on when creating the DB cursor.
+        """
+        cursor = self.conn.cursor(**cursor_args)
+        logger.debug("%s: Executing commands:\n%r", type(self).__name__, cmd)
+        cursor.executemany(cmd, params)
+        if commit:
+            self.conn.commit()
+        return cursor
+
 
 class SQLMixin:
     """A mixin for SQL-like highscores databases."""
@@ -127,7 +148,6 @@ class SQLMixin:
         return textwrap.dedent(
             f"""\
             CREATE TABLE IF NOT EXISTS {table_name} (
-                id INTEGER PRIMARY KEY,
                 difficulty VARCHAR(1) NOT NULL,
                 per_cell INTEGER NOT NULL,
                 drag_select INTEGER NOT NULL,
@@ -136,7 +156,8 @@ class SQLMixin:
                 elapsed REAL NOT NULL,
                 bbbv INTEGER NOT NULL,
                 bbbvps REAL NOT NULL,
-                flagging REAL NOT NULL
+                flagging REAL NOT NULL,
+                PRIMARY KEY(difficulty, name, timestamp)
             )"""
         )
 
@@ -169,7 +190,7 @@ class SQLMixin:
         self, fmt="%s", *, game_mode: GameMode = GameMode.REGULAR
     ) -> str:
         """Get the SQL command to insert a highscore into a DB."""
-        return "INSERT INTO {table} ({fields}) VALUES ({fmt_})".format(
+        return "INSERT OR IGNORE INTO {table} ({fields}) VALUES ({fmt_})".format(
             table=self.TABLES[game_mode],
             fields=", ".join(self._table_fields),
             fmt_=", ".join(fmt for _ in self._table_fields),

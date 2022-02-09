@@ -821,13 +821,22 @@ class MinegaulerGUI(
 
         try:
             logger.info("Fetching highscores from %s", file)
-            added = highscores.retrieve_highscores(file)
-            _msg_popup(
-                self,
-                QMessageBox.Information,
-                "Highscores retrieved",
-                f"Number of highscores added: {added}",
-            )
+            try:
+                added = highscores.retrieve_highscores(file)
+            except highscores.HighscoreReadError as e:
+                _msg_popup(
+                    self,
+                    QMessageBox.Warning,
+                    "Highscores retrieve failed",
+                    f"Unable to retrieve highscores, error: {e}\n",
+                )
+            else:
+                _msg_popup(
+                    self,
+                    QMessageBox.Information,
+                    "Highscores retrieved",
+                    f"Number of highscores added: {added}",
+                )
         except Exception as e:
             _msg_popup(
                 self,

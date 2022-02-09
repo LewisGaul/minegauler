@@ -2,6 +2,7 @@
 
 __all__ = ("SQLiteDB",)
 
+import logging
 import os.path
 import pathlib
 import sqlite3
@@ -13,19 +14,23 @@ from ..shared.types import Difficulty, GameMode, PathLike
 from .base import AbstractHighscoresDB, HighscoreStruct, SQLMixin
 
 
+logger = logging.getLogger(__name__)
+
+
 class SQLiteDB(SQLMixin, AbstractHighscoresDB):
     """Database of local highscores."""
 
-    def __init__(self, path: pathlib.Path):
-        self._path = path
-        if os.path.exists(path):
-            self._conn = sqlite3.connect(str(path))
+    def __init__(self, path: PathLike):
+        self._path = pathlib.Path(path)
+        if self._path.is_file():
+            self._conn = sqlite3.connect(str(self._path))
         else:
-            os.makedirs(path.parent, exist_ok=True)
-            self._conn = sqlite3.connect(str(path))
+            logger.debug("Creating SQLite highscores DB")
+            os.makedirs(self._path.parent, exist_ok=True)
+            self._conn = sqlite3.connect(str(self._path))
 
             for t in self.TABLES.values():
-                self.execute(self._get_create_table_sql(t))
+                self.execute(self._get_create_table_sql(t), commit=True)
             self.execute("PRAGMA user_version = 1")
 
     @property
@@ -76,40 +81,31 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
     def count_highscores(self) -> int:
         """Count the number of rows in the highscores table."""
         super().count_highscores()
-        return next(self.execute(self._get_highscores_count_sql()))[0]
-
-    def merge_highscores(self, path: PathLike) -> int:
-        """Merge in highscores from a given other SQLite DB."""
-        if pathlib.Path(path) == self._path:
-            raise ValueError("Cannot merge database into itself")
-
-        for table in self.TABLES.values():
-            tmp_table = "mergedTable"
-            attach_db = "toMergeDB"
-
-            first_count = self.count_highscores()
-            self.execute(f"ATTACH DATABASE '{path!s}' AS {attach_db}")
-
-            self.execute(
-                f"CREATE TABLE IF NOT EXISTS {tmp_table} AS "
-                f"SELECT * FROM {table} UNION SELECT * FROM {attach_db}.{table}"
+        return sum(
+            self.extract_single_elem(
+                self.execute(self._get_highscores_count_sql(game_mode=mode))
             )
-            # TODO: This is not completely atomic, can we do better?
-            self.execute(f"DROP TABLE IF EXISTS {table}")
-            self.execute(f"ALTER TABLE {tmp_table} RENAME TO {table}")
-            self.execute(f"DETACH DATABASE {attach_db}")
-            self.conn.commit()
-            return self.count_highscores() - first_count
-
-    def insert_highscore(self, highscore: HighscoreStruct) -> None:
-        super().insert_highscore(highscore)
-        self.execute(
-            self._get_insert_highscore_sql(fmt="?", game_mode=highscore.mode),
-            attr.astuple(highscore)[1:],
-            commit=True,
+            for mode in GameMode
         )
+
+    def insert_highscores(self, highscores: Iterable[HighscoreStruct]) -> int:
+        super().insert_highscores(highscores)
+        orig_count = self.count_highscores()
+        for mode in GameMode:
+            mode_rows = [attr.astuple(h)[1:] for h in highscores if h.mode is mode]
+            self.executemany(
+                self._get_insert_highscore_sql(fmt="?", game_mode=mode),
+                mode_rows,
+                commit=True,
+            )
+        return self.count_highscores() - orig_count
 
     def execute(
         self, cmd: str, params: Tuple = (), *, commit=False, **cursor_args
     ) -> sqlite3.Cursor:
         return super().execute(cmd, params, commit=commit, **cursor_args)
+
+    def executemany(
+        self, cmd: str, params: Iterable[Tuple] = (), *, commit=False, **cursor_args
+    ) -> sqlite3.Cursor:
+        return super().executemany(cmd, params, commit=commit, **cursor_args)

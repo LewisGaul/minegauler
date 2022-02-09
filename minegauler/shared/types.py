@@ -330,6 +330,12 @@ class GameMode(str, enum.Enum):
     REGULAR = "REGULAR"
     SPLIT_CELL = "SPLIT_CELL"
 
+    @classmethod
+    def from_str(cls, value: str) -> "Difficulty":
+        """Create an instance from a string representation."""
+        if value.upper() in [x.name for x in cls]:
+            return getattr(cls, value.upper())
+
 
 # ------------------------------------------------------------------------------
 # GUI enums

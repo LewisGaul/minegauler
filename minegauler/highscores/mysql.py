@@ -93,15 +93,24 @@ class MySQLDB(SQLMixin, AbstractHighscoresDB):
         super().count_highscores()
         return next(self.execute(self._get_highscores_count_sql()))[0]
 
-    def insert_highscore(self, highscore: HighscoreStruct) -> None:
-        super().insert_highscore(highscore)
-        self.execute(
-            self._get_insert_highscore_sql(game_mode=highscore.mode),
-            attr.astuple(highscore)[1:],
-            commit=True,
-        )
+    def insert_highscores(self, highscores: Iterable[HighscoreStruct]) -> None:
+        super().insert_highscores(highscores)
+        orig_count = self.count_highscores()
+        for mode in GameMode:
+            mode_rows = [attr.astuple(h)[1:] for h in highscores if h.mode is mode]
+            self.executemany(
+                self._get_insert_highscore_sql(fmt="?", game_mode=mode),
+                mode_rows,
+                commit=True,
+            )
+        return self.count_highscores() - orig_count
 
     def execute(
         self, cmd: str, params: Tuple = (), *, commit=False, **cursor_args
     ) -> mysql.connector.cursor.MySQLCursor:
         return super().execute(cmd, params, commit=commit, **cursor_args)
+
+    def executemany(
+        self, cmd: str, params: Iterable[Tuple] = (), *, commit=False, **cursor_args
+    ) -> mysql.connector.cursor.MySQLCursor:
+        return super().executemany(cmd, params, commit=commit, **cursor_args)
