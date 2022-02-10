@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-_remote_db = hs.SQLiteDB("/home/pi/.local/var/lib/minegauler-highscores.db")
+SQLITE_DB_PATH = "/home/pi/.local/var/lib/minegauler-highscores.db"
 
 
 # ------------------------------------------------------------------------------
@@ -52,7 +52,7 @@ def api_v1_highscore():
         return "", 200
 
     try:
-        _remote_db.insert_highscores([highscore])
+        hs.SQLiteDB(SQLITE_DB_PATH).insert_highscores([highscore])
     except Exception as e:
         logger.exception("Failed to insert highscore into remote DB")
         # TODO: I want to know if this is hit!
@@ -82,7 +82,10 @@ def api_v1_highscores():
         kwargs["drag_select"] = bool(int(drag_select))
     kwargs["name"] = request.args.get("name")
     return jsonify(
-        [attr.asdict(h) for h in hs.get_highscores(database=_remote_db, **kwargs)]
+        [
+            attr.asdict(h)
+            for h in hs.get_highscores(database=hs.SQLiteDB(SQLITE_DB_PATH), **kwargs)
+        ]
     )
 
 
@@ -105,7 +108,7 @@ def api_v1_highscores_ranks():
             attr.asdict(h)
             for h in hs.filter_and_sort(
                 hs.get_highscores(
-                    database=_remote_db,
+                    database=hs.SQLiteDB(SQLITE_DB_PATH),
                     game_mode=game_mode,
                     difficulty=difficulty,
                     per_cell=per_cell,
@@ -137,7 +140,7 @@ def highscores():
 
 
 def is_highscore_new_best(h: hs.HighscoreStruct) -> Optional[str]:
-    all_highscores = hs.get_highscores(database=_remote_db, settings=h)
+    all_highscores = hs.get_highscores(database=hs.SQLiteDB(SQLITE_DB_PATH), settings=h)
     return hs.is_highscore_new_best(h, all_highscores)
 
 
