@@ -150,19 +150,16 @@ def _parse_args(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", "-p", type=int, help="Override the default port")
     parser.add_argument("--bot", action="store_true", help="Handle bot messages")
+    parser.add_argument("--log-path", default="./server.log", help="Path to log file")
     parser.add_argument("--dev", action="store_true", help="Run in development mode")
     return parser.parse_args(argv)
 
 
 def main(argv):
-    if "SQL_DB_PASSWORD" not in os.environ:
-        logger.error("No 'SQL_DB_PASSWORD' env var set")
-        sys.exit(1)
-
     args = _parse_args(argv)
 
     logging.basicConfig(
-        filename="server.log",
+        filename=args.log_path,
         level=logging.DEBUG,
         format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
     )
