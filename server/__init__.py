@@ -2,7 +2,7 @@ __all__ = ("add_new_highscore_hook", "get_new_highscore_hooks", "utils")
 
 from typing import Callable, Iterable
 
-from minegauler.shared import highscores as hs
+from minegauler import highscores as hs
 
 from . import utils
 

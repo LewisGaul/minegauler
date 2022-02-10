@@ -9,14 +9,14 @@ import argparse
 import logging
 import os
 import sys
+from typing import Optional
 
 import attr
 from flask import Flask, abort, jsonify, redirect, request
 
 import bot
-from minegauler.shared import highscores as hs
-from minegauler.shared.types import Difficulty
-from server.utils import is_highscore_new_best
+from minegauler import highscores as hs
+from minegauler.shared.types import Difficulty, GameMode
 
 from . import get_new_highscore_hooks
 
@@ -24,6 +24,8 @@ from . import get_new_highscore_hooks
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+_remote_db = hs.SQLiteDB("/home/pi/.local/var/lib/minegauler-highscores.db")
 
 
 # ------------------------------------------------------------------------------
@@ -50,8 +52,8 @@ def api_v1_highscore():
         return "", 200
 
     try:
-        hs.RemoteHighscoresDB().insert_highscore(highscore)
-    except hs.DBConnectionError as e:
+        _remote_db.insert_highscores([highscore])
+    except Exception as e:
         logger.exception("Failed to insert highscore into remote DB")
         # TODO: I want to know if this is hit!
         return str(e), 503
@@ -69,27 +71,18 @@ def api_v1_highscore():
 def api_v1_highscores():
     """Provide a REST API to get highscores from the DB."""
     logger.debug("GET highscores with args: %s", dict(request.args))
-    difficulty = request.args.get("difficulty")
-    if difficulty:
-        difficulty = Difficulty.from_str(difficulty)
-    per_cell = request.args.get("per_cell")
-    if per_cell:
-        per_cell = int(per_cell)
-    drag_select = request.args.get("drag_select")
-    if drag_select:
-        drag_select = bool(int(drag_select))
-    name = request.args.get("name")
+    kwargs = {}
+    if game_mode := request.args.get("game_mode"):
+        kwargs["game_mode"] = GameMode.from_str(game_mode)
+    if difficulty := request.args.get("difficulty"):
+        kwargs["difficulty"] = Difficulty.from_str(difficulty)
+    if per_cell := request.args.get("per_cell"):
+        kwargs["per_cell"] = int(per_cell)
+    if drag_select := request.args.get("drag_select"):
+        kwargs["drag_select"] = bool(int(drag_select))
+    kwargs["name"] = request.args.get("name")
     return jsonify(
-        [
-            attr.asdict(h)
-            for h in hs.get_highscores(
-                hs.HighscoresDatabases.REMOTE,
-                drag_select=drag_select,
-                per_cell=per_cell,
-                difficulty=difficulty,
-                name=name,
-            )
-        ]
+        [attr.asdict(h) for h in hs.get_highscores(database=_remote_db, **kwargs)]
     )
 
 
@@ -97,11 +90,13 @@ def api_v1_highscores():
 def api_v1_highscores_ranks():
     """Provide a REST API to get highscores from the DB."""
     logger.debug("GET highscores with args: %s", dict(request.args))
+    game_mode = request.args.get("game_mode", "regular")
     difficulty = request.args.get("difficulty")
     per_cell = request.args.get("per_cell")
     drag_select = request.args.get("drag_select")
     if not difficulty or not per_cell or not drag_select:
         abort(404)
+    game_mode = GameMode.from_str(game_mode)
     difficulty = Difficulty.from_str(difficulty)
     per_cell = int(per_cell)
     drag_select = bool(int(drag_select))
@@ -110,10 +105,11 @@ def api_v1_highscores_ranks():
             attr.asdict(h)
             for h in hs.filter_and_sort(
                 hs.get_highscores(
-                    hs.HighscoresDatabases.REMOTE,
-                    drag_select=drag_select,
-                    per_cell=per_cell,
+                    database=_remote_db,
+                    game_mode=game_mode,
                     difficulty=difficulty,
+                    per_cell=per_cell,
+                    drag_select=drag_select,
                 )
             )
         ]
@@ -133,6 +129,16 @@ def index():
 @app.route("/highscores")
 def highscores():
     return api_v1_highscores()
+
+
+# ------------------------------------------------------------------------------
+# Utils
+# ------------------------------------------------------------------------------
+
+
+def is_highscore_new_best(h: hs.HighscoreStruct) -> Optional[str]:
+    all_highscores = hs.get_highscores(database=_remote_db, settings=h)
+    return hs.is_highscore_new_best(h, all_highscores)
 
 
 # ------------------------------------------------------------------------------

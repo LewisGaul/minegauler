@@ -14,7 +14,7 @@ import flask
 import requests
 from flask import request
 
-from minegauler.shared import highscores as hs
+from minegauler import highscores as hs
 
 from . import msgparse, utils
 

@@ -15,13 +15,12 @@ __all__ = (
 )
 
 import datetime as dt
-import time
 from typing import Iterable, List, Mapping, Optional, Tuple, Union
 
 import pytz
 import tabulate
 
-from minegauler.shared import highscores as hs
+from minegauler import highscores as hs
 from minegauler.shared.types import Difficulty
 
 from .utils import Matchup, PlayerInfo

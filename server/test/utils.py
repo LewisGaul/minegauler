@@ -65,8 +65,5 @@ def receive_bot_message(msg: str):
         "files": [],
         "created": "2015-10-18T14:26:16+00:00",
     }
-    with server.utils.multiple_contexts(
-        app.test_client(), mock.patch("requests.get", return_value=resp)
-    ) as ctx:
-        tc, _ = ctx
+    with app.test_client() as tc, mock.patch("requests.get", return_value=resp):
         return tc.post("/bot/message", json=post_data)

@@ -35,8 +35,8 @@ from typing import Iterable, List, Optional, Tuple
 import requests
 from requests_toolbelt import MultipartEncoder
 
-from minegauler.shared import highscores as hs
-from minegauler.shared.types import Difficulty
+from minegauler import highscores as hs
+from minegauler.shared.types import Difficulty, GameMode
 
 
 logger = logging.getLogger(__name__)
@@ -108,10 +108,17 @@ def send_new_best_message(h: hs.HighscoreStruct) -> None:
     """Send a group message when a new personal time record is set."""
     diff = h.difficulty.name.lower()
     drag_select = "on" if h.drag_select else "off"
-    send_group_message(
-        f"New personal record of {h.elapsed:.2f} set by {h.name} on {diff}!\n"
-        f"Settings: drag-select={drag_select}, per-cell={h.per_cell}"
-    )
+    if h.mode is GameMode.REGULAR:
+        send_group_message(
+            f"New personal record of {h.elapsed:.2f} set by {h.name} on {diff}!\n"
+            f"Settings: drag-select={drag_select}, per-cell={h.per_cell}"
+        )
+    else:
+        assert h.mode is GameMode.SPLIT_CELL
+        send_group_message(
+            f"New personal split-cell record of {h.elapsed:.2f} set by {h.name} on {diff}!\n"
+            f"Settings: drag-select={drag_select}, per-cell={h.per_cell}"
+        )
 
 
 def read_users_file():
@@ -150,6 +157,8 @@ def set_user_nickname(user: str, nickname: str) -> None:
 
 def get_highscore_times(
     difficulty: Optional[Difficulty],
+    *,
+    game_mode: GameMode = GameMode.REGULAR,
     drag_select: Optional[bool] = None,
     per_cell: Optional[int] = None,
     users: Optional[Iterable[str]] = None,
@@ -163,6 +172,7 @@ def get_highscore_times(
     if difficulty:
         highscores = hs.filter_and_sort(
             get_highscores(
+                game_mode=game_mode,
                 difficulty=difficulty,
                 drag_select=drag_select,
                 per_cell=per_cell,
@@ -175,7 +185,9 @@ def get_highscore_times(
         }
     else:
         times = {
-            u: _get_combined_highscore(u, drag_select=drag_select, per_cell=per_cell)
+            u: _get_combined_highscore(
+                u, game_mode=game_mode, drag_select=drag_select, per_cell=per_cell
+            )
             for u in users
         }
 
@@ -231,6 +243,7 @@ def is_highscore_new_best(h: hs.HighscoreStruct) -> Optional[str]:
 def get_highscores(
     *,
     settings: Optional[hs.HighscoreSettingsStruct] = None,
+    game_mode: GameMode = GameMode.REGULAR,
     difficulty: Optional[Difficulty] = None,
     per_cell: Optional[int] = None,
     drag_select: Optional[bool] = None,
@@ -241,16 +254,27 @@ def get_highscores(
 
     :param settings:
         Highscore filter to apply.
+    :param game_mode:
+        The game mode to get highscores for. Ignored if settings given.
+    :param difficulty:
+        Optionally specify difficulty to filter by. Ignored if settings given.
+    :param per_cell:
+        Optionally specify per-cell to filter by. Ignored if settings given.
+    :param drag_select:
+        Optionally specify drag-select to filter by. Ignored if settings given.
+    :param name:
+        Optionally specify a name to filter by.
     :raises Exception:
         If the HTTP request fails or returns bad data.
     :return:
         Matching highscores.
     """
     if settings is not None:
+        game_mode = settings.mode
         difficulty = settings.difficulty
         per_cell = settings.per_cell
         drag_select = settings.drag_select
-    args = []
+    args = [f"game_mode={game_mode.name.lower()}"]
     if difficulty is not None:
         args.append(f"difficulty={difficulty.name[0]}")
     if per_cell is not None:
@@ -274,11 +298,16 @@ def _strbool(b: bool) -> str:
 
 
 def _get_combined_highscore(
-    name: str, *, per_cell: Optional[int] = None, drag_select: Optional[bool] = None
+    name: str,
+    *,
+    game_mode: GameMode = GameMode.REGULAR,
+    per_cell: Optional[int] = None,
+    drag_select: Optional[bool] = None,
 ) -> float:
     total = 0
     for diff in ["b", "i", "e"]:
         all_highscores = get_highscores(
+            game_mode=game_mode,
             name=name,
             drag_select=drag_select,
             per_cell=per_cell,

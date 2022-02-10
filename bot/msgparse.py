@@ -13,7 +13,6 @@ import logging
 import sys
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
-from minegauler.shared import highscores as hs
 from minegauler.shared.types import Difficulty
 
 from . import formatter, utils
@@ -480,7 +479,9 @@ def ranks(args, **kwargs) -> str:
     args = parser.parse_args(args)
 
     diff = Difficulty.from_str(args.rank_type) if args.rank_type else None
-    times = utils.get_highscore_times(diff, args.drag_select, args.per_cell)
+    times = utils.get_highscore_times(
+        diff, drag_select=args.drag_select, per_cell=args.per_cell
+    )
 
     lines = [
         "Rankings for {}".format(
@@ -559,7 +560,10 @@ def matchups(
     names = {utils.USER_NAMES[u] for u in users}
 
     times = utils.get_highscore_times(
-        args.difficulty, args.drag_select, args.per_cell, names
+        args.difficulty,
+        drag_select=args.drag_select,
+        per_cell=args.per_cell,
+        users=names,
     )
     matchups = utils.get_matchups(times)
 
@@ -600,7 +604,10 @@ def best_matchups(
     names = {utils.USER_NAMES[u] for u in users}
 
     times = utils.get_highscore_times(
-        args.difficulty, args.drag_select, args.per_cell, utils.USER_NAMES.values()
+        args.difficulty,
+        drag_select=args.drag_select,
+        per_cell=args.per_cell,
+        users=utils.USER_NAMES.values(),
     )
     matchups = utils.get_matchups(times, include_users=names)[:10]
 
@@ -675,7 +682,6 @@ def set_nickname(args, username: str, **kwargs):
     return f"Nickname changed from '{old}' to '{new}'"
 
 
-# fmt: off
 _COMMON_COMMANDS = {
     "help": None,
     "player": player,
@@ -702,7 +708,6 @@ _DIRECT_COMMANDS = {
         "nickname": set_nickname,
     },
 }
-# fmt: on
 
 
 def _map_to_cmd(msg: str, cmds: CommandMapping) -> Tuple[Callable, List[str]]:
