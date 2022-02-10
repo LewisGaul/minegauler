@@ -1,10 +1,8 @@
-__all__ = ("add_new_highscore_hook", "get_new_highscore_hooks", "utils")
+__all__ = ("add_new_highscore_hook", "get_new_highscore_hooks")
 
 from typing import Callable, Iterable
 
 from minegauler import highscores as hs
-
-from . import utils
 
 
 _new_highscore_hooks = []
