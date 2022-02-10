@@ -42,6 +42,9 @@ def api_v1_highscore():
     also perform special handling for new records (e.g. add to the remote DB).
     """
     data = request.get_json()
+    # Accept pre v4.1.0 versions that don't have the 'mode' field.
+    if "mode" not in data:
+        data["mode"] = "regular"
     # verify_highscore(data)  TODO
     highscore = hs.HighscoreStruct.from_dict(data)
     logger.debug("POST highscore: %s", highscore)

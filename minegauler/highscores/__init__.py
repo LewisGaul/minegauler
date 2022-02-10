@@ -29,7 +29,6 @@ from ..shared.types import Difficulty, GameMode, PathLike
 from . import compat
 from .base import AbstractHighscoresDB, HighscoreSettingsStruct, HighscoreStruct
 from .compat import HighscoreReadError
-
 # from .mysql import MySQLDB  # Do not uncomment this without adding dependency on mysql connector
 from .sqlite import SQLiteDB
 
@@ -101,7 +100,7 @@ def insert_highscore(
     """
     if database is None:
         database = _default_local_db
-    database.insert_highscore(highscore)
+    database.insert_highscores([highscore])
 
     if post_remote:
 
