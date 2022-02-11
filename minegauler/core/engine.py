@@ -128,7 +128,7 @@ class UberController(api.AbstractController):
             self.switch_ui_mode(UIMode.GAME)
             self._notif.ui_mode_changed(UIMode.GAME)
 
-        with open(file) as f:
+        with open(file,mode="r",encoding="utf-8") as f:
             data = json.load(f)
 
         try:

@@ -1212,7 +1212,7 @@ class _TextPopup(QWidget):
         self._ok_button = QPushButton(self)
         self._setup_ui()
 
-        with open(file) as f:
+        with open(file,mode="r",encoding="utf-8") as f:
             self._text_widget.setText(f.read())
 
     def _setup_ui(self) -> None:

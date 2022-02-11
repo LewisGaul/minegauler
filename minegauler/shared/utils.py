@@ -313,7 +313,7 @@ def read_settings_from_file(file: os.PathLike) -> Optional[AllOptsStruct]:
 
     read_settings = None
     try:
-        with open(file, "r") as f:
+        with open(file, mode="r", encoding="utf-8") as f:
             read_settings = AllOptsStruct.decode_from_json(json.load(f))
     except FileNotFoundError:
         logger.info("Settings file not found")
@@ -329,7 +329,7 @@ def write_settings_to_file(settings: AllOptsStruct, file: PathLike) -> None:
     logger.info("Saving settings to file: %s", file)
     logger.debug("%s", settings)
     try:
-        with open(file, "w") as f:
+        with open(file, mode="w", encoding="utf-8") as f:
             json.dump(settings.encode_to_json(), f, indent=2)
     except Exception:
         logger.exception("Unexpected error writing settings to file")
