@@ -49,7 +49,7 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
     def get_highscores(
         self,
         *,
-        game_mode: GameMode = GameMode.REGULAR,
+        game_mode: Optional[GameMode] = None,
         difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
         drag_select: Optional[bool] = None,
@@ -62,21 +62,28 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
             drag_select=drag_select,
             name=name,
         )
-        self._conn.row_factory = lambda cursor, row: HighscoreStruct(
-            mode=game_mode,
-            **{col[0]: row[i] for i, col in enumerate(cursor.description)},
-        )
-        cursor = self.execute(
-            self._get_select_highscores_sql(
-                game_mode=game_mode,
-                difficulty=difficulty,
-                per_cell=per_cell,
-                drag_select=drag_select,
-                name=name,
+        if game_mode is None:
+            modes = list(GameMode)
+        else:
+            modes = [game_mode]
+        ret = []
+        for mode in modes:
+            self._conn.row_factory = lambda cursor, row: HighscoreStruct(
+                game_mode=mode,
+                **{col[0]: row[i] for i, col in enumerate(cursor.description)},
             )
-        )
+            cursor = self.execute(
+                self._get_select_highscores_sql(
+                    game_mode=mode,
+                    difficulty=difficulty,
+                    per_cell=per_cell,
+                    drag_select=drag_select,
+                    name=name,
+                )
+            )
+            ret.extend(cursor.fetchall())
         self._conn.row_factory = None
-        return cursor.fetchall()
+        return ret
 
     def count_highscores(self) -> int:
         """Count the number of rows in the highscores table."""
@@ -92,7 +99,7 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
         super().insert_highscores(highscores)
         orig_count = self.count_highscores()
         for mode in GameMode:
-            mode_rows = [attr.astuple(h)[1:] for h in highscores if h.mode is mode]
+            mode_rows = [attr.astuple(h)[1:] for h in highscores if h.game_mode is mode]
             self.executemany(
                 self._get_insert_highscore_sql(fmt="?", game_mode=mode),
                 mode_rows,

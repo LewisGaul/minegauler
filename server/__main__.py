@@ -9,7 +9,7 @@ import argparse
 import logging
 import os
 import sys
-from typing import Optional
+from typing import Dict, Optional
 
 import attr
 from flask import Flask, abort, jsonify, redirect, request
@@ -41,13 +41,15 @@ def api_v1_highscore():
     Perform any desired handling for each highscore (e.g. usage logging), and
     also perform special handling for new records (e.g. add to the remote DB).
     """
-    data = request.get_json()
-    # Accept pre v4.1.0 versions that don't have the 'mode' field.
-    if "mode" not in data:
-        data["mode"] = "regular"
-    # verify_highscore(data)  TODO
-    highscore = hs.HighscoreStruct.from_dict(data)
-    logger.debug("POST highscore: %s", highscore)
+    try:
+        highscore = get_highscore_from_json(request.get_json())
+    except Exception:
+        logger.debug(
+            "Unrecognised highscore posted: %s", request.get_json(), exc_info=True
+        )
+        return "Unrecognised highscore", 400
+    else:
+        logger.debug("POST highscore: %s", highscore)
 
     new_best = is_highscore_new_best(highscore)
     if new_best is None:
@@ -145,6 +147,18 @@ def highscores():
 def is_highscore_new_best(h: hs.HighscoreStruct) -> Optional[str]:
     all_highscores = hs.get_highscores(database=hs.SQLiteDB(SQLITE_DB_PATH), settings=h)
     return hs.is_highscore_new_best(h, all_highscores)
+
+
+def get_highscore_from_json(obj: Dict) -> hs.HighscoreStruct:
+    # Accept pre v4.1.2 versions that only contain the highscore.
+    if "app_version" not in obj:
+        logger.debug("Parsing highscore from pre-v4.1.2 app")
+        obj["game_mode"] = "regular"
+        highscore = hs.HighscoreStruct.from_dict(obj)
+    else:
+        logger.debug("Parsing highscore from app v%s", obj["app_version"])
+        highscore = hs.HighscoreStruct.from_dict(obj["highscore"])
+    return highscore
 
 
 # ------------------------------------------------------------------------------

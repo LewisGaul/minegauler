@@ -27,7 +27,7 @@ def read_highscores(path: PathLike) -> Iterable[HighscoreStruct]:
             # First row entry is 'index' (ignore).
             ret.add(
                 HighscoreStruct(
-                    mode="regular",  # only mode supported
+                    game_mode="regular",  # only mode supported
                     difficulty=row[1],
                     per_cell=row[2],
                     drag_select=row[3],

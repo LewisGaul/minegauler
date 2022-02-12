@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 class HighscoreSettingsStruct(StructConstructorMixin):
     """A set of highscore settings."""
 
-    mode: GameMode = attr.attrib(converter=GameMode.from_str)
+    game_mode: GameMode = attr.attrib(converter=GameMode.from_str)
     difficulty: Difficulty = attr.attrib(converter=Difficulty.from_str)
     per_cell: int
     drag_select: bool = attr.attrib(converter=bool)
@@ -70,7 +70,7 @@ class AbstractHighscoresDB(abc.ABC):
     def get_highscores(
         self,
         *,
-        game_mode: GameMode = GameMode.REGULAR,
+        game_mode: Optional[GameMode] = None,
         difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
         drag_select: Optional[bool] = None,
@@ -164,7 +164,7 @@ class SQLMixin:
     def _get_select_highscores_sql(
         self,
         *,
-        game_mode: GameMode = GameMode.REGULAR,
+        game_mode: GameMode,
         difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
         drag_select: Optional[bool] = None,
@@ -186,9 +186,7 @@ class SQLMixin:
             where="WHERE " + " AND ".join(conditions) if conditions else "",
         )
 
-    def _get_insert_highscore_sql(
-        self, fmt="%s", *, game_mode: GameMode = GameMode.REGULAR
-    ) -> str:
+    def _get_insert_highscore_sql(self, fmt="%s", *, game_mode: GameMode) -> str:
         """Get the SQL command to insert a highscore into a DB."""
         return "INSERT OR IGNORE INTO {table} ({fields}) VALUES ({fmt_})".format(
             table=self.TABLES[game_mode],
@@ -196,8 +194,6 @@ class SQLMixin:
             fmt_=", ".join(fmt for _ in self._table_fields),
         )
 
-    def _get_highscores_count_sql(
-        self, *, game_mode: GameMode = GameMode.REGULAR
-    ) -> str:
+    def _get_highscores_count_sql(self, *, game_mode: GameMode) -> str:
         """Get the SQL command to count the rows of the highscores table."""
         return f"SELECT COUNT(*) FROM {self.TABLES[game_mode]}"

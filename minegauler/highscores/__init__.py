@@ -24,11 +24,13 @@ import attr
 import requests
 
 from .. import paths
+from .._version import __version__
 from ..shared import utils
 from ..shared.types import Difficulty, GameMode, PathLike
 from . import compat
 from .base import AbstractHighscoresDB, HighscoreSettingsStruct, HighscoreStruct
 from .compat import HighscoreReadError
+
 # from .mysql import MySQLDB  # Do not uncomment this without adding dependency on mysql connector
 from .sqlite import SQLiteDB
 
@@ -44,7 +46,7 @@ def get_highscores(
     *,
     database: Optional[AbstractHighscoresDB] = None,
     settings: Optional[HighscoreSettingsStruct] = None,
-    game_mode: GameMode = GameMode.REGULAR,
+    game_mode: Optional[GameMode] = None,
     difficulty: Optional[Difficulty] = None,
     per_cell: Optional[int] = None,
     drag_select: Optional[bool] = None,
@@ -58,7 +60,7 @@ def get_highscores(
     :param settings:
         Optionally specify settings to filter by.
     :param game_mode:
-        The game mode to get highscores for. Ignored if settings given.
+        Optionally specify game mode to filter by. Ignored if settings given.
     :param difficulty:
         Optionally specify difficulty to filter by. Ignored if settings given.
     :param per_cell:
@@ -71,7 +73,7 @@ def get_highscores(
     if database is None:
         database = _default_local_db
     if settings is not None:
-        game_mode = settings.mode
+        game_mode = settings.game_mode
         difficulty = settings.difficulty
         per_cell = settings.per_cell
         drag_select = settings.drag_select
@@ -93,6 +95,8 @@ def insert_highscore(
     """
     Insert a highscore into a database.
 
+    :param highscore:
+        The highscore to insert.
     :param database:
         The database to insert into, defaults to the local highscores DB.
     :param post_remote:
@@ -214,4 +218,11 @@ def is_highscore_new_best(
 def _post_highscore_to_remote(highscore: HighscoreStruct):
     """Send a highscore to the remote server to be added to the remote DB."""
     logger.info("Posting highscore to remote")
-    requests.post(_REMOTE_POST_URL, json=attr.asdict(highscore), timeout=5)
+    requests.post(
+        _REMOTE_POST_URL,
+        json={
+            "highscore": attr.asdict(highscore),
+            "app_version": __version__,
+        },
+        timeout=5,
+    )

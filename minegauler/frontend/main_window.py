@@ -646,7 +646,7 @@ class MinegaulerGUI(
         ):
             assert info.started_info.prop_complete == 1
             highscore = HighscoreStruct(
-                mode=info.mode,
+                game_mode=info.mode,
                 difficulty=info.difficulty,
                 per_cell=info.per_cell,
                 timestamp=int(info.started_info.start_time),
@@ -906,7 +906,7 @@ class MinegaulerGUI(
             self._open_subwindows.get("highscores").close()
         if not settings:
             settings = HighscoreSettingsStruct(
-                mode=self._state.game_mode,
+                game_mode=self._state.game_mode,
                 difficulty=self._state.difficulty,
                 per_cell=self._state.per_cell,
                 drag_select=self._state.drag_select,

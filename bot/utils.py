@@ -108,13 +108,13 @@ def send_new_best_message(h: hs.HighscoreStruct) -> None:
     """Send a group message when a new personal time record is set."""
     diff = h.difficulty.name.lower()
     drag_select = "on" if h.drag_select else "off"
-    if h.mode is GameMode.REGULAR:
+    if h.game_mode is GameMode.REGULAR:
         send_group_message(
             f"New personal record of {h.elapsed:.2f} set by {h.name} on {diff}!\n"
             f"Settings: drag-select={drag_select}, per-cell={h.per_cell}"
         )
     else:
-        assert h.mode is GameMode.SPLIT_CELL
+        assert h.game_mode is GameMode.SPLIT_CELL
         send_group_message(
             f"New personal split-cell record of {h.elapsed:.2f} set by {h.name} on {diff}!\n"
             f"Settings: drag-select={drag_select}, per-cell={h.per_cell}"
@@ -230,7 +230,10 @@ def get_player_info(username: str) -> PlayerInfo:
     combined_time = _get_combined_highscore(name)
     last_highscore = max(h.timestamp for h in highscores) if highscores else None
     hs_types = len(
-        {(h.mode, h.difficulty.lower(), h.drag_select, h.per_cell) for h in highscores}
+        {
+            (h.game_mode, h.difficulty.lower(), h.drag_select, h.per_cell)
+            for h in highscores
+        }
     )
     return PlayerInfo(username, name, combined_time, hs_types, last_highscore)
 
@@ -270,7 +273,7 @@ def get_highscores(
         Matching highscores.
     """
     if settings is not None:
-        game_mode = settings.mode
+        game_mode = settings.game_mode
         difficulty = settings.difficulty
         per_cell = settings.per_cell
         drag_select = settings.drag_select

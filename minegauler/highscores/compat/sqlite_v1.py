@@ -27,7 +27,7 @@ def read_highscores(path: PathLike) -> Iterable[HighscoreStruct]:
             for row in cursor:
                 ret.add(
                     HighscoreStruct(
-                        mode=table_name,
+                        game_mode=table_name,
                         difficulty=row[0],
                         per_cell=row[1],
                         drag_select=row[2],
