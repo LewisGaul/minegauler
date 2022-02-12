@@ -8,6 +8,7 @@ Server entry-point.
 import argparse
 import logging
 import os
+import re
 import sys
 from typing import Dict, Optional
 
@@ -77,13 +78,17 @@ def api_v1_highscores():
     """Provide a REST API to get highscores from the DB."""
     logger.debug("GET highscores with args: %s", dict(request.args))
     kwargs = {}
-    if game_mode := request.args.get("game_mode"):
+    game_mode = request.args.get("game_mode")
+    if game_mode:
         kwargs["game_mode"] = GameMode.from_str(game_mode)
-    if difficulty := request.args.get("difficulty"):
+    difficulty = request.args.get("difficulty")
+    if difficulty:
         kwargs["difficulty"] = Difficulty.from_str(difficulty)
-    if per_cell := request.args.get("per_cell"):
+    per_cell = request.args.get("per_cell")
+    if per_cell:
         kwargs["per_cell"] = int(per_cell)
-    if drag_select := request.args.get("drag_select"):
+    drag_select = request.args.get("drag_select")
+    if drag_select:
         kwargs["drag_select"] = bool(int(drag_select))
     kwargs["name"] = request.args.get("name")
     return jsonify(
@@ -156,7 +161,16 @@ def get_highscore_from_json(obj: Dict) -> hs.HighscoreStruct:
         obj["game_mode"] = "regular"
         highscore = hs.HighscoreStruct(**obj)
     else:
-        logger.debug("Parsing highscore from app v%s", obj["app_version"])
+        app_version = obj["app_version"].lstrip("v")
+        logger.debug("Parsing highscore from app v%s", app_version)
+        version_tuple = tuple(
+            int(x)
+            for x in re.sub(r"((?:\d+\.)+\d+)[a-zA-Z].+", r"\1", app_version).split(".")
+        )
+        if version_tuple < (4, 1, 2):
+            raise ValueError(
+                f"Expected app v4.1.2+ with 'app_version' field, got {app_version!r}"
+            )
         highscore = hs.HighscoreStruct(**obj["highscore"])
     return highscore
 
