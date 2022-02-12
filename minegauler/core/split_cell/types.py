@@ -2,7 +2,7 @@
 
 __all__ = ("Coord",)
 
-from typing import Iterable, Tuple
+from typing import Iterable
 
 from ...shared.types import Coord as CoordBase
 

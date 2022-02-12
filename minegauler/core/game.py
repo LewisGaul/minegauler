@@ -172,7 +172,7 @@ class GameBase(metaclass=abc.ABCMeta):
         self.lives_remaining: int = self.lives
         self._num_flags: int = 0
 
-        self._cell_updates: Dict[Coord, CellContents] = dict()
+        self._cell_updates: Dict[Coord, CellContents] = {}
 
     @abc.abstractmethod
     def _make_board(self) -> BoardBase:
@@ -321,7 +321,7 @@ class GameBase(metaclass=abc.ABCMeta):
         try:
             return self._cell_updates
         finally:
-            self._cell_updates = dict()
+            self._cell_updates = {}
 
     @_check_coord
     @_ignore_if_not(
@@ -351,7 +351,7 @@ class GameBase(metaclass=abc.ABCMeta):
         try:
             return self._cell_updates
         finally:
-            self._cell_updates = dict()
+            self._cell_updates = {}
 
     @_check_coord
     @_ignore_if_not(game_state=GameState.ACTIVE, cell_state=CellContents.Num)
@@ -372,7 +372,7 @@ class GameBase(metaclass=abc.ABCMeta):
             self.board[coord] != CellContents.Num(num_flagged_nbrs)
             or not unclicked_nbrs
         ):
-            return dict()
+            return {}
 
         logger.info("Successful chording, selecting cells %s", unclicked_nbrs)
         for c in unclicked_nbrs:
@@ -384,4 +384,4 @@ class GameBase(metaclass=abc.ABCMeta):
         try:
             return self._cell_updates
         finally:
-            self._cell_updates = dict()
+            self._cell_updates = {}
