@@ -163,10 +163,8 @@ def get_highscore_from_json(obj: Dict) -> hs.HighscoreStruct:
     else:
         app_version = obj["app_version"].lstrip("v")
         logger.debug("Parsing highscore from app v%s", app_version)
-        version_tuple = tuple(
-            int(x)
-            for x in re.sub(r"((?:\d+\.)+\d+)[a-zA-Z].+", r"\1", app_version).split(".")
-        )
+        stripped_version = re.sub(r"((?:\d+\.)+\d+)-?[a-zA-Z].+", r"\1", app_version)
+        version_tuple = tuple(int(x) for x in stripped_version.split("."))
         if version_tuple < (4, 1, 2):
             raise ValueError(
                 f"Expected app v4.1.2+ with 'app_version' field, got {app_version!r}"
