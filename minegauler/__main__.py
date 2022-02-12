@@ -8,6 +8,7 @@ Entry point for the application.
 # Workaround to get the mysql libcrypto and libssl libs loaded.
 import mysql.connector  # isort:skip
 
+import os
 import logging
 import sys
 
@@ -18,11 +19,18 @@ from ._version import __version__
 logger = logging.getLogger(__name__)
 
 
+def get_log_filename():
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return "tests.log"
+
+    return "runtime.log"
+
+
 def setup_logging():
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
     # Create file handler which logs debug messages.
-    fh = logging.FileHandler("runtime.log")
+    fh = logging.FileHandler(get_log_filename())
     fh.setLevel(logging.DEBUG)
     # Create console handler with a higher log level.
     ch = logging.StreamHandler()
