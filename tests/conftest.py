@@ -2,6 +2,7 @@
 
 import contextlib
 import logging
+import os
 import pathlib
 from unittest import mock
 
@@ -48,6 +49,7 @@ def sandbox(tmpdir_factory: pytest.TempdirFactory):
     Must run before importing any minegauler submodules.
     """
     tmpdir = tmpdir_factory.mktemp("sandbox")
+    os.chdir(tmpdir)
     logger.info("Creating testing sandbox, using tmpdir: %s", tmpdir)
     with contextlib.ExitStack() as ctxs:
         # Patch all paths relative to the root dir.
