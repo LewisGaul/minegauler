@@ -21,7 +21,7 @@ import pytz
 import tabulate
 
 from minegauler import highscores as hs
-from minegauler.shared.types import Difficulty
+from minegauler.shared.types import Difficulty, GameMode
 
 from .utils import Matchup, PlayerInfo
 
@@ -83,12 +83,13 @@ def format_player_info(players: Iterable[PlayerInfo]) -> str:
         "Modes played",
         "Last highscore",
     ]
+    types_available = len(GameMode) * (len(Difficulty) - 1) * 3 * 2
     data = [
         (
             p.username,
             p.nickname[:10],
             p.combined_time,
-            f"{p.types_played:2d}/24",
+            f"{p.types_beaten:2d}/{types_available}",
             format_timestamp(p.last_highscore) if p.last_highscore else "None",
         )
         for p in sorted(players, key=lambda x: x.combined_time)
@@ -108,13 +109,16 @@ def format_kwargs(kwargs: Mapping) -> str:
 
 
 def format_filters(
+    *,
+    game_mode: Optional[GameMode],
     difficulty: Optional[Union[str, Difficulty]],
     drag_select: Optional[bool],
     per_cell: Optional[int],
-    *,
     no_difficulty=False,
 ) -> str:
-    opts = dict()
+    opts = {}
+    if game_mode:
+        opts["mode"] = game_mode.value
     if not no_difficulty:
         try:
             diff = difficulty.name.capitalize()

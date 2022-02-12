@@ -13,7 +13,7 @@ import logging
 import sys
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
-from minegauler.shared.types import Difficulty
+from minegauler.shared.types import Difficulty, GameMode
 
 from . import formatter, utils
 
@@ -118,6 +118,7 @@ class ArgParser(argparse.ArgumentParser):
 
         # Start with positional args.
         args = self._parse_positional_args(args, namespace)
+        logger.debug("Remaining after parsing positional args: %s", args)
 
         # Replace optional args so that they don't require the dashes.
         for i, arg in enumerate(args):
@@ -162,6 +163,7 @@ class ArgParser(argparse.ArgumentParser):
             The remaining unmatched keywords.
         """
         for arg in self._positional_args:
+            logger.debug(f"Parsing positional arg %r, kws: %s", arg.name, kws)
             result, kws = self._parse_single_positional_arg(arg, kws)
             setattr(namespace, arg.name, result)
         return kws
@@ -211,7 +213,7 @@ class ArgParser(argparse.ArgumentParser):
                     # at least one value...
                     raise InvalidArgsError(
                         f"Got name of positional arg {arg.name!r} but no values"
-                    )
+                    ) from e
                 else:
                     break
             else:
@@ -236,23 +238,13 @@ class ArgParser(argparse.ArgumentParser):
 
 
 class BotMsgParser(ArgParser):
+    def add_game_mode_arg(self):
+        self.add_positional_arg(
+            "game_mode", nargs="?", type=GameMode.from_str, default=GameMode.REGULAR
+        )
+
     def add_difficulty_arg(self):
         self.add_positional_arg("difficulty", nargs="?", type=Difficulty.from_str)
-
-    def add_rank_type_arg(self):
-        def convert(arg) -> str:
-            try:
-                return Difficulty.from_str(arg).name.lower()
-            except InvalidArgsError:
-                raise  # TODO
-                # if arg == "combined":
-                #     return "combined"
-                # elif arg == "official":
-                #     return "official"
-                # else:
-                #     raise InvalidArgsError(f"Invalid rank type {arg!r}")
-
-        self.add_positional_arg("rank_type", nargs="?", type=convert)
 
     def add_per_cell_arg(self):
         self.add_argument("per-cell", type=int, choices=[1, 2, 3])
@@ -425,12 +417,16 @@ def info(args, **kwargs):
 
 @helpstring("Get player info")
 @schema(
-    "player <name> [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
-    "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
+    "player <name> "
+    "[regular | split-cell] "
+    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
+    "[drag-select {on | off}] "
+    "[per-cell {1 | 2 | 3}]"
 )
 def player(args, username: str, allow_markdown=False, **kwargs):
     parser = BotMsgParser()
     parser.add_positional_arg("username", choices=list(utils.USER_NAMES) + ["me"])
+    parser.add_game_mode_arg()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
@@ -440,19 +436,27 @@ def player(args, username: str, allow_markdown=False, **kwargs):
 
     highscores = utils.get_highscores(
         name=utils.USER_NAMES[args.username],
+        game_mode=args.game_mode,
         difficulty=args.difficulty,
         drag_select=args.drag_select,
         per_cell=args.per_cell,
     )
 
     filters_str = formatter.format_filters(
-        None, args.drag_select, args.per_cell, no_difficulty=True
+        game_mode=None,
+        difficulty=None,
+        drag_select=args.drag_select,
+        per_cell=args.per_cell,
+        no_difficulty=True,
     )
     if filters_str:
         filters_str = " with " + filters_str
     lines = [
-        "Player info for {} ({}){}:".format(
-            args.username, utils.USER_NAMES[args.username], filters_str
+        "Player info for {name} ({username}) for {mode} mode{filters}:".format(
+            name=args.username,
+            username=utils.USER_NAMES[args.username],
+            mode=args.game_mode.value,
+            filters=filters_str,
         )
     ]
     lines.extend(
@@ -466,26 +470,37 @@ def player(args, username: str, allow_markdown=False, **kwargs):
 
 @helpstring("Get rankings")
 @schema(
-    "ranks [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
-    "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
+    "ranks "
+    "[regular | split-cell] "
+    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
+    "[drag-select {on | off}] "
+    "[per-cell {1 | 2 | 3}]"
 )
 def ranks(args, **kwargs) -> str:
     allow_markdown = kwargs.get("allow_markdown", False)
 
     parser = BotMsgParser()
-    parser.add_rank_type_arg()
+    parser.add_game_mode_arg()
+    parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
 
-    diff = Difficulty.from_str(args.rank_type) if args.rank_type else None
     times = utils.get_highscore_times(
-        diff, drag_select=args.drag_select, per_cell=args.per_cell
+        game_mode=args.game_mode,
+        difficulty=args.difficulty,
+        drag_select=args.drag_select,
+        per_cell=args.per_cell,
     )
 
     lines = [
         "Rankings for {}".format(
-            formatter.format_filters(args.rank_type, args.drag_select, args.per_cell)
+            formatter.format_filters(
+                game_mode=args.game_mode,
+                difficulty=args.difficulty,
+                drag_select=args.drag_select,
+                per_cell=args.per_cell,
+            )
         )
     ]
     ranks = formatter.format_highscore_times(times)
@@ -498,11 +513,15 @@ def ranks(args, **kwargs) -> str:
 
 @helpstring("Get stats for played games")
 @schema(  # @@@ This is bad because it requires knowledge of sub-commands.
-    "stats [players ...] [b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
-    "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
+    "stats [players ...] "
+    "[regular | split-cell] "
+    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
+    "[drag-select {on | off}] "
+    "[per-cell {1 | 2 | 3}]"
 )
 def stats(args, **kwargs):
     parser = BotMsgParser()
+    parser.add_game_mode_arg()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
@@ -536,8 +555,10 @@ def stats_players(args, username: str, allow_markdown=False, **kwargs):
 @helpstring("Get matchups for given players")
 @schema(
     "matchups <name> <name> [<name> ...] "
-    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
-    "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
+    "[regular | split-cell] "
+    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
+    "[drag-select {on | off}] "
+    "[per-cell {1 | 2 | 3}]"
 )
 def matchups(
     args,
@@ -550,6 +571,7 @@ def matchups(
     parser.add_positional_arg(
         "username", nargs="+", choices=list(utils.USER_NAMES) + ["me"]
     )
+    parser.add_game_mode_arg()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
@@ -560,7 +582,8 @@ def matchups(
     names = {utils.USER_NAMES[u] for u in users}
 
     times = utils.get_highscore_times(
-        args.difficulty,
+        game_mode=args.game_mode,
+        difficulty=args.difficulty,
         drag_select=args.drag_select,
         per_cell=args.per_cell,
         users=names,
@@ -572,9 +595,14 @@ def matchups(
     else:
         users_str = ", ".join(users)
     lines = [
-        "Matchups between {} for {}:".format(
-            users_str,
-            formatter.format_filters(args.difficulty, args.drag_select, args.per_cell),
+        "Matchups between {users} for {filters}:".format(
+            users=users_str,
+            filters=formatter.format_filters(
+                game_mode=args.game_mode,
+                difficulty=args.difficulty,
+                drag_select=args.drag_select,
+                per_cell=args.per_cell,
+            ),
         )
     ]
     lines.extend(formatter.format_matchups(matchups))
@@ -586,8 +614,10 @@ def matchups(
 @helpstring("Get best matchups including at least one of specified players")
 @schema(
     "best-matchups [<name> ...] "
-    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
-    "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
+    "[regular | split-cell] "
+    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
+    "[drag-select {on | off}] "
+    "[per-cell {1 | 2 | 3}]"
 )
 def best_matchups(
     args, username: str, allow_markdown=False, room_type=RoomType.DIRECT, **kwargs
@@ -596,6 +626,7 @@ def best_matchups(
     parser.add_positional_arg(
         "username", nargs="*", choices=list(utils.USER_NAMES) + ["me"]
     )
+    parser.add_game_mode_arg()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
@@ -604,7 +635,8 @@ def best_matchups(
     names = {utils.USER_NAMES[u] for u in users}
 
     times = utils.get_highscore_times(
-        args.difficulty,
+        game_mode=args.game_mode,
+        difficulty=args.difficulty,
         drag_select=args.drag_select,
         per_cell=args.per_cell,
         users=utils.USER_NAMES.values(),
@@ -618,9 +650,14 @@ def best_matchups(
     if users_str:
         users_str = " including " + users_str
     lines = [
-        "Best matchups{} for {}:".format(
-            users_str,
-            formatter.format_filters(args.difficulty, args.drag_select, args.per_cell),
+        "Best matchups{users} for {filters}:".format(
+            users=users_str,
+            filters=formatter.format_filters(
+                game_mode=args.game_mode,
+                difficulty=args.difficulty,
+                drag_select=args.drag_select,
+                per_cell=args.per_cell,
+            ),
         )
     ]
     lines.extend(formatter.format_matchups(matchups))
@@ -632,8 +669,10 @@ def best_matchups(
 @helpstring("Challenge other players to a game")
 @schema(
     "challenge <name> [<name> ...] "
-    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster]] "
-    "[drag-select {on | off}] [per-cell {1 | 2 | 3}]"
+    "[regular | split-cell] "
+    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
+    "[drag-select {on | off}] "
+    "[per-cell {1 | 2 | 3}]"
 )
 def challenge(args, username: str, **kwargs):
     parser = BotMsgParser()
@@ -642,6 +681,7 @@ def challenge(args, username: str, **kwargs):
         nargs="+",
         choices=set(utils.USER_NAMES) - {username} - utils.NO_TAG_USERS,
     )
+    parser.add_positional_arg("game_mode", nargs="?", type=GameMode.from_str)
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
     parser.add_drag_select_arg()
@@ -649,19 +689,20 @@ def challenge(args, username: str, **kwargs):
     names = {u for u in args.username}
 
     users_str = ", ".join(utils.tag_user(u) for u in names)
-    diff_str = args.difficulty + " " if args.difficulty else ""
-    opts = dict()
-    if args.drag_select:
-        opts["drag-select"] = "on" if args.drag_select else "off"
-    if args.per_cell:
-        opts["per-cell"] = args.per_cell
-    if opts:
-        opts_str = " with {}".format(formatter.format_kwargs(opts))
-    else:
-        opts_str = ""
+    mode_str = args.game_mode.value + " " if args.game_mode else ""
+    mode_str += args.difficulty.name.capitalize() + " " if args.difficulty else ""
+    filters_str = formatter.format_filters(
+        game_mode=None,
+        difficulty=None,
+        drag_select=args.drag_select,
+        per_cell=args.per_cell,
+        no_difficulty=True,
+    )
+    if filters_str:
+        filters_str = " with " + filters_str
 
-    return "{} has challenged {} to a {}game of Minegauler{}".format(
-        username, users_str, diff_str, opts_str
+    return "{user} has challenged {opponents} to a {mode}game of Minegauler{filters}".format(
+        user=username, opponents=users_str, mode=mode_str, filters=filters_str
     )
 
 

@@ -220,17 +220,17 @@ def get_matchups(
 
 
 PlayerInfo = collections.namedtuple(
-    "PlayerInfo", "username, nickname, combined_time, types_played, last_highscore"
+    "PlayerInfo", "username, nickname, combined_time, types_beaten, last_highscore"
 )
 
 
 def get_player_info(username: str) -> PlayerInfo:
     name = USER_NAMES[username]
-    highscores = get_highscores(name=name)
+    highscores = [h for m in GameMode for h in get_highscores(game_mode=m, name=name)]
     combined_time = _get_combined_highscore(name)
     last_highscore = max(h.timestamp for h in highscores) if highscores else None
     hs_types = len(
-        {(h.difficulty.lower(), h.drag_select, h.per_cell) for h in highscores}
+        {(h.mode, h.difficulty.lower(), h.drag_select, h.per_cell) for h in highscores}
     )
     return PlayerInfo(username, name, combined_time, hs_types, last_highscore)
 

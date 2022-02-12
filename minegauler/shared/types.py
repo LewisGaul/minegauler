@@ -327,14 +327,17 @@ class GameState(str, enum.Enum):
 class GameMode(str, enum.Enum):
     """Minesweeper game mode."""
 
-    REGULAR = "REGULAR"
-    SPLIT_CELL = "SPLIT_CELL"
+    REGULAR = "regular"
+    SPLIT_CELL = "split-cell"
 
     @classmethod
     def from_str(cls, value: str) -> "Difficulty":
         """Create an instance from a string representation."""
-        if value.upper() in [x.name for x in cls]:
-            return getattr(cls, value.upper())
+        sanitised_value = value.upper().replace("-", "_")
+        if sanitised_value in [x.name for x in cls]:
+            return getattr(cls, sanitised_value)
+        else:
+            return cls(value)  # Raise standard exception
 
 
 # ------------------------------------------------------------------------------
