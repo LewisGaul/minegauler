@@ -154,10 +154,10 @@ def get_highscore_from_json(obj: Dict) -> hs.HighscoreStruct:
     if "app_version" not in obj:
         logger.debug("Parsing highscore from pre-v4.1.2 app")
         obj["game_mode"] = "regular"
-        highscore = hs.HighscoreStruct.from_dict(obj)
+        highscore = hs.HighscoreStruct(**obj)
     else:
         logger.debug("Parsing highscore from app v%s", obj["app_version"])
-        highscore = hs.HighscoreStruct.from_dict(obj["highscore"])
+        highscore = hs.HighscoreStruct(**obj["highscore"])
     return highscore
 
 
