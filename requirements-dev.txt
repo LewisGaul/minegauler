@@ -61,11 +61,11 @@ toml==0.10.2
 tomli==1.2.1
 tqdm==4.62.2
 twine==3.4.2
-typed-ast==1.4.3
+typed-ast==1.5.2
 typing-extensions==3.10.0.2
 urllib3==1.26.6
 waitress==2.0.0
 webencodings==0.5.1
 Werkzeug==2.0.1
-wheel==0.37.0
+wheel==0.37.1
 zipp==3.5.0
