@@ -2,8 +2,8 @@ Run the program by double-clicking on '{root_filename}', or by finding the '{dis
 
 I would recommend making a shortcut to this file (e.g. right-click, create shortcut) and putting it somewhere convenient such as on the desktop. Note that a direct copy of the executable will not work in a different folder, and any created shortcuts will break if the 'minegauler' folder is moved/modified.
 
-Import your highscores from previous versions by clicking 'Retrieve highscores' in the Help menu.
+Import your highscores from previous versions by clicking 'Retrieve highscores' in the 'Help' menu. I would recommend having a read of the info provided under the 'Help' menu!
 
-Let me know about any problems or if you find any bugs, or even if there is something you'd like to see added or changed. You can contact me over email using minegauler@gmail.com, or raise an issue at https://github.com/LewisGaul/minegauler/.
+Let me know about any problems or if you find any bugs, or even if there is something you'd like to see added or changed. You can contact me over email using minegauler@gmail.com, or raise an issue at https://github.com/LewisGaul/minegauler/issues/.
 
 Enjoy.
