@@ -700,7 +700,7 @@ def challenge(args, username: str, **kwargs):
 
     users_str = ", ".join(utils.tag_user(u) for u in names)
     mode_str = args.game_mode.value + " " if args.game_mode else ""
-    mode_str += args.difficulty.name.capitalize() + " " if args.difficulty else ""
+    mode_str += args.difficulty.name.lower() + " " if args.difficulty else ""
     filters_str = formatter.format_filters(
         game_mode=None,
         difficulty=None,

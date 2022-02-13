@@ -56,6 +56,7 @@ def format_player_highscores(
             Difficulty.INTERMEDIATE,
             Difficulty.EXPERT,
             Difficulty.MASTER,
+            Difficulty.LUDICROUS,
         ]:
             hscores = [h.elapsed for h in highscores if h.difficulty is diff]
             if hscores:
@@ -65,7 +66,7 @@ def format_player_highscores(
             line = "{}: {}".format(diff.name.capitalize(), best)
             lines.append(line)
     else:
-        lines.append(f"Top {difficulty.name.capitalize()} times:")
+        lines.append(f"Top {difficulty.name.lower()} times:")
         for h in highscores[:5]:
             line = "{:.2f} ({:.2f} 3bv/s) - {}".format(
                 h.elapsed, h.bbbvps, format_timestamp(h.timestamp)
@@ -121,7 +122,7 @@ def format_filters(
         opts["mode"] = game_mode.value
     if not no_difficulty:
         try:
-            diff = difficulty.name.capitalize()
+            diff = difficulty.name.lower()
         except AttributeError:
             diff = difficulty if difficulty else "combined"
         opts["difficulty"] = diff
