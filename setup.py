@@ -102,7 +102,7 @@ setuptools.setup(
     project_urls={
         "Bug Reports": "https://github.com/LewisGaul/minegauler/issues",
         "Source": "https://github.com/LewisGaul/minegauler/",
-        "Background": "https://www.lewisgaul.com/minegauler",
+        "Background": "https://www.lewisgaul.co.uk/blog/coding/2020/02/12/minegauler/",
     },
     zip_safe=False,
 )
