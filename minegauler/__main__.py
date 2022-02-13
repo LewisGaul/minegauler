@@ -5,9 +5,6 @@ Entry point for the application.
 
 """
 
-# Workaround to get the mysql libcrypto and libssl libs loaded.
-import mysql.connector  # isort:skip
-
 import logging
 import sys
 

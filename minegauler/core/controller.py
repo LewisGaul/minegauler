@@ -132,7 +132,7 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
         """
         if os.path.isfile(file):
             logger.warning("Overwriting file at %s", file)
-        with open(file, "w") as f:
+        with open(file, mode="w",encoding="utf-8") as f:
             json.dump(mf.to_json(), f)
 
 
@@ -298,7 +298,7 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
 
     def load_minefield(self, file: PathLike) -> None:
         """Load a minefield from file."""
-        with open(file) as f:
+        with open(file,mode="r",encoding="utf-8") as f:
             mf = self.minefield_cls.from_json(json.load(f))
 
         logger.debug(

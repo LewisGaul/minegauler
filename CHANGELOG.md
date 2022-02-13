@@ -13,6 +13,11 @@ Stand-out features in this release include:
  - Improved packaging
 
 
+### 4.1.2 (2022-02-12)
+ - Add highscores for split-cells game mode
+ - Add game mode handling to the bot
+
+
 ### 4.1.1 (2022-02-06)
  - Improve the PyInstaller setup (#71)
 

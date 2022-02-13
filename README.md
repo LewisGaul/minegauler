@@ -4,7 +4,7 @@
 [![Downloads badge](https://img.shields.io/github/downloads/LewisGaul/minegauler/total)](https://github.com/LewisGaul/minegauler/releases/)
 [![Code style badge](https://img.shields.io/badge/code%20style-black-000000.svg)](https://black.readthedocs.io/en/stable/)
 
-# Minegauler v4.1.1
+# Minegauler v4.1.2
 
 Remake of the classic Minesweeper game, written in Python.
 
@@ -22,9 +22,9 @@ Read more about the project history in [my blog post](https://www.lewisgaul.co.u
 The application has been packaged with PyInstaller so that it can be played without setting up Python.
 
 Download links available here:
- - [Windows (amd64)](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-v4.1.1-windows-amd64.zip)
- - [Linux (x86_64)](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-v4.1.1-linux-x86_64.tar.gz)
- - [MacOS (x86_64)](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-v4.1.1-macos-x86_64.tar.gz)
+ - [Windows (amd64)](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-v4.1.2-windows-amd64.zip)
+ - [Linux (x86_64)](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-v4.1.2-linux-x86_64.tar.gz)
+ - [MacOS (x86_64)](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-v4.1.2-macos-x86_64.tar.gz)
 
 
 ### Install from PyPI

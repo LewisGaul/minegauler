@@ -2,13 +2,15 @@
 
 import contextlib
 import logging
+import os
 import pathlib
+import threading
 from unittest import mock
 
 import pytest
 
 import minegauler
-import minegauler.shared.highscores
+import minegauler.highscores
 
 from . import PKG_DIR
 
@@ -48,6 +50,7 @@ def sandbox(tmpdir_factory: pytest.TempdirFactory):
     Must run before importing any minegauler submodules.
     """
     tmpdir = tmpdir_factory.mktemp("sandbox")
+    os.chdir(tmpdir)
     logger.info("Creating testing sandbox, using tmpdir: %s", tmpdir)
     with contextlib.ExitStack() as ctxs:
         # Patch all paths relative to the root dir.
@@ -64,10 +67,20 @@ def sandbox(tmpdir_factory: pytest.TempdirFactory):
                     mock.patch.object(minegauler.paths, name, tmpdir / subpath)
                 )
 
-        ctxs.enter_context(
-            mock.patch.object(
-                minegauler.shared.highscores.HighscoresDatabases.REMOTE, "_value_"
-            )
-        )
+        # Ensure no posting of highscores!
+        logger.debug("Patching requests.post()")
+        ctxs.enter_context(mock.patch("requests.post"))
 
+        yield
+
+
+@pytest.fixture
+def sync_threads() -> None:
+    """Make threaded code run synchronously."""
+
+    class MockThread(threading.Thread):
+        def start(self) -> None:
+            self._target()
+
+    with mock.patch("threading.Thread", MockThread):
         yield

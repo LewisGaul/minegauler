@@ -254,13 +254,13 @@ class _Notifier(AbstractListener):
         :param y_size:
             The number of columns.
         """
-        self._logger.debug(f"Calling resize_minefield() with %s, %s", x_size, y_size)
+        self._logger.debug("Calling resize_minefield() with %d, %d", x_size, y_size)
 
     def set_mines(self, mines: int) -> None:
-        self._logger.debug(f"Calling set_mines() with %d", mines)
+        self._logger.debug("Calling set_mines() with %d", mines)
 
     def set_difficulty(self, diff: Difficulty) -> None:
-        self._logger.debug(f"Calling set_difficulty() with %s", diff)
+        self._logger.debug("Calling set_difficulty() with %s", diff)
 
     def update_cells(self, cell_updates: Dict[Coord, CellContents]) -> None:
         """
@@ -298,7 +298,7 @@ class _Notifier(AbstractListener):
         :param mode:
             The mode to change to.
         """
-        self._logger.debug(f"Calling ui_mode_changed() with %r", mode.name)
+        self._logger.debug("Calling ui_mode_changed() with %r", mode.name)
 
     def game_mode_about_to_change(self, mode: GameMode) -> None:
         """
@@ -307,7 +307,7 @@ class _Notifier(AbstractListener):
         :param mode:
             The mode to change to.
         """
-        self._logger.debug(f"Calling game_mode_about_to_change() with %r", mode.name)
+        self._logger.debug("Calling game_mode_about_to_change() with %r", mode.name)
 
     def game_mode_changed(self, mode: GameMode) -> None:
         """
@@ -316,7 +316,7 @@ class _Notifier(AbstractListener):
         :param mode:
             The mode to change to.
         """
-        self._logger.debug(f"Calling game_mode_changed() with %r", mode.name)
+        self._logger.debug("Calling game_mode_changed() with %r", mode.name)
 
     def handle_exception(self, method: str, exc: Exception) -> None:
         """

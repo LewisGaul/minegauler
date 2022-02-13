@@ -11,18 +11,18 @@ import json
 import logging
 import sys
 from typing import Mapping, Type
-
+from ..shared.types import Coord, Difficulty, GameMode, PathLike, UIMode
+from ..shared.utils import GameOptsStruct
+from . import api, board, controller, game, minefield, regular, split_cell
+from .board import BoardBase
+from .controller import ControllerBase
 
 if sys.version_info < (3, 8):
     from typing_extensions import Protocol
 else:
     from typing import Protocol
 
-from ..shared.types import Coord, Difficulty, GameMode, PathLike, UIMode
-from ..shared.utils import GameOptsStruct
-from . import api, board, controller, game, minefield, regular, split_cell
-from .board import BoardBase
-from .controller import ControllerBase
+
 
 
 logger = logging.getLogger(__name__)
