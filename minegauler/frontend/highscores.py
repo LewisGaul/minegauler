@@ -42,7 +42,8 @@ from PyQt5.QtWidgets import (
     QWidgetAction,
 )
 
-from ..shared import highscores, utils
+from .. import highscores
+from ..shared import utils
 from . import state
 
 

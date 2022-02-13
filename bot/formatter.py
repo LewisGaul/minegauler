@@ -15,14 +15,13 @@ __all__ = (
 )
 
 import datetime as dt
-import time
 from typing import Iterable, List, Mapping, Optional, Tuple, Union
 
 import pytz
 import tabulate
 
-from minegauler.shared import highscores as hs
-from minegauler.shared.types import Difficulty
+from minegauler import highscores as hs
+from minegauler.shared.types import Difficulty, GameMode
 
 from .utils import Matchup, PlayerInfo
 
@@ -57,6 +56,7 @@ def format_player_highscores(
             Difficulty.INTERMEDIATE,
             Difficulty.EXPERT,
             Difficulty.MASTER,
+            Difficulty.LUDICROUS,
         ]:
             hscores = [h.elapsed for h in highscores if h.difficulty is diff]
             if hscores:
@@ -66,7 +66,7 @@ def format_player_highscores(
             line = "{}: {}".format(diff.name.capitalize(), best)
             lines.append(line)
     else:
-        lines.append(f"Top {difficulty.name.capitalize()} times:")
+        lines.append(f"Top {difficulty.name.lower()} times:")
         for h in highscores[:5]:
             line = "{:.2f} ({:.2f} 3bv/s) - {}".format(
                 h.elapsed, h.bbbvps, format_timestamp(h.timestamp)
@@ -84,12 +84,13 @@ def format_player_info(players: Iterable[PlayerInfo]) -> str:
         "Modes played",
         "Last highscore",
     ]
+    types_available = len(GameMode) * (len(Difficulty) - 1) * 3 * 2
     data = [
         (
             p.username,
             p.nickname[:10],
             p.combined_time,
-            f"{p.types_played:2d}/24",
+            f"{p.types_beaten:2d}/{types_available}",
             format_timestamp(p.last_highscore) if p.last_highscore else "None",
         )
         for p in sorted(players, key=lambda x: x.combined_time)
@@ -109,16 +110,19 @@ def format_kwargs(kwargs: Mapping) -> str:
 
 
 def format_filters(
+    *,
+    game_mode: Optional[GameMode],
     difficulty: Optional[Union[str, Difficulty]],
     drag_select: Optional[bool],
     per_cell: Optional[int],
-    *,
     no_difficulty=False,
 ) -> str:
-    opts = dict()
+    opts = {}
+    if game_mode:
+        opts["mode"] = game_mode.value
     if not no_difficulty:
         try:
-            diff = difficulty.name.capitalize()
+            diff = difficulty.name.lower()
         except AttributeError:
             diff = difficulty if difficulty else "combined"
         opts["difficulty"] = diff

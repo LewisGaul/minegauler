@@ -58,7 +58,7 @@ Alternatively, feel free to [open an issue](https://github.com/LewisGaul/minegau
 """
 
 # Should be a release version, e.g. "4.0.1"
-version = "4.1.1"
+version = "4.1.2"
 if "-" in version:
     print("WARNING: Version is not a release version", file=sys.stderr)
 
@@ -85,7 +85,6 @@ setuptools.setup(
     python_requires=">=3.7",
     install_requires=[
         "attrs",
-        "mysql-connector-python==8.*",
         "PyQt5",
         "requests",
     ],

@@ -36,7 +36,7 @@ from typing import Iterable, List, Mapping, Tuple
 import attr
 
 from .. import paths
-from ..shared import HighscoreStruct
+from ..highscores import HighscoreStruct
 from ..shared.types import CellContents, Coord, PathLike
 from ..shared.utils import format_timestamp
 
