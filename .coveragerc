@@ -2,10 +2,12 @@
 source =
     minegauler/
     tests/
-omit = *venv*/**
+omit =
+    *venv*/**
 
 [report]
-#omit = tests/
+omit =
+    minegauler/highscores/mysql.py
 exclude_lines =
     pass
     if __name__ == .__main__.:
