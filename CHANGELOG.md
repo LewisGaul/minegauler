@@ -13,6 +13,10 @@ Stand-out features in this release include:
  - Improved packaging
 
 
+### 4.1.3 (2022-02-13)
+ - Add 'Features' info under the 'Help' menu
+
+
 ### 4.1.2 (2022-02-12)
  - Add highscores for split-cells game mode
  - Add game mode handling to the bot

@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 USER_NAMES = dict()
 _USER_NAMES_FILE = pathlib.Path(__file__).parent / "users.json"
-NO_TAG_USERS = {"_paula", "_felix", "_kunz", "esinghal"}
+NO_TAG_USERS = {"_felix", "_kunz", "esinghal", "richcoop"}
 
 BOT_NAME = "minegaulerbot"
 _BOT_ACCESS_TOKEN = ""

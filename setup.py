@@ -58,7 +58,7 @@ Alternatively, feel free to [open an issue](https://github.com/LewisGaul/minegau
 """
 
 # Should be a release version, e.g. "4.0.1"
-version = "4.1.2"
+version = "4.1.3"
 if "-" in version:
     print("WARNING: Version is not a release version", file=sys.stderr)
 
@@ -102,7 +102,7 @@ setuptools.setup(
     project_urls={
         "Bug Reports": "https://github.com/LewisGaul/minegauler/issues",
         "Source": "https://github.com/LewisGaul/minegauler/",
-        "Background": "https://www.lewisgaul.com/minegauler",
+        "Background": "https://www.lewisgaul.co.uk/blog/coding/2020/02/12/minegauler/",
     },
     zip_safe=False,
 )
