@@ -1,32 +1,38 @@
-Before playing you should enter your name in the bar underneath the board - to change it simply click on it and type. Your highscores will then be saved with this name. It is designed to work by assuming you always use the same name (including letter case).
+This app provides all of the basic functionality of the classic minesweeper game plus much more!
 
-Right click on the timer to hide it during a game.
+
+Before playing:
+
+* Enter your name in the bar underneath the board - to change it simply click on it and type. Any highscores you set will be saved under this name, so it's worth thinking of a good unique name and sticking to it!
+* If you have downloaded a new version of the app you can retrieve highscores from an older version using the 'Retrieve highscores' button under the 'Help' menu and selecting the folder that contains your old version of the app.
 
 
 Game menu:
 
-Create - Not yet working in this version. Will be added soon.
-Solver - (Only works with 1 mine per cell and detection of 1).
-         Show probabilities - Show a heatmap of the probabilities for each cell to contain a mine, given the current configuration. Hold Ctrl key and click a button to display accurate probability. Zoom button size to at least 24 to see values. NOTE: Using this during a game will stop it being eligible for the highscores.
-         Auto flag - Flags all cells that can be deduced by the revealed numbers. Also removes any incorrect flags.
-         Auto click - The computer works out the safest cell and clicks it. If there are multiple cells that can be deduced to be certainly safe, the computer will click all of them at once.
-Current info - If you lose a game, use this to see your predicted score.
-Highscores - Displays highscores for the current game's settings, and for the name that is entered underneath the board. To see everyone's top scores, remove the name from the bar under the board and click highscores again.
-Statistics - Not yet working.
-Custom - Type in dimensions of board and number of mines and press enter. A recommended number of mines is provided, and the maximum dimensions are 100x200.
-Zoom - Set the size of the cells (in pixels). This is saved in highscores, for 'official' times only use default.
+New game, Replay - Self-explanatory! Note that highscores cannot be set with replayed games (or any 'known' boards).
+Create board - Create a board by placing mines, which can then be saved with 'Save board' and loaded with 'Load board'.
+Save board, Load board - Save and load boards to play again.
+Current game info - See some info about the current game, e.g. if you lose a game you get a completion percentage and a predicted time.
+Highscores - Displays local highscores for the current game's settings. Click the headings to filter or sort the highscores.
+Beginner, Intermediate, Expert, Master, Ludicrous, Custom - Select the board difficulty or set a custom size and number of mines.
+Button size - Set the size of the cells (in pixels).
+Themes - Set the app theme.
+Advanced options - Options that are not yet stable.
 
 
-Options menu: (everything below FirstAuto has separate highscores)
+Options menu:
 
-FirstAuto - The first click will always give an opening. This is saved in highscores, for 'official' times turn it off.
-Lives - For 'other', type the number of lives and press enter. Only games with 3 lives or less will have their highscores saved.
-Max mines per cell - 'Many' gives a max of 10, which is effectively the same as having max of 3 or 4 etc.
-Detection strength - They are essentially distances that the numbers detect. An easy way to visualise the detection is by clicking with the left and right mouse buttons both at once during a game.
-Drag and select - Enables selecting buttons by clicking and dragging the mouse.
-Distance to - Not yet working. The numbers are given by n = [distance to closest mine] - [number of mines this distance away].
+Note that all of the options below except 'safe start' have separate highscore tables.
+
+Safe start - Ensure the first click always gives an opening, or at least gives a safe cell if there are too many mines to give an opening.
+Drag select - Enables selecting cells by clicking once and dragging the mouse.
+Max per cell - Set the maximum number of mines per cell.
+Game mode
+  * Regular - The standard minesweeper game.
+  * Split cell - Each large cell can be split into the 4 underlying regular cells using 'right-click'. Large cells can only be split if they contain at least one mine, and must be split to find all of the safe regular cells.
 
 
 Help menu:
 
-Retrieve highscores - Use to import highscores from an old version (only works for versions at least 1.1.2).
+Rules, Features, Tips, About - Text information.
+Retrieve highscores - Use to import highscores from an old version of the app (only works for versions at least v4.0).
