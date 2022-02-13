@@ -11,9 +11,7 @@ Remake of the classic Minesweeper game, written in Python.
 Read more about the project history in [my blog post](https://www.lewisgaul.co.uk/blog/coding/2020/02/12/minegauler/).
 
 
-<img src="img/screenshots/beginner_start.png" height=250>
-<img src="img/screenshots/beginner_win.png" height=250>
-<img src="img/screenshots/split-cell-intermediate.png" height=250>
+<img src="img/screenshots/beginner_start.png" height=250> <img src="img/screenshots/beginner_win.png" height=250> <img src="img/screenshots/split-cell-intermediate.png" height=250>
 
 
 ## Try it out!
