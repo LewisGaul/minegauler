@@ -274,10 +274,10 @@ class RoomType(enum.Enum):
     DIRECT = "direct"
 
     def to_cmds(self) -> CommandMapping:
-        if self is self.GROUP:
+        if self is RoomType.GROUP:
             return _GROUP_COMMANDS
         else:
-            assert self is self.DIRECT
+            assert self is RoomType.DIRECT
             return _DIRECT_COMMANDS
 
 
@@ -425,7 +425,10 @@ def info(args, **kwargs):
 )
 def player(args, username: str, allow_markdown=False, **kwargs):
     parser = BotMsgParser()
-    parser.add_positional_arg("username", choices=list(utils.USER_NAMES) + ["me"])
+    username_choices = list(utils.USER_NAMES)
+    if username:
+        username_choices.append("me")
+    parser.add_positional_arg("username", choices=username_choices)
     parser.add_game_mode_arg()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
@@ -451,10 +454,14 @@ def player(args, username: str, allow_markdown=False, **kwargs):
     )
     if filters_str:
         filters_str = " with " + filters_str
+    if utils.USER_NAMES[args.username] == args.username:
+        username_str = ""
+    else:
+        username_str = f" ({utils.USER_NAMES[args.username]})"
     lines = [
-        "Player info for {name} ({username}) for {mode} mode{filters}:".format(
+        "Player info for {name}{username} on {mode} mode{filters}:".format(
             name=args.username,
-            username=utils.USER_NAMES[args.username],
+            username=username_str,
             mode=args.game_mode.value,
             filters=filters_str,
         )
@@ -533,9 +540,10 @@ def stats(args, **kwargs):
 @schema("stats players {all | <name> [<name> ...]}")
 def stats_players(args, username: str, allow_markdown=False, **kwargs):
     parser = BotMsgParser()
-    parser.add_positional_arg(
-        "username", nargs="+", choices=list(utils.USER_NAMES) + ["me", "all"]
-    )
+    username_choices = list(utils.USER_NAMES) + ["all"]
+    if username:
+        username_choices.append("me")
+    parser.add_positional_arg("username", nargs="+", choices=username_choices)
     args = parser.parse_args(args)
     if "all" in args.username:
         if len(args.username) > 1:
@@ -568,9 +576,10 @@ def matchups(
     **kwargs,
 ):
     parser = BotMsgParser()
-    parser.add_positional_arg(
-        "username", nargs="+", choices=list(utils.USER_NAMES) + ["me"]
-    )
+    username_choices = list(utils.USER_NAMES)
+    if username:
+        username_choices.append("me")
+    parser.add_positional_arg("username", nargs="+", choices=username_choices)
     parser.add_game_mode_arg()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
@@ -623,9 +632,10 @@ def best_matchups(
     args, username: str, allow_markdown=False, room_type=RoomType.DIRECT, **kwargs
 ):
     parser = BotMsgParser()
-    parser.add_positional_arg(
-        "username", nargs="*", choices=list(utils.USER_NAMES) + ["me"]
-    )
+    username_choices = list(utils.USER_NAMES)
+    if username:
+        username_choices.append("me")
+    parser.add_positional_arg("username", nargs="*", choices=username_choices)
     parser.add_game_mode_arg()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
@@ -751,9 +761,9 @@ _DIRECT_COMMANDS = {
 }
 
 
-def _map_to_cmd(msg: str, cmds: CommandMapping) -> Tuple[Callable, List[str]]:
+def _map_to_cmd(msg: Iterable[str], cmds: CommandMapping) -> Tuple[Callable, List[str]]:
     func = None
-    words = msg.split()
+    words = list(msg)
 
     while words:
         next_word = words[0]
@@ -789,7 +799,11 @@ def _flatten_cmds(cmds: CommandMapping, root: bool = True) -> str:
 
 
 def parse_msg(
-    msg: str, room_type: RoomType, *, allow_markdown: bool = False, **kwargs
+    msg: Union[str, List[str]],
+    room_type: RoomType,
+    *,
+    allow_markdown: bool = False,
+    **kwargs,
 ) -> str:
     """
     Parse a message and perform the corresponding action.
@@ -808,12 +822,19 @@ def parse_msg(
         Unrecognised command. The text of the error is a suitable error/help
         message.
     """
-    msg = msg.strip()
-    if msg.endswith("?") and not (msg.startswith("help ") and msg.split()[1] != "?"):
+    orig_msg = msg
+    if isinstance(msg, str):
+        msg = msg.strip().split()
+    else:
+        msg = msg.copy()
+    if not msg:
+        msg = ["help"]
+    if msg[-1] in ["?", "help"] and not msg[0] == "help":
         # Change "?" at the end to be treated as help, except for the case where
         # this is a double help intended for a subcommand, e.g.
         # 'help matchups ?'.
-        msg = "help " + msg[:-1]
+        msg.pop(-1)
+        msg.insert(0, "help")
 
     cmds = room_type.to_cmds()
     func = None
@@ -823,11 +844,11 @@ def parse_msg(
             raise InvalidArgsError("Base command not found")
         return func(args, allow_markdown=allow_markdown, room_type=room_type, **kwargs)
     except InvalidArgsError as e:
-        logger.debug("Invalid message: %r", msg)
+        logger.debug("Invalid message: %r", orig_msg)
         if func is None:
             raise InvalidArgsError(
                 "Unrecognised command - try 'help' or 'info' in direct chat"
-            )
+            ) from e
         else:
             linebreak = "\n\n" if allow_markdown else "\n"
             resp_msg = cmd_help(func, only_schema=True, allow_markdown=allow_markdown)
@@ -843,8 +864,7 @@ def parse_msg(
 
 def main(argv):
     try:
-        # TODO: Need to not join argv, since player names can contain spaces.
-        resp = parse_msg(" ".join(argv), RoomType.DIRECT, username="dummy-user")
+        resp = parse_msg(argv, RoomType.DIRECT, username="")
     except InvalidArgsError as e:
         resp = str(e)
     print(resp)
