@@ -1,0 +1,32 @@
+Before playing you should enter your name in the bar underneath the board - to change it simply click on it and type. Your highscores will then be saved with this name. It is designed to work by assuming you always use the same name (including letter case).
+
+Right click on the timer to hide it during a game.
+
+
+Game menu:
+
+Create - Not yet working in this version. Will be added soon.
+Solver - (Only works with 1 mine per cell and detection of 1).
+         Show probabilities - Show a heatmap of the probabilities for each cell to contain a mine, given the current configuration. Hold Ctrl key and click a button to display accurate probability. Zoom button size to at least 24 to see values. NOTE: Using this during a game will stop it being eligible for the highscores.
+         Auto flag - Flags all cells that can be deduced by the revealed numbers. Also removes any incorrect flags.
+         Auto click - The computer works out the safest cell and clicks it. If there are multiple cells that can be deduced to be certainly safe, the computer will click all of them at once.
+Current info - If you lose a game, use this to see your predicted score.
+Highscores - Displays highscores for the current game's settings, and for the name that is entered underneath the board. To see everyone's top scores, remove the name from the bar under the board and click highscores again.
+Statistics - Not yet working.
+Custom - Type in dimensions of board and number of mines and press enter. A recommended number of mines is provided, and the maximum dimensions are 100x200.
+Zoom - Set the size of the cells (in pixels). This is saved in highscores, for 'official' times only use default.
+
+
+Options menu: (everything below FirstAuto has separate highscores)
+
+FirstAuto - The first click will always give an opening. This is saved in highscores, for 'official' times turn it off.
+Lives - For 'other', type the number of lives and press enter. Only games with 3 lives or less will have their highscores saved.
+Max mines per cell - 'Many' gives a max of 10, which is effectively the same as having max of 3 or 4 etc.
+Detection strength - They are essentially distances that the numbers detect. An easy way to visualise the detection is by clicking with the left and right mouse buttons both at once during a game.
+Drag and select - Enables selecting buttons by clicking and dragging the mouse.
+Distance to - Not yet working. The numbers are given by n = [distance to closest mine] - [number of mines this distance away].
+
+
+Help menu:
+
+Retrieve highscores - Use to import highscores from an old version (only works for versions at least 1.1.2).

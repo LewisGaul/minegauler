@@ -574,30 +574,29 @@ class MinegaulerGUI(
         # ----------
         # Help menu
         # ----------
-        rules_act = QAction("Rules", self)
-        self._help_menu.addAction(rules_act)
-        rules_act.triggered.connect(
-            lambda: self._open_text_popup("Rules", paths.FILES_DIR / "rules.txt")
-        )
+        for file, shortcut in [
+            ("rules", None),
+            ("features", None),
+            ("tips", None),
+            ("about", "F1"),
+        ]:
+            act = QAction(file.capitalize(), self)
+            self._help_menu.addAction(act)
+            act.triggered.connect(
+                functools.partial(
+                    self._open_text_popup,
+                    file.capitalize(),
+                    paths.FILES_DIR / f"{file}.txt",
+                )
+            )
+            if shortcut:
+                act.setShortcut(shortcut)
 
-        tips_act = QAction("Tips", self)
-        self._help_menu.addAction(tips_act)
-        tips_act.triggered.connect(
-            lambda: self._open_text_popup("Tips", paths.FILES_DIR / "tips.txt")
-        )
+        self._help_menu.addSeparator()
 
         retrieve_act = QAction("Retrieve highscores", self)
         retrieve_act.triggered.connect(self._open_retrieve_highscores_modal)
         self._help_menu.addAction(retrieve_act)
-
-        self._help_menu.addSeparator()
-
-        about_act = QAction("About", self)
-        self._help_menu.addAction(about_act)
-        about_act.triggered.connect(
-            lambda: self._open_text_popup("About", paths.FILES_DIR / "about.txt")
-        )
-        about_act.setShortcut("F1")
 
     def _change_difficulty(self, diff: Difficulty) -> None:
         """
