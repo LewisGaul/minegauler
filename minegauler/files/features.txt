@@ -1,0 +1,38 @@
+This app provides all of the basic functionality of the classic minesweeper game plus much more!
+
+
+Before playing:
+
+* Enter your name in the bar underneath the board - to change it simply click on it and type. Any highscores you set will be saved under this name, so it's worth thinking of a good unique name and sticking to it!
+* If you have downloaded a new version of the app you can retrieve highscores from an older version using the 'Retrieve highscores' button under the 'Help' menu and selecting the folder that contains your old version of the app.
+
+
+Game menu:
+
+New game, Replay - Self-explanatory! Note that highscores cannot be set with replayed games (or any 'known' boards).
+Create board - Create a board by placing mines, which can then be saved with 'Save board' and loaded with 'Load board'.
+Save board, Load board - Save and load boards to play again.
+Current game info - See some info about the current game, e.g. if you lose a game you get a completion percentage and a predicted time.
+Highscores - Displays local highscores for the current game's settings. Click the headings to filter or sort the highscores.
+Beginner, Intermediate, Expert, Master, Ludicrous, Custom - Select the board difficulty or set a custom size and number of mines.
+Button size - Set the size of the cells (in pixels).
+Themes - Set the app theme.
+Advanced options - Options that are not yet stable.
+
+
+Options menu:
+
+Note that all of the options below except 'safe start' have separate highscore tables.
+
+Safe start - Ensure the first click always gives an opening, or at least gives a safe cell if there are too many mines to give an opening.
+Drag select - Enables selecting cells by clicking once and dragging the mouse.
+Max per cell - Set the maximum number of mines per cell.
+Game mode
+  * Regular - The standard minesweeper game.
+  * Split cell - Each large cell can be split into the 4 underlying regular cells using 'right-click'. Large cells can only be split if they contain at least one mine, and must be split to find all of the safe regular cells.
+
+
+Help menu:
+
+Rules, Features, Tips, About - Text information.
+Retrieve highscores - Use to import highscores from an old version of the app (only works for versions at least v4.0).
