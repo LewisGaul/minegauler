@@ -9,7 +9,6 @@ import logging
 import sys
 
 from . import core, frontend, paths, shared
-from ._version import __version__
 
 
 logger = logging.getLogger(__name__)

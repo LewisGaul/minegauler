@@ -197,7 +197,7 @@ def main(argv):
     )
 
     if args.bot:
-        bot.init_route_handling(app)
+        bot.routes.init_route_handling(app)
 
     logger.info("Starting up")
     if args.dev:

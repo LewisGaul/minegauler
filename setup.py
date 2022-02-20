@@ -1,9 +1,6 @@
-"""
-setup.py - Setup script
+# January 2020, Lewis Gaul
 
-January 2020, Lewis Gaul
-"""
-
+import runpy
 import sys
 
 import setuptools
@@ -57,8 +54,8 @@ Alternatively, feel free to [open an issue](https://github.com/LewisGaul/minegau
 
 """
 
+version = runpy.run_path("minegauler/_version.py")["__version__"]
 # Should be a release version, e.g. "4.0.1"
-version = "4.1.3"
 if "-" in version:
     print("WARNING: Version is not a release version", file=sys.stderr)
 
@@ -72,7 +69,11 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/LewisGaul/minegauler",
-    packages=setuptools.find_packages(include="minegauler*"),
+    project_urls={
+        "Bug Reports": "https://github.com/LewisGaul/minegauler/issues",
+        "Source": "https://github.com/LewisGaul/minegauler/",
+        "Background": "https://www.lewisgaul.co.uk/blog/coding/2020/02/12/minegauler/",
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -83,11 +84,7 @@ setuptools.setup(
         "Topic :: Games/Entertainment :: Puzzle Games",
     ],
     python_requires=">=3.7",
-    install_requires=[
-        "attrs",
-        "PyQt5",
-        "requests",
-    ],
+    packages=setuptools.find_packages(include="minegauler*"),
     package_data={
         "minegauler": [
             "boards/sample.mgb",
@@ -99,10 +96,10 @@ setuptools.setup(
             "images/numbers/*/*",
         ]
     },
-    project_urls={
-        "Bug Reports": "https://github.com/LewisGaul/minegauler/issues",
-        "Source": "https://github.com/LewisGaul/minegauler/",
-        "Background": "https://www.lewisgaul.co.uk/blog/coding/2020/02/12/minegauler/",
-    },
+    install_requires=[
+        "attrs",
+        "PyQt5",
+        "requests",
+    ],
     zip_safe=False,
 )
