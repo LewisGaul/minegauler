@@ -6,6 +6,9 @@ import sys
 import setuptools
 
 
+with open("README.pypi.md", "r", encoding="utf-8") as f:
+    long_description = f.read()
+
 version = runpy.run_path("minegauler/app/_version.py")["__version__"]
 # Should be a release version, e.g. "4.0.1"
 if "-" in version:
