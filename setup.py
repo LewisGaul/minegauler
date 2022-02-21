@@ -67,14 +67,22 @@ setuptools.setup(
         "requests",
         "typing-extensions",
     ],
+    extras_require={
+        "bot": [
+            "flask",
+            "pytz",
+            "requests-toolbelt",
+            "tabulate",
+        ],
+    },
     entry_points={
         "gui_scripts": [
             "minegauler = minegauler.app.__main__:main",
         ],
         # TODO: Make this an extra with additional deps.
-        # "console_scripts": [
-        #     "minegauler-bot = minegauler.bot.msgparse:main",
-        # ],
+        "console_scripts": [
+            "minegauler-bot = minegauler.bot.msgparse:main [bot]",
+        ],
     },
     zip_safe=False,
 )
