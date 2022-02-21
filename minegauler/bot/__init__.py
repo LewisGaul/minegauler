@@ -5,4 +5,10 @@ Bot package.
 
 """
 
-from . import formatter, msgparse, routes, utils
+from . import formatter, msgparse, utils
+
+
+try:
+    from . import routes
+except ImportError:
+    pass

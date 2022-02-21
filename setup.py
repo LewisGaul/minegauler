@@ -79,7 +79,6 @@ setuptools.setup(
         "gui_scripts": [
             "minegauler = minegauler.app.__main__:main",
         ],
-        # TODO: Make this an extra with additional deps.
         "console_scripts": [
             "minegauler-bot = minegauler.bot.msgparse:main [bot]",
         ],
