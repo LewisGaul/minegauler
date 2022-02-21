@@ -39,17 +39,15 @@ setuptools.setup(
         "Topic :: Games/Entertainment :: Puzzle Games",
     ],
     python_requires=">=3.7",
-    packages=setuptools.find_namespace_packages(
-        include=("minegauler*",),
-        exclude=(
-            "minegauler.app.boards",
-            "minegauler.app.data",
-            "minegauler.app.files",
-            "minegauler.app.images",
-            "minegauler.app.images.*",
-            "minegauler.server.test",
-        ),
-    ),
+    packages=[
+        "minegauler." + subpkg
+        for subpkg in (
+            *setuptools.find_packages(
+                where="minegauler/",
+                include=("app", "app.*", "bot"),
+            ),
+        )
+    ],
     package_data={
         "minegauler.app": [
             "boards/sample.mgb",
@@ -59,9 +57,6 @@ setuptools.setup(
             "images/buttons/*/*",
             "images/markers/*/*",
             "images/numbers/*/*",
-        ],
-        "minegauler.cli": [
-            "cli.yaml",
         ],
     },
     install_requires=[
