@@ -14,9 +14,9 @@ import sys
 
 import flask
 import requests
-import server
-from flask import request
 
+from .. import server
+from ..app import highscores as hs
 from . import msgparse, utils
 
 
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 def bot_message():
     """Receive a notification of a bot message."""
-    data = request.get_json()["data"]
+    data = flask.request.get_json()["data"]
     logger.debug("POST bot message: %s", data)
     user = utils.user_from_email(data["personEmail"])
     send_welcome = False

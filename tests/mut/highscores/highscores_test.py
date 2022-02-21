@@ -11,7 +11,7 @@ from unittest import mock
 import pytest
 import requests
 
-import minegauler
+import minegauler.app
 from minegauler.app import highscores
 from minegauler.app.highscores import HighscoreSettingsStruct, HighscoreStruct
 from minegauler.app.shared.types import Difficulty, GameMode
@@ -207,13 +207,13 @@ class TestModuleAPIs:
         mock_insert_hs.reset_mock()
 
         # Post to remote.
-        result = highscores.insert_highscore(fake_hs, database=mock_db)
+        highscores.insert_highscore(fake_hs, database=mock_db)
         mock_insert_hs.assert_called_once_with([fake_hs])
         requests.post.assert_called_once_with(
             highscores._REMOTE_POST_URL,
             json={
                 "highscore": fake_hs_json,
-                "app_version": minegauler.__version__,
+                "app_version": minegauler.app.__version__,
             },
             timeout=5,
         )

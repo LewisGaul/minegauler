@@ -19,8 +19,8 @@ from typing import Iterable, Mapping, Optional, Tuple
 
 import attr
 
-from minegauler.app.shared.types import Difficulty, GameMode
-from minegauler.app.shared.utils import StructConstructorMixin
+from ..shared.types import Difficulty, GameMode
+from ..shared.utils import StructConstructorMixin
 
 
 logger = logging.getLogger(__name__)

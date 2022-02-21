@@ -9,7 +9,7 @@ from unittest import mock
 
 import pytest
 
-import minegauler.app1import
+import minegauler.app
 import minegauler.app.highscores
 
 from . import PKG_DIR
@@ -54,7 +54,7 @@ def sandbox(tmpdir_factory: pytest.TempdirFactory):
     logger.info("Creating testing sandbox, using tmpdir: %s", tmpdir)
     with contextlib.ExitStack() as ctxs:
         # Patch all paths relative to the root dir.
-        for name, obj in vars(minegauler.paths).items():
+        for name, obj in vars(minegauler.app.paths).items():
             if not isinstance(obj, pathlib.Path) or name in ["IMG_DIR", "FILES_DIR"]:
                 continue
             try:
@@ -64,7 +64,7 @@ def sandbox(tmpdir_factory: pytest.TempdirFactory):
             else:
                 logger.debug("Patching %s with %s", name, tmpdir / subpath)
                 ctxs.enter_context(
-                    mock.patch.object(minegauler.paths, name, tmpdir / subpath)
+                    mock.patch.object(minegauler.app.paths, name, tmpdir / subpath)
                 )
 
         # Ensure no posting of highscores!

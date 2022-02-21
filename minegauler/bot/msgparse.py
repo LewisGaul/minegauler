@@ -13,8 +13,7 @@ import logging
 import sys
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
-from minegauler.app.shared.types import Difficulty, GameMode
-
+from ..app.shared.types import Difficulty, GameMode
 from . import formatter, utils
 
 

@@ -21,8 +21,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from minegauler.app.shared.types import CellContents, CellImageType, Coord
-
+from ...shared.types import CellContents, CellImageType, Coord
 from ..utils import CellUpdate_T
 from ._base import update_cell_images
 

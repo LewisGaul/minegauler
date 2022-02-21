@@ -15,7 +15,7 @@ from PyQt5.QtCore import QEvent, QPoint, Qt
 from PyQt5.QtGui import QMouseEvent
 
 import minegauler.app.paths
-from minegauler.app1importcore import frontend  # TODO: Fix circular dependency
+from minegauler.app import core, frontend  # TODO: Fix circular dependency
 from minegauler.app.shared.types import CellImageType
 from minegauler.app.shared.utils import AllOptsStruct, write_settings_to_file
 
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 def create_gui(settings: Optional[AllOptsStruct] = None) -> frontend.MinegaulerGUI:
     """Create a minegauler GUI instance via the main entrypoint."""
     if settings is not None:
-        write_settings_to_file(settings, minegauler.paths.SETTINGS_FILE)
+        write_settings_to_file(settings, minegauler.app.paths.SETTINGS_FILE)
 
     def run_app(gui: frontend.MinegaulerGUI) -> int:
         logger.info("In run_app()")
@@ -37,7 +37,7 @@ def create_gui(settings: Optional[AllOptsStruct] = None) -> frontend.MinegaulerG
 
     logger.info("Executing __main__ without starting app event loop")
     with contextlib.ExitStack() as ctxs:
-        ctxs.enter_context(mock.patch("minegauler.frontend.run_app", run_app))
+        ctxs.enter_context(mock.patch("minegauler.app.frontend.run_app", run_app))
         ctxs.enter_context(mock.patch("sys.exit"))
         main_module = run_main_entrypoint()
 

@@ -7,12 +7,13 @@ CLI entry-point.
 
 import logging
 import pathlib
+import runpy
 import subprocess
 import sys
 from typing import Any, Callable, Dict
 
 # Any 3rd-party dependencies must be vendored for venv creation.
-import yaml
+import yaml  # noqa
 
 from .parser import CLIParser
 
@@ -23,8 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_app(args):
-    # TODO: Use the venv python.
-    subprocess.run(["python", "-m", "minegauler"])
+    runpy.run_module("minegauler.app", run_name="__main__")
 
 
 def run_tests(args):
@@ -34,10 +34,8 @@ def run_tests(args):
         args.remaining_args.remove("--")
     except ValueError:
         pass
-    if args.pytest_help:
-        subprocess.run(["python", "-m", "pytest", "-h"])
-    else:
-        subprocess.run(["python", "-m", "pytest"] + args.remaining_args)
+    pytest_args = ["-h"] if args.pytest_help else args.remaining_args
+    subprocess.run([sys.executable, "-m", "pytest"] + pytest_args)
 
 
 def run_bot_cli(args):

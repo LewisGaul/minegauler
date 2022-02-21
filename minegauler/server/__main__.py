@@ -13,11 +13,10 @@ import sys
 from typing import Dict, Optional
 
 import attr
-import bot
 from flask import Flask, abort, jsonify, redirect, request
 
-from minegauler.app.shared.types import Difficulty, GameMode
-
+from .. import bot
+from ..app.shared.types import Difficulty, GameMode
 from . import get_new_highscore_hooks
 
 
