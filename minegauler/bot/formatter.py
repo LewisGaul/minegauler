@@ -20,8 +20,8 @@ from typing import Iterable, List, Mapping, Optional, Tuple, Union
 import pytz
 import tabulate
 
-from minegauler import highscores as hs
-from minegauler.shared.types import Difficulty, GameMode
+from minegauler.app import highscores as hs
+from minegauler.app.shared.types import Difficulty, GameMode
 
 from .utils import Matchup, PlayerInfo
 

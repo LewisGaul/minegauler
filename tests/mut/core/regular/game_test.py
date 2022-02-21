@@ -12,12 +12,12 @@ import time
 import pytest
 from pytest import approx
 
-from minegauler.core.game import GameNotStartedError
-from minegauler.core.regular.board import Board
-from minegauler.core.regular.game import Game
-from minegauler.core.regular.minefield import Minefield
-from minegauler.core.regular.types import Coord
-from minegauler.shared.types import Difficulty, GameState
+from minegauler.app.core.game import GameNotStartedError
+from minegauler.app.core.regular.board import Board
+from minegauler.app.core.regular.game import Game
+from minegauler.app.core.regular.minefield import Minefield
+from minegauler.app.core.regular.types import Coord
+from minegauler.app.shared.types import Difficulty, GameState
 
 
 logger = logging.getLogger(__name__)

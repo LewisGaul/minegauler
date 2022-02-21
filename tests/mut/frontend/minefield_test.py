@@ -13,10 +13,10 @@ from PyQt5.QtCore import QEvent, QPoint, Qt
 from PyQt5.QtGui import QMouseEvent
 from pytestqt.qtbot import QtBot
 
-from minegauler.core import api
-from minegauler.frontend import state
-from minegauler.frontend.minefield import MinefieldWidget
-from minegauler.frontend.minefield._base import RAISED_CELL, SUNKEN_CELL
+from minegauler.app.core import api
+from minegauler.app.frontend import state
+from minegauler.app.frontend.minefield import MinefieldWidget
+from minegauler.app.frontend.minefield._base import RAISED_CELL, SUNKEN_CELL
 
 from . import utils
 

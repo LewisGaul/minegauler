@@ -4,8 +4,8 @@ from unittest import mock
 
 import pytest
 
-from minegauler.core import api
-from minegauler.core.regular import (
+from minegauler.app.core import api
+from minegauler.app.core.regular import (
     Board,
     Coord,
     CreateController,
@@ -13,9 +13,9 @@ from minegauler.core.regular import (
     GameController,
     Minefield,
 )
-from minegauler.shared import GameOptsStruct
-from minegauler.shared.types import CellContents, Difficulty, GameMode, GameState
-from minegauler.shared.utils import Grid
+from minegauler.app.shared import GameOptsStruct
+from minegauler.app.shared.types import CellContents, Difficulty, GameMode, GameState
+from minegauler.app.shared.utils import Grid
 
 
 class TestGameController:

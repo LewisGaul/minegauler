@@ -1,9 +1,10 @@
 # February 2022, Lewis Gaul
+
 import pytest
 
-import server.__main__ as server_main
-from minegauler.highscores import HighscoreStruct
-from minegauler.shared.types import Difficulty, GameMode
+from minegauler.app.highscores import HighscoreStruct
+from minegauler.app.shared.types import Difficulty, GameMode
+from minegauler.server import __main__ as server_main
 
 
 # Mapping of supported app version to valid highscore post JSON.

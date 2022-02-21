@@ -5,16 +5,18 @@ Definition of bot HTTP routes.
 
 """
 
-__all__ = ("activate_bot_msg_handling", "new_highscore_hook")
+__all__ = ("activate_bot_msg_handling", "init_route_handling", "new_highscore_hook")
 
 import logging
+import os
 import re
+import sys
 
 import flask
 import requests
-from flask import request
 
-from minegauler import highscores as hs
+from minegauler import server
+from minegauler.app import highscores as hs
 
 from . import msgparse, utils
 
@@ -29,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 def bot_message():
     """Receive a notification of a bot message."""
-    data = request.get_json()["data"]
+    data = flask.request.get_json()["data"]
     logger.debug("POST bot message: %s", data)
     user = utils.user_from_email(data["personEmail"])
     send_welcome = False
@@ -133,3 +135,16 @@ def _send_myself_error_msg(error: str) -> None:
         utils.send_myself_message(f"Error {error}, see server logs")
     except requests.HTTPError:
         logger.exception("Error sending myself bot message when handling error")
+
+
+def init_route_handling(app: flask.app.Flask):
+    if "BOT_ACCESS_TOKEN" not in os.environ:
+        logger.error("No 'BOT_ACCESS_TOKEN' env var set")
+        sys.exit(1)
+    utils.set_bot_access_token(os.environ["BOT_ACCESS_TOKEN"])
+
+    utils.read_users_file()
+
+    activate_bot_msg_handling(app)
+
+    server.add_new_highscore_hook(new_highscore_hook)

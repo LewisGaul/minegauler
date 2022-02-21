@@ -15,9 +15,9 @@ from typing import Dict, Optional
 import attr
 from flask import Flask, abort, jsonify, redirect, request
 
-import bot
-from minegauler import highscores as hs
-from minegauler.shared.types import Difficulty, GameMode
+from minegauler import bot
+from minegauler.app import highscores as hs
+from minegauler.app.shared.types import Difficulty, GameMode
 
 from . import get_new_highscore_hooks
 
@@ -197,7 +197,7 @@ def main(argv):
     )
 
     if args.bot:
-        bot.init_route_handling(app)
+        bot.routes.init_route_handling(app)
 
     logger.info("Starting up")
     if args.dev:

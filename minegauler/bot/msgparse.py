@@ -13,7 +13,7 @@ import logging
 import sys
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
-from minegauler.shared.types import Difficulty, GameMode
+from minegauler.app.shared.types import Difficulty, GameMode
 
 from . import formatter, utils
 
@@ -862,12 +862,17 @@ def parse_msg(
 # ------------------------------------------------------------------------------
 
 
-def main(argv):
+def main(argv: Optional[List[str]] = None) -> int:
+    if argv is None:
+        argv = sys.argv[1:]
+    rc = 0
     try:
         resp = parse_msg(argv, RoomType.DIRECT, username="")
     except InvalidArgsError as e:
         resp = str(e)
+        rc = 1
     print(resp)
+    return rc
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ import sys
 
 from flask import Flask
 
-from . import init_route_handling
+from .routes import init_route_handling
 
 
 logger = logging.getLogger(__name__)
