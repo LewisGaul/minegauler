@@ -46,6 +46,7 @@ setuptools.setup(
             "minegauler.app.data",
             "minegauler.app.files",
             "minegauler.app.images",
+            "minegauler.app.images.*",
             "minegauler.server.test",
         ),
     ),
