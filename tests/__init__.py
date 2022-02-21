@@ -1,7 +1,9 @@
+__all__ = ("APP_DIR",)
+
 import pathlib
 
-import minegauler
+import minegauler.app
 
 
 # ROOT_DIR is mocked, so recalculate the package root here.
-PKG_DIR = pathlib.Path(minegauler.__file__).parent
+APP_DIR = pathlib.Path(minegauler.app.__file__).parent

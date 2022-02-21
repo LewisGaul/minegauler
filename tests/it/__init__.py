@@ -21,8 +21,8 @@ def run_main_entrypoint() -> types.ModuleType:
     :return:
         The __main__ module namespace.
     """
-    module = types.ModuleType("minegauler.__main__")
-    spec = importlib.util.find_spec("minegauler.__main__")
+    module = types.ModuleType("minegauler.app.__main__")
+    spec = importlib.util.find_spec("minegauler.app.__main__")
     spec.loader.exec_module(module)
     return module
 

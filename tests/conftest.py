@@ -12,7 +12,7 @@ import pytest
 import minegauler.app
 import minegauler.app.highscores
 
-from . import PKG_DIR
+from . import APP_DIR
 
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ def sandbox(tmpdir_factory: pytest.TempdirFactory):
             if not isinstance(obj, pathlib.Path) or name in ["IMG_DIR", "FILES_DIR"]:
                 continue
             try:
-                subpath = obj.relative_to(PKG_DIR)
+                subpath = obj.relative_to(APP_DIR)
             except ValueError:
                 pass
             else:

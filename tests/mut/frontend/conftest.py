@@ -9,6 +9,7 @@ from unittest import mock
 
 import pytest
 
+from minegauler.app import api
 from minegauler.app.core import regular
 from minegauler.app.shared import utils
 from minegauler.app.shared.types import Difficulty, GameMode, GameState

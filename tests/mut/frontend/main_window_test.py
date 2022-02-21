@@ -10,6 +10,7 @@ from unittest import mock
 import pytest
 from pytestqt.qtbot import QtBot
 
+from minegauler.app import api
 from minegauler.app.frontend import main_window, minefield, panel, state
 from minegauler.app.frontend.main_window import MinegaulerGUI
 from minegauler.app.highscores import HighscoreStruct
@@ -41,16 +42,17 @@ class TestMinegaulerGUI:
     @classmethod
     def setup_class(cls):
         cls._panel_class_mock = mock.patch(
-            "minegauler.frontend.panel.PanelWidget", side_effect=_MockPanelWidget
+            "minegauler.app.frontend.panel.PanelWidget", side_effect=_MockPanelWidget
         ).start()
         cls._minefield_class_mock = mock.patch(
-            "minegauler.frontend.minefield.MinefieldWidget",
+            "minegauler.app.frontend.minefield.MinefieldWidget",
             side_effect=_MockMinefieldWidget,
         ).start()
         mock.patch(
-            "minegauler.frontend.panel._CounterWidget", side_effect=_MockCounterWidget
+            "minegauler.app.frontend.panel._CounterWidget",
+            side_effect=_MockCounterWidget,
         ).start()
-        mock.patch("minegauler.frontend.minefield._base.update_cell_images").start()
+        mock.patch("minegauler.app.frontend.minefield._base.update_cell_images").start()
         mock.patch.object(main_window, "highscores").start()
 
     @classmethod
@@ -163,7 +165,7 @@ class TestMinegaulerGUI:
             0.4,
         )
 
-        with mock.patch("minegauler.frontend.utils.save_highscore_file"):
+        with mock.patch("minegauler.app.frontend.utils.save_highscore_file"):
             with mock.patch.object(gui, "open_highscores_window") as mock_open:
                 gui.update_game_state(GameState.WON)
                 gui._panel_widget.timer.set_time.assert_called_once_with(100)

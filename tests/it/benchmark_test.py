@@ -11,7 +11,7 @@ from types import ModuleType
 import pytest
 from pytest_benchmark.fixture import BenchmarkFixture
 
-from minegauler.app1importcore import frontend
+from minegauler.app import core, frontend
 from minegauler.app.shared.types import CellContents
 
 from . import process_events as _utils_process_events

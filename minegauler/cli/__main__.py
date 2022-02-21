@@ -84,7 +84,7 @@ def main(argv):
     # Parse argv.
     prog = "run.bat" if sys.platform.startswith("win") else "run.sh"
     args = CLIParser(schema, prog=prog).parse_args(argv)
-    logger.debug("Got args:", args)
+    logger.debug("Got args: %s", args)
 
     # Run the command!
     return _COMMANDS[args.command](args)
