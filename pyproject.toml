@@ -15,7 +15,7 @@ build-backend = "setuptools.build_meta"
 [tool.black]
 line-length = 88
 target-version = ['py37']
-exclude = '.*venv.*|bootstrap'
+exclude = '.*venv.*|_vendor'
 
 [tool.isort]
 # Make compatible with Black
@@ -27,4 +27,4 @@ use_parentheses = true
 # Other options
 order_by_type = true
 lines_after_imports = 2
-skip_glob = ['bootstrap', '*venv*']
+skip_glob = ['*/_vendor/*', '*venv*']

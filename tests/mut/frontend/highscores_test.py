@@ -8,8 +8,8 @@ Tests for the frontend highscores module (model/view).
 import pytest
 from PyQt5.QtCore import Qt
 
-from minegauler.frontend.highscores import HighscoresModel
-from minegauler.frontend.state import HighscoreWindowState
+from minegauler.app.frontend.highscores import HighscoresModel
+from minegauler.app.frontend.state import HighscoreWindowState
 
 
 @pytest.fixture

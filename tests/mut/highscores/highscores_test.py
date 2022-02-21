@@ -12,9 +12,9 @@ import pytest
 import requests
 
 import minegauler
-from minegauler import highscores
-from minegauler.highscores import HighscoreSettingsStruct, HighscoreStruct
-from minegauler.shared.types import Difficulty, GameMode
+from minegauler.app import highscores
+from minegauler.app.highscores import HighscoreSettingsStruct, HighscoreStruct
+from minegauler.app.shared.types import Difficulty, GameMode
 
 
 @pytest.fixture

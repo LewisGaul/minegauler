@@ -13,7 +13,7 @@ import sys
 import tempfile
 from typing import List, Optional
 
-import minegauler  # To get the version
+import minegauler.app1  # To get the version
 
 
 class Platform(enum.Enum):

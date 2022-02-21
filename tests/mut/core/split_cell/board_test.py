@@ -7,8 +7,8 @@ Test the split cell board module.
 
 import pytest
 
-from minegauler.core.split_cell import Board, Coord
-from minegauler.shared.types import CellContents
+from minegauler.app.core.split_cell import Board, Coord
+from minegauler.app.shared.types import CellContents
 
 
 class TestSplitCellBoard:

@@ -9,4 +9,7 @@ This file is provided for use with pyinstaller.
 
 """
 
-import minegauler.__main__
+import runpy
+
+
+runpy.run_module("minegauler.app", run_name="__main__")

@@ -9,8 +9,8 @@ from unittest import mock
 
 import pytest
 
-import minegauler
-import minegauler.highscores
+import minegauler.app1import
+import minegauler.app.highscores
 
 from . import PKG_DIR
 

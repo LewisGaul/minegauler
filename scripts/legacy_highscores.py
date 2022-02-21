@@ -10,7 +10,7 @@ from typing import List, Optional
 
 import attr
 
-from minegauler.shared import highscores as hs
+from minegauler.app.shared import highscores as hs
 
 
 logger = logging.getLogger(__name__)

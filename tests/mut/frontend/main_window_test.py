@@ -10,11 +10,10 @@ from unittest import mock
 import pytest
 from pytestqt.qtbot import QtBot
 
-from minegauler import api
-from minegauler.frontend import main_window, minefield, panel, state
-from minegauler.frontend.main_window import MinegaulerGUI
-from minegauler.highscores import HighscoreStruct
-from minegauler.shared.types import Difficulty, GameMode, GameState
+from minegauler.app.frontend import main_window, minefield, panel, state
+from minegauler.app.frontend.main_window import MinegaulerGUI
+from minegauler.app.highscores import HighscoreStruct
+from minegauler.app.shared.types import Difficulty, GameMode, GameState
 
 from ..utils import make_true_mock
 from .utils import maybe_stop_for_interaction

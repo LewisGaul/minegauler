@@ -8,10 +8,10 @@ Test the core game module.
 import logging
 from unittest import mock
 
-from minegauler.core.game import _ignore_if, _ignore_if_not
-from minegauler.core.regular.game import Game
-from minegauler.core.regular.types import Coord
-from minegauler.shared.types import CellContents, GameState
+from minegauler.app.core.game import _ignore_if, _ignore_if_not
+from minegauler.app.core.regular.game import Game
+from minegauler.app.core.regular.types import Coord
+from minegauler.app.shared.types import CellContents, GameState
 
 
 logger = logging.getLogger(__name__)

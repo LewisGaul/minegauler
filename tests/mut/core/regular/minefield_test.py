@@ -4,9 +4,9 @@ import textwrap
 
 import pytest
 
-from minegauler.core.regular.board import Board
-from minegauler.core.regular.minefield import Minefield
-from minegauler.core.regular.types import Coord
+from minegauler.app.core.regular.board import Board
+from minegauler.app.core.regular.minefield import Minefield
+from minegauler.app.core.regular.types import Coord
 
 
 class TestRegularMinefield:

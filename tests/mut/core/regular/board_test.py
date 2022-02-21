@@ -9,9 +9,9 @@ import textwrap
 
 import pytest
 
-from minegauler.core.regular import Board, Coord
-from minegauler.shared import utils
-from minegauler.shared.types import CellContents
+from minegauler.app.core.regular import Board, Coord
+from minegauler.app.shared import utils
+from minegauler.app.shared.types import CellContents
 
 
 class TestRegularBoard:

@@ -1,6 +1,6 @@
 import pathlib
 
-import minegauler
+import minegauler.app1
 
 
 # ROOT_DIR is mocked, so recalculate the package root here.
