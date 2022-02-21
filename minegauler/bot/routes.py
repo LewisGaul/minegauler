@@ -15,8 +15,9 @@ import sys
 import flask
 import requests
 
-from .. import server
-from ..app import highscores as hs
+from minegauler import server
+from minegauler.app import highscores as hs
+
 from . import msgparse, utils
 
 

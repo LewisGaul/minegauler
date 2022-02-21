@@ -1244,4 +1244,4 @@ class _TextPopup(QWidget):
     def sizeHint(self) -> QSize:
         size = super().sizeHint()
         area = size.width() * size.height()
-        return QSize(int(area ** 0.5), int(area ** 0.4))
+        return QSize(int(area**0.5), int(area**0.4))

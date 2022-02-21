@@ -33,7 +33,7 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: End Users/Desktop",
     "Natural Language :: English",
-    "Topic :: Games/Entertainment :: Puzzle Games"
+    "Topic :: Games/Entertainment :: Puzzle Games",
 ]
 dependencies = [
     "attrs",
@@ -41,9 +41,14 @@ dependencies = [
     "requests",
     "typing-extensions",
 ]
-#optional-dependencies = [
-#    {test = ["pytest", "pytest-cov"]}
-#]
+optional-dependencies = [
+    { bot = [
+        "flask",
+        "pytz",
+        "requests-toolbelt",
+        "tabulate",
+    ] }
+]
 
 [project.urls]
 homepage = "https://github.com/LewisGaul/minegauler/"
@@ -51,11 +56,11 @@ issues = "https://github.com/LewisGaul/minegauler/issues/"
 changelog = "https://github.com/LewisGaul/minegauler/issues/blob/main/CHANGELOG.md"
 background = "https://www.lewisgaul.co.uk/blog/coding/2020/02/12/minegauler/"
 
-[project.scripts]
-minegauler-bot = "minegauler.cli.__main__:main"
-
 [project.gui-scripts]
 minegauler = "minegauler.app.__main__:main"
+
+[project.scripts]
+minegauler-bot = "minegauler.bot.msgparse:main [bot]"
 
 
 # TOOLS

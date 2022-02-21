@@ -13,6 +13,9 @@ from . import core, frontend, paths, shared
 
 logger = logging.getLogger(__name__)
 
+ctrlr = None
+gui = None
+
 
 def setup_logging():
     root = logging.getLogger()
@@ -33,6 +36,8 @@ def setup_logging():
 
 
 def main() -> int:
+    global ctrlr, gui
+
     setup_logging()
 
     read_settings = shared.read_settings_from_file(paths.SETTINGS_FILE)
