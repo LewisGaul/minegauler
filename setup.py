@@ -87,6 +87,7 @@ setuptools.setup(
         "attrs",
         "PyQt5",
         "requests",
+        "typing-extensions",
     ],
     package_data={
         "minegauler": [
