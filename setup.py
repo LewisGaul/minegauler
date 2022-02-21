@@ -68,6 +68,7 @@ setuptools.setup(
         "attrs",
         "PyQt5",
         "requests",
+        "typing-extensions",
     ],
     zip_safe=False,
 )
