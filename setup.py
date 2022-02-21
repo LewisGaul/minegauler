@@ -23,7 +23,10 @@ setuptools.setup(
             "images/buttons/*/*",
             "images/markers/*/*",
             "images/numbers/*/*",
-        ]
+        ],
+        "minegauler/cli": [
+            "cli.yaml",
+        ],
     },
     zip_safe=False,
 )
