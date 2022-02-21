@@ -51,7 +51,7 @@ setuptools.setup(
         ),
     ),
     package_data={
-        "minegauler/app": [
+        "minegauler.app": [
             "boards/sample.mgb",
             "files/*.txt",
             "images/icon.ico",
@@ -60,7 +60,7 @@ setuptools.setup(
             "images/markers/*/*",
             "images/numbers/*/*",
         ],
-        "minegauler/cli": [
+        "minegauler.cli": [
             "cli.yaml",
         ],
     },
