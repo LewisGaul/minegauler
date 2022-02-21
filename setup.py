@@ -13,7 +13,16 @@ import setuptools
 
 
 setuptools.setup(
-    packages=setuptools.find_packages(include="minegauler*"),
+    packages=setuptools.find_namespace_packages(
+        include=("minegauler*",),
+        exclude=(
+            "minegauler.app.boards",
+            "minegauler.app.data",
+            "minegauler.app.files",
+            "minegauler.app.images",
+            "minegauler.server.test",
+        ),
+    ),
     package_data={
         "minegauler/app": [
             "boards/sample.mgb",
