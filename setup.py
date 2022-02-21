@@ -24,7 +24,11 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/LewisGaul/minegauler",
-    packages=setuptools.find_packages(include="minegauler*"),
+    project_urls={
+        "Bug Reports": "https://github.com/LewisGaul/minegauler/issues",
+        "Source": "https://github.com/LewisGaul/minegauler/",
+        "Background": "https://www.lewisgaul.co.uk/blog/coding/2020/02/12/minegauler/",
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -35,11 +39,7 @@ setuptools.setup(
         "Topic :: Games/Entertainment :: Puzzle Games",
     ],
     python_requires=">=3.7",
-    install_requires=[
-        "attrs",
-        "PyQt5",
-        "requests",
-    ],
+    packages=setuptools.find_packages(include="minegauler*"),
     package_data={
         "minegauler/app": [
             "boards/sample.mgb",
@@ -54,10 +54,10 @@ setuptools.setup(
             "cli.yaml",
         ],
     },
-    project_urls={
-        "Bug Reports": "https://github.com/LewisGaul/minegauler/issues",
-        "Source": "https://github.com/LewisGaul/minegauler/",
-        "Background": "https://www.lewisgaul.co.uk/blog/coding/2020/02/12/minegauler/",
-    },
+    install_requires=[
+        "attrs",
+        "PyQt5",
+        "requests",
+    ],
     zip_safe=False,
 )
