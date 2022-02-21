@@ -3,7 +3,7 @@ from unittest import mock
 import flask
 import requests
 
-from ...bot import routes
+from minegauler.bot import routes
 
 
 app = flask.Flask(__name__)
