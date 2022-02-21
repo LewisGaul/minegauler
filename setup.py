@@ -6,10 +6,10 @@ import sys
 import setuptools
 
 
-# version = runpy.run_path("minegauler/app/_version.py")["__version__"]
-# # Should be a release version, e.g. "4.0.1"
-# if "-" in version:
-#     print("WARNING: Version is not a release version", file=sys.stderr)
+version = runpy.run_path("minegauler/app/_version.py")["__version__"]
+# Should be a release version, e.g. "4.0.1"
+if "-" in version:
+    print("WARNING: Version is not a release version", file=sys.stderr)
 
 
 setuptools.setup(
