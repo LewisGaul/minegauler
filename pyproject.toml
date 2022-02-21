@@ -39,6 +39,7 @@ dependencies = [
     "attrs",
     "PyQt5",
     "requests",
+    "typing-extensions",
 ]
 #optional-dependencies = [
 #    {test = ["pytest", "pytest-cov"]}

@@ -13,19 +13,19 @@ import setuptools
 
 
 setuptools.setup(
-    packages=setuptools.find_namespace_packages(
-        include=("minegauler*",),
-        exclude=(
-            "minegauler.app.boards",
-            "minegauler.app.data",
-            "minegauler.app.files",
-            "minegauler.app.images",
-            "minegauler.app.images.*",
-            "minegauler.server.test",
-        ),
-    ),
+    packages=[
+        "minegauler",
+        *[
+            "minegauler." + subpkg
+            for subpkg in (
+                *setuptools.find_packages(
+                    where="minegauler/", include=("app", "app.*", "bot")
+                ),
+            )
+        ],
+    ],
     package_data={
-        "minegauler/app": [
+        "minegauler.app": [
             "boards/sample.mgb",
             "files/*.txt",
             "images/icon.ico",
@@ -33,9 +33,6 @@ setuptools.setup(
             "images/buttons/*/*",
             "images/markers/*/*",
             "images/numbers/*/*",
-        ],
-        "minegauler/cli": [
-            "cli.yaml",
         ],
     },
     zip_safe=False,
