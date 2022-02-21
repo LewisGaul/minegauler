@@ -67,11 +67,14 @@ setuptools.setup(
         "requests",
         "typing-extensions",
     ],
-    gui_scripts={
-        "minegauler": "minegauler.app",
-    },
-    console_scripts={
-        "minegauler-bot": "minegauler.bot.msgparse",
+    entry_points={
+        "gui_scripts": [
+            "minegauler = minegauler.app.__main__:main",
+        ],
+        # TODO: Make this an extra with additional deps.
+        # "console_scripts": [
+        #     "minegauler-bot = minegauler.bot.msgparse:main",
+        # ],
     },
     zip_safe=False,
 )
