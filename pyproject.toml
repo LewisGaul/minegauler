@@ -40,21 +40,21 @@ dependencies = [
     "PyQt5",
     "requests",
 ]
-optional-dependencies = [
-    {test = ["pytest", "pytest-cov"]}
-]
+#optional-dependencies = [
+#    {test = ["pytest", "pytest-cov"]}
+#]
 
 [project.urls]
-homepage = "github.com/LewisGaul/minegauler/"
-issues = "github.com/LewisGaul/minegauler/issues/"
-changelog = "github.com/LewisGaul/minegauler/issues/blob/main/CHANGELOG.md"
+homepage = "https://github.com/LewisGaul/minegauler/"
+issues = "https://github.com/LewisGaul/minegauler/issues/"
+changelog = "https://github.com/LewisGaul/minegauler/issues/blob/main/CHANGELOG.md"
 background = "https://www.lewisgaul.co.uk/blog/coding/2020/02/12/minegauler/"
 
 [project.scripts]
-minegauler-bot = "minegauler.cli"
+minegauler-bot = "minegauler.cli.__main__:main"
 
 [project.gui-scripts]
-minegauler = "minegauler.app"
+minegauler = "minegauler.app.__main__:main"
 
 
 # TOOLS
