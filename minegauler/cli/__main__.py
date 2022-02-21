@@ -39,7 +39,7 @@ def run_tests(args):
 
 
 def run_bot_cli(args):
-    from .. import bot
+    from minegauler import bot
 
     bot.utils.read_users_file()
 
@@ -51,14 +51,14 @@ def run_bot_cli(args):
 
 
 def add_bot_player(args):
-    from .. import bot
+    from minegauler import bot
 
     bot.utils.read_users_file()
     bot.utils.set_user_nickname(args.player_name, args.player_name)
 
 
 def remove_bot_player(args):
-    from .. import bot
+    from minegauler import bot
 
     bot.utils.read_users_file()
     bot.utils.USER_NAMES.pop(args.player_name)

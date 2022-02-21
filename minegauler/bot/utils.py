@@ -35,8 +35,8 @@ from typing import Iterable, List, Optional, Tuple
 import requests
 from requests_toolbelt import MultipartEncoder
 
-from ..app import highscores as hs
-from ..app.shared.types import Difficulty, GameMode
+from minegauler.app import highscores as hs
+from minegauler.app.shared.types import Difficulty, GameMode
 
 
 logger = logging.getLogger(__name__)

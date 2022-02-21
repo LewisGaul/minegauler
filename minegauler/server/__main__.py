@@ -15,9 +15,10 @@ from typing import Dict, Optional
 import attr
 from flask import Flask, abort, jsonify, redirect, request
 
-from .. import bot
-from ..app import highscores as hs
-from ..app.shared.types import Difficulty, GameMode
+from minegauler import bot
+from minegauler.app import highscores as hs
+from minegauler.app.shared.types import Difficulty, GameMode
+
 from . import get_new_highscore_hooks
 
 
