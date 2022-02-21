@@ -40,13 +40,15 @@ setuptools.setup(
     ],
     python_requires=">=3.7",
     packages=[
-        "minegauler." + subpkg
-        for subpkg in (
-            *setuptools.find_packages(
-                where="minegauler/",
-                include=("app", "app.*", "bot"),
-            ),
-        )
+        "minegauler",
+        *[
+            "minegauler." + subpkg
+            for subpkg in (
+                *setuptools.find_packages(
+                    where="minegauler/", include=("app", "app.*", "bot")
+                ),
+            )
+        ],
     ],
     package_data={
         "minegauler.app": [
@@ -65,5 +67,11 @@ setuptools.setup(
         "requests",
         "typing-extensions",
     ],
+    gui_scripts={
+        "minegauler": "minegauler.app",
+    },
+    console_scripts={
+        "minegauler-bot": "minegauler.bot.msgparse",
+    },
     zip_safe=False,
 )
