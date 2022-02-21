@@ -4,6 +4,7 @@
 [build-system]
 requires = [
     "setuptools @ git+https://github.com/pypa/setuptools@experimental/support-pyproject",
+    "trove-classifiers",
     "wheel",
 ]
 build-backend = "setuptools.build_meta"
@@ -41,13 +42,13 @@ dependencies = [
     "requests",
     "typing-extensions",
 ]
-optional-dependencies = [
-    { bot = [
-        "flask",
-        "pytz",
-        "requests-toolbelt",
-        "tabulate",
-    ] }
+
+[project.optional-dependencies]
+bot = [
+    "flask",
+    "pytz",
+    "requests-toolbelt",
+    "tabulate",
 ]
 
 [project.urls]
