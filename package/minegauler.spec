@@ -3,6 +3,9 @@
 import pathlib
 from typing import List, Tuple
 
+from PyInstaller.building.api import COLLECT, EXE, PYZ
+from PyInstaller.building.build_main import Analysis
+
 
 block_cipher = None
 
@@ -21,8 +24,8 @@ def _get_data() -> List[Tuple[str, str]]:
 
 
 a = Analysis(
-    [".pyinstaller_app.py"],
-    pathex=[str(_PROJECT_PATH)],
+    [".pyinstaller_main.py"],
+    pathex=[str(_PROJECT_PATH.parent)],
     binaries=[],
     datas=_get_data(),
     hiddenimports=[],
