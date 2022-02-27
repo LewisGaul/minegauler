@@ -12,8 +12,8 @@ This file is provided for use with pyinstaller.
 import shlex
 import sys
 
-import minegauler.app
 import minegauler.bot
+from minegauler.app.__main__ import main
 
 
 if len(sys.argv) >= 1 and sys.argv[1] == "bot":
@@ -27,4 +27,4 @@ if len(sys.argv) >= 1 and sys.argv[1] == "bot":
                 print()
                 break
 else:
-    import minegauler.app.__main__
+    sys.exit(main())
