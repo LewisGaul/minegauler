@@ -85,7 +85,7 @@ def create_windows_wrapper(
         content.append(f"CD '{str(cd)}'")
     run_cmd = "CALL" if console else "START"
     argv = [str(src), *argv]
-    content.append(f"{run_cmd} {subprocess.list2cmdline(argv)}")
+    content.append(f"{run_cmd} {subprocess.list2cmdline(argv)} %*")
     dest = pathlib.Path(dest).with_suffix(".bat")
     with open(dest, "w") as f:
         f.write("\n".join(content))
@@ -107,7 +107,7 @@ def create_posix_wrapper(
         argv.insert(0, "exec")
     elif argv[0][0] != "/":
         argv[0] = "./" + argv[0]
-    content.append(shlex.join(argv))
+    content.append(shlex.join(argv) + ' "$@"')
     dest = pathlib.Path(dest).with_suffix(".sh")
     with open(dest, "w") as f:
         f.write("\n".join(content))
