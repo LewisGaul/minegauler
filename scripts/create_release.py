@@ -61,6 +61,7 @@ def run_pyinstaller(output_dir: pathlib.Path) -> None:
         "pyinstaller",
         "--distpath", str(output_dir),
         "package/minegauler.spec",
+        "package/minegauler-bot.spec",
         # fmt: on
     ]
     logging.debug("Running command: %s", " ".join(shlex.quote(x) for x in cmd))

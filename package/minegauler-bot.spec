@@ -1,30 +1,21 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 import pathlib
-from typing import List, Tuple
 
 
 block_cipher = None
 
 
 _PROJECT_NAME = "minegauler"
+_EXE_NAME = "minegauler-bot"
 _PROJECT_PATH = pathlib.Path("..") / _PROJECT_NAME
 
 
-def _get_data() -> List[Tuple[str, str]]:
-    dirs = ["app/images", "app/files"]
-    files = ["app/boards/sample.mgb"]
-    return [
-        *[(str(_PROJECT_PATH / d), str(pathlib.Path(d))) for d in dirs],
-        *[(str(_PROJECT_PATH / f), str(pathlib.Path(f).parent)) for f in files],
-    ]
-
-
 a = Analysis(
-    [".pyinstaller_app.py"],
+    [".pyinstaller_bot.py"],
     pathex=[str(_PROJECT_PATH)],
     binaries=[],
-    datas=_get_data(),
+    datas=[],
     hiddenimports=[],
     hookspath=[],
     runtime_hooks=[],
@@ -40,7 +31,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name=_PROJECT_NAME,
+    name=_EXE_NAME,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -56,5 +47,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name=_PROJECT_NAME,
+    name=_EXE_NAME,
 )

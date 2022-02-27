@@ -69,7 +69,6 @@ setuptools.setup(
     ],
     extras_require={
         "bot": [
-            "flask",
             "pytz",
             "requests-toolbelt",
             "tabulate",
