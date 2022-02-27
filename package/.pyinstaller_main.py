@@ -9,12 +9,12 @@ This file is provided for use with pyinstaller.
 
 """
 
-import runpy
-import shlex
 import sys
 
 
 if len(sys.argv) >= 1 and sys.argv[1] == "bot":
+    import shlex
+
     import minegauler.bot
 
     if len(sys.argv) > 2:
@@ -27,4 +27,4 @@ if len(sys.argv) >= 1 and sys.argv[1] == "bot":
                 print()
                 break
 else:
-    runpy.run_module("minegauler.app", run_name="__main__")
+    import minegauler.app.__main__
