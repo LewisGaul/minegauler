@@ -1,4 +1,4 @@
-Minegauler version 4.1.3
+Minegauler version 4.1.4
 
 c. Copyright Lewis Gaul 2017-2022.
 Email: minegauler@gmail.com
