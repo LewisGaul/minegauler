@@ -14,14 +14,17 @@ import shlex
 import sys
 
 
-if sys.argv[1] == "bot":
+if len(sys.argv) >= 1 and sys.argv[1] == "bot":
     import minegauler.bot
 
-    while True:
-        try:
-            minegauler.bot.msgparse.main(shlex.split(input("bot> ")))
-        except (EOFError, KeyboardInterrupt):
-            print()
-            break
+    if len(sys.argv) > 2:
+        sys.exit(minegauler.bot.msgparse.main(sys.argv[2:]))
+    else:
+        while True:
+            try:
+                minegauler.bot.msgparse.main(shlex.split(input("bot> ")))
+            except (EOFError, KeyboardInterrupt):
+                print()
+                break
 else:
     runpy.run_module("minegauler.app", run_name="__main__")
