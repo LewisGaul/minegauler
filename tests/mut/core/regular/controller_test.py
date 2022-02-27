@@ -4,8 +4,8 @@ from unittest import mock
 
 import pytest
 
-from minegauler.core import api
-from minegauler.core.regular import (
+from minegauler.app.core import api
+from minegauler.app.core.regular import (
     Board,
     Coord,
     CreateController,
@@ -13,9 +13,9 @@ from minegauler.core.regular import (
     GameController,
     Minefield,
 )
-from minegauler.shared import GameOptsStruct
-from minegauler.shared.types import CellContents, Difficulty, GameMode, GameState
-from minegauler.shared.utils import Grid
+from minegauler.app.shared import GameOptsStruct
+from minegauler.app.shared.types import CellContents, Difficulty, GameMode, GameState
+from minegauler.app.shared.utils import Grid
 
 
 class TestGameController:
@@ -799,7 +799,7 @@ class TestGameController:
 
         with mock.patch("json.load", return_value=mf.to_json()):
             ctrlr.load_minefield("file")
-        mock_open.assert_called_once_with("file",mode="r",encoding="utf-8")
+        mock_open.assert_called_once_with("file", mode="r", encoding="utf-8")
         assert ctrlr._opts.x_size == 11
         assert ctrlr._opts.y_size == 12
         assert ctrlr._opts.mines == 10
@@ -1054,5 +1054,5 @@ class TestCreateController:
 
         with mock.patch("json.dump") as mock_json_dump:
             ctrlr.save_current_minefield("file")
-        mock_open.assert_called_once_with("file", mode="w",encoding="utf-8")
+        mock_open.assert_called_once_with("file", mode="w", encoding="utf-8")
         mock_json_dump.assert_called_once_with(mf.to_json(), mock.ANY)

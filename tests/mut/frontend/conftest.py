@@ -9,10 +9,10 @@ from unittest import mock
 
 import pytest
 
-from minegauler import api
-from minegauler.core import regular
-from minegauler.shared import utils
-from minegauler.shared.types import Difficulty, GameMode, GameState
+from minegauler.app import api
+from minegauler.app.core import regular
+from minegauler.app.shared import utils
+from minegauler.app.shared.types import Difficulty, GameMode, GameState
 
 
 @pytest.fixture

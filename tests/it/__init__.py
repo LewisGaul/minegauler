@@ -2,7 +2,6 @@
 
 __all__ = ("process_events", "run_main_entrypoint")
 
-import importlib.util
 import logging
 import os
 import time
@@ -21,10 +20,10 @@ def run_main_entrypoint() -> types.ModuleType:
     :return:
         The __main__ module namespace.
     """
-    module = types.ModuleType("minegauler.__main__")
-    spec = importlib.util.find_spec("minegauler.__main__")
-    spec.loader.exec_module(module)
-    return module
+    import minegauler.app.__main__ as main_module
+
+    main_module.main()
+    return main_module
 
 
 try:

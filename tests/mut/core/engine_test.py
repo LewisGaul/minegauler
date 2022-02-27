@@ -13,9 +13,9 @@ from unittest import mock
 
 import pytest
 
-from minegauler.core import engine
-from minegauler.shared.types import Difficulty, GameMode, UIMode
-from minegauler.shared.utils import GameOptsStruct
+from minegauler.app.core import engine
+from minegauler.app.shared.types import Difficulty, GameMode, UIMode
+from minegauler.app.shared.utils import GameOptsStruct
 
 from .. import utils
 

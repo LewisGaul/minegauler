@@ -3,17 +3,20 @@
 import pathlib
 from typing import List, Tuple
 
+from PyInstaller.building.api import COLLECT, EXE, PYZ
+from PyInstaller.building.build_main import Analysis
+
 
 block_cipher = None
 
 
 _PROJECT_NAME = "minegauler"
-_PROJECT_PATH = pathlib.Path("..") / _PROJECT_NAME
+_PROJECT_PATH = pathlib.Path.cwd() / _PROJECT_NAME
 
 
 def _get_data() -> List[Tuple[str, str]]:
-    dirs = ["images", "files"]
-    files = ["boards/sample.mgb"]
+    dirs = ["app/images", "app/files"]
+    files = ["app/boards/sample.mgb"]
     return [
         *[(str(_PROJECT_PATH / d), str(pathlib.Path(d))) for d in dirs],
         *[(str(_PROJECT_PATH / f), str(pathlib.Path(f).parent)) for f in files],
@@ -22,7 +25,7 @@ def _get_data() -> List[Tuple[str, str]]:
 
 a = Analysis(
     [".pyinstaller_main.py"],
-    pathex=[str(_PROJECT_PATH)],
+    pathex=[str(_PROJECT_PATH.parent)],
     binaries=[],
     datas=_get_data(),
     hiddenimports=[],
@@ -46,7 +49,7 @@ exe = EXE(
     strip=False,
     upx=True,
     console=False,
-    icon=str(_PROJECT_PATH / "images" / "icon.ico"),
+    icon=str(_PROJECT_PATH / "app/images/icon.ico"),
 )
 coll = COLLECT(
     exe,

@@ -6,7 +6,6 @@ dist/
 *.egg-info/
 target/
 Cargo.lock
-bot/users.json
 
 # Test-generated
 coverage/
@@ -33,6 +32,11 @@ htmlcov/
 LaTex/
 
 # App-generated per-user data
+bot/users.json
 minegauler/settings.cfg
 minegauler/data/
 minegauler/boards/_*.mgb
+minegauler/bot/users.json
+minegauler/app/settings.cfg
+minegauler/app/data/
+minegauler/app/boards/_*.mgb

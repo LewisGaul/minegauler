@@ -4,6 +4,7 @@ altgraph==0.17.2
 attrs==21.2.0
 black==22.1.0
 bleach==4.1.0
+build==0.7.0
 bump2version==1.0.1
 certifi==2021.5.30
 cffi==1.14.6
@@ -30,6 +31,7 @@ mypy-extensions==0.4.3
 mysql-connector-python==8.0.26
 packaging==21.0
 pathspec==0.9.0
+pep517==0.12.0
 pkginfo==1.7.1
 platformdirs==2.3.0
 pluggy==1.0.0
@@ -62,7 +64,7 @@ tomli==1.2.1
 tqdm==4.62.2
 twine==3.4.2
 typed-ast==1.5.2
-typing-extensions==3.10.0.2
+typing-extensions==4.1.1
 urllib3==1.26.6
 waitress==2.0.0
 webencodings==0.5.1
