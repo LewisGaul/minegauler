@@ -50,29 +50,12 @@ def run_bot_cli(args):
     return bot.msgparse.main(args.remaining_args)
 
 
-def add_bot_player(args):
-    from minegauler import bot
-
-    bot.utils.read_users_file()
-    bot.utils.set_user_nickname(args.player_name, args.player_name)
-
-
-def remove_bot_player(args):
-    from minegauler import bot
-
-    bot.utils.read_users_file()
-    bot.utils.USER_NAMES.pop(args.player_name)
-    bot.utils.save_users_file()
-
-
 _COMMANDS: Dict[str, Callable[[Any], int]] = {
     "run": run_app,
     "make-venv": lambda args: print("Not implemented"),
     "run-tests": run_tests,
     "bump-version": lambda args: print("Not implemented"),
     "bot": run_bot_cli,
-    "bot-add-player": add_bot_player,
-    "bot-remove-player": remove_bot_player,
 }
 
 
