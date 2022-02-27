@@ -9,14 +9,14 @@ This file is provided for use with pyinstaller.
 
 """
 
+import shlex
 import sys
+
+import minegauler.app
+import minegauler.bot
 
 
 if len(sys.argv) >= 1 and sys.argv[1] == "bot":
-    import shlex
-
-    import minegauler.bot
-
     if len(sys.argv) > 2:
         sys.exit(minegauler.bot.msgparse.main(sys.argv[2:]))
     else:
