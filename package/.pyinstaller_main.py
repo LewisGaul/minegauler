@@ -16,7 +16,7 @@ import minegauler.bot
 from minegauler.app.__main__ import main
 
 
-if len(sys.argv) >= 1 and sys.argv[1] == "bot":
+if len(sys.argv) > 1 and sys.argv[1] == "bot":
     if len(sys.argv) > 2:
         sys.exit(minegauler.bot.msgparse.main(sys.argv[2:]))
     else:
