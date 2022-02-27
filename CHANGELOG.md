@@ -13,6 +13,11 @@ Stand-out features in this release include:
  - Improved packaging
 
 
+### 4.1.4 (2022-02-27)
+ - Fix dependencies when pip installing
+ - Add bot entrypoint (still missing on Windows packaged app)
+
+
 ### 4.1.3 (2022-02-13)
  - Add 'Features' info under the 'Help' menu
 
