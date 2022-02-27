@@ -140,13 +140,14 @@ def create_package(from_dir: pathlib.Path, dest_dir: pathlib.Path, fmt: Format) 
         root_filename = "minegauler.exe"
         dist_filename = "minegauler"
         os.symlink(os.path.join("minegauler", dist_filename), from_dir / root_filename)
-    create_wrapper(
-        dist_filename,
-        from_dir / "minegauler-bot",
-        cd=APP_NAME,
-        argv=("bot",),
-        console=True,
-    )
+        # TODO: Want this for Windows too but the exe closes stdin...
+        create_wrapper(
+            dist_filename,
+            from_dir / "minegauler-bot",
+            cd=APP_NAME,
+            argv=("bot",),
+            console=True,
+        )
     with open("package/README.txt.template", "r") as f:
         readme = f.read().format(
             root_filename=root_filename, dist_filename=dist_filename
