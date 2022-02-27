@@ -9,7 +9,22 @@ This file is provided for use with pyinstaller.
 
 """
 
-import runpy
+import shlex
+import sys
+
+import minegauler.bot
+from minegauler.app.__main__ import main
 
 
-runpy.run_module("minegauler.app", run_name="__main__")
+if len(sys.argv) > 1 and sys.argv[1] == "bot":
+    if len(sys.argv) > 2:
+        sys.exit(minegauler.bot.msgparse.main(sys.argv[2:]))
+    else:
+        while True:
+            try:
+                minegauler.bot.msgparse.main(shlex.split(input("bot> ")))
+            except (EOFError, KeyboardInterrupt):
+                print()
+                break
+else:
+    sys.exit(main())

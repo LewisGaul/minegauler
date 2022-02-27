@@ -11,9 +11,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from typing import List, Optional
+from typing import Iterable, List, Optional
 
 import minegauler.app  # To get the version
+
+
+APP_NAME = "minegauler"
 
 
 class Platform(enum.Enum):
@@ -69,6 +72,62 @@ def run_pyinstaller(output_dir: pathlib.Path) -> None:
         raise Exception(f"Pyinstaller command with exit code {proc.returncode}")
 
 
+def create_windows_wrapper(
+    src: os.PathLike,
+    dest: os.PathLike,
+    *,
+    cd: Optional[os.PathLike] = None,
+    argv: Iterable[str] = (),
+    console: bool = False,
+) -> None:
+    content = []
+    if cd:
+        content.append(f"CD '{str(cd)}'")
+    run_cmd = "CALL" if console else "START"
+    argv = [str(src), *argv]
+    content.append(f"{run_cmd} {subprocess.list2cmdline(argv)} %*")
+    dest = pathlib.Path(dest).with_suffix(".bat")
+    with open(dest, "w") as f:
+        f.write("\n".join(content))
+
+
+def create_posix_wrapper(
+    src: os.PathLike,
+    dest: os.PathLike,
+    *,
+    cd: Optional[os.PathLike] = None,
+    argv: Iterable[str] = (),
+    console: bool = False,
+) -> None:
+    content = ["#!/bin/sh"]
+    if cd:
+        content.append(f"cd {shlex.quote(str(cd))}")
+    argv = [str(src), *argv]
+    if not console:
+        argv.insert(0, "exec")
+    elif argv[0][0] != "/":
+        argv[0] = "./" + argv[0]
+    content.append(shlex.join(argv) + ' "$@"')
+    dest = pathlib.Path(dest).with_suffix(".sh")
+    with open(dest, "w") as f:
+        f.write("\n".join(content))
+    os.chmod(dest, 0o755)
+
+
+def create_wrapper(
+    src: os.PathLike,
+    dest: os.PathLike,
+    *,
+    cd: Optional[os.PathLike] = None,
+    argv: Iterable[str] = (),
+    console: bool = False,
+) -> None:
+    if Platform.current() is Platform.WINDOWS:
+        create_windows_wrapper(src, dest, cd=cd, argv=argv, console=console)
+    else:
+        create_posix_wrapper(src, dest, cd=cd, argv=argv, console=console)
+
+
 def create_package(from_dir: pathlib.Path, dest_dir: pathlib.Path, fmt: Format) -> str:
     # Create outer files.
     shutil.copy2("CHANGELOG.md", from_dir / "CHANGELOG.txt")
@@ -76,11 +135,19 @@ def create_package(from_dir: pathlib.Path, dest_dir: pathlib.Path, fmt: Format) 
     if Platform.current() is Platform.WINDOWS:
         root_filename = "minegauler.bat"
         dist_filename = "minegauler.exe"
-        shutil.copy2("package/windows_wrapper_script.bat", from_dir / root_filename)
+        create_windows_wrapper(dist_filename, from_dir / root_filename, cd=APP_NAME)
     else:
         root_filename = "minegauler.exe"
         dist_filename = "minegauler"
         os.symlink(os.path.join("minegauler", dist_filename), from_dir / root_filename)
+        # TODO: Want this for Windows too but the exe closes stdin...
+        create_wrapper(
+            dist_filename,
+            from_dir / "minegauler-bot",
+            cd=APP_NAME,
+            argv=("bot",),
+            console=True,
+        )
     with open("package/README.txt.template", "r") as f:
         readme = f.read().format(
             root_filename=root_filename, dist_filename=dist_filename

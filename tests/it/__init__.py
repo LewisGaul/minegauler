@@ -21,6 +21,7 @@ def run_main_entrypoint() -> types.ModuleType:
         The __main__ module namespace.
     """
     import minegauler.app.__main__ as main_module
+
     main_module.main()
     return main_module
 
