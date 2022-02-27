@@ -11,7 +11,7 @@ block_cipher = None
 
 
 _PROJECT_NAME = "minegauler"
-_PROJECT_PATH = pathlib.Path("..") / _PROJECT_NAME
+_PROJECT_PATH = pathlib.Path.cwd() / _PROJECT_NAME
 
 
 def _get_data() -> List[Tuple[str, str]]:
