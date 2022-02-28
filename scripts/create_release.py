@@ -143,7 +143,7 @@ def create_package(from_dir: pathlib.Path, dest_dir: pathlib.Path, fmt: Format) 
         root_filename = "minegauler.exe"
         dist_filename = "minegauler"
         os.symlink(os.path.join(APP_NAME, dist_filename), from_dir / root_filename)
-        os.symlink(os.path.join(APP_NAME, "minegauler-bot"), from_dir)
+        os.symlink(os.path.join(APP_NAME, "minegauler-bot"), from_dir / "minegauler-bot")
 
     with open("package/README.txt.template", "r") as f:
         readme = f.read().format(
