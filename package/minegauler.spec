@@ -23,7 +23,7 @@ def _get_data() -> List[Tuple[str, str]]:
     ]
 
 
-a = Analysis(
+app_analysis = Analysis(
     [".pyinstaller_main.py"],
     pathex=[str(_PROJECT_PATH.parent)],
     binaries=[],
@@ -37,10 +37,10 @@ a = Analysis(
     cipher=block_cipher,
     noarchive=False,
 )
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
-exe = EXE(
-    pyz,
-    a.scripts,
+app_pyz = PYZ(app_analysis.pure, app_analysis.zipped_data, cipher=block_cipher)
+app_exe = EXE(
+    app_pyz,
+    app_analysis.scripts,
     [],
     exclude_binaries=True,
     name=_PROJECT_NAME,
@@ -51,11 +51,45 @@ exe = EXE(
     console=False,
     icon=str(_PROJECT_PATH / "app/images/icon.ico"),
 )
+
+bot_analysis = Analysis(
+    [".pyinstaller_bot.py"],
+    pathex=[str(_PROJECT_PATH.parent)],
+    binaries=[],
+    datas=[],
+    hiddenimports=[],
+    hookspath=[],
+    runtime_hooks=[],
+    excludes=[],
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=block_cipher,
+    noarchive=False,
+)
+bot_pyz = PYZ(bot_analysis.pure, bot_analysis.zipped_data, cipher=block_cipher)
+bot_exe = EXE(
+    bot_pyz,
+    bot_analysis.scripts,
+    [],
+    exclude_binaries=True,
+    name=f"{_PROJECT_NAME}-bot",
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    console=True,
+    icon=str(_PROJECT_PATH / "app/images/icon.ico"),
+)
+
 coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
+    app_exe,
+    app_analysis.binaries,
+    app_analysis.zipfiles,
+    app_analysis.datas,
+    bot_exe,
+    bot_analysis.binaries,
+    bot_analysis.zipfiles,
+    bot_analysis.datas,
     strip=False,
     upx=True,
     upx_exclude=[],
