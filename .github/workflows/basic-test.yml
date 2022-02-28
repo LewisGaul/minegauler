@@ -22,7 +22,9 @@ jobs:
           python-version: "3.7"
 
       - name: Install Python requirements
-        run: pip install -r requirements-dev.txt
+        run: |
+          pip install wheel
+          pip install -r requirements-dev.txt
 
       - name: Set up X-server
         run: |

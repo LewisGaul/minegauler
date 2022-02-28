@@ -24,7 +24,9 @@ jobs:
           python-version: "3.9"
 
       - name: Install Python requirements
-        run: pip install pyinstaller tabulate pytz requests-toolbelt -r requirements.txt
+        run: |
+          pip install wheel
+          pip install pyinstaller tabulate pytz requests-toolbelt -r requirements.txt
 
       - name: Create PyInstaller package
         run: python3 -m scripts.create_release -v -o artefacts/
