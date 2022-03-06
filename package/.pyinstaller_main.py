@@ -9,7 +9,9 @@ This file is provided for use with pyinstaller.
 
 """
 
-import runpy
+import sys
+
+from minegauler.app.__main__ import main
 
 
-runpy.run_module("minegauler.app", run_name="__main__")
+sys.exit(main())

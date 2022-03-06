@@ -30,6 +30,10 @@ class InvalidArgsError(Exception):
     pass
 
 
+class InvalidMsgError(Exception):
+    pass
+
+
 class PositionalArg:
     def __init__(
         self,
@@ -272,13 +276,17 @@ CommandMapping = Dict[Optional[str], Union[Callable, "CommandMapping"]]
 class RoomType(enum.Enum):
     GROUP = "group"
     DIRECT = "direct"
+    LOCAL = "local"
 
     def to_cmds(self) -> CommandMapping:
         if self is RoomType.GROUP:
             return _GROUP_COMMANDS
-        else:
-            assert self is RoomType.DIRECT
+        elif self is RoomType.DIRECT:
             return _DIRECT_COMMANDS
+        elif self is RoomType.LOCAL:
+            return _LOCAL_COMMANDS
+        else:
+            assert False
 
 
 GENERAL_INFO = """\
@@ -292,9 +300,10 @@ Minegauler, and also gives notifications whenever anyone in the group sets a \
 new highscore.
 
 There are a few settings to filter Minegauler games with:
+ - mode: One of 'regular' or 'split-cell' (defaults to 'regular').
  - difficulty: One of 'beginner', 'intermediate', 'expert' or 'master'.  
    By default the combination of beginner, intermediate and expert is used, \
-   with 1000 used for any difficulties not completed.
+with a score of 1000 used for any difficulties not completed.
  - drag-select: One of 'on' or 'off'.  
    By default no filter is applied (the best time of either mode is used).
  - per-cell: One of 1, 2 or 3.  
@@ -321,6 +330,35 @@ Some useful group-chat commands:
 
 Some useful direct-chat commands:  
 'set nickname' - set your nickname that you use in the Minegauler app
+"""
+
+
+LOCAL_INFO = """\
+Welcome to the Minegauler bot!
+
+Instructions for downloading Minegauler can be found in the \
+[GitHub repo](https://github.com/LewisGaul/minegauler/blob/main/README.md).
+
+The local bot provides the ability to check highscores and matchups for games \
+of Minegauler.
+
+There are a few settings to filter Minegauler games with:
+ - mode: One of 'regular' or 'split-cell' (defaults to 'regular').
+ - difficulty: One of 'beginner', 'intermediate', 'expert' or 'master'.  
+   By default the combination of beginner, intermediate and expert is used, \
+with a score of 1000 used for any difficulties not completed.
+ - drag-select: One of 'on' or 'off'.  
+   By default no filter is applied (the best time of either mode is used).
+ - per-cell: One of 1, 2 or 3.  
+   By default no filter is applied (the best time of any mode is used).
+
+All highscores are independent of each of the above modes, and all commands \
+accept these filters to view specific times. E.g. 'ranks beginner per-cell 1'.
+
+Some useful common commands:  
+'ranks' - display rankings  
+'player <name>' - display player info  
+'matchups <name> <name> ...' - display comparison of times between users
 """
 
 
@@ -369,42 +407,23 @@ def cmd_help(
 
 @helpstring("Get help for a command")
 @schema("help [<command>]")
-def group_help(args, **kwargs):
+def help_(args, **kwargs):
     allow_markdown = kwargs.get("allow_markdown", False)
+    room_type = kwargs.get("room_type", RoomType.DIRECT)
+    cmds = room_type.to_cmds()
 
     linebreak = "\n\n" if allow_markdown else "\n"
-    commands = _flatten_cmds(_GROUP_COMMANDS)
+    commands = _flatten_cmds(cmds)
     if allow_markdown:
         commands = f"`{commands}`"
 
     if not args:
         return commands
 
-    func, _ = _map_to_cmd(" ".join(args), _GROUP_COMMANDS)
+    func, _ = _map_to_cmd(args, cmds)
     if func is None:
         raise InvalidArgsError(linebreak.join(["Unrecognised command", commands]))
-    else:
-        return cmd_help(func, allow_markdown=allow_markdown)
-
-
-@helpstring("Get help for a command")
-@schema("help [<command>]")
-def direct_help(args, **kwargs):
-    allow_markdown = kwargs.get("allow_markdown", False)
-
-    linebreak = "\n\n" if allow_markdown else "\n"
-    commands = _flatten_cmds(_DIRECT_COMMANDS)
-    if allow_markdown:
-        commands = f"`{commands}`"
-
-    if not args:
-        return commands
-
-    func, _ = _map_to_cmd(" ".join(args), _DIRECT_COMMANDS)
-    if func is None:
-        raise InvalidArgsError(linebreak.join(["Unrecognised command", commands]))
-    else:
-        return cmd_help(func, allow_markdown=allow_markdown)
+    return cmd_help(func, allow_markdown=allow_markdown)
 
 
 @helpstring("Get information about the game")
@@ -412,7 +431,10 @@ def direct_help(args, **kwargs):
 def info(args, **kwargs):
     # Check no args given.
     BotMsgParser().parse_args(args)
-    return GENERAL_INFO
+    if kwargs["room_type"] is RoomType.LOCAL:
+        return LOCAL_INFO
+    else:
+        return GENERAL_INFO
 
 
 @helpstring("Get player info")
@@ -730,11 +752,52 @@ def set_nickname(args, username: str, **kwargs):
     old = utils.USER_NAMES[username]
     logger.debug("Changing nickname of %s from %r to %r", username, old, new)
     utils.set_user_nickname(username, new)
-    return f"Nickname changed from '{old}' to '{new}'"
+    return f"Nickname changed from {old!r} to {new!r}"
+
+
+@helpstring("Add a user to the local rankings")
+@schema("user add <name>")
+def add_user(args, **kwargs):
+    parser = BotMsgParser()
+    parser.add_positional_arg("name")
+    args = parser.parse_args(args)
+    for user in utils.USER_NAMES:
+        if args.name.lower() == user.lower():
+            raise InvalidMsgError(f"User {user!r} already added")
+    logger.debug("Adding user %r", args.name)
+    utils.set_user_nickname(args.name, args.name)
+    return f"Added user {args.name!r}"
+
+
+@helpstring("Remove a user from the local rankings")
+@schema("user remove <name>")
+def remove_user(args, **kwargs):
+    parser = BotMsgParser()
+    parser.add_positional_arg("name")
+    args = parser.parse_args(args)
+    try:
+        utils.USER_NAMES.pop(args.name)
+    except KeyError as e:
+        raise InvalidMsgError(f"User {args.name!r} not found") from e
+    else:
+        utils.save_users_file()
+    logger.debug("Removed user %r", args.name)
+    return f"Removed user {args.name!r}"
+
+
+@helpstring("List users on the local rankings")
+@schema("user list")
+def list_users(args, **kwargs):
+    parser = BotMsgParser()
+    parser.parse_args(args)
+    msg = "The following users are on the local rankings:"
+    for user in sorted(utils.USER_NAMES, key=lambda x: x.lower()):
+        msg += "\n - " + user
+    return msg
 
 
 _COMMON_COMMANDS = {
-    "help": None,
+    "help": help_,
     "player": player,
     "ranks": ranks,
     "stats": {
@@ -747,16 +810,24 @@ _COMMON_COMMANDS = {
 
 _GROUP_COMMANDS = {
     **_COMMON_COMMANDS,
-    "help": group_help,
     "challenge": challenge,
 }
 
 _DIRECT_COMMANDS = {
     **_COMMON_COMMANDS,
-    "help": direct_help,
     "info": info,
     "set": {
         "nickname": set_nickname,
+    },
+}
+
+_LOCAL_COMMANDS = {
+    **_COMMON_COMMANDS,
+    "info": info,
+    "user": {
+        "add": add_user,
+        "remove": remove_user,
+        "list": list_users,
     },
 }
 
@@ -843,6 +914,10 @@ def parse_msg(
         if func is None:
             raise InvalidArgsError("Base command not found")
         return func(args, allow_markdown=allow_markdown, room_type=room_type, **kwargs)
+    except InvalidMsgError as e:
+        logger.debug("Invalid message: %r", orig_msg)
+        resp_msg = f"Invalid command: {str(e)}"
+        raise InvalidMsgError(resp_msg) from e
     except InvalidArgsError as e:
         logger.debug("Invalid message: %r", orig_msg)
         if func is None:
@@ -866,9 +941,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
     rc = 0
+    utils.read_users_file()
     try:
-        resp = parse_msg(argv, RoomType.DIRECT, username="")
-    except InvalidArgsError as e:
+        resp = parse_msg(argv, RoomType.LOCAL, username="")
+    except (InvalidArgsError, InvalidMsgError) as e:
         resp = str(e)
         rc = 1
     print(resp)
@@ -876,4 +952,4 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    sys.exit(main(sys.argv[1:]))

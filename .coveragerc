@@ -1,6 +1,6 @@
 [run]
 source =
-    minegauler/
+    minegauler/app/
     tests/
 omit =
     *venv*/**

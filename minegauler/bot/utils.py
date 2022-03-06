@@ -29,7 +29,9 @@ __all__ = (
 import collections
 import json
 import logging
+import os
 import pathlib
+import sys
 from typing import Iterable, List, Optional, Tuple
 
 import requests
@@ -43,7 +45,11 @@ logger = logging.getLogger(__name__)
 
 
 USER_NAMES = dict()
-_USER_NAMES_FILE = pathlib.Path(__file__).parent / "users.json"
+if hasattr(sys, "frozen") and hasattr(sys, "_MEIPASS"):  # in pyinstaller EXE
+    _USER_NAMES_FILE = pathlib.Path(__file__).parents[2] / "bot/users.json"
+    os.makedirs(_USER_NAMES_FILE.parent, exist_ok=True)
+else:
+    _USER_NAMES_FILE = pathlib.Path(__file__).parent / "users.json"
 NO_TAG_USERS = {"_felix", "_kunz", "esinghal", "richcoop"}
 
 BOT_NAME = "minegaulerbot"
