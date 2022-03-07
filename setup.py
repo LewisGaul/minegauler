@@ -39,17 +39,7 @@ setuptools.setup(
         "Topic :: Games/Entertainment :: Puzzle Games",
     ],
     python_requires=">=3.7",
-    packages=[
-        "minegauler",
-        *[
-            "minegauler." + subpkg
-            for subpkg in (
-                *setuptools.find_packages(
-                    where="minegauler/", include=("app", "app.*", "bot")
-                ),
-            )
-        ],
-    ],
+    packages=setuptools.find_packages(where="src/", include=("minegauler*")),
     package_data={
         "minegauler.app": [
             "boards/sample.mgb",
