@@ -185,3 +185,7 @@ class UberController(api.AbstractController):
 
     def save_current_minefield(self, file: PathLike) -> None:
         self._active_ctrlr.save_current_minefield(file)
+
+    def get_probabilities(self) -> Mapping[Coord, float]:
+        """Get the current game's cell probabilities."""
+        return self._active_ctrlr.get_probabilities()

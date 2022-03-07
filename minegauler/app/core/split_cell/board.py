@@ -1,6 +1,6 @@
 # October 2021, Lewis Gaul
 
-from typing import Iterable, List
+from typing import Iterable, List, Mapping
 
 from ...shared.types import CellContents, GameMode
 from ..board import BoardBase
@@ -95,3 +95,9 @@ class Board(BoardBase):
     def split_coord(self, coord: Coord) -> None:
         self._all_coords.pop(coord)
         self._all_coords.update({c: CellContents.Unclicked for c in coord.split()})
+
+    def calculate_probs(
+        self, mines: int, *, per_cell: int = 1
+    ) -> Mapping[Coord, float]:
+        """Calculate mine probabilities for the board."""
+        raise NotImplementedError

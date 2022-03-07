@@ -22,6 +22,7 @@ Exports
 __all__ = (
     "CellUpdate_T",
     "MouseMove",
+    "blend_colours",
     "read_highscore_file",
     "save_highscore_file",
 )
@@ -101,3 +102,7 @@ def read_highscore_file(
     with gzip.open(path, "rt") as f:
         data = json.load(f)
     return HighscoreStruct(**data["highscore"]), data["cell_updates"]
+
+
+def blend_colours(ratio, high=(255, 0, 0), low=(255, 255, 64)) -> Tuple[int, int, int]:
+    return tuple(int(low[i] + ratio * (high[i] - low[i])) for i in range(3))

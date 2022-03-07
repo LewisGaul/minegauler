@@ -417,6 +417,10 @@ class MinegaulerGUI(
         # - Probabilities (F5)
         # - Auto flag (Ctrl+F)
         # - Auto click (Ctrl+Enter)
+        # probs_act = self._game_menu.addAction(
+        #    "Probabilities", lambda: self._mf_widget.display_probs()
+        # )
+        # probs_act.setShortcut("F5")
 
         # Highscores (F6)
         highscores_act = self._game_menu.addAction(

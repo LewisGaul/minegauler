@@ -237,6 +237,7 @@ class _CellWrongFlag(_CellFlag):
 CellContents.Unclicked = _CellUnclicked()
 CellContents.UnclickedSunken = _CellUnclickedSunken()
 CellContents.Num = _CellNum
+CellContents.MineBase = _CellMineType
 CellContents.Mine = _CellMine
 CellContents.HitMine = _CellHitMine
 CellContents.Flag = _CellFlag
