@@ -1,11 +1,7 @@
 __all__ = ("APP_DIR",)
 
-import os
 import pathlib
-import sys
 
-
-sys.path.insert(0, os.path.join(os.getcwd(), "src"))
 import minegauler.app
 
 
