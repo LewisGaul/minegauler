@@ -8,7 +8,7 @@ Minesweeper board API.
 __all__ = ("BoardBase",)
 
 import abc
-from typing import Iterable, List
+from typing import Iterable, List, Mapping
 
 from ..shared.types import CellContents, Coord, GameMode
 
@@ -54,3 +54,9 @@ class BoardBase(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_coord_at(self, x: int, y: int) -> Coord:
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def calculate_probs(
+        self, mines: int, *, per_cell: int = 1
+    ) -> Mapping[Coord, float]:
+        """Calculate mine probabilities for the board."""

@@ -30,7 +30,6 @@ from ..shared.types import Difficulty, GameMode, PathLike
 from . import compat
 from .base import AbstractHighscoresDB, HighscoreSettingsStruct, HighscoreStruct
 from .compat import HighscoreReadError
-
 # from .mysql import MySQLDB  # Do not uncomment this without adding dependency on mysql connector
 from .sqlite import SQLiteDB
 

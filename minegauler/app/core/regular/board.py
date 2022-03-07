@@ -1,6 +1,6 @@
 # October 2021, Lewis Gaul
 
-from typing import Iterable, List, Union
+from typing import Iterable, List, Mapping, Union
 
 from ...shared import utils
 from ...shared.types import CellContents, GameMode
@@ -90,6 +90,12 @@ class Board(BoardBase):
         if x < 0 or x >= self.x_size or y < 0 or y >= self.y_size:
             raise ValueError(f"Position out of bounds: ({x}, {y})")
         return Coord(x, y)
+
+    def calculate_probs(
+        self, mines: int, *, per_cell: int = 1
+    ) -> Mapping[Coord, float]:
+        """Calculate mine probabilities for the board."""
+        raise NotImplementedError
 
     def reset(self):
         """Reset the board to the initial state."""
