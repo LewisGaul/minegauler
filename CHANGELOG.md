@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 See the [issues page](https://github.com/LewisGaul/minegauler/issues) for upcoming features or pending fixes.
 
 
+### dev
+- Add initial implementation of probabilities
+TODO:
+- Ensure highscores cannot be obtained when using probabilities
+- Clear probabilities when pressing F5 again
+- Display probabilities with create board mode
+- Fix probabilities on large boards
+
+
 ## 4.1
 
 Stand-out features in this release include:
