@@ -10,7 +10,7 @@ A perfect clone of the classic Minesweeper game, with many added features.
 Read more about the project history on [the project homepage](https://github.com/LewisGaul/minegauler).
 
 
-<img src="https://raw.githubusercontent.com/LewisGaul/minegauler/main/img/screenshots/beginner_start.png" height=250> <img src="https://raw.githubusercontent.com/LewisGaul/minegauler/main/img/screenshots/beginner_win.png" height=250> <img src="https://raw.githubusercontent.com/LewisGaul/minegauler/main/img/screenshots/split-cell-intermediate.png" height=250> <img src="https://raw.githubusercontent.com/LewisGaul/minegauler/main/img/screenshots/intermediate_probs.PNG" height=250>
+<img src="https://raw.githubusercontent.com/LewisGaul/minegauler/e3fa64f404952fe70ad8acaa83a53504e90e5e22/img/screenshots/beginner_start.png" height=250> <img src="https://raw.githubusercontent.com/LewisGaul/minegauler/e3fa64f404952fe70ad8acaa83a53504e90e5e22/img/screenshots/beginner_win.png" height=250> <img src="https://raw.githubusercontent.com/LewisGaul/minegauler/e3fa64f404952fe70ad8acaa83a53504e90e5e22/img/screenshots/split-cell-intermediate.png" height=250> <img src="https://raw.githubusercontent.com/LewisGaul/minegauler/e3fa64f404952fe70ad8acaa83a53504e90e5e22/img/screenshots/intermediate_probs.PNG" height=250>
 
 
 ## Install and Run
