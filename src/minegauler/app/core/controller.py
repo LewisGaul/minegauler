@@ -286,6 +286,12 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
         if not (self.game.state.started() or self.game.minefield_known):
             self.new_game()
 
+    def get_probabilities(self) -> Mapping[Coord, float]:
+        """Get the current game's cell probabilities."""
+        if self.game.state is GameState.ACTIVE:
+            self.game.minefield_known = True
+        return super().get_probabilities()
+
     def save_current_minefield(self, file: PathLike) -> None:
         """
         Save the current minefield to file.
