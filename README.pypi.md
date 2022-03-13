@@ -10,8 +10,10 @@ A perfect clone of the classic Minesweeper game, with many added features.
 Read more about the project history on [the project homepage](https://github.com/LewisGaul/minegauler).
 
 
-![img1](https://raw.githubusercontent.com/LewisGaul/minegauler/26fbc3d0fad5c70e5e9f9a1c37114da1d92507e5/img/screenshots/beginner_start.png)
-![img2](https://raw.githubusercontent.com/LewisGaul/minegauler/26fbc3d0fad5c70e5e9f9a1c37114da1d92507e5/img/screenshots/beginner_win.png)
+<img src="https://raw.githubusercontent.com/LewisGaul/minegauler/main/img/screenshots/beginner_start.png" height=250>
+<img src="https://raw.githubusercontent.com/LewisGaul/minegauler/main/img/screenshots/beginner_win.png" height=250>
+<img src="https://raw.githubusercontent.com/LewisGaul/minegauler/main/img/screenshots/split-cell-intermediate.png" height=250>
+<img src="https://raw.githubusercontent.com/LewisGaul/minegauler/main/img/screenshots/intermediate_probs.png" height=250>
 
 
 ## Install and Run

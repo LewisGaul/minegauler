@@ -1,11 +1,18 @@
 # October 2021, Lewis Gaul
 
-from typing import Iterable, List, Union
+import logging
+import subprocess
+from typing import Iterable, List, Mapping, Union
+
+import zig_minesolver as minesolver  # TODO: Rename the package
 
 from ...shared import utils
 from ...shared.types import CellContents, GameMode
 from ..board import BoardBase
 from .types import Coord
+
+
+logger = logging.getLogger(__name__)
 
 
 class Board(BoardBase):
@@ -90,6 +97,31 @@ class Board(BoardBase):
         if x < 0 or x >= self.x_size or y < 0 or y >= self.y_size:
             raise ValueError(f"Position out of bounds: ({x}, {y})")
         return Coord(x, y)
+
+    def calculate_probs(
+        self, mines: int, *, per_cell: int = 1
+    ) -> Mapping[Coord, float]:
+        """Calculate mine probabilities for the board."""
+
+        def cell_repr(cell: CellContents):
+            if isinstance(cell, CellContents.MineBase):
+                return CellContents.Unclicked
+            else:
+                return cell
+
+        try:
+            probs = minesolver.get_board_probs(
+                self._grid.__str__(mapping=cell_repr), mines=mines, per_cell=per_cell
+            )
+        except subprocess.CalledProcessError as e:
+            logger.debug("Output from zig_minesolver:\n%s%s", e.stderr, e.stdout)
+            raise RuntimeError("Unable to calculate probabilities") from e
+
+        return {
+            c: probs[c.y][c.x]
+            for c in self.all_coords
+            if self[c] is CellContents.Unclicked
+        }
 
     def reset(self):
         """Reset the board to the initial state."""

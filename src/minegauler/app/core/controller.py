@@ -7,7 +7,7 @@ import json
 import logging
 import os.path
 from os import PathLike
-from typing import Dict, Optional, Type
+from typing import Dict, Mapping, Optional, Type
 
 import attr
 
@@ -50,7 +50,7 @@ class SharedInfo:
 class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
     """Base controller class, generic over game mode."""
 
-    # Remove abstractmethods.
+    # Remove abstractmethods, handled in uber controller.
     switch_game_mode = None
     switch_ui_mode = None
     reset_settings = None
@@ -117,6 +117,13 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
             self._notif.set_difficulty(
                 self.game_cls.difficulty_from_values(x_size, y_size, mines)
             )
+
+    def get_probabilities(self) -> Mapping[Coord, float]:
+        """Get the current game's cell probabilities."""
+        super().get_probabilities()
+        return self.board.calculate_probs(
+            self._opts.mines, per_cell=self._opts.per_cell
+        )
 
     @staticmethod
     def _save_minefield(mf: MinefieldBase, file: PathLike) -> None:
@@ -279,6 +286,12 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
         if not (self.game.state.started() or self.game.minefield_known):
             self.new_game()
 
+    def get_probabilities(self) -> Mapping[Coord, float]:
+        """Get the current game's cell probabilities."""
+        if self.game.state is GameState.ACTIVE:
+            self.game.minefield_known = True
+        return super().get_probabilities()
+
     def save_current_minefield(self, file: PathLike) -> None:
         """
         Save the current minefield to file.
@@ -345,7 +358,7 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
 class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
     """Base create controller class, generic over game mode."""
 
-    # Remove abstractmethod - always handled by game controller.
+    # Remove abstractmethod - handled in uber controller.
     load_minefield = None
 
     def __init__(

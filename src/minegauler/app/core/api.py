@@ -13,7 +13,7 @@ __all__ = (
 
 import abc
 import logging
-from typing import Callable, Dict, Iterable, List, Optional
+from typing import Callable, Dict, Iterable, List, Mapping, Optional
 
 import attr
 
@@ -485,6 +485,17 @@ class AbstractController(metaclass=abc.ABCMeta):
             ".mgb".
         """
         self._logger.debug("Loading minefield from file: %s", file)
+
+    @abc.abstractmethod
+    def get_probabilities(self) -> Mapping[Coord, float]:
+        """
+        Get the current game's cell probabilities.
+
+        :return:
+            A mapping of cell coord to number between 0 and 1 representing the
+            probability that the cell contains at least 1 mine.
+        """
+        self._logger.debug("Getting board probabilities")
 
     @abc.abstractmethod
     def switch_game_mode(self, mode: GameMode) -> None:

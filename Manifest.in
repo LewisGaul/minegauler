@@ -6,3 +6,5 @@ include pytest.ini
 graft docs/
 graft package/
 graft scripts/
+graft src/
+graft tests/
