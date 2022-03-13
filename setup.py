@@ -39,7 +39,7 @@ setuptools.setup(
         "Topic :: Games/Entertainment :: Puzzle Games",
     ],
     python_requires=">=3.7",
-    packages=setuptools.find_packages(where="src/", include=("minegauler*",)),
+    packages=setuptools.find_packages(where="src", include=("minegauler*",)),
     package_dir={"": "src"},
     package_data={
         "minegauler.app": [
@@ -57,7 +57,6 @@ setuptools.setup(
         "PyQt5",
         "requests",
         "typing-extensions",
-        "zig-minesolver >= 0.1.1, < 0.2",
     ],
     extras_require={
         "bot": [

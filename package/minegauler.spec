@@ -11,21 +11,23 @@ block_cipher = None
 
 
 _PROJECT_NAME = "minegauler"
-_PROJECT_PATH = pathlib.Path.cwd() / _PROJECT_NAME
+_PROJECT_DIR = pathlib.Path.cwd() / "src"
+_PROJECT_ROOT = _PROJECT_DIR  / _PROJECT_NAME
+_ICON_PATH = _PROJECT_ROOT / "app/images/icon.ico"
 
 
 def _get_data() -> List[Tuple[str, str]]:
     dirs = ["app/images", "app/files"]
     files = ["app/boards/sample.mgb"]
     return [
-        *[(str(_PROJECT_PATH / d), str(pathlib.Path(d))) for d in dirs],
-        *[(str(_PROJECT_PATH / f), str(pathlib.Path(f).parent)) for f in files],
+        *[(str(_PROJECT_ROOT / d), str(pathlib.Path(d))) for d in dirs],
+        *[(str(_PROJECT_ROOT / f), str(pathlib.Path(f).parent)) for f in files],
     ]
 
 
 app_analysis = Analysis(
     [".pyinstaller_main.py"],
-    pathex=[str(_PROJECT_PATH.parent)],
+    pathex=[],
     binaries=[],
     datas=_get_data(),
     hiddenimports=[],
@@ -49,12 +51,12 @@ app_exe = EXE(
     strip=False,
     upx=True,
     console=False,
-    icon=str(_PROJECT_PATH / "app/images/icon.ico"),
+    icon=str(_ICON_PATH),
 )
 
 bot_analysis = Analysis(
     [".pyinstaller_bot.py"],
-    pathex=[str(_PROJECT_PATH.parent)],
+    pathex=[],
     binaries=[],
     datas=[],
     hiddenimports=[],
@@ -78,7 +80,7 @@ bot_exe = EXE(
     strip=False,
     upx=True,
     console=True,
-    icon=str(_PROJECT_PATH / "app/images/icon.ico"),
+    icon=str(_ICON_PATH),
 )
 
 coll = COLLECT(
