@@ -25,7 +25,7 @@ jobs:
       - name: Install Python requirements
         run: |
           pip install wheel
-          pip install pyinstaller tabulate pytz requests-toolbelt -r requirements.txt
+          pip install pyinstaller .[bot]
 
       - name: Create PyInstaller package
         run: python3 -m scripts.create_release -v -o artefacts/
