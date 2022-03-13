@@ -1,3 +1,5 @@
 @echo off
 
-cmd /C "python -m minegauler %*"
+CD src
+CMD /C "python -m cli %*"
+CD ..
