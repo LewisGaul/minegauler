@@ -1,5 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os.path
 import pathlib
 
 from PyInstaller.building.api import COLLECT, EXE, PYZ
@@ -16,14 +17,14 @@ _PROJECT_ROOT = _PROJECT_DIR / _PROJECT_NAME
 _ICON_PATH = _PROJECT_ROOT / "app/images/icon.ico"
 
 
-_APP_DATA = collect_data_files(
-    _PROJECT_NAME,
-    includes=(
-        "app/images/",
-        "app/files/",
-        "app/boards/sample.mgb",
-    ),
-)
+_APP_DATA = [
+    (x[0], os.path.relpath(x[1], start=_PROJECT_NAME))
+    for x in collect_data_files(
+        _PROJECT_NAME,
+        subdir="app",
+        includes=("images/", "files/", "boards/sample.mgb"),
+    )
+]
 _APP_DATA += collect_data_files("zig_minesolver")
 
 

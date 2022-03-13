@@ -14,7 +14,10 @@ import pathlib
 import sys
 
 
-ROOT_DIR = pathlib.Path(__file__).parent
+if hasattr(sys, "frozen") and hasattr(sys, "_MEIPASS"):  # in pyinstaller EXE
+    ROOT_DIR = pathlib.Path(__file__).parents[2] / "app"
+else:
+    ROOT_DIR = pathlib.Path(__file__).parent
 SETTINGS_FILE: pathlib.Path = ROOT_DIR / "settings.cfg"
 DATA_DIR: pathlib.Path = ROOT_DIR / "data"
 HIGHSCORES_FILE: pathlib.Path = DATA_DIR / "highscores.db"
