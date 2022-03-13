@@ -5,21 +5,17 @@ All notable changes to this project will be documented in this file.
 See the [issues page](https://github.com/LewisGaul/minegauler/issues) for upcoming features or pending fixes.
 
 
-### dev
-- Add initial implementation of probabilities
-TODO:
-- Ensure highscores cannot be obtained when using probabilities
-- Clear probabilities when pressing F5 again
-- Display probabilities with create board mode
-- Fix probabilities on large boards
-
-
 ## 4.1
 
 Stand-out features in this release include:
  - Split cells game mode
+ - Board probabilities
  - Themes (replacing button styles)
  - Improved packaging
+
+
+### 4.1.6 (2022-03-13)
+- Add beta implementation of probabilities
 
 
 ### 4.1.5 (2022-02-28)
