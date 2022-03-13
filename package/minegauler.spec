@@ -1,10 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os.path
 import pathlib
-from typing import List, Tuple
 
 from PyInstaller.building.api import COLLECT, EXE, PYZ
 from PyInstaller.building.build_main import Analysis
+from PyInstaller.utils.hooks import collect_data_files
 
 
 block_cipher = None
@@ -12,24 +13,26 @@ block_cipher = None
 
 _PROJECT_NAME = "minegauler"
 _PROJECT_DIR = pathlib.Path.cwd() / "src"
-_PROJECT_ROOT = _PROJECT_DIR  / _PROJECT_NAME
+_PROJECT_ROOT = _PROJECT_DIR / _PROJECT_NAME
 _ICON_PATH = _PROJECT_ROOT / "app/images/icon.ico"
 
 
-def _get_data() -> List[Tuple[str, str]]:
-    dirs = ["app/images", "app/files"]
-    files = ["app/boards/sample.mgb"]
-    return [
-        *[(str(_PROJECT_ROOT / d), str(pathlib.Path(d))) for d in dirs],
-        *[(str(_PROJECT_ROOT / f), str(pathlib.Path(f).parent)) for f in files],
-    ]
+_APP_DATA = [
+    (x[0], os.path.relpath(x[1], start=_PROJECT_NAME))
+    for x in collect_data_files(
+        _PROJECT_NAME,
+        subdir="app",
+        includes=("images/", "files/", "boards/sample.mgb"),
+    )
+]
+_APP_DATA += collect_data_files("zig_minesolver")
 
 
 app_analysis = Analysis(
     [".pyinstaller_main.py"],
     pathex=[],
     binaries=[],
-    datas=_get_data(),
+    datas=_APP_DATA,
     hiddenimports=[],
     hookspath=[],
     runtime_hooks=[],

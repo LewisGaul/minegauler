@@ -57,6 +57,7 @@ setuptools.setup(
         "PyQt5",
         "requests",
         "typing-extensions",
+        "zig-minesolver >= 0.1.1, < 0.2",
     ],
     extras_require={
         "bot": [
