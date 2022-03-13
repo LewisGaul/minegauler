@@ -33,7 +33,7 @@ jobs:
       env:
         COVERAGE_FILE: .cov-mut
       run: |
-        coverage run --source=minegauler/app/,tests/mut/ -m pytest tests/mut/
+        coverage run --source=src/minegauler/app/,tests/mut/ -m pytest tests/mut/
         coverage report
         coverage xml -o cov-mut-with-tests.xml
         coverage xml --omit='tests/**' -o cov-mut-no-tests.xml
@@ -42,7 +42,7 @@ jobs:
       env:
         COVERAGE_FILE: .cov-it
       run: |
-        coverage run --source=minegauler/app/,tests/it/ -m pytest tests/it/
+        coverage run --source=src/minegauler/app/,tests/it/ -m pytest tests/it/
         coverage report
         coverage xml -o cov-it-with-tests.xml
         coverage xml --omit='tests/**' -o cov-it-no-tests.xml

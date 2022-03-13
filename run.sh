@@ -1,3 +1,4 @@
 #!/usr/bin/env sh
 
-python3 -m minegauler "$@"
+cd src/
+python3 -m cli "$@"

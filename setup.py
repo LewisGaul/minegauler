@@ -9,7 +9,7 @@ import setuptools
 with open("README.pypi.md", "r", encoding="utf-8") as f:
     long_description = f.read()
 
-version = runpy.run_path("minegauler/app/_version.py")["__version__"]
+version = runpy.run_path("src/minegauler/app/_version.py")["__version__"]
 # Should be a release version, e.g. "4.0.1"
 if "-" in version:
     print("WARNING: Version is not a release version", file=sys.stderr)
@@ -39,17 +39,8 @@ setuptools.setup(
         "Topic :: Games/Entertainment :: Puzzle Games",
     ],
     python_requires=">=3.7",
-    packages=[
-        "minegauler",
-        *[
-            "minegauler." + subpkg
-            for subpkg in (
-                *setuptools.find_packages(
-                    where="minegauler/", include=("app", "app.*", "bot")
-                ),
-            )
-        ],
-    ],
+    packages=setuptools.find_packages(where="src/", include=("minegauler*",)),
+    package_dir={"": "src"},
     package_data={
         "minegauler.app": [
             "boards/sample.mgb",

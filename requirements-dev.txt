@@ -46,7 +46,7 @@ pyparsing==2.4.7
 PyQt5==5.14.2; platform_system != 'Windows'
 PyQt5==5.15.6; platform_system == 'Windows'
 PyQt5-sip==12.9.0
-pytest==6.2.5
+pytest==7.0.1
 pytest-benchmark==3.4.1
 pytest-cov==2.12.1
 pytest-qt==4.0.2
