@@ -9,13 +9,8 @@ See the [issues page](https://github.com/LewisGaul/minegauler/issues) for upcomi
 
 Stand-out features in this release include:
  - Split cells game mode
- - Board probabilities
  - Themes (replacing button styles)
  - Improved packaging
-
-
-### 4.1.6 (2022-03-13)
-- Add beta implementation of probabilities
 
 
 ### 4.1.5 (2022-02-28)
