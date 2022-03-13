@@ -1,6 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 import pathlib
+from typing import List, Tuple
 
 from PyInstaller.building.api import COLLECT, EXE, PYZ
 from PyInstaller.building.build_main import Analysis
@@ -11,14 +12,24 @@ block_cipher = None
 
 _PROJECT_NAME = "minegauler"
 _PROJECT_DIR = pathlib.Path.cwd() / "src"
-_ICON_PATH = _PROJECT_DIR  / _PROJECT_NAME / "app/images/icon.ico"
+_PROJECT_ROOT = _PROJECT_DIR  / _PROJECT_NAME
+_ICON_PATH = _PROJECT_ROOT / "app/images/icon.ico"
+
+
+def _get_data() -> List[Tuple[str, str]]:
+    dirs = ["app/images", "app/files"]
+    files = ["app/boards/sample.mgb"]
+    return [
+        *[(str(_PROJECT_ROOT / d), str(pathlib.Path(d))) for d in dirs],
+        *[(str(_PROJECT_ROOT / f), str(pathlib.Path(f).parent)) for f in files],
+    ]
 
 
 app_analysis = Analysis(
     [".pyinstaller_main.py"],
     pathex=[],
     binaries=[],
-    datas=[],  # Picked up from the pip install
+    datas=_get_data(),
     hiddenimports=[],
     hookspath=[],
     runtime_hooks=[],
