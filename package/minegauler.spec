@@ -1,7 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 import pathlib
-from typing import List, Tuple
 
 from PyInstaller.building.api import COLLECT, EXE, PYZ
 from PyInstaller.building.build_main import Analysis
@@ -11,23 +10,15 @@ block_cipher = None
 
 
 _PROJECT_NAME = "minegauler"
-_PROJECT_PATH = pathlib.Path.cwd() / _PROJECT_NAME
-
-
-def _get_data() -> List[Tuple[str, str]]:
-    dirs = ["app/images", "app/files"]
-    files = ["app/boards/sample.mgb"]
-    return [
-        *[(str(_PROJECT_PATH / d), str(pathlib.Path(d))) for d in dirs],
-        *[(str(_PROJECT_PATH / f), str(pathlib.Path(f).parent)) for f in files],
-    ]
+_PROJECT_DIR = pathlib.Path.cwd() / "src"
+_ICON_PATH = _PROJECT_DIR  / _PROJECT_NAME / "app/images/icon.ico"
 
 
 app_analysis = Analysis(
     [".pyinstaller_main.py"],
-    pathex=[str(_PROJECT_PATH.parent)],
+    pathex=[],
     binaries=[],
-    datas=_get_data(),
+    datas=[],  # Picked up from the pip install
     hiddenimports=[],
     hookspath=[],
     runtime_hooks=[],
@@ -49,12 +40,12 @@ app_exe = EXE(
     strip=False,
     upx=True,
     console=False,
-    icon=str(_PROJECT_PATH / "app/images/icon.ico"),
+    icon=str(_ICON_PATH),
 )
 
 bot_analysis = Analysis(
     [".pyinstaller_bot.py"],
-    pathex=[str(_PROJECT_PATH.parent)],
+    pathex=[],
     binaries=[],
     datas=[],
     hiddenimports=[],
@@ -78,7 +69,7 @@ bot_exe = EXE(
     strip=False,
     upx=True,
     console=True,
-    icon=str(_PROJECT_PATH / "app/images/icon.ico"),
+    icon=str(_ICON_PATH),
 )
 
 coll = COLLECT(
