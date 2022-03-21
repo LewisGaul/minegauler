@@ -66,7 +66,7 @@ twine==3.4.2
 typed-ast==1.5.2
 typing-extensions==4.1.1
 urllib3==1.26.6
-waitress==2.0.0
+waitress==2.1.1
 webencodings==0.5.1
 Werkzeug==2.0.1
 wheel==0.37.1
