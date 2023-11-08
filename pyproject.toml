@@ -22,3 +22,16 @@ use_parentheses = true
 order_by_type = true
 lines_after_imports = 2
 skip_glob = ['*/_vendor/*', '*venv*/*']
+
+[tool.importlinter]
+root_packages = ["minegauler"]
+include_external_packages = true
+exclude_type_checking_imports = true
+
+[[tool.importlinter.contracts]]
+name = "pkg layers"
+type = "layers"
+layers = [
+    "minegauler",
+    "minegauler.app",
+]
