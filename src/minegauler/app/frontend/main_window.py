@@ -213,6 +213,7 @@ class MinegaulerGUI(
         self._create_menu_action: QAction
         self._diff_menu_actions: Dict[Difficulty, QAction] = dict()
         self._populate_menubars()
+        self._opts_menu_reach_group: QActionGroup
         self._menubar.setFixedHeight(self._menubar.sizeHint().height())
         self._panel_widget = panel.PanelWidget(self, self._state)
         self._mf_widget = minefield.MinefieldWidget(self, self._ctrlr, self._state)
@@ -570,15 +571,17 @@ class MinegaulerGUI(
             return change_reach
 
         reach_menu = self._opts_menu.addMenu("Reach")
-        reach_group = QActionGroup(self)
-        reach_group.setExclusive(True)
+        self._opts_menu_reach_group = QActionGroup(self)
+        self._opts_menu_reach_group.setExclusive(True)
         for s in ReachSetting:
             action = QAction(str(s.value), self, checkable=True)
             reach_menu.addAction(action)
-            reach_group.addAction(action)
+            self._opts_menu_reach_group.addAction(action)
             if self._state.reach is s:
                 action.setChecked(True)
             action.triggered.connect(get_change_reach_func(s))
+        if self._state.game_mode is not GameMode.REGULAR:
+            self._opts_menu_reach_group.setDisabled(True)
 
         self._opts_menu.addSeparator()
 
@@ -646,6 +649,11 @@ class MinegaulerGUI(
 
     def _change_game_mode(self, mode: GameMode) -> None:
         self._ctrlr.switch_game_mode(mode)
+        if self._state.game_mode is GameMode.REGULAR:
+            self._opts_menu_reach_group.setDisabled(False)
+            self._opts_menu_reach_group.checkedAction().trigger()
+        else:
+            self._opts_menu_reach_group.setDisabled(True)
 
     def _set_name(self, name: str) -> None:
         self._state.name = name

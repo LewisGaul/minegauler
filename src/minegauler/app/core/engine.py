@@ -85,6 +85,8 @@ class UberController(api.AbstractController):
             )
         self._notif.game_mode_about_to_change(mode)
         self._opts.mode = mode
+        if mode is not GameMode.REGULAR:
+            self._opts.reach = ReachSetting.NORMAL
         old_difficulty = self._active_ctrlr.difficulty
         self._active_ctrlr = self._get_ctrlr_cls(mode, self._ui_mode)(
             self._opts, notif=self._notif
