@@ -4,7 +4,7 @@ __all__ = ("CreateController", "GameController")
 
 import logging
 
-from ...shared.types import CellContents, GameMode
+from ...shared.types import CellContents, GameMode, ReachSetting
 from ..controller import CreateControllerBase, GameControllerBase
 from .board import Board
 from .game import Game
@@ -26,6 +26,9 @@ class _ControllerMixin:
     @property
     def board(self) -> Board:
         return super().board
+
+    def set_reach(self, value: ReachSetting) -> None:
+        raise NotImplementedError
 
 
 class GameController(_ControllerMixin, GameControllerBase):

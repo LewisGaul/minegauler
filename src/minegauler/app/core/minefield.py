@@ -12,6 +12,7 @@ import logging
 import random
 from typing import Any, Generic, Iterable, List, Mapping, Optional, Set, TypeVar
 
+from ..shared.types import ReachSetting
 from .board import BoardBase
 
 
@@ -39,6 +40,7 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
         *,
         mines: int,
         per_cell: int = 1,
+        reach: ReachSetting = ReachSetting.NORMAL,
     ):
         """
         :param all_coords:
@@ -47,12 +49,15 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
             The number of mines to randomly place.
         :param per_cell:
             Maximum number of mines per cell.
+        :param reach:
+            The number of cell neighbours.
         :raise ValueError:
             If the number of mines is too high.
         """
         self.all_coords: Set[C] = set(all_coords)
         self.mines: int = mines
         self.per_cell: int = per_cell
+        self.reach: ReachSetting = reach
         self.mine_coords: List[C] = []
         self._bbbv: Optional[int] = None
         self._completed_board: Optional[B] = None
@@ -80,6 +85,7 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
         *,
         mine_coords: Iterable[C],
         per_cell: int = 1,
+        reach: ReachSetting = ReachSetting.NORMAL,
     ) -> "MinefieldBase":
         """
         :param all_coords:
@@ -99,7 +105,7 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
                     str(c) for c in mine_coords if mine_coords.count(c) > per_cell
                 )
             )
-        self = cls(all_coords, mines=len(mine_coords), per_cell=per_cell)
+        self = cls(all_coords, mines=len(mine_coords), per_cell=per_cell, reach=reach)
         self.mine_coords = mine_coords
         self.populated = True
         return self

@@ -43,6 +43,7 @@ __all__ = (
     "GameMode",
     "GameState",
     "PathLike",
+    "ReachSetting",
     "UIMode",
 )
 
@@ -323,6 +324,14 @@ class GameState(str, enum.Enum):
 
     def finished(self) -> bool:
         return self in [self.WON, self.LOST]
+
+
+class ReachSetting(enum.IntEnum):
+    """Enum representing supported reach settings."""
+
+    SHORT = 4
+    NORMAL = 8
+    LONG = 24
 
 
 class GameMode(str, enum.Enum):

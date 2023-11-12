@@ -13,7 +13,14 @@ import math
 import time
 from typing import Callable, Dict, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
-from ..shared.types import CellContents, Coord, Difficulty, GameMode, GameState
+from ..shared.types import (
+    CellContents,
+    Coord,
+    Difficulty,
+    GameMode,
+    GameState,
+    ReachSetting,
+)
 from .board import BoardBase
 from .minefield import MinefieldBase
 
@@ -152,15 +159,17 @@ class GameBase(metaclass=abc.ABCMeta):
         x_size: int,
         y_size: int,
         mines: int,
-        per_cell: int = 1,
-        lives: int = 1,
         first_success: bool = False,
+        per_cell: int = 1,
+        reach: ReachSetting = ReachSetting.NORMAL,
+        lives: int = 1,
     ):
         self.x_size: int = x_size
         self.y_size: int = y_size
+        self._reach: ReachSetting = reach
         self.board: BoardBase = self._make_board()
         self.mf: MinefieldBase = self.minefield_cls(
-            self.board.all_underlying_coords, mines=mines, per_cell=per_cell
+            self.board.all_underlying_coords, mines=mines, per_cell=per_cell, reach=reach
         )
         self.minefield_known: bool = False
         self.lives: int = lives
@@ -202,6 +211,7 @@ class GameBase(metaclass=abc.ABCMeta):
             y_size=mf.y_size,
             mines=mf.mines,
             per_cell=mf.per_cell,
+            reach=mf.reach,
             **kwargs,
         )
         self.mf = mf
@@ -235,6 +245,10 @@ class GameBase(metaclass=abc.ABCMeta):
     @property
     def per_cell(self) -> int:
         return self.mf.per_cell
+
+    @property
+    def reach(self) -> ReachSetting:
+        return self._reach
 
     def get_prop_complete(self) -> float:
         """Calculate the progress of solving the board using 3bv."""

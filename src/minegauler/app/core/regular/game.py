@@ -39,7 +39,7 @@ class Game(GameBase):
     # Abstract methods
     # ---------------------
     def _make_board(self) -> Board:
-        return Board(self.x_size, self.y_size)
+        return Board(self.x_size, self.y_size, reach=self.reach)
 
     def get_rem_3bv(self) -> int:
         if self.state is GameState.READY:

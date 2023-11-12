@@ -55,6 +55,7 @@ from ..shared.types import (
     GameMode,
     GameState,
     PathLike,
+    ReachSetting,
     UIMode,
 )
 from ..shared.utils import GUIOptsStruct, format_timestamp
@@ -559,6 +560,25 @@ class MinegaulerGUI(
             if self._state.per_cell == i:
                 action.setChecked(True)
             action.triggered.connect(get_change_per_cell_func(i))
+
+        # Reach option
+        def get_change_reach_func(r):
+            def change_reach():
+                self._state.reach = r
+                self._ctrlr.set_reach(r)
+
+            return change_reach
+
+        reach_menu = self._opts_menu.addMenu("Reach")
+        reach_group = QActionGroup(self)
+        reach_group.setExclusive(True)
+        for s in ReachSetting:
+            action = QAction(str(s.value), self, checkable=True)
+            reach_menu.addAction(action)
+            reach_group.addAction(action)
+            if self._state.reach is s:
+                action.setChecked(True)
+            action.triggered.connect(get_change_reach_func(s))
 
         self._opts_menu.addSeparator()
 

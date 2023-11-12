@@ -8,6 +8,7 @@ from typing import Any, Iterable, List, Mapping, Optional, TypeVar
 from ...shared import utils
 from ...shared.types import CellContents
 from ...shared.types import Coord as CoordBase
+from ...shared.types import ReachSetting
 from ..board import BoardBase
 from ..minefield import MinefieldBase
 from .board import Board
@@ -46,7 +47,7 @@ class RegularMinefieldBase(MinefieldBase[C, B], metaclass=abc.ABCMeta):
 
     @classmethod
     def from_dimensions(
-        cls, x_size: int, y_size: int, *, mines: int, per_cell: int = 1
+        cls, x_size: int, y_size: int, *, mines: int, per_cell: int = 1, reach: ReachSetting = ReachSetting.NORMAL
     ) -> "RegularMinefieldBase":
         """
         :param x_size:
@@ -57,21 +58,25 @@ class RegularMinefieldBase(MinefieldBase[C, B], metaclass=abc.ABCMeta):
             The number of mines to randomly place.
         :param per_cell:
             Maximum number of mines per cell.
+        :param reach:
+            Reach of the cell numbers.
         :raise ValueError:
             If the number of mines is too high.
         """
         all_coords = [Coord(x, y) for x in range(x_size) for y in range(y_size)]
-        return cls(all_coords, mines=mines, per_cell=per_cell)
+        return cls(all_coords, mines=mines, per_cell=per_cell, reach=reach)
 
     @classmethod
     def from_grid(
-        cls, grid: utils.Grid, *, per_cell: int = 1
+        cls, grid: utils.Grid, *, per_cell: int = 1, reach: ReachSetting = ReachSetting.NORMAL
     ) -> "RegularMinefieldBase":
         """
         :param grid:
             A `Grid` instance containing int number of mines in each cell.
         :param per_cell:
             Maximum number of mines per cell.
+        :param reach:
+            Reach of the cell numbers.
         :raise ValueError:
             If any of the number of mines is too high.
         """
@@ -83,19 +88,22 @@ class RegularMinefieldBase(MinefieldBase[C, B], metaclass=abc.ABCMeta):
             (Coord(*c) for c in grid.all_coords),
             mine_coords=mine_coords,
             per_cell=per_cell,
+            reach=reach,
         )
 
     @classmethod
-    def from_2d_array(cls, array, *, per_cell: int = 1) -> "RegularMinefieldBase":
+    def from_2d_array(cls, array, *, per_cell: int = 1, reach: ReachSetting = ReachSetting.NORMAL) -> "RegularMinefieldBase":
         """
         :param array:
             2D array containing int number of mines in each cell.
         :param per_cell:
             Maximum number of mines per cell.
+        :param reach:
+            Reach of the cell numbers.
         :raise ValueError:
             If any of the number of mines is too high.
         """
-        return cls.from_grid(utils.Grid.from_2d_array(array), per_cell=per_cell)
+        return cls.from_grid(utils.Grid.from_2d_array(array), per_cell=per_cell, reach=reach)
 
 
 class Minefield(RegularMinefieldBase[Coord, Board]):
@@ -125,6 +133,7 @@ class Minefield(RegularMinefieldBase[Coord, Board]):
                 ),
                 mine_coords=[Coord(*c) for c in obj["mine_coords"]],
                 per_cell=obj.get("per_cell", 1),
+                reach=ReachSetting(obj.get("reach", 8)),
             )
         except KeyError as e:
             raise ValueError(
@@ -138,18 +147,12 @@ class Minefield(RegularMinefieldBase[Coord, Board]):
             y_size=self.y_size,
             mine_coords=self.mine_coords,
             per_cell=self.per_cell,
+            reach=self.reach,
         )
 
     def _get_nbrs(self, coord: Coord, *, include_origin=False) -> Iterable[Coord]:
         """Get coordinates of neighbouring cells."""
-        x, y = coord
-        nbrs = []
-        for i in range(max(0, x - 1), min(self.x_size, x + 2)):
-            for j in range(max(0, y - 1), min(self.y_size, y + 2)):
-                nbrs.append(Coord(i, j))
-        if not include_origin:
-            nbrs.remove(coord)
-        return nbrs
+        return Board(self.x_size, self.y_size, reach=self.reach).get_nbrs(coord, include_origin=include_origin)
 
     def _calc_3bv(self) -> int:
         """Calculate the 3bv of the board."""
@@ -163,7 +166,7 @@ class Minefield(RegularMinefieldBase[Coord, Board]):
         Create the completed board with the flags and numbers that should be
         seen upon game completion.
         """
-        completed_board = Board(self.x_size, self.y_size)
+        completed_board = Board(self.x_size, self.y_size, reach=self.reach)
         completed_board.fill(CellContents.Num(0))
         for c in self.all_coords:
             mines = self[c]
