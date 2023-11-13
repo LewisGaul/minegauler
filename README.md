@@ -39,7 +39,7 @@ See note on system dependencies below, or [get in touch](#Contact) if you have a
 
 ### Clone the repo
 
-You will need Python 3.7+ to run the code (check with `python3 --version`).
+You will need Python 3.8+ to run the code (check with `python3 --version`).
 
  1. Clone the repo: `git clone https://github.com/LewisGaul/minegauler`
  2. Change directory: `cd minegauler`
