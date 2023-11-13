@@ -30,7 +30,7 @@ def read_highscores(path: PathLike) -> Iterable[HighscoreStruct]:
                         game_mode=table_name,
                         difficulty=row[0],
                         per_cell=row[1],
-                        reach=ReachSetting.NORMAL,
+                        reach=ReachSetting.NORMAL.value,
                         drag_select=row[2],
                         name=row[3],
                         timestamp=row[4],
