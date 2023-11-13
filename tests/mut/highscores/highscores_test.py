@@ -84,22 +84,82 @@ class TestLocalHighscoreDatabase:
         # Multiple highscores
         multiple_hs = {
             HighscoreStruct(
-                GameMode.REGULAR, "B", 1, ReachSetting.NORMAL, False, "NAME1", 123400, 3.00, 5, 1.56, 0.0
+                GameMode.REGULAR,
+                "B",
+                1,
+                ReachSetting.NORMAL,
+                False,
+                "NAME1",
+                123400,
+                3.00,
+                5,
+                1.56,
+                0.0,
             ),
             HighscoreStruct(
-                GameMode.REGULAR, "B", 1, ReachSetting.SHORT, False, "NAME2", 123401, 3.11, 5, 1.56, 0.0
+                GameMode.REGULAR,
+                "B",
+                1,
+                ReachSetting.SHORT,
+                False,
+                "NAME2",
+                123401,
+                3.11,
+                5,
+                1.56,
+                0.0,
             ),
             HighscoreStruct(
-                GameMode.REGULAR, "B", 1, ReachSetting.LONG, True, "NAME1", 123402, 3.22, 5, 1.56, 0.0
+                GameMode.REGULAR,
+                "B",
+                1,
+                ReachSetting.LONG,
+                True,
+                "NAME1",
+                123402,
+                3.22,
+                5,
+                1.56,
+                0.0,
             ),
             HighscoreStruct(
-                GameMode.REGULAR, "B", 2, ReachSetting.NORMAL, False, "NAME1", 123403, 3.33, 5, 1.56, 0.0
+                GameMode.REGULAR,
+                "B",
+                2,
+                ReachSetting.NORMAL,
+                False,
+                "NAME1",
+                123403,
+                3.33,
+                5,
+                1.56,
+                0.0,
             ),
             HighscoreStruct(
-                GameMode.REGULAR, "I", 1, ReachSetting.NORMAL, False, "NAME1", 123404, 3.44, 5, 1.56, 0.0
+                GameMode.REGULAR,
+                "I",
+                1,
+                ReachSetting.NORMAL,
+                False,
+                "NAME1",
+                123404,
+                3.44,
+                5,
+                1.56,
+                0.0,
             ),
             HighscoreStruct(
-                GameMode.SPLIT_CELL, "I", 1, ReachSetting.NORMAL, False, "NAME1", 123404, 3.55, 5, 1.56, 0.0
+                GameMode.SPLIT_CELL,
+                "I",
+                1,
+                ReachSetting.NORMAL,
+                False,
+                "NAME1",
+                123404,
+                3.55,
+                5,
+                1.56,
+                0.0,
             ),
         }
         db.insert_highscores(multiple_hs)
@@ -137,7 +197,17 @@ class TestLocalHighscoreDatabase:
             )
         ) == [
             HighscoreStruct(
-                GameMode.REGULAR, "B", 1, ReachSetting.NORMAL, False, "NAME1", 123400, 3, 5, 1.56, 0
+                GameMode.REGULAR,
+                "B",
+                1,
+                ReachSetting.NORMAL,
+                False,
+                "NAME1",
+                123400,
+                3,
+                5,
+                1.56,
+                0,
             )
         ]
 

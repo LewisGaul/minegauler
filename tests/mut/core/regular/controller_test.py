@@ -14,7 +14,13 @@ from minegauler.app.core.regular import (
     Minefield,
 )
 from minegauler.app.shared import GameOptsStruct
-from minegauler.app.shared.types import CellContents, Difficulty, GameMode, GameState, ReachSetting
+from minegauler.app.shared.types import (
+    CellContents,
+    Difficulty,
+    GameMode,
+    GameState,
+    ReachSetting,
+)
 from minegauler.app.shared.utils import Grid
 
 
