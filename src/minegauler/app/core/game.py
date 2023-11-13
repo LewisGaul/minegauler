@@ -169,7 +169,10 @@ class GameBase(metaclass=abc.ABCMeta):
         self._reach: ReachSetting = reach
         self.board: BoardBase = self._make_board()
         self.mf: MinefieldBase = self.minefield_cls(
-            self.board.all_underlying_coords, mines=mines, per_cell=per_cell, reach=reach
+            self.board.all_underlying_coords,
+            mines=mines,
+            per_cell=per_cell,
+            reach=reach,
         )
         self.minefield_known: bool = False
         self.lives: int = lives

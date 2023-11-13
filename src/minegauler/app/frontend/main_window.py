@@ -941,7 +941,9 @@ class MinegaulerGUI(
                 game_mode=self._state.game_mode,
                 difficulty=self._state.difficulty,
                 per_cell=self._state.per_cell,
-                reach=self._state.reach if self._state.game_mode is GameMode.REGULAR else ReachSetting.NORMAL,
+                reach=self._state.reach
+                if self._state.game_mode is GameMode.REGULAR
+                else ReachSetting.NORMAL,
                 drag_select=self._state.drag_select,
             )
         if sort_by:

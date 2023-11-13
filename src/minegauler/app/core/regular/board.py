@@ -20,7 +20,9 @@ class Board(BoardBase):
 
     mode = GameMode.REGULAR
 
-    def __init__(self, x_size: int, y_size: int, *, reach: ReachSetting = ReachSetting.NORMAL):
+    def __init__(
+        self, x_size: int, y_size: int, *, reach: ReachSetting = ReachSetting.NORMAL
+    ):
         self._grid = utils.Grid(x_size, y_size, fill=CellContents.Unclicked)
         self._reach = reach
 
@@ -95,7 +97,10 @@ class Board(BoardBase):
 
     def get_nbrs(self, coord: Coord, *, include_origin=False) -> Iterable[Coord]:
         return [
-            Coord(*c) for c in self._grid.get_nbrs(coord, include_origin=include_origin, reach=self.reach)
+            Coord(*c)
+            for c in self._grid.get_nbrs(
+                coord, include_origin=include_origin, reach=self.reach
+            )
         ]
 
     def get_coord_at(self, x: int, y: int) -> Coord:

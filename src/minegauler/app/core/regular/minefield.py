@@ -47,7 +47,13 @@ class RegularMinefieldBase(MinefieldBase[C, B], metaclass=abc.ABCMeta):
 
     @classmethod
     def from_dimensions(
-        cls, x_size: int, y_size: int, *, mines: int, per_cell: int = 1, reach: ReachSetting = ReachSetting.NORMAL
+        cls,
+        x_size: int,
+        y_size: int,
+        *,
+        mines: int,
+        per_cell: int = 1,
+        reach: ReachSetting = ReachSetting.NORMAL,
     ) -> "RegularMinefieldBase":
         """
         :param x_size:
@@ -68,7 +74,11 @@ class RegularMinefieldBase(MinefieldBase[C, B], metaclass=abc.ABCMeta):
 
     @classmethod
     def from_grid(
-        cls, grid: utils.Grid, *, per_cell: int = 1, reach: ReachSetting = ReachSetting.NORMAL
+        cls,
+        grid: utils.Grid,
+        *,
+        per_cell: int = 1,
+        reach: ReachSetting = ReachSetting.NORMAL,
     ) -> "RegularMinefieldBase":
         """
         :param grid:
@@ -92,7 +102,9 @@ class RegularMinefieldBase(MinefieldBase[C, B], metaclass=abc.ABCMeta):
         )
 
     @classmethod
-    def from_2d_array(cls, array, *, per_cell: int = 1, reach: ReachSetting = ReachSetting.NORMAL) -> "RegularMinefieldBase":
+    def from_2d_array(
+        cls, array, *, per_cell: int = 1, reach: ReachSetting = ReachSetting.NORMAL
+    ) -> "RegularMinefieldBase":
         """
         :param array:
             2D array containing int number of mines in each cell.
@@ -103,7 +115,9 @@ class RegularMinefieldBase(MinefieldBase[C, B], metaclass=abc.ABCMeta):
         :raise ValueError:
             If any of the number of mines is too high.
         """
-        return cls.from_grid(utils.Grid.from_2d_array(array), per_cell=per_cell, reach=reach)
+        return cls.from_grid(
+            utils.Grid.from_2d_array(array), per_cell=per_cell, reach=reach
+        )
 
 
 class Minefield(RegularMinefieldBase[Coord, Board]):
@@ -152,7 +166,9 @@ class Minefield(RegularMinefieldBase[Coord, Board]):
 
     def _get_nbrs(self, coord: Coord, *, include_origin=False) -> Iterable[Coord]:
         """Get coordinates of neighbouring cells."""
-        return Board(self.x_size, self.y_size, reach=self.reach).get_nbrs(coord, include_origin=include_origin)
+        return Board(self.x_size, self.y_size, reach=self.reach).get_nbrs(
+            coord, include_origin=include_origin
+        )
 
     def _calc_3bv(self) -> int:
         """Calculate the 3bv of the board."""

@@ -26,7 +26,10 @@ class _ControllerMixin:
 
     def __init__(self, opts: GameOptsStruct, *args, **kwargs):
         if opts.reach is not ReachSetting.NORMAL:
-            logger.warning("Only 'reach' setting of NORMAL is supported in split cell mode, ignoring requested %r setting", opts.reach.name)
+            logger.warning(
+                "Only 'reach' setting of NORMAL is supported in split cell mode, ignoring requested %r setting",
+                opts.reach.name,
+            )
             opts.reach = ReachSetting.NORMAL
         super().__init__(opts, *args, **kwargs)
 

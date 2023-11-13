@@ -53,7 +53,18 @@ class HighscoreStruct(HighscoreSettingsStruct):
     flagging: float
 
     def to_row(self) -> Tuple[Union[int, float, str]]:
-        return (self.difficulty.value, self.per_cell, self.reach.value, int(self.drag_select), self.name, self.timestamp, self.elapsed, self.bbbv, self.bbbvps, self.flagging)
+        return (
+            self.difficulty.value,
+            self.per_cell,
+            self.reach.value,
+            int(self.drag_select),
+            self.name,
+            self.timestamp,
+            self.elapsed,
+            self.bbbv,
+            self.bbbvps,
+            self.flagging,
+        )
 
 
 class AbstractHighscoresDB(abc.ABC):

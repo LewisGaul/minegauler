@@ -181,7 +181,11 @@ class Grid(list):
                 row[i] = item
 
     def get_nbrs(
-        self, coord: Tuple[int, int], *, include_origin=False, reach: ReachSetting = ReachSetting.NORMAL
+        self,
+        coord: Tuple[int, int],
+        *,
+        include_origin=False,
+        reach: ReachSetting = ReachSetting.NORMAL,
     ) -> Iterable[Tuple[int, int]]:
         """
         Get a list of the coordinates of neighbouring cells.
