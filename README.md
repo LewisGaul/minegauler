@@ -30,7 +30,7 @@ Download links available here:
 
 The Python package is also available on PyPI: https://pypi.org/project/minegauler/.
 
- 1. Python 3.7+ required (check with `python3 --version`)
+ 1. Python 3.8+ required (check with `python3 --version`)
  2. Install with `python3 -m pip install minegauler`
  3. Run with `python3 -m minegauler`
 
@@ -80,6 +80,7 @@ Options menu:
 * Safe start - ensure the first click always gives an opening, or at least gives a safe cell if there are too many mines to give an opening.
 * Drag select - enable selecting cells by clicking once and dragging the mouse.
 * Max mines per cell - allow up to 3 mines per cell.
+* Reach - the number of neighbouring cells cell numbers detect.
 * Game mode
   * Regular - the standard minesweeper game.
   * Split cell - Each large cell can be split into the 4 underlying regular cells using 'right-click'. Large cells can only be split if they contain at least one mine, and must be split to find all of the safe regular cells.
