@@ -14,7 +14,7 @@ from minegauler.app.core.regular import (
     Minefield,
 )
 from minegauler.app.shared import GameOptsStruct
-from minegauler.app.shared.types import CellContents, Difficulty, GameMode, GameState
+from minegauler.app.shared.types import CellContents, Difficulty, GameMode, GameState, ReachSetting
 from minegauler.app.shared.utils import Grid
 
 
@@ -93,8 +93,9 @@ class TestGameController:
             y_size=self.opts.y_size,
             mines=self.opts.mines,
             difficulty=ctrlr.game.difficulty,
-            per_cell=self.opts.per_cell,
             first_success=self.opts.first_success,
+            per_cell=self.opts.per_cell,
+            reach=self.opts.reach,
             minefield_known=False,
             mode=GameMode.REGULAR,
         )
@@ -109,8 +110,9 @@ class TestGameController:
                 y_size=self.opts.y_size,
                 mines=self.opts.mines,
                 difficulty=ctrlr.game.difficulty,
-                per_cell=self.opts.per_cell,
                 first_success=self.opts.first_success,
+                per_cell=self.opts.per_cell,
+                reach=self.opts.reach,
                 minefield_known=False,
                 mode=GameMode.REGULAR,
                 started_info=api.GameInfo.StartedInfo(
@@ -774,6 +776,46 @@ class TestGameController:
         with pytest.raises(ValueError):
             ctrlr.set_per_cell(0)
 
+    def test_set_reach(self):
+        """Test the method to set the 'reach' option."""
+        opts = self.opts.copy()
+        opts.reach = ReachSetting.NORMAL
+        ctrlr = self.create_ctrlr(opts, set_mf=False)
+        assert ctrlr._opts is opts
+        assert ctrlr.game.reach is ReachSetting.NORMAL
+
+        # Normal toggle.
+        ctrlr.set_reach(ReachSetting.SHORT)
+        assert ctrlr._opts.reach is ReachSetting.SHORT
+        assert ctrlr.game.reach is ReachSetting.SHORT
+
+        # No op.
+        ctrlr.set_reach(ReachSetting.SHORT)
+        assert ctrlr._opts.reach is ReachSetting.SHORT
+        assert ctrlr.game.reach is ReachSetting.SHORT
+
+        # During game.
+        ctrlr.select_cell(Coord(0, 0))
+        ctrlr.set_reach(ReachSetting.LONG)
+        assert ctrlr._opts.reach is ReachSetting.LONG
+        assert ctrlr.game.reach is ReachSetting.SHORT
+
+        # New games pick up the change.
+        ctrlr.new_game()
+        assert ctrlr._opts.reach is ReachSetting.LONG
+        assert ctrlr.game.reach is ReachSetting.LONG
+
+        # Known minefield.
+        ctrlr.select_cell(Coord(0, 0))
+        ctrlr.restart_game()
+        ctrlr.set_reach(ReachSetting.SHORT)
+        assert ctrlr._opts.reach is ReachSetting.SHORT
+        assert ctrlr.game.reach is ReachSetting.LONG
+
+        # Invalid value.
+        with pytest.raises(ValueError):
+            ctrlr.set_reach(0)
+
     @mock.patch("builtins.open")
     def test_save_minefield(self, mock_open):
         """Test the method to save the current minefield."""
@@ -855,8 +897,9 @@ class TestCreateController:
             y_size=opts.y_size,
             mines=0,
             difficulty=Difficulty.CUSTOM,
-            per_cell=opts.per_cell,
             first_success=opts.first_success,
+            per_cell=opts.per_cell,
+            reach=opts.reach,
             minefield_known=True,
             mode=GameMode.REGULAR,
         )
@@ -871,8 +914,9 @@ class TestCreateController:
             y_size=opts.y_size,
             mines=10,
             difficulty=Difficulty.BEGINNER,
-            per_cell=opts.per_cell,
             first_success=opts.first_success,
+            per_cell=opts.per_cell,
+            reach=opts.reach,
             minefield_known=True,
             mode=GameMode.REGULAR,
         )
@@ -1030,6 +1074,20 @@ class TestCreateController:
         # No op.
         ctrlr.set_per_cell(2)
         assert ctrlr.get_game_info().per_cell == 2
+
+    def test_set_reach(self):
+        """Test the method to set the 'reach' option."""
+        opts = GameOptsStruct(reach=ReachSetting.NORMAL)
+        ctrlr = self.create_ctrlr(opts)
+        assert ctrlr.get_game_info().reach == ReachSetting.NORMAL
+
+        # Normal change.
+        ctrlr.set_reach(ReachSetting.SHORT)
+        assert ctrlr.get_game_info().reach == ReachSetting.SHORT
+
+        # No op.
+        ctrlr.set_reach(ReachSetting.SHORT)
+        assert ctrlr.get_game_info().reach == ReachSetting.SHORT
 
     @mock.patch("builtins.open")
     def test_save_minefield(self, mock_open):

@@ -475,6 +475,8 @@ class AbstractController(metaclass=abc.ABCMeta):
         """
         Set the reach value (number of cells considered neighbours).
         """
+        if not isinstance(value, ReachSetting):
+            raise ValueError(f"Reach must be instance of ReachSetting enum, got {value}")
         self._logger.debug("Setting reach to %s", value)
 
     @abc.abstractmethod

@@ -59,7 +59,7 @@ class TestLocalHighscoreDatabase:
         """Test creating a new highscores DB."""
         db = highscores.SQLiteDB(tmp_local_db_path)
         assert db.path == tmp_local_db_path
-        assert db.get_db_version() == 1
+        assert db.get_db_version() == 2
         tables = list(
             db.execute(
                 "SELECT name FROM sqlite_master "
@@ -84,22 +84,22 @@ class TestLocalHighscoreDatabase:
         # Multiple highscores
         multiple_hs = {
             HighscoreStruct(
-                GameMode.REGULAR, "B", 1, False, "NAME1", 123400, 3.00, 5, 1.56, 0.0
+                GameMode.REGULAR, "B", 1, ReachSetting.NORMAL, False, "NAME1", 123400, 3.00, 5, 1.56, 0.0
             ),
             HighscoreStruct(
-                GameMode.REGULAR, "B", 1, False, "NAME2", 123401, 3.11, 5, 1.56, 0.0
+                GameMode.REGULAR, "B", 1, ReachSetting.SHORT, False, "NAME2", 123401, 3.11, 5, 1.56, 0.0
             ),
             HighscoreStruct(
-                GameMode.REGULAR, "B", 1, True, "NAME1", 123402, 3.22, 5, 1.56, 0.0
+                GameMode.REGULAR, "B", 1, ReachSetting.LONG, True, "NAME1", 123402, 3.22, 5, 1.56, 0.0
             ),
             HighscoreStruct(
-                GameMode.REGULAR, "B", 2, False, "NAME1", 123403, 3.33, 5, 1.56, 0.0
+                GameMode.REGULAR, "B", 2, ReachSetting.NORMAL, False, "NAME1", 123403, 3.33, 5, 1.56, 0.0
             ),
             HighscoreStruct(
-                GameMode.REGULAR, "I", 1, False, "NAME1", 123404, 3.44, 5, 1.56, 0.0
+                GameMode.REGULAR, "I", 1, ReachSetting.NORMAL, False, "NAME1", 123404, 3.44, 5, 1.56, 0.0
             ),
             HighscoreStruct(
-                GameMode.SPLIT_CELL, "I", 1, False, "NAME1", 123404, 3.55, 5, 1.56, 0.0
+                GameMode.SPLIT_CELL, "I", 1, ReachSetting.NORMAL, False, "NAME1", 123404, 3.55, 5, 1.56, 0.0
             ),
         }
         db.insert_highscores(multiple_hs)
@@ -117,6 +117,9 @@ class TestLocalHighscoreDatabase:
         exp_highscores = {h for h in hscores if h.per_cell == 1}
         assert set(db.get_highscores(per_cell=1)) == exp_highscores
 
+        exp_highscores = {h for h in hscores if h.reach is ReachSetting.NORMAL}
+        assert set(db.get_highscores(reach=ReachSetting.NORMAL)) == exp_highscores
+
         exp_highscores = {h for h in hscores if h.drag_select is False}
         assert set(db.get_highscores(drag_select=False)) == exp_highscores
 
@@ -128,12 +131,13 @@ class TestLocalHighscoreDatabase:
                 game_mode=GameMode.REGULAR,
                 difficulty=Difficulty.BEGINNER,
                 per_cell=1,
+                reach=ReachSetting.NORMAL,
                 drag_select=False,
                 name="NAME1",
             )
         ) == [
             HighscoreStruct(
-                GameMode.REGULAR, "B", 1, False, "NAME1", 123400, 3, 5, 1.56, 0
+                GameMode.REGULAR, "B", 1, ReachSetting.NORMAL, False, "NAME1", 123400, 3, 5, 1.56, 0
             )
         ]
 
@@ -170,6 +174,7 @@ class TestModuleAPIs:
             game_mode=None,
             difficulty=None,
             per_cell=None,
+            reach=None,
             drag_select=None,
             name=None,
         )
@@ -179,6 +184,7 @@ class TestModuleAPIs:
         highscores.get_highscores(
             game_mode=GameMode.SPLIT_CELL,
             database=mock_db,
+            reach=ReachSetting.LONG,
             drag_select=True,
             name="FOO",
         )
@@ -186,6 +192,7 @@ class TestModuleAPIs:
             game_mode=GameMode.SPLIT_CELL,
             difficulty=None,
             per_cell=None,
+            reach=ReachSetting.LONG,
             drag_select=True,
             name="FOO",
         )
@@ -196,6 +203,7 @@ class TestModuleAPIs:
             database=mock_db,
             settings=HighscoreSettingsStruct.get_default(),
             game_mode="NONSENSE",
+            reach=ReachSetting.LONG,
             drag_select=True,
             name="BAR",
         )
@@ -203,6 +211,7 @@ class TestModuleAPIs:
             game_mode=GameMode.REGULAR,
             difficulty=Difficulty.BEGINNER,
             per_cell=1,
+            reach=ReachSetting.NORMAL,
             drag_select=False,
             name="BAR",
         )
