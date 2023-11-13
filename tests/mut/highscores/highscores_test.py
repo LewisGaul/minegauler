@@ -14,7 +14,7 @@ import requests
 import minegauler.app
 from minegauler.app import highscores
 from minegauler.app.highscores import HighscoreSettingsStruct, HighscoreStruct
-from minegauler.app.shared.types import Difficulty, GameMode
+from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting
 
 
 @pytest.fixture
@@ -24,13 +24,24 @@ def tmp_local_db_path(tmp_path: pathlib.Path) -> pathlib.Path:
 
 
 fake_hs = HighscoreStruct(
-    GameMode.REGULAR, "M", 1, True, "testname", 1234, 166.49, 322, 1.94, 0.0
+    GameMode.REGULAR,
+    "M",
+    1,
+    ReachSetting.NORMAL,
+    True,
+    "testname",
+    1234,
+    166.49,
+    322,
+    1.94,
+    0.0,
 )
 
 fake_hs_json = {
     "game_mode": "regular",
     "difficulty": "M",
     "per_cell": 1,
+    "reach": 8,
     "drag_select": True,
     "name": "testname",
     "timestamp": 1234,

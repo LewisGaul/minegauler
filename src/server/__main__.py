@@ -17,7 +17,7 @@ from flask import Flask, abort, jsonify, redirect, request
 
 from minegauler import bot
 from minegauler.app import highscores as hs
-from minegauler.app.shared.types import Difficulty, GameMode
+from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting
 
 from . import get_new_highscore_hooks
 
@@ -158,8 +158,8 @@ def get_highscore_from_json(obj: Dict) -> hs.HighscoreStruct:
     # Accept pre v4.1.2 versions that only contain the highscore.
     if "app_version" not in obj:
         logger.debug("Parsing highscore from pre-v4.1.2 app")
-        obj["game_mode"] = "regular"
-        highscore = hs.HighscoreStruct(**obj)
+        hs_obj = obj
+        version_tuple = (0, 0, 0)
     else:
         app_version = obj["app_version"].lstrip("v")
         logger.debug("Parsing highscore from app v%s", app_version)
@@ -169,8 +169,14 @@ def get_highscore_from_json(obj: Dict) -> hs.HighscoreStruct:
             raise ValueError(
                 f"Expected app v4.1.2+ with 'app_version' field, got {app_version!r}"
             )
-        highscore = hs.HighscoreStruct(**obj["highscore"])
-    return highscore
+        hs_obj = obj["highscore"]
+    if version_tuple < (4, 1, 2):
+        # Game modes not supported before 4.1.2
+        hs_obj["game_mode"] = "regular"
+    if version_tuple < (4, 2, 0):
+        # Reach setting not supported before 4.2.0
+        hs_obj["reach"] = ReachSetting.NORMAL.value
+    return hs.HighscoreStruct(**hs_obj)
 
 
 # ------------------------------------------------------------------------------
