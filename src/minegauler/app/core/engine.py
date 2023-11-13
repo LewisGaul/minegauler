@@ -9,20 +9,13 @@ __all__ = ("UberController",)
 
 import json
 import logging
-import sys
-from typing import Mapping, Type
+from typing import Mapping, Protocol, Type
 
 from ..shared.types import Coord, Difficulty, GameMode, PathLike, ReachSetting, UIMode
 from ..shared.utils import GameOptsStruct
 from . import api, board, controller, game, minefield, regular, split_cell
 from .board import BoardBase
 from .controller import ControllerBase
-
-
-if sys.version_info < (3, 8):
-    from typing_extensions import Protocol
-else:
-    from typing import Protocol
 
 
 logger = logging.getLogger(__name__)
@@ -117,6 +110,7 @@ class UberController(api.AbstractController):
 
     def reset_settings(self) -> None:
         super().reset_settings()
+        self.switch_game_mode(GameMode.REGULAR)
         self._opts = GameOptsStruct()
         self.switch_ui_mode(UIMode.GAME)
         self.resize_board(self._opts.x_size, self._opts.y_size, self._opts.mines)
