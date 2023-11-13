@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 See the [issues page](https://github.com/LewisGaul/minegauler/issues) for upcoming features or pending fixes.
 
 
+## 4.2
+
+Stand-out features in this release include:
+ - Added the "reach" option/game mode for cell number detection
+
+
+### 4.2.0-b0 (2023-11-13)
+ - Add the "reach" option/game mode for cell number detection
+
+
 ## 4.1
 
 Stand-out features in this release include:
@@ -15,7 +25,7 @@ Stand-out features in this release include:
 
 
 ### 4.1.6 (2022-03-13)
-- Add beta implementation of probabilities
+ - Add beta implementation of probabilities
 
 
 ### 4.1.5 (2022-02-28)

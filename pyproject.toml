@@ -7,12 +7,13 @@ build-backend = "setuptools.build_meta"
 
 [tool.black]
 line-length = 88
-target-version = ['py37']
-include = '\.spec$'
-exclude = '.*venv.*|_vendor'
+target-version = ['py38']
+include = '\.spec$|\.pyi?$'
+extend_exclude = '.*venv.*|_vendor|__pycache__'
 
 [tool.isort]
 # Make compatible with Black
+profile = "black"
 line_length = 88
 multi_line_output = 3
 include_trailing_comma = true

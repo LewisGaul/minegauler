@@ -24,6 +24,7 @@ from ..shared.types import (
     GameMode,
     GameState,
     PathLike,
+    ReachSetting,
     UIMode,
 )
 from ..shared.utils import GameOptsStruct
@@ -49,8 +50,9 @@ class GameInfo:
     y_size: int
     mines: int
     difficulty: Difficulty
-    per_cell: int
     first_success: bool
+    per_cell: int
+    reach: ReachSetting
     mode: GameMode
 
     minefield_known: bool
@@ -462,7 +464,22 @@ class AbstractController(metaclass=abc.ABCMeta):
         """
         Set the maximum number of mines per cell.
         """
-        self._logger.debug("Setting per cell to %s", value)
+        if value < 1:
+            raise ValueError(
+                f"Max number of mines per cell must be at least 1, got {value}"
+            )
+        self._logger.debug("Setting per cell to %d", value)
+
+    @abc.abstractmethod
+    def set_reach(self, value: ReachSetting) -> None:
+        """
+        Set the reach value (number of cells considered neighbours).
+        """
+        if not isinstance(value, ReachSetting):
+            raise ValueError(
+                f"Reach must be instance of ReachSetting enum, got {value}"
+            )
+        self._logger.debug("Setting reach to %s", value)
 
     @abc.abstractmethod
     def save_current_minefield(self, file: PathLike) -> None:

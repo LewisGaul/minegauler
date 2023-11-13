@@ -24,7 +24,14 @@ from typing import Dict, Optional
 import attr
 
 from ..highscores import HighscoreStruct
-from ..shared.types import CellImageType, Difficulty, GameMode, GameState, UIMode
+from ..shared.types import (
+    CellImageType,
+    Difficulty,
+    GameMode,
+    GameState,
+    ReachSetting,
+    UIMode,
+)
 from ..shared.utils import GameOptsStruct, GUIOptsStruct, StructConstructorMixin
 
 
@@ -41,6 +48,7 @@ class PerGameState(StructConstructorMixin):
     difficulty: Difficulty = Difficulty.BEGINNER
     first_success: bool = True
     per_cell: int = 1
+    reach: ReachSetting = ReachSetting.NORMAL
     lives: int = 1
     drag_select: bool = False
     mode: GameMode = GameMode.REGULAR
@@ -177,6 +185,21 @@ class State:
             return self.pending_game_state.per_cell
         else:
             return self._current_game_state.per_cell
+
+    @property
+    def reach(self):
+        return self._current_game_state.reach
+
+    @reach.setter
+    def reach(self, value):
+        self._update_game_state("reach", value)
+
+    @property
+    def pending_reach(self):
+        if self.has_pending_game_state():
+            return self.pending_game_state.reach
+        else:
+            return self._current_game_state.reach
 
     @property
     def lives(self):

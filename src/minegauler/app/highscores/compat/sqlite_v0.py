@@ -12,7 +12,7 @@ __all__ = ("read_highscores",)
 import sqlite3
 from typing import Iterable
 
-from ...shared.types import PathLike
+from ...shared.types import GameMode, PathLike, ReachSetting
 from ..base import HighscoreStruct
 
 
@@ -27,9 +27,10 @@ def read_highscores(path: PathLike) -> Iterable[HighscoreStruct]:
             # First row entry is 'index' (ignore).
             ret.add(
                 HighscoreStruct(
-                    game_mode="regular",  # only mode supported
+                    game_mode=GameMode.REGULAR.value,  # only mode supported
                     difficulty=row[1],
                     per_cell=row[2],
+                    reach=ReachSetting.NORMAL.value,
                     drag_select=row[3],
                     name=row[4],
                     timestamp=row[5],

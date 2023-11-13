@@ -17,7 +17,7 @@ from minegauler.app.core.regular.board import Board
 from minegauler.app.core.regular.game import Game
 from minegauler.app.core.regular.minefield import Minefield
 from minegauler.app.core.regular.types import Coord
-from minegauler.app.shared.types import Difficulty, GameState
+from minegauler.app.shared.types import Difficulty, GameState, ReachSetting
 
 
 logger = logging.getLogger(__name__)
@@ -40,6 +40,7 @@ class TestGame:
         assert game.y_size == 5
         assert game.mines == 6
         assert game.per_cell == 1
+        assert game.reach is ReachSetting.NORMAL
         assert game.lives == 1
         assert game.first_success is False
         assert game.state is GameState.READY

@@ -4,7 +4,8 @@ __all__ = ("CreateController", "GameController")
 
 import logging
 
-from ...shared.types import CellContents, GameMode
+from ...shared import GameOptsStruct
+from ...shared.types import CellContents, GameMode, ReachSetting
 from ..controller import CreateControllerBase, GameControllerBase
 from .board import Board
 from .game import Game
@@ -23,9 +24,21 @@ class _ControllerMixin:
     board_cls = Board
     game_cls = Game
 
+    def __init__(self, opts: GameOptsStruct, *args, **kwargs):
+        if opts.reach is not ReachSetting.NORMAL:
+            logger.warning(
+                "Only 'reach' setting of NORMAL is supported in split cell mode, ignoring requested %r setting",
+                opts.reach.name,
+            )
+            opts.reach = ReachSetting.NORMAL
+        super().__init__(opts, *args, **kwargs)
+
     @property
     def board(self) -> Board:
         return super().board
+
+    def set_reach(self, value: ReachSetting) -> None:
+        raise NotImplementedError
 
 
 class GameController(_ControllerMixin, GameControllerBase):

@@ -38,7 +38,7 @@ setuptools.setup(
         "Natural Language :: English",
         "Topic :: Games/Entertainment :: Puzzle Games",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     packages=setuptools.find_packages(where="src", include=("minegauler*",)),
     package_dir={"": "src"},
     package_data={

@@ -54,7 +54,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
 import attr
 
-from .types import CellImageType, GameMode, PathLike
+from .types import CellImageType, GameMode, PathLike, ReachSetting
 
 
 logger = logging.getLogger(__name__)
@@ -181,7 +181,11 @@ class Grid(list):
                 row[i] = item
 
     def get_nbrs(
-        self, coord: Tuple[int, int], *, include_origin=False
+        self,
+        coord: Tuple[int, int],
+        *,
+        include_origin=False,
+        reach: ReachSetting = ReachSetting.NORMAL,
     ) -> Iterable[Tuple[int, int]]:
         """
         Get a list of the coordinates of neighbouring cells.
@@ -191,17 +195,32 @@ class Grid(list):
             The coordinate to check.
         include_origin=False (bool)
             Whether to include the original coordinate, coord, in the list.
+        reach=ReachSetting.NORMAL (ReachSetting)
+            How far the reach when considering what counts as a neighbour.
 
         Return: [(int, int), ...]
             List of coordinates within the boundaries of the grid.
         """
         x, y = coord
         nbrs = []
-        for i in range(max(0, x - 1), min(self.x_size, x + 2)):
-            for j in range(max(0, y - 1), min(self.y_size, y + 2)):
-                nbrs.append((i, j))
+        if reach is ReachSetting.NORMAL:
+            for i in range(max(0, x - 1), min(self.x_size, x + 2)):
+                for j in range(max(0, y - 1), min(self.y_size, y + 2)):
+                    nbrs.append((i, j))
+        elif reach is ReachSetting.SHORT:
+            for c in [(x - 1, y), (x, y), (x, y + 1), (x, y - 1), (x + 1, y)]:
+                if self.is_coord_in_grid(c):
+                    nbrs.append(c)
+        elif reach is ReachSetting.LONG:
+            for i in range(max(0, x - 2), min(self.x_size, x + 3)):
+                for j in range(max(0, y - 2), min(self.y_size, y + 3)):
+                    nbrs.append((i, j))
+        else:
+            assert False, f"Unrecognised reach value '{reach}'"
+
         if not include_origin:
             nbrs.remove(coord)
+
         return nbrs
 
     def copy(self):
@@ -262,6 +281,7 @@ class GameOptsStruct(StructConstructorMixin):
     mines: int = 10
     first_success: bool = True
     per_cell: int = 1
+    reach: ReachSetting = ReachSetting.NORMAL
     lives: int = 1
     mode: GameMode = GameMode.REGULAR
 
@@ -300,6 +320,7 @@ class AllOptsStruct(GameOptsStruct, GUIOptsStruct):
             getattr(CellImageType, k): v for k, v in dict_["styles"].items()
         }
         dict_["mode"] = getattr(GameMode, dict_.get("mode", "REGULAR"))
+        dict_["reach"] = ReachSetting(dict_.get("reach", 8))
         return cls(**dict_)
 
 

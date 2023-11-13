@@ -38,7 +38,7 @@ import requests
 from requests_toolbelt import MultipartEncoder
 
 from minegauler.app import highscores as hs
-from minegauler.app.shared.types import Difficulty, GameMode
+from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting
 
 
 logger = logging.getLogger(__name__)
@@ -167,6 +167,7 @@ def get_highscore_times(
     game_mode: GameMode = GameMode.REGULAR,
     drag_select: Optional[bool] = None,
     per_cell: Optional[int] = None,
+    reach: Optional[ReachSetting] = None,
     users: Optional[Iterable[str]] = None,
 ) -> List[Tuple[str, float]]:
     if difficulty is Difficulty.CUSTOM:
@@ -182,6 +183,7 @@ def get_highscore_times(
                 difficulty=difficulty,
                 drag_select=drag_select,
                 per_cell=per_cell,
+                reach=reach,
             )
         )
         times = {
@@ -192,7 +194,11 @@ def get_highscore_times(
     else:
         times = {
             u: _get_combined_highscore(
-                u, game_mode=game_mode, drag_select=drag_select, per_cell=per_cell
+                u,
+                game_mode=game_mode,
+                drag_select=drag_select,
+                per_cell=per_cell,
+                reach=reach,
             )
             for u in users
         }
@@ -237,7 +243,7 @@ def get_player_info(username: str) -> PlayerInfo:
     last_highscore = max(h.timestamp for h in highscores) if highscores else None
     hs_types = len(
         {
-            (h.game_mode, h.difficulty.lower(), h.drag_select, h.per_cell)
+            (h.game_mode, h.difficulty.lower(), h.drag_select, h.per_cell, h.reach)
             for h in highscores
         }
     )
@@ -255,6 +261,7 @@ def get_highscores(
     game_mode: GameMode = GameMode.REGULAR,
     difficulty: Optional[Difficulty] = None,
     per_cell: Optional[int] = None,
+    reach: Optional[ReachSetting] = None,
     drag_select: Optional[bool] = None,
     name: Optional[str] = None,
 ) -> Iterable[hs.HighscoreStruct]:
@@ -269,6 +276,8 @@ def get_highscores(
         Optionally specify difficulty to filter by. Ignored if settings given.
     :param per_cell:
         Optionally specify per-cell to filter by. Ignored if settings given.
+    :param reach:
+        Optionally specify reach to filter by. Ignored if settings given.
     :param drag_select:
         Optionally specify drag-select to filter by. Ignored if settings given.
     :param name:
@@ -282,12 +291,15 @@ def get_highscores(
         game_mode = settings.game_mode
         difficulty = settings.difficulty
         per_cell = settings.per_cell
+        reach = settings.reach
         drag_select = settings.drag_select
     args = [f"game_mode={game_mode.name.lower()}"]
     if difficulty is not None:
         args.append(f"difficulty={difficulty.name[0]}")
     if per_cell is not None:
         args.append(f"per_cell={per_cell}")
+    if reach is not None:
+        args.append(f"reach={int(reach)}")
     if drag_select is not None:
         args.append(f"drag_select={int(drag_select)}")
     if name is not None:
@@ -311,6 +323,7 @@ def _get_combined_highscore(
     *,
     game_mode: GameMode = GameMode.REGULAR,
     per_cell: Optional[int] = None,
+    reach: Optional[ReachSetting] = None,
     drag_select: Optional[bool] = None,
 ) -> float:
     total = 0
@@ -320,6 +333,7 @@ def _get_combined_highscore(
             name=name,
             drag_select=drag_select,
             per_cell=per_cell,
+            reach=reach,
         )
         highscores = [h.elapsed for h in all_highscores if h.difficulty.lower() == diff]
         total += min(highscores) if highscores else 1000

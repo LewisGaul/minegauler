@@ -29,8 +29,9 @@ Install with `pip install minegauler`, and then run with `python -m minegauler`.
 - Option of whether first click will guarantee an opening
 - Option to select cells by click-and-drag technique with the mouse
 - Option to allow multiple mines per cell
+- Option for setting the 'reach' of the cell numbers
+- New game mode: "split cell"
 - Local highscores for standard difficulty modes
-- Highscores uploaded to remote server when there is an internet connection
 - Custom cell styles
 - Option to change the cell size
 - Ability to reduce the window size and use scroll

@@ -21,7 +21,7 @@ import pytz
 import tabulate
 
 from minegauler.app import highscores as hs
-from minegauler.app.shared.types import Difficulty, GameMode
+from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting
 
 from .utils import Matchup, PlayerInfo
 
@@ -84,7 +84,17 @@ def format_player_info(players: Iterable[PlayerInfo]) -> str:
         "Modes played",
         "Last highscore",
     ]
-    types_available = len(GameMode) * (len(Difficulty) - 1) * 3 * 2
+    types_available = (
+        # fmt: off
+        (len(Difficulty) - 1)  # difficulty (ignore custom)
+        * 3                    # per-cell
+        * 2                    # drag-select
+        * (
+            len(ReachSetting)  # regular game-mode reach setting
+            + 1                # split-cell game-mode (no reach setting)
+          )
+        # fmt: on
+    )
     data = [
         (
             p.username,
@@ -115,6 +125,7 @@ def format_filters(
     difficulty: Optional[Union[str, Difficulty]],
     drag_select: Optional[bool],
     per_cell: Optional[int],
+    reach: Optional[ReachSetting],
     no_difficulty=False,
 ) -> str:
     opts = {}
@@ -130,6 +141,8 @@ def format_filters(
         opts["drag-select"] = "on" if drag_select else "off"
     if per_cell is not None:
         opts["per-cell"] = per_cell
+    if reach is not None:
+        opts["reach"] = reach.value
     return format_kwargs(opts)
 
 

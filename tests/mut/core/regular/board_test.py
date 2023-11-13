@@ -11,7 +11,7 @@ import pytest
 
 from minegauler.app.core.regular import Board, Coord
 from minegauler.app.shared import utils
-from minegauler.app.shared.types import CellContents
+from minegauler.app.shared.types import CellContents, ReachSetting
 
 
 class TestRegularBoard:
@@ -45,9 +45,80 @@ class TestRegularBoard:
         nbrs = board.get_nbrs((1, 1), include_origin=True)
         assert set(nbrs) == {
             # fmt: off
-            (0, 0), (0, 1), (0, 2),
-            (1, 0), (1, 1), (1, 2),
-            (2, 0), (2, 1), (2, 2),
+            (0, 0), (1, 0), (2, 0),
+            (0, 1), (1, 1), (2, 1),
+            (0, 2), (1, 2), (2, 2),
+            # fmt: on
+        }
+
+    def test_get_nbrs_reach_short(self):
+        board = Board(5, 5, reach=ReachSetting.SHORT)
+
+        # Top left corner
+        nbrs = board.get_nbrs((0, 0))
+        assert set(nbrs) == {(0, 1), (1, 0)}
+
+        # Bottom right corner
+        nbrs = board.get_nbrs((4, 4))
+        assert set(nbrs) == {(3, 4), (4, 3)}
+
+        # Left edge
+        nbrs = board.get_nbrs((0, 1))
+        assert set(nbrs) == {(0, 0), (0, 2), (1, 1)}
+
+        # Middle
+        nbrs = board.get_nbrs((1, 1), include_origin=True)
+        assert set(nbrs) == {
+            # fmt: off
+                    (1, 0),
+            (0, 1), (1, 1), (2, 1),
+                    (1, 2),
+            # fmt: on
+        }
+
+    def test_get_nbrs_reach_long(self):
+        board = Board(6, 6, reach=ReachSetting.LONG)
+
+        # Far top left corner
+        nbrs = board.get_nbrs((0, 0))
+        assert set(nbrs) == {
+            # fmt: off
+                    (1, 0), (2, 0),
+            (0, 1), (1, 1), (2, 1),
+            (0, 2), (1, 2), (2, 2),
+            # fmt: on
+        }
+
+        # Inner top left corner
+        nbrs = board.get_nbrs((1, 1))
+        assert set(nbrs) == {
+            # fmt: off
+            (0, 0), (1, 0), (2, 0), (3, 0),
+            (0, 1),         (2, 1), (3, 1),
+            (0, 2), (1, 2), (2, 2), (3, 2),
+            (0, 3), (1, 3), (2, 3), (3, 3),
+            # fmt: on
+        }
+
+        # Bottom right edge
+        nbrs = board.get_nbrs((4, 5))
+        assert set(nbrs) == {
+            # fmt: off
+            (2, 3), (3, 3), (4, 3), (5, 3),
+            (2, 4), (3, 4), (4, 4), (5, 4),
+            (2, 5), (3, 5),         (5, 5),
+            # fmt: on
+        }
+
+        # Middle
+        nbrs = board.get_nbrs((2, 2), include_origin=True)
+        assert set(nbrs) == {
+            # fmt: off
+            (0, 0), (1, 0), (2, 0), (3, 0), (4, 0),
+            (0, 1), (1, 1), (2, 1), (3, 1), (4, 1),
+            (0, 2), (1, 2), (2, 2), (3, 2), (4, 2),
+            (0, 3), (1, 3), (2, 3), (3, 3), (4, 3),
+            (0, 4), (1, 4), (2, 4), (3, 4), (4, 4),
             # fmt: on
         }
 
