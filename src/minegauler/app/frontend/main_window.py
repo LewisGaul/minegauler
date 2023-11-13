@@ -680,6 +680,7 @@ class MinegaulerGUI(
                 game_mode=info.mode,
                 difficulty=info.difficulty,
                 per_cell=info.per_cell,
+                reach=info.reach,
                 timestamp=int(info.started_info.start_time),
                 elapsed=info.started_info.elapsed,
                 bbbv=info.started_info.bbbv,
@@ -861,6 +862,7 @@ class MinegaulerGUI(
                     "Highscores retrieve failed",
                     f"Unable to retrieve highscores, error: {e}\n",
                 )
+                logger.debug("Exception:", exc_info=True)
             else:
                 _msg_popup(
                     self,
@@ -929,8 +931,7 @@ class MinegaulerGUI(
                 QMessageBox.Warning,
                 "Highscores unavailable",
                 "No highscores available for the active settings.\n"
-                "Highscores are only stored for the standard board difficulties, "
-                "and currently only for the 'regular' game mode.",
+                "Highscores are only stored for the standard board difficulties.",
             )
             return
         if self._open_subwindows.get("highscores"):
@@ -940,6 +941,7 @@ class MinegaulerGUI(
                 game_mode=self._state.game_mode,
                 difficulty=self._state.difficulty,
                 per_cell=self._state.per_cell,
+                reach=self._state.reach if self._state.game_mode is GameMode.REGULAR else ReachSetting.NORMAL,
                 drag_select=self._state.drag_select,
             )
         if sort_by:

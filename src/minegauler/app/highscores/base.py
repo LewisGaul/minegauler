@@ -15,11 +15,11 @@ __all__ = (
 import abc
 import logging
 import textwrap
-from typing import Iterable, Mapping, Optional, Tuple
+from typing import Iterable, Mapping, Optional, Tuple, Union
 
 import attr
 
-from ..shared.types import Difficulty, GameMode
+from ..shared.types import Difficulty, GameMode, ReachSetting
 from ..shared.utils import StructConstructorMixin
 
 
@@ -33,11 +33,12 @@ class HighscoreSettingsStruct(StructConstructorMixin):
     game_mode: GameMode = attr.attrib(converter=GameMode.from_str)
     difficulty: Difficulty = attr.attrib(converter=Difficulty.from_str)
     per_cell: int
+    reach: ReachSetting = attr.attrib(converter=ReachSetting)
     drag_select: bool = attr.attrib(converter=bool)
 
     @classmethod
     def get_default(cls) -> "HighscoreSettingsStruct":
-        return cls(GameMode.REGULAR, Difficulty.BEGINNER, 1, False)
+        return cls(GameMode.REGULAR, Difficulty.BEGINNER, 1, ReachSetting.NORMAL, False)
 
 
 @attr.attrs(auto_attribs=True, frozen=True)
@@ -50,6 +51,9 @@ class HighscoreStruct(HighscoreSettingsStruct):
     bbbv: int
     bbbvps: float
     flagging: float
+
+    def to_row(self) -> Tuple[Union[int, float, str]]:
+        return (self.difficulty.value, self.per_cell, self.reach.value, int(self.drag_select), self.name, self.timestamp, self.elapsed, self.bbbv, self.bbbvps, self.flagging)
 
 
 class AbstractHighscoresDB(abc.ABC):
@@ -73,6 +77,7 @@ class AbstractHighscoresDB(abc.ABC):
         game_mode: Optional[GameMode] = None,
         difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
+        reach: Optional[ReachSetting] = None,
         drag_select: Optional[bool] = None,
         name: Optional[str] = None,
     ) -> Iterable[HighscoreStruct]:
@@ -150,6 +155,7 @@ class SQLMixin:
             CREATE TABLE IF NOT EXISTS {table_name} (
                 difficulty VARCHAR(1) NOT NULL,
                 per_cell INTEGER NOT NULL,
+                reach INTEGER NOT NULL,
                 drag_select INTEGER NOT NULL,
                 name VARCHAR(20) NOT NULL,
                 timestamp INTEGER NOT NULL,
@@ -167,6 +173,7 @@ class SQLMixin:
         game_mode: GameMode,
         difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
+        reach: Optional[ReachSetting] = None,
         drag_select: Optional[bool] = None,
         name: Optional[str] = None,
     ) -> str:
@@ -175,7 +182,9 @@ class SQLMixin:
         if difficulty is not None:
             conditions.append(f"difficulty='{difficulty.value}'")
         if per_cell is not None:
-            conditions.append(f"per_cell={per_cell}")
+            conditions.append(f"per_cell={per_cell:d}")
+        if reach is not None:
+            conditions.append(f"reach={reach:d}")
         if drag_select is not None:
             conditions.append(f"drag_select={drag_select:d}")
         if name is not None:

@@ -18,7 +18,7 @@ from typing import Callable, Iterable
 
 from ...shared.types import PathLike
 from ..base import HighscoreStruct
-from . import sqlite_v0, sqlite_v1
+from . import sqlite_v0, sqlite_v1, sqlite_v2
 
 
 ConversionFunc = Callable[[PathLike], Iterable[HighscoreStruct]]
@@ -55,6 +55,8 @@ def read_highscores(path: PathLike) -> Iterable[HighscoreStruct]:
             func = sqlite_v0.read_highscores
         elif sqlite_db_version == 1:
             func = sqlite_v1.read_highscores
+        elif sqlite_db_version == 2:
+            func = sqlite_v2.read_highscores
         else:
             raise HighscoreReadError(
                 f"Unrecognised SQLite DB version '{sqlite_db_version}'"

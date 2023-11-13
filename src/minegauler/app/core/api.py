@@ -52,7 +52,7 @@ class GameInfo:
     difficulty: Difficulty
     first_success: bool
     per_cell: int
-    reach: int
+    reach: ReachSetting
     mode: GameMode
 
     minefield_known: bool

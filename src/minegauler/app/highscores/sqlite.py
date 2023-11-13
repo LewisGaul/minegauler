@@ -10,7 +10,7 @@ from typing import Iterable, Optional, Tuple
 
 import attr
 
-from ..shared.types import Difficulty, GameMode, PathLike
+from ..shared.types import Difficulty, GameMode, PathLike, ReachSetting
 from .base import AbstractHighscoresDB, HighscoreStruct, SQLMixin
 
 
@@ -31,7 +31,7 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
 
             for t in self.TABLES.values():
                 self.execute(self._get_create_table_sql(t), commit=True)
-            self.execute("PRAGMA user_version = 1")
+            self.execute("PRAGMA user_version = 2")
 
     @property
     def conn(self) -> sqlite3.Connection:
@@ -52,6 +52,7 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
         game_mode: Optional[GameMode] = None,
         difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
+        reach: Optional[ReachSetting] = None,
         drag_select: Optional[bool] = None,
         name: Optional[str] = None,
     ) -> Iterable[HighscoreStruct]:
@@ -59,6 +60,7 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
             game_mode=game_mode,
             difficulty=difficulty,
             per_cell=per_cell,
+            reach=reach,
             drag_select=drag_select,
             name=name,
         )
@@ -77,6 +79,7 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
                     game_mode=mode,
                     difficulty=difficulty,
                     per_cell=per_cell,
+                    reach=reach,
                     drag_select=drag_select,
                     name=name,
                 )
@@ -99,7 +102,7 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
         super().insert_highscores(highscores)
         orig_count = self.count_highscores()
         for mode in GameMode:
-            mode_rows = [attr.astuple(h)[1:] for h in highscores if h.game_mode is mode]
+            mode_rows = [h.to_row() for h in highscores if h.game_mode is mode]
             self.executemany(
                 self._get_insert_highscore_sql(fmt="?", game_mode=mode),
                 mode_rows,

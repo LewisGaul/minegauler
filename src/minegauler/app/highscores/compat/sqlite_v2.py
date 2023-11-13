@@ -3,7 +3,7 @@
 """
 Compatibility with v1 SQLite highscore format.
 
-This version adds split-cell mode highscore support in v4.1.2 minegauler.
+This version adds the 'reach' setting highscore support in v4.2.0 minegauler.
 
 """
 
@@ -30,14 +30,14 @@ def read_highscores(path: PathLike) -> Iterable[HighscoreStruct]:
                         game_mode=table_name,
                         difficulty=row[0],
                         per_cell=row[1],
-                        reach=ReachSetting.NORMAL,
-                        drag_select=row[2],
-                        name=row[3],
-                        timestamp=row[4],
-                        elapsed=row[5],
-                        bbbv=row[6],
-                        bbbvps=row[7],
-                        flagging=row[8],
+                        reach=row[2],
+                        drag_select=row[3],
+                        name=row[4],
+                        timestamp=row[5],
+                        elapsed=row[6],
+                        bbbv=row[7],
+                        bbbvps=row[8],
+                        flagging=row[9],
                     )
                 )
     return ret

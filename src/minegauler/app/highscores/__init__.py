@@ -26,7 +26,7 @@ import requests
 from .. import paths
 from .._version import __version__
 from ..shared import utils
-from ..shared.types import Difficulty, GameMode, PathLike
+from ..shared.types import Difficulty, GameMode, PathLike, ReachSetting
 from . import compat
 from .base import AbstractHighscoresDB, HighscoreSettingsStruct, HighscoreStruct
 from .compat import HighscoreReadError
@@ -48,6 +48,7 @@ def get_highscores(
     game_mode: Optional[GameMode] = None,
     difficulty: Optional[Difficulty] = None,
     per_cell: Optional[int] = None,
+    reach: Optional[ReachSetting] = None,
     drag_select: Optional[bool] = None,
     name: Optional[str] = None,
 ) -> Iterable[HighscoreStruct]:
@@ -64,6 +65,8 @@ def get_highscores(
         Optionally specify difficulty to filter by. Ignored if settings given.
     :param per_cell:
         Optionally specify per-cell to filter by. Ignored if settings given.
+    :param per_cell:
+        Optionally specify reach to filter by. Ignored if settings given.
     :param drag_select:
         Optionally specify drag-select to filter by. Ignored if settings given.
     :param name:
@@ -75,11 +78,13 @@ def get_highscores(
         game_mode = settings.game_mode
         difficulty = settings.difficulty
         per_cell = settings.per_cell
+        reach = settings.reach
         drag_select = settings.drag_select
     return database.get_highscores(
         game_mode=game_mode,
         difficulty=difficulty,
         per_cell=per_cell,
+        reach=reach,
         drag_select=drag_select,
         name=name,
     )
