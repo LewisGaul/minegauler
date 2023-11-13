@@ -112,6 +112,8 @@ class Board(BoardBase):
         self, mines: int, *, per_cell: int = 1
     ) -> Mapping[Coord, float]:
         """Calculate mine probabilities for the board."""
+        if self._reach is not ReachSetting.NORMAL:
+            raise NotImplementedError
 
         def cell_repr(cell: CellContents):
             if isinstance(cell, CellContents.MineBase):

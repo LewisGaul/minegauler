@@ -87,6 +87,9 @@ def api_v1_highscores():
     per_cell = request.args.get("per_cell")
     if per_cell:
         kwargs["per_cell"] = int(per_cell)
+    reach = request.args.get("reach")
+    if reach:
+        kwargs["reach"] = ReachSetting(int(reach))
     drag_select = request.args.get("drag_select")
     if drag_select:
         kwargs["drag_select"] = bool(int(drag_select))
@@ -106,12 +109,14 @@ def api_v1_highscores_ranks():
     game_mode = request.args.get("game_mode", "regular")
     difficulty = request.args.get("difficulty")
     per_cell = request.args.get("per_cell")
+    reach = request.args.get("reach")
     drag_select = request.args.get("drag_select")
     if not difficulty or not per_cell or not drag_select:
         abort(404)
     game_mode = GameMode.from_str(game_mode)
     difficulty = Difficulty.from_str(difficulty)
     per_cell = int(per_cell)
+    reach = ReachSetting(int(reach))
     drag_select = bool(int(drag_select))
     return jsonify(
         [
@@ -122,6 +127,7 @@ def api_v1_highscores_ranks():
                     game_mode=game_mode,
                     difficulty=difficulty,
                     per_cell=per_cell,
+                    reach=reach,
                     drag_select=drag_select,
                 )
             )
@@ -172,10 +178,10 @@ def get_highscore_from_json(obj: Dict) -> hs.HighscoreStruct:
         hs_obj = obj["highscore"]
     if version_tuple < (4, 1, 2):
         # Game modes not supported before 4.1.2
-        hs_obj["game_mode"] = "regular"
+        hs_obj["game_mode"] = GameMode.REGULAR
     if version_tuple < (4, 2, 0):
         # Reach setting not supported before 4.2.0
-        hs_obj["reach"] = ReachSetting.NORMAL.value
+        hs_obj["reach"] = ReachSetting.NORMAL
     return hs.HighscoreStruct(**hs_obj)
 
 

@@ -13,7 +13,7 @@ import logging
 import sys
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
-from minegauler.app.shared.types import Difficulty, GameMode
+from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting
 
 from . import formatter, utils
 
@@ -253,6 +253,14 @@ class BotMsgParser(ArgParser):
     def add_per_cell_arg(self):
         self.add_argument("per-cell", type=int, choices=[1, 2, 3])
 
+    def add_reach_arg(self):
+        self.add_argument(
+            "reach",
+            type=ReachSetting,
+            choices=[x.value for x in ReachSetting],
+            default=ReachSetting.NORMAL,
+        )
+
     def add_drag_select_arg(self):
         def _arg_type(arg):
             if arg == "on":
@@ -308,6 +316,8 @@ with a score of 1000 used for any difficulties not completed.
    By default no filter is applied (the best time of either mode is used).
  - per-cell: One of 1, 2 or 3.  
    By default no filter is applied (the best time of any mode is used).
+ - reach: One of 4, 8 or 24.  
+   By default reach=8 is used (the normal mode).
 
 All highscores are independent of each of the above modes, and all commands \
 accept these filters to view specific times. E.g. 'ranks beginner per-cell 1'.
@@ -443,7 +453,8 @@ def info(args, **kwargs):
     "[regular | split-cell] "
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
     "[drag-select {on | off}] "
-    "[per-cell {1 | 2 | 3}]"
+    "[per-cell {1 | 2 | 3}] "
+    "[reach {4 | 8 | 24}]"
 )
 def player(args, username: str, allow_markdown=False, **kwargs):
     parser = BotMsgParser()
@@ -454,6 +465,7 @@ def player(args, username: str, allow_markdown=False, **kwargs):
     parser.add_game_mode_arg()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
+    parser.add_reach_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
     if args.username == "me":
@@ -465,6 +477,7 @@ def player(args, username: str, allow_markdown=False, **kwargs):
         difficulty=args.difficulty,
         drag_select=args.drag_select,
         per_cell=args.per_cell,
+        reach=args.reach,
     )
 
     filters_str = formatter.format_filters(
@@ -472,6 +485,7 @@ def player(args, username: str, allow_markdown=False, **kwargs):
         difficulty=None,
         drag_select=args.drag_select,
         per_cell=args.per_cell,
+        reach=args.reach,
         no_difficulty=True,
     )
     if filters_str:
@@ -503,7 +517,8 @@ def player(args, username: str, allow_markdown=False, **kwargs):
     "[regular | split-cell] "
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
     "[drag-select {on | off}] "
-    "[per-cell {1 | 2 | 3}]"
+    "[per-cell {1 | 2 | 3}] "
+    "[reach {4 | 8 | 24}]"
 )
 def ranks(args, **kwargs) -> str:
     allow_markdown = kwargs.get("allow_markdown", False)
@@ -512,6 +527,7 @@ def ranks(args, **kwargs) -> str:
     parser.add_game_mode_arg()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
+    parser.add_reach_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
 
@@ -520,6 +536,7 @@ def ranks(args, **kwargs) -> str:
         difficulty=args.difficulty,
         drag_select=args.drag_select,
         per_cell=args.per_cell,
+        reach=args.reach,
     )
 
     lines = [
@@ -529,6 +546,7 @@ def ranks(args, **kwargs) -> str:
                 difficulty=args.difficulty,
                 drag_select=args.drag_select,
                 per_cell=args.per_cell,
+                reach=args.reach,
             )
         )
     ]
@@ -546,13 +564,15 @@ def ranks(args, **kwargs) -> str:
     "[regular | split-cell] "
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
     "[drag-select {on | off}] "
-    "[per-cell {1 | 2 | 3}]"
+    "[per-cell {1 | 2 | 3}] "
+    "[reach {4 | 8 | 24}]"
 )
 def stats(args, **kwargs):
     parser = BotMsgParser()
     parser.add_game_mode_arg()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
+    parser.add_reach_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
     return "Stats"
@@ -588,7 +608,8 @@ def stats_players(args, username: str, allow_markdown=False, **kwargs):
     "[regular | split-cell] "
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
     "[drag-select {on | off}] "
-    "[per-cell {1 | 2 | 3}]"
+    "[per-cell {1 | 2 | 3}] "
+    "[reach {4 | 8 | 24}]"
 )
 def matchups(
     args,
@@ -605,6 +626,7 @@ def matchups(
     parser.add_game_mode_arg()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
+    parser.add_reach_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
     users = {u if u != "me" else username for u in args.username}
@@ -617,6 +639,7 @@ def matchups(
         difficulty=args.difficulty,
         drag_select=args.drag_select,
         per_cell=args.per_cell,
+        reach=args.reach,
         users=names,
     )
     matchups = utils.get_matchups(times)
@@ -633,6 +656,7 @@ def matchups(
                 difficulty=args.difficulty,
                 drag_select=args.drag_select,
                 per_cell=args.per_cell,
+                reach=args.reach,
             ),
         )
     ]
@@ -648,7 +672,8 @@ def matchups(
     "[regular | split-cell] "
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
     "[drag-select {on | off}] "
-    "[per-cell {1 | 2 | 3}]"
+    "[per-cell {1 | 2 | 3}] "
+    "[reach {4 | 8 | 24}]"
 )
 def best_matchups(
     args, username: str, allow_markdown=False, room_type=RoomType.DIRECT, **kwargs
@@ -661,6 +686,7 @@ def best_matchups(
     parser.add_game_mode_arg()
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
+    parser.add_reach_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
     users = {u if u != "me" else username for u in args.username}
@@ -671,6 +697,7 @@ def best_matchups(
         difficulty=args.difficulty,
         drag_select=args.drag_select,
         per_cell=args.per_cell,
+        reach=args.reach,
         users=utils.USER_NAMES.values(),
     )
     matchups = utils.get_matchups(times, include_users=names)[:10]
@@ -689,6 +716,7 @@ def best_matchups(
                 difficulty=args.difficulty,
                 drag_select=args.drag_select,
                 per_cell=args.per_cell,
+                reach=args.reach,
             ),
         )
     ]
@@ -704,7 +732,8 @@ def best_matchups(
     "[regular | split-cell] "
     "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
     "[drag-select {on | off}] "
-    "[per-cell {1 | 2 | 3}]"
+    "[per-cell {1 | 2 | 3}] "
+    "[reach {4 | 8 | 24}]"
 )
 def challenge(args, username: str, **kwargs):
     parser = BotMsgParser()
@@ -716,6 +745,7 @@ def challenge(args, username: str, **kwargs):
     parser.add_positional_arg("game_mode", nargs="?", type=GameMode.from_str)
     parser.add_difficulty_arg()
     parser.add_per_cell_arg()
+    parser.add_reach_arg()
     parser.add_drag_select_arg()
     args = parser.parse_args(args)
     names = {u for u in args.username}
@@ -728,6 +758,7 @@ def challenge(args, username: str, **kwargs):
         difficulty=None,
         drag_select=args.drag_select,
         per_cell=args.per_cell,
+        reach=args.reach,
         no_difficulty=True,
     )
     if filters_str:
