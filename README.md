@@ -1,4 +1,4 @@
-[![Build badge](https://img.shields.io/github/workflow/status/LewisGaul/minegauler/Workflow%20for%20full%20test%20matrix/dev)](https://github.com/LewisGaul/minegauler/actions?query=workflow%3A%22Workflow+for+full+test+matrix%22+branch%3Adev)
+[![Build badge](https://img.shields.io/github/actions/workflow/status/LewisGaul/minegauler/full-test.yml?branch=dev)](https://github.com/LewisGaul/minegauler/actions?query=workflow%3A%22Workflow+for+full+test+matrix%22+branch%3Adev)
 [![Codecov badge](https://img.shields.io/codecov/c/github/LewisGaul/minegauler/dev)](https://codecov.io/gh/LewisGaul/minegauler/)
 [![PyPI badge](https://img.shields.io/pypi/v/minegauler.svg)](https://pypi.python.org/pypi/minegauler/)
 [![Downloads badge](https://img.shields.io/github/downloads/LewisGaul/minegauler/total)](https://github.com/LewisGaul/minegauler/releases/)
@@ -21,9 +21,9 @@ Read more about the project history in [my blog post](https://www.lewisgaul.co.u
 The application has been packaged with PyInstaller so that it can be played without setting up Python.
 
 Download links available here:
- - [Windows (amd64)](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-v4.1.6-windows-amd64.zip)
- - [Linux (x86_64)](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-v4.1.6-linux-x86_64.tar.gz)
- - [MacOS (x86_64)](https://github.com/LewisGaul/minegauler/releases/latest/download/minegauler-v4.1.6-macos-x86_64.tar.gz)
+ - [Windows (amd64)](https://github.com/LewisGaul/minegauler/releases/download/v4.2.0-b0/minegauler-v4.2.0-b0-windows-amd64.zip)
+ - [Linux (x86_64)](https://github.com/LewisGaul/minegauler/releases/download/v4.2.0-b0/minegauler-v4.2.0-b0-linux-x86_64.tar.gz)
+ - [MacOS (x86_64)](https://github.com/LewisGaul/minegauler/releases/download/v4.1.6/minegauler-v4.1.6-macos-x86_64.tar.gz) (v4.1.6, see [issue #214](https://github.com/LewisGaul/minegauler/issues/214))
 
 
 ### Install from PyPI
