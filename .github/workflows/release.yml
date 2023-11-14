@@ -44,7 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@master
       # Get the 'GIT_TAG_NAME' env var.
-      - uses: olegtarasov/get-tag@master.1
+      - uses: olegtarasov/get-tag@master
 
       # Fetch artefacts from pyinstaller job. Unfortunately, the download
       # involves creating artefact folders, meaning they end up at:
