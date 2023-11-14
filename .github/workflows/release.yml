@@ -31,7 +31,7 @@ jobs:
         run: python3 -m scripts.create_release -v -o artefacts/
 
       - name: Store artefacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@master
         with:
           name: ${{ matrix.os }}
           path: artefacts/
@@ -41,20 +41,20 @@ jobs:
     needs: pyinstaller
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@master
       # Get the 'GIT_TAG_NAME' env var.
-      - uses: olegtarasov/get-tag@v2.1
+      - uses: olegtarasov/get-tag@master.1
 
       # Fetch artefacts from pyinstaller job. Unfortunately, the download
       # involves creating artefact folders, meaning they end up at:
       # ./artefacts/<os>/minegauler-<version>-<os>-<arch>.<ext>
       - name: Fetch artefacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@master
         with:
           path: artefacts/
 
       - name: Create release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -74,7 +74,7 @@ jobs:
     if: always()
     steps:
       - name: Delete artefacts shared between jobs
-        uses: geekyeggo/delete-artifact@v1
+        uses: geekyeggo/delete-artifact@master
         with:
           name: |
             ubuntu-latest
