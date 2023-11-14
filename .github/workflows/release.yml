@@ -74,7 +74,7 @@ jobs:
     if: always()
     steps:
       - name: Delete artefacts shared between jobs
-        uses: geekyeggo/delete-artifact@master
+        uses: geekyeggo/delete-artifact@main
         with:
           name: |
             ubuntu-latest
