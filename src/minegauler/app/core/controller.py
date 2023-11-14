@@ -12,7 +12,14 @@ from typing import Dict, Mapping, Optional, Type
 import attr
 
 from ..shared import GameOptsStruct
-from ..shared.types import CellContents, Coord, Difficulty, GameMode, GameState
+from ..shared.types import (
+    CellContents,
+    Coord,
+    Difficulty,
+    GameMode,
+    GameState,
+    ReachSetting,
+)
 from . import api
 from .board import BoardBase
 from .game import GameBase
@@ -163,9 +170,10 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
             x_size=self._opts.x_size,
             y_size=self._opts.y_size,
             mines=self._opts.mines,
-            per_cell=self._opts.per_cell,
-            lives=self._opts.lives,
             first_success=self._opts.first_success,
+            per_cell=self._opts.per_cell,
+            reach=self._opts.reach,
+            lives=self._opts.lives,
         )
         self._last_update = SharedInfo()
         # self._send_updates()
@@ -187,8 +195,9 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
             y_size=self.game.y_size,
             mines=self.game.mines,
             difficulty=self.game.difficulty,
-            per_cell=self.game.per_cell,
             first_success=self.game.first_success,
+            per_cell=self.game.per_cell,
+            reach=self.game.reach,
             mode=self.mode,
             minefield_known=self.game.minefield_known,
         )
@@ -226,9 +235,10 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
             x_size=self._opts.x_size,
             y_size=self._opts.y_size,
             mines=self._opts.mines,
-            per_cell=self._opts.per_cell,
-            lives=self._opts.lives,
             first_success=self._opts.first_success,
+            per_cell=self._opts.per_cell,
+            reach=self._opts.reach,
+            lives=self._opts.lives,
         )
         self._send_reset_update()
 
@@ -275,14 +285,19 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
         Set the maximum number of mines per cell.
         """
         super().set_per_cell(value)
-        if value < 1:
-            raise ValueError(
-                f"Max number of mines per cell must be at least 1, got {value}"
-            )
         self._opts.per_cell = value
         # If the game is not started and the minefield is not known then the
         # new per-cell value should be picked up immediately, and the board
         # cleared of any flags (e.g. 3-flag cells may no longer be allowed!).
+        if not (self.game.state.started() or self.game.minefield_known):
+            self.new_game()
+
+    def set_reach(self, value: ReachSetting) -> None:
+        super().set_reach(value)
+        self._opts.reach = value
+        # If the game is not started and the minefield is not known then the
+        # new reach value should be picked up immediately, and the board
+        # cleared of any flags.
         if not (self.game.state.started() or self.game.minefield_known):
             self.new_game()
 
@@ -399,8 +414,9 @@ class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
             y_size=self._opts.y_size,
             mines=self._flags,
             difficulty=self.difficulty,
-            per_cell=self._opts.per_cell,
             first_success=self._opts.first_success,
+            per_cell=self._opts.per_cell,
+            reach=self._opts.reach,
             mode=self.mode,
             minefield_known=True,
         )
@@ -437,6 +453,10 @@ class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
     def set_per_cell(self, value: int) -> None:
         super().set_per_cell(value)
         self._opts.per_cell = value
+
+    def set_reach(self, value: ReachSetting) -> None:
+        super().set_reach(value)
+        self._opts.reach = value
 
     def save_current_minefield(self, file: PathLike) -> None:
         """

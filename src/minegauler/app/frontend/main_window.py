@@ -55,6 +55,7 @@ from ..shared.types import (
     GameMode,
     GameState,
     PathLike,
+    ReachSetting,
     UIMode,
 )
 from ..shared.utils import GUIOptsStruct, format_timestamp
@@ -212,6 +213,7 @@ class MinegaulerGUI(
         self._create_menu_action: QAction
         self._diff_menu_actions: Dict[Difficulty, QAction] = dict()
         self._populate_menubars()
+        self._opts_menu_reach_group: QActionGroup
         self._menubar.setFixedHeight(self._menubar.sizeHint().height())
         self._panel_widget = panel.PanelWidget(self, self._state)
         self._mf_widget = minefield.MinefieldWidget(self, self._ctrlr, self._state)
@@ -560,6 +562,27 @@ class MinegaulerGUI(
                 action.setChecked(True)
             action.triggered.connect(get_change_per_cell_func(i))
 
+        # Reach option
+        def get_change_reach_func(r):
+            def change_reach():
+                self._state.reach = r
+                self._ctrlr.set_reach(r)
+
+            return change_reach
+
+        reach_menu = self._opts_menu.addMenu("Reach")
+        self._opts_menu_reach_group = QActionGroup(self)
+        self._opts_menu_reach_group.setExclusive(True)
+        for s in ReachSetting:
+            action = QAction(str(s.value), self, checkable=True)
+            reach_menu.addAction(action)
+            self._opts_menu_reach_group.addAction(action)
+            if self._state.reach is s:
+                action.setChecked(True)
+            action.triggered.connect(get_change_reach_func(s))
+        if self._state.game_mode is not GameMode.REGULAR:
+            self._opts_menu_reach_group.setDisabled(True)
+
         self._opts_menu.addSeparator()
 
         game_mode_menu = self._opts_menu.addMenu("Game mode")
@@ -626,6 +649,11 @@ class MinegaulerGUI(
 
     def _change_game_mode(self, mode: GameMode) -> None:
         self._ctrlr.switch_game_mode(mode)
+        if self._state.game_mode is GameMode.REGULAR:
+            self._opts_menu_reach_group.setDisabled(False)
+            self._opts_menu_reach_group.checkedAction().trigger()
+        else:
+            self._opts_menu_reach_group.setDisabled(True)
 
     def _set_name(self, name: str) -> None:
         self._state.name = name
@@ -652,6 +680,7 @@ class MinegaulerGUI(
                 game_mode=info.mode,
                 difficulty=info.difficulty,
                 per_cell=info.per_cell,
+                reach=info.reach,
                 timestamp=int(info.started_info.start_time),
                 elapsed=info.started_info.elapsed,
                 bbbv=info.started_info.bbbv,
@@ -833,6 +862,7 @@ class MinegaulerGUI(
                     "Highscores retrieve failed",
                     f"Unable to retrieve highscores, error: {e}\n",
                 )
+                logger.debug("Exception:", exc_info=True)
             else:
                 _msg_popup(
                     self,
@@ -901,8 +931,7 @@ class MinegaulerGUI(
                 QMessageBox.Warning,
                 "Highscores unavailable",
                 "No highscores available for the active settings.\n"
-                "Highscores are only stored for the standard board difficulties, "
-                "and currently only for the 'regular' game mode.",
+                "Highscores are only stored for the standard board difficulties.",
             )
             return
         if self._open_subwindows.get("highscores"):
@@ -912,6 +941,9 @@ class MinegaulerGUI(
                 game_mode=self._state.game_mode,
                 difficulty=self._state.difficulty,
                 per_cell=self._state.per_cell,
+                reach=self._state.reach
+                if self._state.game_mode is GameMode.REGULAR
+                else ReachSetting.NORMAL,
                 drag_select=self._state.drag_select,
             )
         if sort_by:

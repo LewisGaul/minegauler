@@ -4,7 +4,7 @@
 [![Downloads badge](https://img.shields.io/github/downloads/LewisGaul/minegauler/total)](https://github.com/LewisGaul/minegauler/releases/)
 [![Code style badge](https://img.shields.io/badge/code%20style-black-000000.svg)](https://black.readthedocs.io/en/stable/)
 
-# Minegauler v4.1.6
+# Minegauler v4.2.0-b0
 
 Remake of the classic Minesweeper game, written in Python.
 
@@ -30,7 +30,7 @@ Download links available here:
 
 The Python package is also available on PyPI: https://pypi.org/project/minegauler/.
 
- 1. Python 3.7+ required (check with `python3 --version`)
+ 1. Python 3.8+ required (check with `python3 --version`)
  2. Install with `python3 -m pip install minegauler`
  3. Run with `python3 -m minegauler`
 
@@ -39,7 +39,7 @@ See note on system dependencies below, or [get in touch](#Contact) if you have a
 
 ### Clone the repo
 
-You will need Python 3.7+ to run the code (check with `python3 --version`).
+You will need Python 3.8+ to run the code (check with `python3 --version`).
 
  1. Clone the repo: `git clone https://github.com/LewisGaul/minegauler`
  2. Change directory: `cd minegauler`
@@ -80,6 +80,7 @@ Options menu:
 * Safe start - ensure the first click always gives an opening, or at least gives a safe cell if there are too many mines to give an opening.
 * Drag select - enable selecting cells by clicking once and dragging the mouse.
 * Max mines per cell - allow up to 3 mines per cell.
+* Reach - the number of neighbouring cells cell numbers detect.
 * Game mode
   * Regular - the standard minesweeper game.
   * Split cell - Each large cell can be split into the 4 underlying regular cells using 'right-click'. Large cells can only be split if they contain at least one mine, and must be split to find all of the safe regular cells.

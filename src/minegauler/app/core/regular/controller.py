@@ -53,7 +53,7 @@ class CreateController(_ControllerMixin, CreateControllerBase):
     """A controller for creating boards."""
 
     def _make_board(self) -> Board:
-        return Board(self._opts.x_size, self._opts.y_size)
+        return Board(self._opts.x_size, self._opts.y_size, reach=self._opts.reach)
 
     def select_cell(self, coord: Coord) -> None:
         super().select_cell(coord)

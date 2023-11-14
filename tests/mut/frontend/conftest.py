@@ -12,7 +12,7 @@ import pytest
 from minegauler.app import api
 from minegauler.app.core import regular
 from minegauler.app.shared import utils
-from minegauler.app.shared.types import Difficulty, GameMode, GameState
+from minegauler.app.shared.types import Difficulty, GameMode, GameState, ReachSetting
 
 
 @pytest.fixture
@@ -25,8 +25,9 @@ def ctrlr() -> api.AbstractController:
         y_size=8,
         mines=10,
         difficulty=Difficulty.BEGINNER,
-        per_cell=1,
         first_success=True,
+        per_cell=1,
+        reach=ReachSetting.NORMAL,
         mode=GameMode.REGULAR,
         minefield_known=False,
     )

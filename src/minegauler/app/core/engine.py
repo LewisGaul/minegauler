@@ -9,20 +9,13 @@ __all__ = ("UberController",)
 
 import json
 import logging
-import sys
-from typing import Mapping, Type
+from typing import Mapping, Protocol, Type
 
-from ..shared.types import Coord, Difficulty, GameMode, PathLike, UIMode
+from ..shared.types import Coord, Difficulty, GameMode, PathLike, ReachSetting, UIMode
 from ..shared.utils import GameOptsStruct
 from . import api, board, controller, game, minefield, regular, split_cell
 from .board import BoardBase
 from .controller import ControllerBase
-
-
-if sys.version_info < (3, 8):
-    from typing_extensions import Protocol
-else:
-    from typing import Protocol
 
 
 logger = logging.getLogger(__name__)
@@ -85,6 +78,8 @@ class UberController(api.AbstractController):
             )
         self._notif.game_mode_about_to_change(mode)
         self._opts.mode = mode
+        if mode is not GameMode.REGULAR:
+            self._opts.reach = ReachSetting.NORMAL
         old_difficulty = self._active_ctrlr.difficulty
         self._active_ctrlr = self._get_ctrlr_cls(mode, self._ui_mode)(
             self._opts, notif=self._notif
@@ -115,6 +110,7 @@ class UberController(api.AbstractController):
 
     def reset_settings(self) -> None:
         super().reset_settings()
+        self.switch_game_mode(GameMode.REGULAR)
         self._opts = GameOptsStruct()
         self.switch_ui_mode(UIMode.GAME)
         self.resize_board(self._opts.x_size, self._opts.y_size, self._opts.mines)
@@ -182,6 +178,9 @@ class UberController(api.AbstractController):
 
     def set_per_cell(self, value: int) -> None:
         self._active_ctrlr.set_per_cell(value)
+
+    def set_reach(self, value: ReachSetting) -> None:
+        self._active_ctrlr.set_reach(value)
 
     def save_current_minefield(self, file: PathLike) -> None:
         self._active_ctrlr.save_current_minefield(file)

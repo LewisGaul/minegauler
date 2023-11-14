@@ -8,9 +8,8 @@ import pathlib
 import sqlite3
 from typing import Iterable, Optional, Tuple
 
-import attr
-
-from ..shared.types import Difficulty, GameMode, PathLike
+from ..shared.types import Difficulty, GameMode, PathLike, ReachSetting
+from . import compat
 from .base import AbstractHighscoresDB, HighscoreStruct, SQLMixin
 
 
@@ -20,10 +19,27 @@ logger = logging.getLogger(__name__)
 class SQLiteDB(SQLMixin, AbstractHighscoresDB):
     """Database of local highscores."""
 
+    VERSION: int = 2
+
     def __init__(self, path: PathLike):
         self._path = pathlib.Path(path)
         if self._path.is_file():
             self._conn = sqlite3.connect(str(self._path))
+            if self.get_db_version() != self.VERSION:
+                logger.warning(
+                    "Got SQLite highscore DB on old version '%d', recreating...",
+                    self.get_db_version(),
+                )
+                # Read highscores into new DB using compat subpackage.
+                tmp_db_path = str(path) + ".new"
+                new_db = self.__class__(tmp_db_path)
+                new_db.insert_highscores(compat.read_highscores(self._path))
+                # Switch to the new DB.
+                new_db.close()
+                self._conn.close()
+                os.rename(self._path, str(self._path) + ".old")
+                os.rename(tmp_db_path, self._path)
+                self._conn = sqlite3.connect(str(self._path))
         else:
             logger.debug("Creating SQLite highscores DB")
             os.makedirs(self._path.parent, exist_ok=True)
@@ -31,7 +47,7 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
 
             for t in self.TABLES.values():
                 self.execute(self._get_create_table_sql(t), commit=True)
-            self.execute("PRAGMA user_version = 1")
+            self.execute(f"PRAGMA user_version = {self.VERSION}")
 
     @property
     def conn(self) -> sqlite3.Connection:
@@ -40,6 +56,9 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
     @property
     def path(self) -> pathlib.Path:
         return self._path
+
+    def close(self) -> None:
+        self._conn.close()
 
     def get_db_version(self) -> int:
         """Get the database version number."""
@@ -52,6 +71,7 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
         game_mode: Optional[GameMode] = None,
         difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
+        reach: Optional[ReachSetting] = None,
         drag_select: Optional[bool] = None,
         name: Optional[str] = None,
     ) -> Iterable[HighscoreStruct]:
@@ -59,6 +79,7 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
             game_mode=game_mode,
             difficulty=difficulty,
             per_cell=per_cell,
+            reach=reach,
             drag_select=drag_select,
             name=name,
         )
@@ -77,6 +98,7 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
                     game_mode=mode,
                     difficulty=difficulty,
                     per_cell=per_cell,
+                    reach=reach,
                     drag_select=drag_select,
                     name=name,
                 )
@@ -99,7 +121,7 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
         super().insert_highscores(highscores)
         orig_count = self.count_highscores()
         for mode in GameMode:
-            mode_rows = [attr.astuple(h)[1:] for h in highscores if h.game_mode is mode]
+            mode_rows = [h.to_row() for h in highscores if h.game_mode is mode]
             self.executemany(
                 self._get_insert_highscore_sql(fmt="?", game_mode=mode),
                 mode_rows,
