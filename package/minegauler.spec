@@ -55,6 +55,7 @@ app_exe = EXE(
     upx=True,
     console=False,
     icon=str(_ICON_PATH),
+    target_arch="arm64",
 )
 
 bot_analysis = Analysis(
@@ -84,6 +85,7 @@ bot_exe = EXE(
     upx=True,
     console=True,
     icon=str(_ICON_PATH),
+    target_arch="arm64",
 )
 
 coll = COLLECT(

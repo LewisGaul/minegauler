@@ -66,8 +66,6 @@ def run_pyinstaller(output_dir: pathlib.Path) -> None:
         "package/minegauler.spec",
         # fmt: on
     ]
-    if Platform.current() is Platform.MACOS:
-        cmd.extend(["--target-arch", "arm64"])
     logging.debug("Running command: %s", " ".join(shlex.quote(x) for x in cmd))
     proc = subprocess.run(cmd)
     if proc.returncode != 0:
