@@ -2,6 +2,8 @@ name: Workflow for creating a release
 
 on:
   push:
+    branches:
+      - gh-actions-release-macos
     tags:
       - 'v*.*.*'
 
@@ -12,8 +14,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, windows-latest]
-#        os: [ubuntu-latest, macOS-latest, windows-latest]
+        os: [ubuntu-latest, macOS-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@master
