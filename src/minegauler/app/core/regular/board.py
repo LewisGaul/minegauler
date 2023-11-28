@@ -112,7 +112,7 @@ class Board(BoardBase):
         self, mines: int, *, per_cell: int = 1
     ) -> Mapping[Coord, float]:
         """Calculate mine probabilities for the board."""
-        if self._reach is not ReachSetting.NORMAL:
+        if self.reach is ReachSetting.LONG:
             raise NotImplementedError
 
         def cell_repr(cell: CellContents):
@@ -123,7 +123,10 @@ class Board(BoardBase):
 
         try:
             probs = minesolver.get_board_probs(
-                self._grid.__str__(mapping=cell_repr), mines=mines, per_cell=per_cell
+                self._grid.__str__(mapping=cell_repr),
+                mines=mines,
+                per_cell=per_cell,
+                reach=self.reach.value,
             )
         except subprocess.CalledProcessError as e:
             logger.debug("Output from zig_minesolver:\n%s%s", e.stderr, e.stdout)
