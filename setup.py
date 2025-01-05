@@ -71,7 +71,7 @@ setuptools.setup(
             "minegauler = minegauler.app.__main__:main",
         ],
         "console_scripts": [
-            "minegauler-bot = minegauler.bot.msgparse:main [bot]",
+            "minegauler-bot = minegauler.bot.__main__:main [bot]",
         ],
     },
     zip_safe=False,
