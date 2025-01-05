@@ -134,17 +134,15 @@ log_file_level = "debug"
 # ------------------------
 [tool.coverage.run]
 source = [
-    "minegauler/app/",
-    "tests/",
+    "minegauler.app",
+    "tests",
 ]
 omit = [
     "*venv*/**",
+    "src/minegauler/app/highscores/mysql.py",
 ]
 
 [tool.coverage.report]
-omit = [
-    "minegauler/app/highscores/mysql.py",
-]
 exclude_lines = [
     "assert False",
     "case _ as unreachable:",
