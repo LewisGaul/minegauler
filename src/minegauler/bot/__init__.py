@@ -5,10 +5,6 @@ Bot package.
 
 """
 
+__all__ = ("formatter", "msgparse", "utils")
+
 from . import formatter, msgparse, utils
-
-
-try:
-    from . import routes
-except ImportError:
-    pass

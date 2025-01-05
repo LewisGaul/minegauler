@@ -5,12 +5,17 @@ Parse bot messages.
 
 """
 
-__all__ = ("GENERAL_INFO", "RoomType", "parse_msg")
+__all__ = (
+    "GENERAL_INFO",
+    "InvalidArgsError",
+    "InvalidMsgError",
+    "RoomType",
+    "parse_msg",
+)
 
 import argparse
 import enum
 import logging
-import sys
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting
@@ -961,26 +966,3 @@ def parse_msg(
             resp_msg = linebreak.join([f"Unrecognised command: {str(e)}", resp_msg])
 
         raise InvalidArgsError(resp_msg) from e
-
-
-# ------------------------------------------------------------------------------
-# Main
-# ------------------------------------------------------------------------------
-
-
-def main(argv: Optional[List[str]] = None) -> int:
-    if argv is None:
-        argv = sys.argv[1:]
-    rc = 0
-    utils.read_users_file()
-    try:
-        resp = parse_msg(argv, RoomType.LOCAL, username="")
-    except (InvalidArgsError, InvalidMsgError) as e:
-        resp = str(e)
-        rc = 1
-    print(resp)
-    return rc
-
-
-if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
