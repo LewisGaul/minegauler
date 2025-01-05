@@ -1,5 +1,5 @@
 @echo off
 
 CD src
-CMD /C "python -m cli %*"
+CMD /C "python -m minegauler.app %*"
 CD ..
