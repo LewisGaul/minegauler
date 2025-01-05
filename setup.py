@@ -62,7 +62,6 @@ setuptools.setup(
     extras_require={
         "bot": [
             "pytz",
-            "requests-toolbelt",
             "tabulate",
         ],
     },
