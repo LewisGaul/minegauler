@@ -1,3 +1,6 @@
+# Packaging configuration
+# ========================
+
 [build-system]
 requires = [
     "setuptools>=40.8.0",
@@ -5,12 +8,20 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+
+# Tooling configuration
+# ========================
+
+# black
+# ------------------------
 [tool.black]
 line-length = 88
 target-version = ['py38']
 include = '\.spec$|\.pyi?$'
 extend_exclude = '.*venv.*|_vendor|__pycache__'
 
+# isort
+# ------------------------
 [tool.isort]
 # Make compatible with Black
 profile = "black"
@@ -23,3 +34,126 @@ use_parentheses = true
 order_by_type = true
 lines_after_imports = 2
 skip_glob = ['*/_vendor/*', '*venv*/*']
+
+# ruff
+# ------------------------
+[tool.ruff.lint]
+preview = true
+select = [
+    # pydocstyle
+    "D",
+    # Pyflakes
+    "F",
+    # pycodestyle
+    "E",
+    # pep8-naming
+    "N",
+    # pyupgrade
+    "UP",
+    # flake8-2020
+    "YTT",
+    # flake8-async
+    "ASYNC",
+    # flake8-bandit
+    "S506",  # unsafe-yaml-load
+    # flake8-bugbear
+    "B",
+    # flake8-executable
+    "EXE",
+    # flake8-pie
+    "PIE",
+    # flake8-pyi
+    "PYI",
+    # flake8-simplify
+    "SIM",
+    # pylint
+    "PLE",      # errors
+    "PLW",      # warnings
+    "PLR1711",  # useless-return
+    # Ruff-specific rules
+    "RUF",
+]
+ignore = [
+    # pydocstyle
+    "D105",  # undocumented-magic-method
+    "D107",  # undocumented-public-init
+    "D203",  # one-blank-line-before-class
+    "D205",  # blank-line-after-summary
+    "D212",  # multi-line-summary-first-line
+    "D401",  # non-imperative-mood
+    # Pyflakes
+    "F403",  # undefined-local-with-import-star
+    "F841",  # unused-variable
+    # pycodestyle
+    "E402",  # module-import-not-at-top-of-file
+    "E501",  # line-too-long
+    # pep8-naming
+    "N802",  # invalid-function-name
+    # pylint warnings
+    "PLW3201",  # bad-dunder-method-name
+    # flake8-pyi
+    "PYI041",  # redundant-numeric-union
+    # pyupgrade
+    "UP015",  # redundant-open-modes
+    "UP032",  # f-string
+    # flake8-bugbear
+    "B011",  # assert-false
+    # Ruff-specific rules
+    "RUF028",  # invalid-formatter-suppression-comment
+    # flake8-simplify
+    "SIM102",  # collapsible-if
+    "SIM108",  # if-else-block-instead-of-if-exp
+    "SIM117",  # multiple-with-statements
+]
+task-tags = ["TODO", "FIXME", "XXX", "@@@"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]
+"**/__init__.py" = ["RUF022"]
+
+# mypy
+# ------------------------
+[tool.mypy]
+check_untyped_defs = true
+
+# pytest
+# ------------------------
+[tool.pytest.ini_options]
+minversion = "7.0"
+pythonpath = ["src/"]
+testpaths = ["tests/"]
+xfail_strict = true
+qt_api = "pyqt5"
+filterwarnings = [
+    "ignore:Creating a LegacyVersion:DeprecationWarning",
+]
+log_file = "test.log"
+log_file_level = "debug"
+
+# coverage
+# ------------------------
+[tool.coverage.run]
+source = [
+    "minegauler/app/",
+    "tests/",
+]
+omit = [
+    "*venv*/**",
+]
+
+[tool.coverage.report]
+omit = [
+    "minegauler/app/highscores/mysql.py",
+]
+exclude_lines = [
+    "assert False",
+    "case _ as unreachable:",
+    "raise NotImplementedError",
+    "return NotImplemented",
+    'if __name__ == "__main__":',
+    "if TYPE_CHECKING:",
+]
+precision = 1
+
+[tool.coverage.html]
+directory = "htmlcov"
