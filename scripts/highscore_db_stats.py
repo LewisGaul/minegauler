@@ -23,12 +23,22 @@ def print_highscore_stats(highscores: Iterable[hs.HighscoreStruct]) -> None:
     print("Oldest:", format_timestamp(min(h.timestamp for h in highscores)))
     print("Most recent:", format_timestamp(max(h.timestamp for h in highscores)))
     print("Number of usernames:", len({h.name for h in highscores}))
-    print("Number of modes:", len({(h.game_mode, h.difficulty, h.per_cell, h.reach, h.drag_select) for h in highscores}))
+    print(
+        "Number of modes:",
+        len(
+            {
+                (h.game_mode, h.difficulty, h.per_cell, h.reach, h.drag_select)
+                for h in highscores
+            }
+        ),
+    )
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logs")
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Enable debug logs"
+    )
     parser.add_argument("file", help="SQLite DB file path")
     return parser.parse_args(argv)
 
