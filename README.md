@@ -31,7 +31,7 @@ Download links available here:
 
 The Python package is also available on PyPI: https://pypi.org/project/minegauler/.
 
- 1. Python 3.8+ required (check with `python3 --version`)
+ 1. Python 3.9+ required (check with `python3 --version`)
  2. Install with `python3 -m pip install minegauler`
  3. Run with `python3 -m minegauler`
 
@@ -40,7 +40,7 @@ See note on system dependencies below, or [get in touch](#Contact) if you have a
 
 ### Clone the repo
 
-You will need Python 3.8+ to run the code (check with `python3 --version`).
+You will need Python 3.9+ to run the code (check with `python3 --version`).
 
  1. Clone the repo: `git clone https://github.com/LewisGaul/minegauler`
  2. Change directory: `cd minegauler`

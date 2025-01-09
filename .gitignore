@@ -13,7 +13,6 @@ coverage/
 coverage*.xml
 *,cover
 htmlcov/
-.pytest*
 .benchmarks/
 
 # Editor-related
@@ -28,6 +27,7 @@ htmlcov/
 # Python tooling
 .ipynb_checkpoints/
 .mypy_cache/
+.ruff_cache/
 
 LaTex/
 
