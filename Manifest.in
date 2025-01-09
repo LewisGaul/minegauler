@@ -1,8 +1,5 @@
 include README*
 include CHANGELOG*
-include .coveragerc
-include .pylintrc
-include pytest.ini
 graft docs/
 graft package/
 graft scripts/

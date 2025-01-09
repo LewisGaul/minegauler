@@ -1,12 +1,56 @@
 # Packaging configuration
 # ========================
 
-[build-system]
-requires = [
-    "setuptools>=40.8.0",
-    "wheel",
+[project]
+name = "minegauler"
+version = "4.2.0-b1"
+description = "A clone of the original minesweeper game with many added features"
+readme = "README.pypi.md"
+authors = [{name = "Lewis Gaul", email = "minegauler@gmail.com"}]
+urls."Bug Reports" = "https://github.com/LewisGaul/minegauler/issues"
+urls.Source = "https://github.com/LewisGaul/minegauler/"
+urls.Background = "https://www.lewisgaul.co.uk/blog/coding/2020/02/12/minegauler/"
+keywords = ["minesweeper", "game", "puzzle"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: End Users/Desktop",
+    "Natural Language :: English",
+    "Topic :: Games/Entertainment :: Puzzle Games"
 ]
+requires-python = ">=3.9"
+dependencies = [
+    "attrs",
+    "PyQt5",
+    "requests",
+    "pytz",
+    "tabulate",
+    "typing-extensions",
+    "zig-minesolver >= 0.1.1, < 0.2",
+]
+gui-scripts.minegauler = "minegauler.app.__main__:main"
+scripts.minegauler-bot = "minegauler.bot.__main__:main"
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["minegauler*"]
+
+[tool.setuptools.package-data]
+"minegauler.app" = [
+    "boards/sample.mgb",
+    "files/*.txt",
+    "images/icon.ico",
+    "images/faces/*",
+    "images/buttons/*/*",
+    "images/markers/*/*",
+    "images/numbers/*/*"
+]
 
 
 # Tooling configuration

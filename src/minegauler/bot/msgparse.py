@@ -1,34 +1,25 @@
-# February 2020, Lewis Gaul
-
 """
 Parse bot messages.
 
 """
 
 __all__ = (
-    "GENERAL_INFO",
-    "InvalidArgsError",
+    "BotMsgParser",
+    "CmdParser",
+    "CommandMapping" "InvalidArgsError",
     "InvalidMsgError",
-    "RoomType",
-    "parse_msg",
+    "helpstring",
+    "schema",
 )
 
 import argparse
-import enum
 import logging
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting
 
-from . import formatter, utils
-
 
 logger = logging.getLogger(__name__)
-
-
-# ------------------------------------------------------------------------------
-# Message parsing
-# ------------------------------------------------------------------------------
 
 
 class InvalidArgsError(Exception):
@@ -39,7 +30,173 @@ class InvalidMsgError(Exception):
     pass
 
 
-class PositionalArg:
+CommandMapping = Dict[Optional[str], Union[Callable, "CommandMapping"]]
+
+
+def helpstring(text):
+    """Decorator for a command function providing the help for the command."""
+
+    def decorator(func):
+        func.__helpstring__ = text
+        return func
+
+    return decorator
+
+
+def schema(text):
+    """Decorator for a command function providing the schema for the command."""
+
+    def decorator(func):
+        func.__schema__ = text
+        return func
+
+    return decorator
+
+
+class CmdParser:
+    """A parser to handle commands mapped to functions."""
+
+    def __init__(self, cmds: CommandMapping, markdown: bool = False):
+        """
+        :param cmds:
+            The dictionary of commands to support.
+        :param markdown:
+            Whether to enable markdown in the response.
+        """
+        self._cmds: CommandMapping = {**cmds, "help": self.help_}
+        self._markdown: bool = markdown
+
+    @helpstring("Get help for a command")
+    @schema("help [<command>]")
+    def help_(self, args, **kwargs):
+        linebreak = "\n\n" if self._markdown else "\n"
+        flat_cmds = self._flatten_cmds(self._cmds)
+        if self._markdown:
+            flat_cmds = f"`{flat_cmds}`"
+
+        if not args:
+            return flat_cmds
+
+        func, _ = self._map_to_cmd(args)
+        if func is None:
+            raise InvalidArgsError(linebreak.join(["Unrecognised command", flat_cmds]))
+        return self._get_cmd_help(func)
+
+    def handle_msg(self, msg: Union[str, List[str]], **kwargs) -> str:
+        """
+        Parse a message and perform the corresponding action.
+
+        :param msg:
+            The message to handle.
+        :param kwargs:
+            Arguments to pass on to sub-command functions.
+        :return:
+            Response text.
+        :raise InvalidArgsError:
+            Unrecognised command. The text of the error is a suitable error/help
+            message.
+        """
+        orig_msg = msg
+        if isinstance(msg, str):
+            msg = msg.strip().split()
+        else:
+            msg = msg.copy()
+        if not msg:
+            msg = ["help"]
+        if msg[-1] in ["?", "help"] and not msg[0] == "help":
+            # Change "?" at the end to be treated as help, except for the case where
+            # this is a double help intended for a subcommand, e.g.
+            # 'help matchups ?'.
+            msg.pop(-1)
+            msg.insert(0, "help")
+
+        func = None
+        try:
+            func, args = self._map_to_cmd(msg)
+            if func is None:
+                raise InvalidArgsError("Base command not found")
+            return func(args, markdown=self._markdown, **kwargs)
+        except InvalidMsgError as e:
+            logger.debug("Invalid message: %r", orig_msg)
+            resp_msg = f"Invalid command: {str(e)}"
+            raise InvalidMsgError(resp_msg) from e
+        except InvalidArgsError as e:
+            logger.debug("Invalid message: %r", orig_msg)
+            if func is None:
+                raise InvalidArgsError(
+                    "Unrecognised command - try 'help' or 'info' in direct chat"
+                ) from e
+            else:
+                linebreak = "\n\n" if self._markdown else "\n"
+                resp_msg = self._get_cmd_help(func, only_schema=True)
+                resp_msg = linebreak.join([f"Unrecognised command: {str(e)}", resp_msg])
+
+            raise InvalidArgsError(resp_msg) from e
+
+    def _get_cmd_help(self, func: Callable, *, only_schema: bool = False) -> str:
+        lines = []
+        if not only_schema:
+            try:
+                lines.append(func.__helpstring__)
+            except AttributeError:
+                logger.warning(
+                    "No helpstring found on message handling function %r", func.__name__
+                )
+        try:
+            schema = func.__schema__
+        except AttributeError:
+            logger.warning(
+                "No schema found on message handling function %r", func.__name__
+            )
+        else:
+            if self._markdown:
+                lines.append(f"`{schema}`")
+            else:
+                lines.append(schema)
+
+        if not lines:
+            return "Unexpected error: unable to get help message\n\n"
+
+        return "\n\n".join(lines)
+
+    def _map_to_cmd(self, msg: Iterable[str]) -> Tuple[Callable, List[str]]:
+        cmds = self._cmds
+        func = None
+        words = list(msg)
+        while words:
+            next_word = words[0]
+            if next_word in cmds:
+                words.pop(0)
+                if callable(cmds[next_word]):
+                    func = cmds[next_word]
+                    break
+                else:
+                    cmds = cmds[next_word]
+            else:
+                break
+            if None in cmds:
+                func = cmds[None]
+
+        return func, words
+
+    @classmethod
+    def _flatten_cmds(cls, cmds: CommandMapping, root: bool = True) -> str:
+        to_join = []
+        for k, v in cmds.items():
+            item = k
+            if isinstance(v, dict):
+                item += " " + cls._flatten_cmds(v, root=False)
+            if item:
+                to_join.append(item)
+        ret = " | ".join(to_join)
+        if None in cmds:
+            ret = f"[{ret}]"
+        elif len(cmds) > 1 and not root:
+            ret = f"{{{ret}}}"
+        return ret
+
+
+class _PositionalArg:
     def __init__(
         self,
         name: str,
@@ -77,7 +234,7 @@ class PositionalArg:
         return True
 
 
-class ArgParser(argparse.ArgumentParser):
+class _ArgParser(argparse.ArgumentParser):
     """
     A specialised arg parser.
 
@@ -156,9 +313,9 @@ class ArgParser(argparse.ArgumentParser):
         :param name:
             The name of the argument - must be unique.
         :param kwargs:
-            Arguments to pass to the 'PositionalArg' class.
+            Arguments to pass to the '_PositionalArg' class.
         """
-        self._positional_args.append(PositionalArg(name, **kwargs))
+        self._positional_args.append(_PositionalArg(name, **kwargs))
 
     def _parse_positional_args(self, kws: Iterable[str], namespace) -> Iterable[str]:
         """
@@ -178,7 +335,7 @@ class ArgParser(argparse.ArgumentParser):
         return kws
 
     def _parse_single_positional_arg(
-        self, arg: PositionalArg, kws: Iterable[str]
+        self, arg: _PositionalArg, kws: Iterable[str]
     ) -> Tuple[Any, Iterable[str]]:
         """
         Parse a single positional arg. Raise InvalidArgsError if not enough
@@ -246,7 +403,9 @@ class ArgParser(argparse.ArgumentParser):
         return arg_value, kws
 
 
-class BotMsgParser(ArgParser):
+class BotMsgParser(_ArgParser):
+    """Subclass of argparse.ArgumentParser with support for bot message args."""
+
     def add_game_mode_arg(self):
         self.add_positional_arg(
             "game_mode", nargs="?", type=GameMode.from_str, default=GameMode.REGULAR
@@ -276,693 +435,3 @@ class BotMsgParser(ArgParser):
                 raise InvalidArgsError("Drag select should be one of {'on', 'off'}")
 
         self.add_argument("drag-select", type=_arg_type)
-
-
-# ------------------------------------------------------------------------------
-# Message handling
-# ------------------------------------------------------------------------------
-
-
-CommandMapping = Dict[Optional[str], Union[Callable, "CommandMapping"]]
-
-
-class RoomType(enum.Enum):
-    GROUP = "group"
-    DIRECT = "direct"
-    LOCAL = "local"
-
-    def to_cmds(self) -> CommandMapping:
-        if self is RoomType.GROUP:
-            return _GROUP_COMMANDS
-        elif self is RoomType.DIRECT:
-            return _DIRECT_COMMANDS
-        elif self is RoomType.LOCAL:
-            return _LOCAL_COMMANDS
-        else:
-            assert False
-
-
-GENERAL_INFO = """\
-Welcome to the Minegauler bot!
-
-Instructions for downloading Minegauler can be found in the \
-[GitHub repo](https://github.com/LewisGaul/minegauler/blob/main/README.md).
-
-The bot provides the ability to check highscores and matchups for games of \
-Minegauler, and also gives notifications whenever anyone in the group sets a \
-new highscore.
-
-There are a few settings to filter Minegauler games with:
- - mode: One of 'regular' or 'split-cell' (defaults to 'regular').
- - difficulty: One of 'beginner', 'intermediate', 'expert' or 'master'.  
-   By default the combination of beginner, intermediate and expert is used, \
-with a score of 1000 used for any difficulties not completed.
- - drag-select: One of 'on' or 'off'.  
-   By default no filter is applied (the best time of either mode is used).
- - per-cell: One of 1, 2 or 3.  
-   By default no filter is applied (the best time of any mode is used).
- - reach: One of 4, 8 or 24.  
-   By default reach=8 is used (the normal mode).
-
-All highscores are independent of each of the above modes, and all commands \
-accept these filters to view specific times. E.g. 'ranks beginner per-cell 1'.
-
-Commands can be issued in group chat and direct chat. Most of the commands are \
-the same, however some are only available in one of the other (e.g. \
-'set nickname'). Type 'help' or '?' to check the available commands.
-
-To interact with a bot in Webex Teams group chats, the bot must be tagged. To \
-do this, type @ followed by the bot's name. The client should auto-suggest a \
-completion, at which point you'll need to press enter or tab to select the \
-completion and turn it into a tag.
-
-Some useful common commands:  
-'ranks' - display rankings  
-'matchups <name> <name> ...' - display comparison of times between users
-
-Some useful group-chat commands:  
-'challenge <name> ...' - challenge other users to a game
-
-Some useful direct-chat commands:  
-'set nickname' - set your nickname that you use in the Minegauler app
-"""
-
-
-LOCAL_INFO = """\
-Welcome to the Minegauler bot!
-
-Instructions for downloading Minegauler can be found in the \
-[GitHub repo](https://github.com/LewisGaul/minegauler/blob/main/README.md).
-
-The local bot provides the ability to check highscores and matchups for games \
-of Minegauler.
-
-There are a few settings to filter Minegauler games with:
- - mode: One of 'regular' or 'split-cell' (defaults to 'regular').
- - difficulty: One of 'beginner', 'intermediate', 'expert' or 'master'.  
-   By default the combination of beginner, intermediate and expert is used, \
-with a score of 1000 used for any difficulties not completed.
- - drag-select: One of 'on' or 'off'.  
-   By default no filter is applied (the best time of either mode is used).
- - per-cell: One of 1, 2 or 3.  
-   By default no filter is applied (the best time of any mode is used).
-
-All highscores are independent of each of the above modes, and all commands \
-accept these filters to view specific times. E.g. 'ranks beginner per-cell 1'.
-
-Some useful common commands:  
-'ranks' - display rankings  
-'player <name>' - display player info  
-'matchups <name> <name> ...' - display comparison of times between users
-"""
-
-
-def helpstring(text):
-    def decorator(func):
-        func.__helpstring__ = text
-        return func
-
-    return decorator
-
-
-def schema(text):
-    def decorator(func):
-        func.__schema__ = text
-        return func
-
-    return decorator
-
-
-def cmd_help(
-    func: Callable, *, only_schema: bool = False, allow_markdown: bool = False
-) -> str:
-    lines = []
-    if not only_schema:
-        try:
-            lines.append(func.__helpstring__)
-        except AttributeError:
-            logger.warning(
-                "No helpstring found on message handling function %r", func.__name__
-            )
-    try:
-        schema = func.__schema__
-    except AttributeError:
-        logger.warning("No schema found on message handling function %r", func.__name__)
-    else:
-        if allow_markdown:
-            lines.append(f"`{schema}`")
-        else:
-            lines.append(schema)
-
-    if not lines:
-        return "Unexpected error: unable to get help message\n\n"
-
-    return "\n\n".join(lines)
-
-
-@helpstring("Get help for a command")
-@schema("help [<command>]")
-def help_(args, **kwargs):
-    allow_markdown = kwargs.get("allow_markdown", False)
-    room_type = kwargs.get("room_type", RoomType.DIRECT)
-    cmds = room_type.to_cmds()
-
-    linebreak = "\n\n" if allow_markdown else "\n"
-    commands = _flatten_cmds(cmds)
-    if allow_markdown:
-        commands = f"`{commands}`"
-
-    if not args:
-        return commands
-
-    func, _ = _map_to_cmd(args, cmds)
-    if func is None:
-        raise InvalidArgsError(linebreak.join(["Unrecognised command", commands]))
-    return cmd_help(func, allow_markdown=allow_markdown)
-
-
-@helpstring("Get information about the game")
-@schema("info")
-def info(args, **kwargs):
-    # Check no args given.
-    BotMsgParser().parse_args(args)
-    if kwargs["room_type"] is RoomType.LOCAL:
-        return LOCAL_INFO
-    else:
-        return GENERAL_INFO
-
-
-@helpstring("Get player info")
-@schema(
-    "player <name> "
-    "[regular | split-cell] "
-    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
-    "[drag-select {on | off}] "
-    "[per-cell {1 | 2 | 3}] "
-    "[reach {4 | 8 | 24}]"
-)
-def player(args, username: str, allow_markdown=False, **kwargs):
-    parser = BotMsgParser()
-    username_choices = list(utils.USER_NAMES)
-    if username:
-        username_choices.append("me")
-    parser.add_positional_arg("username", choices=username_choices)
-    parser.add_game_mode_arg()
-    parser.add_difficulty_arg()
-    parser.add_per_cell_arg()
-    parser.add_reach_arg()
-    parser.add_drag_select_arg()
-    args = parser.parse_args(args)
-    if args.username == "me":
-        args.username = username
-
-    highscores = utils.get_highscores(
-        name=utils.USER_NAMES[args.username],
-        game_mode=args.game_mode,
-        difficulty=args.difficulty,
-        drag_select=args.drag_select,
-        per_cell=args.per_cell,
-        reach=args.reach,
-    )
-
-    filters_str = formatter.format_filters(
-        game_mode=None,
-        difficulty=None,
-        drag_select=args.drag_select,
-        per_cell=args.per_cell,
-        reach=args.reach,
-        no_difficulty=True,
-    )
-    if filters_str:
-        filters_str = " with " + filters_str
-    if utils.USER_NAMES[args.username] == args.username:
-        username_str = ""
-    else:
-        username_str = f" ({utils.USER_NAMES[args.username]})"
-    lines = [
-        "Player info for {name}{username} on {mode} mode{filters}:".format(
-            name=args.username,
-            username=username_str,
-            mode=args.game_mode.value,
-            filters=filters_str,
-        )
-    ]
-    lines.extend(
-        formatter.format_player_highscores(list(highscores), difficulty=args.difficulty)
-    )
-
-    linebreak = "  \n" if allow_markdown else "\n"
-
-    return linebreak.join(lines)
-
-
-@helpstring("Get rankings")
-@schema(
-    "ranks "
-    "[regular | split-cell] "
-    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
-    "[drag-select {on | off}] "
-    "[per-cell {1 | 2 | 3}] "
-    "[reach {4 | 8 | 24}]"
-)
-def ranks(args, **kwargs) -> str:
-    allow_markdown = kwargs.get("allow_markdown", False)
-
-    parser = BotMsgParser()
-    parser.add_game_mode_arg()
-    parser.add_difficulty_arg()
-    parser.add_per_cell_arg()
-    parser.add_reach_arg()
-    parser.add_drag_select_arg()
-    args = parser.parse_args(args)
-
-    times = utils.get_highscore_times(
-        game_mode=args.game_mode,
-        difficulty=args.difficulty,
-        drag_select=args.drag_select,
-        per_cell=args.per_cell,
-        reach=args.reach,
-    )
-
-    lines = [
-        "Rankings for {}".format(
-            formatter.format_filters(
-                game_mode=args.game_mode,
-                difficulty=args.difficulty,
-                drag_select=args.drag_select,
-                per_cell=args.per_cell,
-                reach=args.reach,
-            )
-        )
-    ]
-    ranks = formatter.format_highscore_times(times)
-    if allow_markdown:
-        ranks = f"```\n{ranks}\n```"
-    lines.append(ranks)
-
-    return "\n".join(lines)
-
-
-@helpstring("Get stats for played games")
-@schema(  # @@@ This is bad because it requires knowledge of sub-commands.
-    "stats [players ...] "
-    "[regular | split-cell] "
-    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
-    "[drag-select {on | off}] "
-    "[per-cell {1 | 2 | 3}] "
-    "[reach {4 | 8 | 24}]"
-)
-def stats(args, **kwargs):
-    parser = BotMsgParser()
-    parser.add_game_mode_arg()
-    parser.add_difficulty_arg()
-    parser.add_per_cell_arg()
-    parser.add_reach_arg()
-    parser.add_drag_select_arg()
-    args = parser.parse_args(args)
-    return "Stats"
-
-
-@helpstring("Get player stats")
-@schema("stats players {all | <name> [<name> ...]}")
-def stats_players(args, username: str, allow_markdown=False, **kwargs):
-    parser = BotMsgParser()
-    username_choices = list(utils.USER_NAMES) + ["all"]
-    if username:
-        username_choices.append("me")
-    parser.add_positional_arg("username", nargs="+", choices=username_choices)
-    args = parser.parse_args(args)
-    if "all" in args.username:
-        if len(args.username) > 1:
-            raise InvalidArgsError("'all' should be specified without usernames")
-        users = utils.USER_NAMES.keys()
-    else:
-        users = {u if u != "me" else username for u in args.username}
-
-    player_info = [utils.get_player_info(u) for u in users]
-    lines = [formatter.format_player_info(player_info)]
-    if allow_markdown:
-        lines = ["```", *lines, "```"]
-
-    return "\n".join(lines)
-
-
-@helpstring("Get matchups for given players")
-@schema(
-    "matchups <name> <name> [<name> ...] "
-    "[regular | split-cell] "
-    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
-    "[drag-select {on | off}] "
-    "[per-cell {1 | 2 | 3}] "
-    "[reach {4 | 8 | 24}]"
-)
-def matchups(
-    args,
-    username: str,
-    allow_markdown: bool = False,
-    room_type=RoomType.DIRECT,
-    **kwargs,
-):
-    parser = BotMsgParser()
-    username_choices = list(utils.USER_NAMES)
-    if username:
-        username_choices.append("me")
-    parser.add_positional_arg("username", nargs="+", choices=username_choices)
-    parser.add_game_mode_arg()
-    parser.add_difficulty_arg()
-    parser.add_per_cell_arg()
-    parser.add_reach_arg()
-    parser.add_drag_select_arg()
-    args = parser.parse_args(args)
-    users = {u if u != "me" else username for u in args.username}
-    if len(users) < 2 or len(users) > 5:
-        raise InvalidArgsError("Require between 2 and 5 username args")
-    names = {utils.USER_NAMES[u] for u in users}
-
-    times = utils.get_highscore_times(
-        game_mode=args.game_mode,
-        difficulty=args.difficulty,
-        drag_select=args.drag_select,
-        per_cell=args.per_cell,
-        reach=args.reach,
-        users=names,
-    )
-    matchups = utils.get_matchups(times)
-
-    if allow_markdown and room_type is RoomType.GROUP:
-        users_str = ", ".join(utils.tag_user(u) for u in users)
-    else:
-        users_str = ", ".join(users)
-    lines = [
-        "Matchups between {users} for {filters}:".format(
-            users=users_str,
-            filters=formatter.format_filters(
-                game_mode=args.game_mode,
-                difficulty=args.difficulty,
-                drag_select=args.drag_select,
-                per_cell=args.per_cell,
-                reach=args.reach,
-            ),
-        )
-    ]
-    lines.extend(formatter.format_matchups(matchups))
-    linebreak = "  \n" if allow_markdown else "\n"
-
-    return linebreak.join(lines)
-
-
-@helpstring("Get best matchups including at least one of specified players")
-@schema(
-    "best-matchups [<name> ...] "
-    "[regular | split-cell] "
-    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
-    "[drag-select {on | off}] "
-    "[per-cell {1 | 2 | 3}] "
-    "[reach {4 | 8 | 24}]"
-)
-def best_matchups(
-    args, username: str, allow_markdown=False, room_type=RoomType.DIRECT, **kwargs
-):
-    parser = BotMsgParser()
-    username_choices = list(utils.USER_NAMES)
-    if username:
-        username_choices.append("me")
-    parser.add_positional_arg("username", nargs="*", choices=username_choices)
-    parser.add_game_mode_arg()
-    parser.add_difficulty_arg()
-    parser.add_per_cell_arg()
-    parser.add_reach_arg()
-    parser.add_drag_select_arg()
-    args = parser.parse_args(args)
-    users = {u if u != "me" else username for u in args.username}
-    names = {utils.USER_NAMES[u] for u in users}
-
-    times = utils.get_highscore_times(
-        game_mode=args.game_mode,
-        difficulty=args.difficulty,
-        drag_select=args.drag_select,
-        per_cell=args.per_cell,
-        reach=args.reach,
-        users=utils.USER_NAMES.values(),
-    )
-    matchups = utils.get_matchups(times, include_users=names)[:10]
-
-    if allow_markdown and room_type is RoomType.GROUP:
-        users_str = ", ".join(utils.tag_user(u) for u in users)
-    else:
-        users_str = ", ".join(users)
-    if users_str:
-        users_str = " including " + users_str
-    lines = [
-        "Best matchups{users} for {filters}:".format(
-            users=users_str,
-            filters=formatter.format_filters(
-                game_mode=args.game_mode,
-                difficulty=args.difficulty,
-                drag_select=args.drag_select,
-                per_cell=args.per_cell,
-                reach=args.reach,
-            ),
-        )
-    ]
-    lines.extend(formatter.format_matchups(matchups))
-    linebreak = "  \n" if allow_markdown else "\n"
-
-    return linebreak.join(lines)
-
-
-@helpstring("Challenge other players to a game")
-@schema(
-    "challenge <name> [<name> ...] "
-    "[regular | split-cell] "
-    "[b[eginner] | i[ntermediate] | e[xpert] | m[aster] | l[udicrous]] "
-    "[drag-select {on | off}] "
-    "[per-cell {1 | 2 | 3}] "
-    "[reach {4 | 8 | 24}]"
-)
-def challenge(args, username: str, **kwargs):
-    parser = BotMsgParser()
-    parser.add_positional_arg(
-        "username",
-        nargs="+",
-        choices=set(utils.USER_NAMES) - {username} - utils.NO_TAG_USERS,
-    )
-    parser.add_positional_arg("game_mode", nargs="?", type=GameMode.from_str)
-    parser.add_difficulty_arg()
-    parser.add_per_cell_arg()
-    parser.add_reach_arg()
-    parser.add_drag_select_arg()
-    args = parser.parse_args(args)
-    names = {u for u in args.username}
-
-    users_str = ", ".join(utils.tag_user(u) for u in names)
-    mode_str = args.game_mode.value + " " if args.game_mode else ""
-    mode_str += args.difficulty.name.lower() + " " if args.difficulty else ""
-    filters_str = formatter.format_filters(
-        game_mode=None,
-        difficulty=None,
-        drag_select=args.drag_select,
-        per_cell=args.per_cell,
-        reach=args.reach,
-        no_difficulty=True,
-    )
-    if filters_str:
-        filters_str = " with " + filters_str
-
-    return "{user} has challenged {opponents} to a {mode}game of Minegauler{filters}".format(
-        user=username, opponents=users_str, mode=mode_str, filters=filters_str
-    )
-
-
-@helpstring("Set your nickname")
-@schema("set nickname <name>")
-def set_nickname(args, username: str, **kwargs):
-    new = " ".join(args)
-    if len(new) > 10:
-        raise InvalidArgsError("Nickname must be no longer than 10 characters")
-    for other in utils.USER_NAMES.values():
-        if new.lower() == other.lower():
-            raise InvalidArgsError(f"Nickname {other!r} already in use")
-    if new.lower() in utils.USER_NAMES.keys() and new != username:
-        raise InvalidArgsError(f"Cannot set nickname to someone else's username!")
-    old = utils.USER_NAMES[username]
-    logger.debug("Changing nickname of %s from %r to %r", username, old, new)
-    utils.set_user_nickname(username, new)
-    return f"Nickname changed from {old!r} to {new!r}"
-
-
-@helpstring("Add a user to the local rankings")
-@schema("user add <name>")
-def add_user(args, **kwargs):
-    parser = BotMsgParser()
-    parser.add_positional_arg("name")
-    args = parser.parse_args(args)
-    for user in utils.USER_NAMES:
-        if args.name.lower() == user.lower():
-            raise InvalidMsgError(f"User {user!r} already added")
-    logger.debug("Adding user %r", args.name)
-    utils.set_user_nickname(args.name, args.name)
-    return f"Added user {args.name!r}"
-
-
-@helpstring("Remove a user from the local rankings")
-@schema("user remove <name>")
-def remove_user(args, **kwargs):
-    parser = BotMsgParser()
-    parser.add_positional_arg("name")
-    args = parser.parse_args(args)
-    try:
-        utils.USER_NAMES.pop(args.name)
-    except KeyError as e:
-        raise InvalidMsgError(f"User {args.name!r} not found") from e
-    else:
-        utils.save_users_file()
-    logger.debug("Removed user %r", args.name)
-    return f"Removed user {args.name!r}"
-
-
-@helpstring("List users on the local rankings")
-@schema("user list")
-def list_users(args, **kwargs):
-    parser = BotMsgParser()
-    parser.parse_args(args)
-    msg = "The following users are on the local rankings:"
-    for user in sorted(utils.USER_NAMES, key=lambda x: x.lower()):
-        msg += "\n - " + user
-    return msg
-
-
-_COMMON_COMMANDS = {
-    "help": help_,
-    "player": player,
-    "ranks": ranks,
-    "stats": {
-        # None: stats,
-        "players": stats_players,
-    },
-    "matchups": matchups,
-    "best-matchups": best_matchups,
-}
-
-_GROUP_COMMANDS = {
-    **_COMMON_COMMANDS,
-    "challenge": challenge,
-}
-
-_DIRECT_COMMANDS = {
-    **_COMMON_COMMANDS,
-    "info": info,
-    "set": {
-        "nickname": set_nickname,
-    },
-}
-
-_LOCAL_COMMANDS = {
-    **_COMMON_COMMANDS,
-    "info": info,
-    "user": {
-        "add": add_user,
-        "remove": remove_user,
-        "list": list_users,
-    },
-}
-
-
-def _map_to_cmd(msg: Iterable[str], cmds: CommandMapping) -> Tuple[Callable, List[str]]:
-    func = None
-    words = list(msg)
-
-    while words:
-        next_word = words[0]
-        if next_word in cmds:
-            words.pop(0)
-            if callable(cmds[next_word]):
-                func = cmds[next_word]
-                break
-            else:
-                cmds = cmds[next_word]
-        else:
-            break
-        if None in cmds:
-            func = cmds[None]
-
-    return func, words
-
-
-def _flatten_cmds(cmds: CommandMapping, root: bool = True) -> str:
-    to_join = []
-    for k, v in cmds.items():
-        item = k
-        if isinstance(v, dict):
-            item += " " + _flatten_cmds(v, root=False)
-        if item:
-            to_join.append(item)
-    ret = " | ".join(to_join)
-    if None in cmds:
-        ret = f"[{ret}]"
-    elif len(cmds) > 1 and not root:
-        ret = f"{{{ret}}}"
-    return ret
-
-
-def parse_msg(
-    msg: Union[str, List[str]],
-    room_type: RoomType,
-    *,
-    allow_markdown: bool = False,
-    **kwargs,
-) -> str:
-    """
-    Parse a message and perform the corresponding action.
-
-    :param msg:
-        The message to parse.
-    :param room_type:
-        The room type the message was received in.
-    :param allow_markdown:
-        Whether to allow markdown in the response.
-    :param kwargs:
-        Other arguments to pass on to sub-command functions.
-    :return:
-        Response text.
-    :raise InvalidArgsError:
-        Unrecognised command. The text of the error is a suitable error/help
-        message.
-    """
-    orig_msg = msg
-    if isinstance(msg, str):
-        msg = msg.strip().split()
-    else:
-        msg = msg.copy()
-    if not msg:
-        msg = ["help"]
-    if msg[-1] in ["?", "help"] and not msg[0] == "help":
-        # Change "?" at the end to be treated as help, except for the case where
-        # this is a double help intended for a subcommand, e.g.
-        # 'help matchups ?'.
-        msg.pop(-1)
-        msg.insert(0, "help")
-
-    cmds = room_type.to_cmds()
-    func = None
-    try:
-        func, args = _map_to_cmd(msg, cmds)
-        if func is None:
-            raise InvalidArgsError("Base command not found")
-        return func(args, allow_markdown=allow_markdown, room_type=room_type, **kwargs)
-    except InvalidMsgError as e:
-        logger.debug("Invalid message: %r", orig_msg)
-        resp_msg = f"Invalid command: {str(e)}"
-        raise InvalidMsgError(resp_msg) from e
-    except InvalidArgsError as e:
-        logger.debug("Invalid message: %r", orig_msg)
-        if func is None:
-            raise InvalidArgsError(
-                "Unrecognised command - try 'help' or 'info' in direct chat"
-            ) from e
-        else:
-            linebreak = "\n\n" if allow_markdown else "\n"
-            resp_msg = cmd_help(func, only_schema=True, allow_markdown=allow_markdown)
-            resp_msg = linebreak.join([f"Unrecognised command: {str(e)}", resp_msg])
-
-        raise InvalidArgsError(resp_msg) from e
