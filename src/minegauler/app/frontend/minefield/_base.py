@@ -14,9 +14,9 @@ import logging
 import os.path
 from typing import Dict, Mapping, Optional
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QImage, QPainter, QPixmap
-from PyQt5.QtWidgets import QGraphicsScene
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QImage, QPainter, QPixmap
+from PyQt6.QtWidgets import QGraphicsScene
 
 from ... import api, paths
 from ...core.board import BoardBase
@@ -137,11 +137,11 @@ def _make_pixmap(
     """
     if fg_path:
         image = QImage(bg_path).scaled(
-            size, size, transformMode=Qt.SmoothTransformation
+            size, size, transformMode=Qt.TransformationMode.SmoothTransformation
         )
         fg_size = int(propn * size)
         overlay = QPixmap(fg_path).scaled(
-            fg_size, fg_size, transformMode=Qt.SmoothTransformation
+            fg_size, fg_size, transformMode=Qt.TransformationMode.SmoothTransformation
         )
         painter = QPainter(image)
         margin = int(size * (1 - propn) / 2)
@@ -150,7 +150,7 @@ def _make_pixmap(
         image = QPixmap.fromImage(image)
     else:
         image = QPixmap(bg_path).scaled(
-            size, size, transformMode=Qt.SmoothTransformation
+            size, size, transformMode=Qt.TransformationMode.SmoothTransformation
         )
     return image
 

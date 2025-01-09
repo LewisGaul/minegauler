@@ -23,7 +23,7 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = [
     "attrs",
-    "PyQt5",
+    "PyQt6",
     "requests",
     "pytz",
     "tabulate",
@@ -167,7 +167,7 @@ minversion = "7.0"
 pythonpath = ["src/"]
 testpaths = ["tests/"]
 xfail_strict = true
-qt_api = "pyqt5"
+qt_api = "pyqt6"
 filterwarnings = [
     "ignore:Creating a LegacyVersion:DeprecationWarning",
 ]

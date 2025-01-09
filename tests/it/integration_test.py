@@ -11,8 +11,8 @@ from typing import Optional
 from unittest import mock
 
 import pytest
-from PyQt5.QtCore import QEvent, QPoint, Qt
-from PyQt5.QtGui import QMouseEvent
+from PyQt6.QtCore import QEvent, QPoint, Qt
+from PyQt6.QtGui import QMouseEvent
 
 import minegauler.app.paths
 from minegauler.app import core, frontend  # TODO: Fix circular dependency
@@ -56,7 +56,7 @@ class Test:
     # Stored for convenience in helper functions.
     _qtbot = None
     _mf_widget = None
-    _mouse_buttons_down = Qt.NoButton
+    _mouse_buttons_down = Qt.MouseButton.NoButton
     _mouse_down_pos = None
 
     @pytest.fixture(scope="class", autouse=True)
@@ -68,13 +68,13 @@ class Test:
     @pytest.fixture(scope="function", autouse=True)
     def setup(self, qtbot):
         self._qtbot = qtbot
-        self._mouse_buttons_down = Qt.NoButton
+        self._mouse_buttons_down = Qt.MouseButton.NoButton
         self._mouse_down_pos = None
 
         yield
 
         self._mouse_down_pos = None
-        self._mouse_buttons_down = Qt.NoButton
+        self._mouse_buttons_down = Qt.MouseButton.NoButton
         self._qtbot = None
         self.gui.factory_reset()
 
@@ -133,13 +133,13 @@ class Test:
         **kwargs
             Passed on to self._mouse_press().
         """
-        self._mouse_press(Qt.LeftButton, coord, **kwargs)
+        self._mouse_press(Qt.MouseButton.LeftButton, coord, **kwargs)
 
     def left_release(self):
         """
         Simulate a left mouse button release.
         """
-        self._mouse_release(Qt.LeftButton)
+        self._mouse_release(Qt.MouseButton.LeftButton)
 
     def right_press(self, coord=None, **kwargs):
         """
@@ -151,13 +151,13 @@ class Test:
         **kwargs
             Passed on to self._mouse_press().
         """
-        self._mouse_press(Qt.RightButton, coord, **kwargs)
+        self._mouse_press(Qt.MouseButton.RightButton, coord, **kwargs)
 
     def right_release(self):
         """
         Simulate a right mouse button release.
         """
-        self._mouse_release(Qt.RightButton)
+        self._mouse_release(Qt.MouseButton.RightButton)
 
     def mouse_move(self, coord, **kwargs):
         """
@@ -174,7 +174,7 @@ class Test:
 
         pos = self.point_from_coord(coord, **kwargs)
         event = QMouseEvent(
-            QEvent.MouseMove, pos, Qt.NoButton, self._mouse_buttons_down, Qt.NoModifier
+            QEvent.Type.MouseMove, pos, Qt.MouseButton.NoButton, self._mouse_buttons_down, Qt.KeyboardModifier.NoModifier
         )
         self._mf_widget.mouseMoveEvent(event)
         self._mouse_down_pos = pos
@@ -215,5 +215,5 @@ class Test:
             self._mf_widget.viewport(), button, pos=self._mouse_down_pos
         )
         self._mouse_buttons_down &= ~button
-        if self._mouse_buttons_down == Qt.NoButton:
+        if self._mouse_buttons_down == Qt.MouseButton.NoButton:
             self._mouse_down_pos = None

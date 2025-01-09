@@ -9,8 +9,8 @@ import functools
 from unittest.mock import Mock
 
 import pytest
-from PyQt5.QtCore import QEvent, QPoint, Qt
-from PyQt5.QtGui import QMouseEvent
+from PyQt6.QtCore import QEvent, QPoint, QPointF, Qt
+from PyQt6.QtGui import QMouseEvent
 from pytestqt.qtbot import QtBot
 
 from minegauler.app.core import api
@@ -43,7 +43,7 @@ class TestMinefieldWidget:
     # Stored for convenience in helper functions.
     _qtbot = None
     _mf_widget = None
-    _mouse_buttons_down = Qt.NoButton
+    _mouse_buttons_down = Qt.MouseButton.NoButton
     _mouse_down_pos = None
 
     @pytest.fixture
@@ -56,14 +56,14 @@ class TestMinefieldWidget:
 
         self._qtbot = qtbot
         self._mf_widget = widget
-        self._mouse_buttons_down = Qt.NoButton
+        self._mouse_buttons_down = Qt.MouseButton.NoButton
         self._mouse_down_pos = None
 
         yield widget
 
         self._qtbot = None
         self._mf_widget = None
-        self._mouse_buttons_down = Qt.NoButton
+        self._mouse_buttons_down = Qt.MouseButton.NoButton
         self._mouse_down_pos = None
 
     # --------------------------------------------------------------------------
@@ -177,7 +177,7 @@ class TestMinefieldWidget:
         mf_widget.resize(mf_widget.maximumSize())
         # Now try clicking around the edge - should correspond to clicking cells.
         click = functools.partial(
-            qtbot.mousePress, self._mf_widget.viewport(), Qt.LeftButton
+            qtbot.mousePress, self._mf_widget.viewport(), Qt.MouseButton.LeftButton
         )
         click(pos=QPoint(0, 16))
         self.assert_cell_sank((0, 1))
@@ -221,13 +221,13 @@ class TestMinefieldWidget:
         **kwargs
             Passed on to self._mouse_press().
         """
-        self._mouse_press(Qt.LeftButton, coord, **kwargs)
+        self._mouse_press(Qt.MouseButton.LeftButton, coord, **kwargs)
 
     def left_release(self):
         """
         Simulate a left mouse button release.
         """
-        self._mouse_release(Qt.LeftButton)
+        self._mouse_release(Qt.MouseButton.LeftButton)
 
     def right_press(self, coord=None, **kwargs):
         """
@@ -239,13 +239,13 @@ class TestMinefieldWidget:
         **kwargs
             Passed on to self._mouse_press().
         """
-        self._mouse_press(Qt.RightButton, coord, **kwargs)
+        self._mouse_press(Qt.MouseButton.RightButton, coord, **kwargs)
 
     def right_release(self):
         """
         Simulate a right mouse button release.
         """
-        self._mouse_release(Qt.RightButton)
+        self._mouse_release(Qt.MouseButton.RightButton)
 
     def mouse_move(self, coord, **kwargs):
         """
@@ -262,7 +262,11 @@ class TestMinefieldWidget:
 
         pos = self.point_from_coord(coord, **kwargs)
         event = QMouseEvent(
-            QEvent.MouseMove, pos, Qt.NoButton, self._mouse_buttons_down, Qt.NoModifier
+            QEvent.Type.MouseMove,
+            QPointF(pos.x(), pos.y()),
+            Qt.MouseButton.NoButton,
+            self._mouse_buttons_down,
+            Qt.KeyboardModifier.NoModifier,
         )
         self._mf_widget.mouseMoveEvent(event)
         self._mouse_down_pos = pos
@@ -324,5 +328,5 @@ class TestMinefieldWidget:
             self._mf_widget.viewport(), button, pos=self._mouse_down_pos
         )
         self._mouse_buttons_down &= ~button
-        if self._mouse_buttons_down == Qt.NoButton:
+        if self._mouse_buttons_down == Qt.MouseButton.NoButton:
             self._mouse_down_pos = None

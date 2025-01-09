@@ -19,12 +19,10 @@ import textwrap
 import traceback
 from typing import Callable, Dict, Mapping, Optional
 
-from PyQt5.QtCore import QSize, Qt, pyqtSignal
-from PyQt5.QtGui import QFocusEvent, QFont, QIcon, QKeyEvent
-from PyQt5.QtWidgets import (
+from PyQt6.QtCore import QSize, Qt, pyqtSignal
+from PyQt6.QtGui import QAction, QActionGroup, QFocusEvent, QFont, QIcon, QKeyEvent
+from PyQt6.QtWidgets import (
     QWIDGETSIZE_MAX,
-    QAction,
-    QActionGroup,
     QApplication,
     QDialog,
     QFileDialog,
@@ -79,7 +77,7 @@ def _msg_popup(
     popup.setWindowTitle(title)
     if msg:
         popup.setText(msg)
-    popup.exec_()
+    popup.exec()
 
 
 class _BaseMainWindow(QMainWindow):
@@ -109,8 +107,10 @@ class _BaseMainWindow(QMainWindow):
         self.setWindowTitle(title)
         self.setWindowIcon(self._icon)
         # Disable maximise button
-        self.setWindowFlags(self.windowFlags() | Qt.CustomizeWindowHint)
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowMaximizeButtonHint)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.CustomizeWindowHint)
+        self.setWindowFlags(
+            self.windowFlags() & ~Qt.WindowType.WindowMaximizeButtonHint
+        )
         self._setup_ui()
         # Keep track of all non-modal subwindows that are open.
         self._open_subwindows: Dict[str, QWidget] = {}
@@ -124,24 +124,28 @@ class _BaseMainWindow(QMainWindow):
         """
         # QMainWindow objects have a central widget to be set.
         central_widget = QWidget(self)
-        central_widget.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        central_widget.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored
+        )
         self.setCentralWidget(central_widget)
         vlayout = QVBoxLayout(central_widget)
         vlayout.setContentsMargins(0, 0, 0, 0)
         vlayout.setSpacing(0)
         # Top panel widget.
         self._panel_frame = QFrame(central_widget)
-        self._panel_frame.setFrameShadow(QFrame.Sunken)
-        self._panel_frame.setFrameShape(QFrame.Panel)
+        self._panel_frame.setFrameShadow(QFrame.Shadow.Sunken)
+        self._panel_frame.setFrameShape(QFrame.Shape.Panel)
         self._panel_frame.setLineWidth(2)
-        self._panel_frame.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
+        self._panel_frame.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed
+        )
         vlayout.addWidget(self._panel_frame)
         # Main body widget config - use horizontal layout for centre alignment.
         hstretch = QHBoxLayout()
         hstretch.addStretch()  # left-padding for centering
         self._body_frame = QFrame(central_widget)
-        self._body_frame.setFrameShadow(QFrame.Raised)
-        self._body_frame.setFrameShape(QFrame.Box)
+        self._body_frame.setFrameShadow(QFrame.Shadow.Raised)
+        self._body_frame.setFrameShape(QFrame.Shape.Box)
         self._body_frame.setLineWidth(self.BODY_FRAME_WIDTH // 2)
         hstretch.addWidget(self._body_frame)
         hstretch.addStretch()  # right-padding for centering
@@ -516,7 +520,7 @@ class MinegaulerGUI(
         # self._game_menu.addAction("Factory reset", self.factory_reset)
 
         # Exit (Alt+F4)
-        self._game_menu.addAction("Exit", self.close, shortcut="Alt+F4")
+        self._game_menu.addAction("Exit", "Alt+F4", self.close)
 
         # ----------
         # Options menu
@@ -719,7 +723,7 @@ class MinegaulerGUI(
             # TODO: The menubar option should be disabled.
             _msg_popup(
                 self,
-                QMessageBox.Warning,
+                QMessageBox.Icon.Warning,
                 "Save failed",
                 "Only able to save boards for finished games, or those created "
                 "in 'create' mode.",
@@ -814,9 +818,9 @@ class MinegaulerGUI(
             directory=str(pathlib.Path.home()),
             filter="highscores.db",
         )
-        dialog.setFileMode(QFileDialog.Directory)
+        dialog.setFileMode(QFileDialog.FileMode.Directory)
         dialog.accepted.connect(accept_cb)
-        dialog.exec_()
+        dialog.exec()
 
         if not accepted:
             return  # cancelled
@@ -828,7 +832,7 @@ class MinegaulerGUI(
         if not path.exists():
             _msg_popup(
                 self,
-                QMessageBox.Critical,
+                QMessageBox.Icon.Critical,
                 "Not found",
                 "Unable to access selected folder.",
             )
@@ -843,7 +847,7 @@ class MinegaulerGUI(
         else:
             _msg_popup(
                 self,
-                QMessageBox.Warning,
+                QMessageBox.Icon.Warning,
                 "Not found",
                 "No highscores database found when searching along the path "
                 "'.../minegauler/data/highscores.db'. Contact "
@@ -858,7 +862,7 @@ class MinegaulerGUI(
             except highscores.HighscoreReadError as e:
                 _msg_popup(
                     self,
-                    QMessageBox.Warning,
+                    QMessageBox.Icon.Warning,
                     "Highscores retrieve failed",
                     f"Unable to retrieve highscores, error: {e}\n",
                 )
@@ -866,14 +870,14 @@ class MinegaulerGUI(
             else:
                 _msg_popup(
                     self,
-                    QMessageBox.Information,
+                    QMessageBox.Icon.Information,
                     "Highscores retrieved",
                     f"Number of highscores added: {added}",
                 )
         except Exception as e:
             _msg_popup(
                 self,
-                QMessageBox.Critical,
+                QMessageBox.Icon.Critical,
                 "Error",
                 str(e) + " Contact minegauler@gmail.com if this error is unexpected.",
             )
@@ -899,7 +903,7 @@ class MinegaulerGUI(
         except Exception as e:
             logger.exception("Error reading highscore file")
             _msg_popup(
-                self, QMessageBox.Warning, "Error loading highscore file", str(e)
+                self, QMessageBox.Icon.Warning, "Error loading highscore file", str(e)
             )
         else:
             win.show()
@@ -928,7 +932,7 @@ class MinegaulerGUI(
         if self._state.difficulty is Difficulty.CUSTOM:
             _msg_popup(
                 self,
-                QMessageBox.Warning,
+                QMessageBox.Icon.Warning,
                 "Highscores unavailable",
                 "No highscores available for the active settings.\n"
                 "Highscores are only stored for the standard board difficulties.",
@@ -941,9 +945,11 @@ class MinegaulerGUI(
                 game_mode=self._state.game_mode,
                 difficulty=self._state.difficulty,
                 per_cell=self._state.per_cell,
-                reach=self._state.reach
-                if self._state.game_mode is GameMode.REGULAR
-                else ReachSetting.NORMAL,
+                reach=(
+                    self._state.reach
+                    if self._state.game_mode is GameMode.REGULAR
+                    else ReachSetting.NORMAL
+                ),
                 drag_select=self._state.drag_select,
             )
         if sort_by:
@@ -1173,7 +1179,7 @@ class _AdvancedOptionsModal(QDialog):
                 win.adjustSize()
 
         win.hide()
-        win.setWindowFlag(Qt.WindowMaximizeButtonHint)
+        win.setWindowFlag(Qt.WindowType.WindowMaximizeButtonHint)
         win.setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX)
         win._mf_widget.size_changed.disconnect(win._update_size)
         win._update_size = update_size
@@ -1188,7 +1194,7 @@ class _SliderSpinner(QWidget):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.slider = QSlider(Qt.Horizontal)
+        self.slider = QSlider(Qt.Orientation.Horizontal)
         self.numbox = QSpinBox()
         self.numbox.setRange(self.slider.minimum(), self.slider.maximum())
         self.numbox.setFixedWidth(50)
@@ -1223,14 +1229,14 @@ class _NameEntryBar(QLineEdit):
         super().__init__(parent)
         self.setText(text)
         self.setPlaceholderText("Enter name here")
-        self.setAlignment(Qt.AlignCenter)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         font = QFont("Helvetica")
         font.setBold(True)
         self.setFont(font)
 
     def keyPressEvent(self, event: QKeyEvent):
         super().keyPressEvent(event)
-        if event.key() in [Qt.Key_Return, Qt.Key_Enter]:
+        if event.key() in [Qt.Key.Key_Return, Qt.Key.Key_Enter]:
             self.clearFocus()
 
     def focusOutEvent(self, event: QFocusEvent):
@@ -1245,7 +1251,7 @@ class _TextPopup(QWidget):
 
     def __init__(self, parent: Optional[QWidget], title: str, file: PathLike):
         super().__init__(parent)
-        self.setWindowFlag(Qt.Window)
+        self.setWindowFlag(Qt.WindowType.Window)
         self.setWindowTitle(title)
         self.setMinimumSize(200, 100)
 
@@ -1259,10 +1265,10 @@ class _TextPopup(QWidget):
     def _setup_ui(self) -> None:
         """Set up the UI layout."""
         lyt = QVBoxLayout(self)
-        # lyt.setAlignment(Qt.AlignCenter)
+        # lyt.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self._text_widget.setLineWidth(1)
-        self._text_widget.setFrameShape(QFrame.Panel)
+        self._text_widget.setFrameShape(QFrame.Shape.Panel)
         self._text_widget.setMargin(10)
         self._text_widget.setStyleSheet(
             """
