@@ -247,10 +247,7 @@ class MinefieldWidget(QGraphicsView):
             if buttons:
                 logger.debug("Mouse button release on cell %s after both down", coord)
                 self.first_of_both_buttons_release(coord)
-            if (
-                not self._state.drag_select
-                or buttons == Qt.MouseButton.RightButton
-            ):
+            if not self._state.drag_select or buttons == Qt.MouseButton.RightButton:
                 # Only right button down - no risk.
                 self.no_risk_signal.emit()
         ## Left release

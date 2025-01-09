@@ -31,9 +31,9 @@ Download links available here:
 
 The Python package is also available on PyPI: https://pypi.org/project/minegauler/.
 
- 1. Python 3.9+ required (check with `python3 --version`)
- 2. Install with `python3 -m pip install minegauler`
- 3. Run with `python3 -m minegauler`
+1. Python 3.9+ required (check with `python3 --version`)
+2. Install with `pip install minegauler`
+3. Run with `minegauler` entrypoint script
 
 See note on system dependencies below, or [get in touch](#Contact) if you have any issues.
 
@@ -42,22 +42,24 @@ See note on system dependencies below, or [get in touch](#Contact) if you have a
 
 You will need Python 3.9+ to run the code (check with `python3 --version`).
 
- 1. Clone the repo: `git clone https://github.com/LewisGaul/minegauler`
- 2. Change directory: `cd minegauler`
- 3. Consider setting up a [virtual environment](https://docs.python.org/3/tutorial/venv.html)
- 4. Install requirements with `python3 -m pip install -r requirements.txt`
- 5. Run with `python3 -m minegauler`
+1. Clone the repo: `git clone https://github.com/LewisGaul/minegauler`
+2. Change directory: `cd minegauler`
+3. Consider setting up a [virtual environment](https://docs.python.org/3/tutorial/venv.html)
+4. Install requirements with `uv sync --no-dev` (see <https://docs.astral.sh/uv/getting-started/features/#projects>)
+5. Run with `minegauler` entrypoint script
 
 
 ### System dependencies
 
 #### WSL
 
-If running in WSL (Windows Subsystem for Linux) you will need to set up an X-server for running graphical apps. This isn't too difficult to do, see <https://wiki.ubuntu.com/WSL#Running_Graphical_Applications> or search online for further advice - I would recommend downloading and using Xming.
+If running in WSL (Windows Subsystem for Linux) you will need to set up an X-server for running graphical apps.
+This isn't too difficult to do, see <https://wiki.ubuntu.com/WSL#Running_Graphical_Applications> or search online for further advice - I would recommend downloading and using Xming.
 
 #### Linux
 
-If running with `python -m minegauler` fails with `Aborted (core dumped)` on Linux, you may need a package that provides graphical support. For me this was fixed by running `sudo apt install libxkbcommon-x11-0` on Ubuntu in WSL1.
+If running fails with `Aborted (core dumped)` on Linux, you may need a package that provides graphical support.
+For me this was fixed by running `sudo apt install libxkbcommon-x11-0` on Ubuntu, but the exact library may vary (try an internet search).
 
 
 ## Features

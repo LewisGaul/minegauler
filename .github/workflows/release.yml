@@ -25,8 +25,9 @@ jobs:
 
       - name: Install Python requirements
         run: |
-          pip install wheel
-          pip install pyinstaller .[bot]
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
 
       - name: Create PyInstaller package
         run: python3 -m scripts.create_release -v -o artefacts/
