@@ -10,8 +10,8 @@ __all__ = ("MinegaulerGUI", "init_app", "run_app", "state")
 import signal
 import sys
 
-from PyQt5.QtCore import QTimer, pyqtRemoveInputHook
-from PyQt5.QtWidgets import QApplication, QWidget
+from PyQt6.QtCore import QTimer, pyqtRemoveInputHook
+from PyQt6.QtWidgets import QApplication, QWidget
 
 from . import state
 from .main_window import MinegaulerGUI
@@ -53,4 +53,4 @@ def run_app(gui: QWidget) -> int:
     _timer.timeout.connect(lambda: None)
     _timer.start(100)
 
-    return _app.exec_()
+    return _app.exec()

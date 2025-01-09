@@ -9,9 +9,9 @@ __all__ = ("MinefieldWidget",)
 import logging
 from typing import Dict, List, Mapping, Optional
 
-from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QMouseEvent, QPixmap
-from PyQt5.QtWidgets import (
+from PyQt6.QtCore import QTimer
+from PyQt6.QtGui import QMouseEvent, QPixmap
+from PyQt6.QtWidgets import (
     QDialog,
     QFrame,
     QGraphicsScene,
@@ -73,10 +73,10 @@ class MinefieldWidget(QDialog):
     def _setup_ui(self):
         base_layout = QVBoxLayout(self)
         frame = QFrame(self)
-        frame.setFrameShadow(QFrame.Raised)
-        frame.setFrameShape(QFrame.Box)
+        frame.setFrameShadow(QFrame.Shadow.Raised)
+        frame.setFrameShape(QFrame.Shape.Box)
         frame.setLineWidth(5)
-        frame.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        frame.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         base_layout.addWidget(frame)
         sub_layout = QVBoxLayout(frame)
         sub_layout.setContentsMargins(0, 0, 0, 0)

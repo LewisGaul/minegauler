@@ -14,9 +14,9 @@ __all__ = ("PanelWidget",)
 
 from typing import Optional, Union
 
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal
-from PyQt5.QtGui import QColor, QFont, QPalette, QPixmap
-from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QWidget
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
+from PyQt6.QtGui import QColor, QFont, QPalette, QPixmap
+from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QWidget
 
 from .. import paths
 from ..shared.types import FaceState, GameState
@@ -54,15 +54,15 @@ class PanelWidget(QWidget):
         """
         layout = QHBoxLayout(self)
         layout.setContentsMargins(6, 2, 6, 2)
-        layout.setAlignment(Qt.AlignCenter)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         # Mine counter widget.
         layout.addWidget(self._mines_counter)
         layout.addStretch()
         # Face button.
         self._face_button = QLabel(self)
         self._face_button.setFixedSize(32, 32)
-        self._face_button.setFrameShape(QFrame.Panel)
-        self._face_button.setFrameShadow(QFrame.Raised)
+        self._face_button.setFrameShape(QFrame.Shape.Panel)
+        self._face_button.setFrameShadow(QFrame.Shadow.Raised)
         self._face_button.setLineWidth(3)
         layout.addWidget(self._face_button)
         self.set_face(FaceState.READY)
@@ -76,13 +76,13 @@ class PanelWidget(QWidget):
     def mousePressEvent(self, event):
         """Handle mouse press event."""
         super().mousePressEvent(event)
-        if event.button() == Qt.LeftButton:
-            self._face_button.setFrameShadow(QFrame.Sunken)
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._face_button.setFrameShadow(QFrame.Shadow.Sunken)
 
     def mouseReleaseEvent(self, event):
         """Handle mouse release event."""
-        if event.button() == Qt.LeftButton:
-            self._face_button.setFrameShadow(QFrame.Raised)
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._face_button.setFrameShadow(QFrame.Shadow.Raised)
             if self.rect().contains(event.pos()):
                 self.clicked.emit()
 
@@ -110,7 +110,9 @@ class PanelWidget(QWidget):
         fname = f"face{life}{state}.png"
         pixmap = QPixmap(str(paths.IMG_DIR / "faces" / fname))
         self._face_button.setPixmap(
-            pixmap.scaled(26, 26, transformMode=Qt.SmoothTransformation)
+            pixmap.scaled(
+                26, 26, transformMode=Qt.TransformationMode.SmoothTransformation
+            )
         )
 
     def at_risk(self) -> None:
@@ -151,15 +153,15 @@ class _CounterWidget(QLabel):
 
     def __init__(self, parent: QWidget, count: int = 0):
         super().__init__(parent)
-        self.setFrameShadow(QFrame.Sunken)
-        self.setFrameShape(QFrame.Panel)
+        self.setFrameShadow(QFrame.Shadow.Sunken)
+        self.setFrameShape(QFrame.Shape.Panel)
         self.setLineWidth(2)
         self.setFixedSize(39, 26)
         self.setAutoFillBackground(True)
-        self.setAlignment(Qt.AlignCenter)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._palette = QPalette()
-        self._palette.setColor(QPalette.Window, QColor("black"))
-        self._palette.setColor(QPalette.WindowText, QColor("red"))
+        self._palette.setColor(QPalette.ColorRole.Window, QColor("black"))
+        self._palette.setColor(QPalette.ColorRole.WindowText, QColor("red"))
         self.setPalette(self._palette)
         self._font = QFont()
         self._font.setFamily("Helvetica")
@@ -181,11 +183,11 @@ class _CounterWidget(QLabel):
     def _invert(self, normal: bool = True) -> None:
         """Invert the colours."""
         if normal:
-            self._palette.setColor(QPalette.Window, QColor("black"))
-            self._palette.setColor(QPalette.WindowText, QColor("red"))
+            self._palette.setColor(QPalette.ColorRole.Window, QColor("black"))
+            self._palette.setColor(QPalette.ColorRole.WindowText, QColor("red"))
         else:
-            self._palette.setColor(QPalette.Window, QColor("red"))
-            self._palette.setColor(QPalette.WindowText, QColor("black"))
+            self._palette.setColor(QPalette.ColorRole.Window, QColor("red"))
+            self._palette.setColor(QPalette.ColorRole.WindowText, QColor("black"))
         self.setPalette(self._palette)
 
 

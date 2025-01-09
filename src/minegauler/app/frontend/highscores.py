@@ -16,7 +16,7 @@ import logging
 import time
 from typing import Dict, List, Optional
 
-from PyQt5.QtCore import (
+from PyQt6.QtCore import (
     QAbstractTableModel,
     QModelIndex,
     QPoint,
@@ -27,12 +27,10 @@ from PyQt5.QtCore import (
     pyqtSignal,
     pyqtSlot,
 )
-from PyQt5.QtGui import QCursor, QFont, QHideEvent
-from PyQt5.QtWidgets import (
+from PyQt6.QtGui import QAction, QActionGroup, QCursor, QFont, QHideEvent
+from PyQt6.QtWidgets import (
     QAbstractItemView,
     QAbstractScrollArea,
-    QAction,
-    QActionGroup,
     QDialog,
     QHBoxLayout,
     QLineEdit,
@@ -74,7 +72,7 @@ class HighscoresWindow(QDialog):
         # settings_frame = QFrame(self)
         # lyt.addWidget(settings_frame) #[currently not implemented]
         # settings_frame.setLineWidth(2)
-        # settings_frame.setFrameShape(QFrame.StyledPanel)
+        # settings_frame.setFrameShape(QFrame.Shape.StyledPanel)
         # Make highscores table.
         lyt.addWidget(self._table)
         # Make settings/filter panel.
@@ -84,7 +82,7 @@ class HighscoresWindow(QDialog):
     def keyPressEvent(self, event):
         """Override the QWidget method for receiving key presses."""
         # Make enter/return/escape close the window.
-        if event.key() in [Qt.Key_Return, Qt.Key_Enter, Qt.Key_Escape]:
+        if event.key() in [Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Escape]:
             self.close()
         else:
             super().keyPressEvent(event)
@@ -122,7 +120,7 @@ class HighscoresModel(QAbstractTableModel):
     # -------------------------------------------------------------------------
     # Implement abstract methods
     # -------------------------------------------------------------------------
-    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+    def flags(self, index: QModelIndex) -> Qt.ItemFlag:
         return super().flags(index)
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
@@ -141,25 +139,25 @@ class HighscoresModel(QAbstractTableModel):
         bold_font = QFont("Sans-serif", 9)
         bold_font.setBold(True)
         # Horizontal header
-        if orientation == Qt.Horizontal:
+        if orientation == Qt.Orientation.Horizontal:
             header = self._HEADERS[section]
-            if role == Qt.DisplayRole:
+            if role == Qt.ItemDataRole.DisplayRole:
                 return QVariant(header.capitalize())
-            elif role == Qt.FontRole:
+            elif role == Qt.ItemDataRole.FontRole:
                 if (
                     self._filters.get(header)
                     or self._state.sort_by == self._HEADERS[section]
                 ):
                     return bold_font
-            elif role == Qt.SizeHintRole:
+            elif role == Qt.ItemDataRole.SizeHintRole:
                 # Set size hint for 'Name' column width (minimum width).
                 if header == "name":
                     return QSize(200, 0)
         # Vertical indexing
-        elif orientation == Qt.Vertical:
-            if role == Qt.DisplayRole:
+        elif orientation == Qt.Orientation.Vertical:
+            if role == Qt.ItemDataRole.DisplayRole:
                 return QVariant(str(section + 1))
-            elif role == Qt.FontRole:
+            elif role == Qt.ItemDataRole.FontRole:
                 if section == self._get_active_row():
                     return bold_font
         return QVariant()
@@ -168,18 +166,22 @@ class HighscoresModel(QAbstractTableModel):
         header = self._HEADERS[index.column()]
         if not index.isValid():
             return QVariant()
-        elif role == Qt.DisplayRole:
+        elif role == Qt.ItemDataRole.DisplayRole:
             return QVariant(self._format_data(index.row(), header))
-        elif role == Qt.TextAlignmentRole:
-            return QVariant(Qt.AlignHCenter | Qt.AlignVCenter)
-        elif role == Qt.FontRole:
+        elif role == Qt.ItemDataRole.TextAlignmentRole:
+            return QVariant(
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter
+            )
+        elif role == Qt.ItemDataRole.FontRole:
             bold_font = QFont("Sans-serif", 9)
             bold_font.setBold(True)
             if index.row() == self._get_active_row():
                 return bold_font
         return QVariant()
 
-    def sort(self, column: int, order: Qt.SortOrder = Qt.DescendingOrder) -> None:
+    def sort(
+        self, column: int, order: Qt.SortOrder = Qt.SortOrder.DescendingOrder
+    ) -> None:
         header = self._HEADERS[column]
         if header not in ["time", "3bv/s"]:
             return
@@ -246,7 +248,7 @@ class HighscoresTable(QTableView):
         self.setModel(model)
         self._header = self.horizontalHeader()
         self._index = self.verticalHeader()
-        self.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
+        self.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         # self.setMinimumWidth(500)
         self.setMinimumHeight(300)
         self.setStyleSheet(
@@ -256,12 +258,12 @@ class HighscoresTable(QTableView):
             """
         )
         self.setAlternatingRowColors(True)
-        self.setSelectionMode(QAbstractItemView.NoSelection)
-        self.setFocusPolicy(Qt.NoFocus)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setCornerButtonEnabled(False)
         self.setSortingEnabled(True)
         # TODO: ResizeToContents is too slow.
-        # self._header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        # self._header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self._header.setSortIndicatorShown(True)
         self.set_sort_indicator()
         # Sort indicator is changed by clicking a header column, although in
@@ -271,7 +273,7 @@ class HighscoresTable(QTableView):
         self._header.sectionClicked.connect(self.show_header_menu)
         # Set height of rows.
         # TODO: ResizeToContents is too slow.
-        # self._index.setSectionResizeMode(QHeaderView.ResizeToContents)
+        # self._index.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self._index.setSectionsClickable(False)
         self._filter_menu = QMenu(None)
         self._block_header_menu = False
@@ -291,7 +293,8 @@ class HighscoresTable(QTableView):
     def set_sort_indicator(self, *_):
         """Set the sort indicator to match the actual sorting."""
         self._header.setSortIndicator(
-            self._model._HEADERS.index(self._state.sort_by), Qt.DescendingOrder
+            self._model._HEADERS.index(self._state.sort_by),
+            Qt.SortOrder.DescendingOrder,
         )
 
     @pyqtSlot(int)
@@ -360,7 +363,7 @@ class HighscoresTable(QTableView):
         posY = headerPos.y() + self._header.height()
         posX = headerPos.x() + self._header.sectionPosition(col)
         pos = QPoint(posX, posY)
-        self._filter_menu.exec_(pos)  # modal dialog
+        self._filter_menu.exec(pos)  # modal dialog
         self.resizeRowsToContents()
 
     def _check_mouse_on_header_menu_hide(self):

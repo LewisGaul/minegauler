@@ -5,8 +5,8 @@ __all__ = ("MinefieldWidgetImpl",)
 import logging
 from typing import Dict
 
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QGraphicsScene
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QGraphicsScene
 
 from ... import api
 from ...core.split_cell import Coord

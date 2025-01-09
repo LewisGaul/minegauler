@@ -7,7 +7,7 @@ import os
 import time
 import types
 
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication
 
 
 logger = logging.getLogger(__name__)
