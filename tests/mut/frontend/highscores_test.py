@@ -30,13 +30,18 @@ class TestHighscoresModel:
 
         # Check headers.
         headers = [
-            model.headerData(i, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole).value()
+            model.headerData(
+                i, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole
+            ).value()
             for i in range(len(model._HEADERS))
         ]
         assert headers == [x.capitalize() for x in model._HEADERS]
 
         # Check row numbers.
         row_indices = [
-            model.headerData(i, Qt.Orientation.Vertical, Qt.ItemDataRole.DisplayRole).value() for i in range(10)
+            model.headerData(
+                i, Qt.Orientation.Vertical, Qt.ItemDataRole.DisplayRole
+            ).value()
+            for i in range(10)
         ]
         assert row_indices == [str(x + 1) for x in range(10)]

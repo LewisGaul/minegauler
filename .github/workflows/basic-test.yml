@@ -9,7 +9,7 @@ on:
   pull_request:
     branches: [dev]
 env:
-  DISPLAY: ":0"
+  QT_QPA_PLATFORM: offscreen
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -19,20 +19,20 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@master
         with:
-          python-version: "3.8"
+          python-version: "3.9"
 
       - name: Install Python requirements
         run: |
-          pip install wheel
-          pip install -r requirements-dev.txt
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
 
-      - name: Set up X-server
+      - name: Install system requirements
         run: |
-          sudo apt-get install -y xvfb libxkbcommon-x11-0
-          Xvfb :0 &
+          sudo apt install -y libegl1
 
       - name: Run MUT
-        run: python -m pytest tests/mut/
+        run: pytest tests/mut/
 
       - name: Run IT
-        run: python -m pytest tests/it/
+        run: pytest tests/it/

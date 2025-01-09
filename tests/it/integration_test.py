@@ -174,7 +174,11 @@ class Test:
 
         pos = self.point_from_coord(coord, **kwargs)
         event = QMouseEvent(
-            QEvent.Type.MouseMove, pos, Qt.MouseButton.NoButton, self._mouse_buttons_down, Qt.KeyboardModifier.NoModifier
+            QEvent.Type.MouseMove,
+            pos,
+            Qt.MouseButton.NoButton,
+            self._mouse_buttons_down,
+            Qt.KeyboardModifier.NoModifier,
         )
         self._mf_widget.mouseMoveEvent(event)
         self._mouse_down_pos = pos

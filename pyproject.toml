@@ -33,6 +33,21 @@ dependencies = [
 gui-scripts.minegauler = "minegauler.app.__main__:main"
 scripts.minegauler-bot = "minegauler.bot.__main__:main"
 
+[dependency-groups]
+dev = [
+    "black>=24.10.0",
+    "coverage>=7.6.10",
+    "isort>=5.13.2",
+    "mypy>=1.14.1",
+    "pytest>=8.3.4",
+    "pytest-benchmark>=5.1.0",
+    "pytest-cov>=6.0.0",
+    "pytest-qt>=4.4.0",
+    "ruff>=0.9.0",
+    "bump2version>=1.0.1",
+    "pyinstaller>=6.11.1",
+]
+
 [build-system]
 requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
