@@ -12,8 +12,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, windows-latest]
-#        os: [ubuntu-latest, macOS-latest, windows-latest]
+        # macOS-latest is arm64, macOS-13 is x86_64
+        os: [ubuntu-latest, windows-latest, macOS-latest, macOS-13]
 
     steps:
       - uses: actions/checkout@master
@@ -21,16 +21,15 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@master
         with:
-          python-version: "3.9"
+          python-version: "3.12"
 
       - name: Install Python requirements
         run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv sync
-          echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
+          pip install uv
+          uv sync --no-editable
 
       - name: Create PyInstaller package
-        run: python3 -m scripts.create_release -v -o artefacts/
+        run: uv run -m scripts.create_release -v -o artefacts/
 
       - name: Store artefacts
         uses: actions/upload-artifact@master
