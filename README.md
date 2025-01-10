@@ -21,10 +21,10 @@ Read more about the project history in [my blog post](https://www.lewisgaul.co.u
 The application has been packaged with PyInstaller so that it can be played without setting up Python.
 
 Download links available here:
- - [Windows (amd64)](https://github.com/LewisGaul/minegauler/releases/download/v4.2.0-b0/minegauler-v4.2.0-b0-windows-amd64.zip)
- - [Linux (x86_64)](https://github.com/LewisGaul/minegauler/releases/download/v4.2.0-b0/minegauler-v4.2.0-b0-linux-x86_64.tar.gz)
- - [MacOS (x86_64)](https://github.com/LewisGaul/minegauler/releases/download/v4.2.0-b0/minegauler-v4.2.0-b0-macos-x86_64.tar.gz)
- - MacOS (arm64) (not yet available, see [issue #214](https://github.com/LewisGaul/minegauler/issues/214))
+ - [Windows (amd64)](https://github.com/LewisGaul/minegauler/releases/download/v4.2.0/minegauler-v4.2.0-windows-amd64.zip)
+ - [Linux (x86_64)](https://github.com/LewisGaul/minegauler/releases/download/v4.2.0/minegauler-v4.2.0-linux-x86_64.tar.gz)
+ - [MacOS (arm64)](https://github.com/LewisGaul/minegauler/releases/download/v4.2.0/minegauler-v4.2.0-macos-arm64.tar.gz)
+ - [MacOS (x86_64)](https://github.com/LewisGaul/minegauler/releases/download/v4.2.0/minegauler-v4.2.0-macos-x86_64.tar.gz)
 
 
 ### Install from PyPI
