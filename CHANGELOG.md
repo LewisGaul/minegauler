@@ -11,6 +11,10 @@ Stand-out features in this release include:
  - Added the "reach" option/game mode for cell number detection
 
 
+### 4.2.0 (2025-01-10)
+ - Upgraded dependencies and supporting latest Python versions
+
+
 ### 4.2.0-b0 (2023-11-13)
  - Add the "reach" option/game mode for cell number detection
 
