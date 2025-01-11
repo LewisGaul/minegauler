@@ -31,8 +31,17 @@ jobs:
         run: |
           sudo apt install -y libegl1
 
-      - name: Run MUT
-        run: pytest tests/mut/
+      - name: Run black
+        run: black --check --diff ./
+
+      - name: Run isort
+        run: isort --check --diff ./
+
+      - name: Run import-linter
+        run: lint-imports
+
+      - name: Run UT
+        run: pytest tests/ut/
 
       - name: Run IT
         run: pytest tests/it/
