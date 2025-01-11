@@ -36,8 +36,8 @@ jobs:
         run: |
           sudo apt install -y libegl1
 
-      - name: Run MUT
-        run: uv run pytest tests/mut/
+      - name: Run UT
+        run: uv run pytest tests/ut/
 
       - name: Run IT
         run: uv run pytest tests/it/

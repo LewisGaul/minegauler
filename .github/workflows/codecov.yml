@@ -29,14 +29,14 @@ jobs:
       run: |
         sudo apt install -y libegl1
 
-    - name: Collect MUT coverage
+    - name: Collect UT coverage
       env:
-        COVERAGE_FILE: .cov-mut
+        COVERAGE_FILE: .cov-ut
       run: |
-        coverage run --source=src/minegauler/app/,tests/mut/ -m pytest tests/mut/
+        coverage run --source=src/minegauler/app/,tests/ut/ -m pytest tests/ut/
         coverage report
-        coverage xml -o cov-mut-with-tests.xml
-        coverage xml --omit='tests/**' -o cov-mut-no-tests.xml
+        coverage xml -o cov-ut-with-tests.xml
+        coverage xml --omit='tests/**' -o cov-ut-no-tests.xml
 
     - name: Collect IT coverage
       env:
@@ -49,7 +49,7 @@ jobs:
 
     - name: Combine coverage
       run: |
-        coverage combine .cov-mut .cov-it
+        coverage combine .cov-ut .cov-it
         coverage report
         coverage xml -o cov-all-with-tests.xml
         coverage xml --omit='tests/**' -o cov-all-no-tests.xml

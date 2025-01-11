@@ -26,8 +26,7 @@ htmlcov/
 
 # Python tooling
 .ipynb_checkpoints/
-.mypy_cache/
-.ruff_cache/
+.*_cache/
 
 LaTex/
 
