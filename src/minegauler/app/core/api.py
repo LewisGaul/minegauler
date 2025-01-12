@@ -15,7 +15,7 @@ import abc
 import logging
 from typing import Callable, Dict, Iterable, List, Mapping, Optional
 
-import attr
+import attrs
 
 from ..shared.types import (
     CellContents,
@@ -27,15 +27,15 @@ from ..shared.types import (
     ReachSetting,
     UIMode,
 )
-from ..shared.utils import GameOptsStruct
+from ..shared.utils import GameOpts
 from .board import BoardBase
 
 
-@attr.attrs(auto_attribs=True, kw_only=True)
+@attrs.define(kw_only=True)
 class GameInfo:
     """General information about a game."""
 
-    @attr.attrs(auto_attribs=True, kw_only=True)
+    @attrs.define(kw_only=True)
     class StartedInfo:
         start_time: float
         elapsed: float
@@ -334,8 +334,8 @@ class AbstractController(metaclass=abc.ABCMeta):
     Listeners can be registered for receiving updates.
     """
 
-    def __init__(self, opts: GameOptsStruct):
-        self._opts = GameOptsStruct.from_structs(opts)
+    def __init__(self, opts: GameOpts):
+        self._opts = GameOpts.from_structs(opts)
         # The registered functions to be called with updates.
         self._notif = _Notifier()
         self._logger = logging.getLogger(
@@ -386,7 +386,7 @@ class AbstractController(metaclass=abc.ABCMeta):
         """Get information about the current game."""
         return NotImplemented
 
-    def get_game_options(self) -> GameOptsStruct:
+    def get_game_options(self) -> GameOpts:
         return self._opts
 
     # --------------------------------------------------------------------------

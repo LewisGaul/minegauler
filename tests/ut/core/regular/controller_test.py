@@ -13,7 +13,7 @@ from minegauler.app.core.regular import (
     GameController,
     Minefield,
 )
-from minegauler.app.shared import GameOptsStruct
+from minegauler.app.shared import GameOpts
 from minegauler.app.shared.types import (
     CellContents,
     Difficulty,
@@ -44,7 +44,7 @@ class TestGameController:
         ],
         per_cell=2,
     )
-    opts = GameOptsStruct(
+    opts = GameOpts(
         x_size=mf.x_size,
         y_size=mf.y_size,
         mines=mf.mines,
@@ -138,7 +138,7 @@ class TestGameController:
         coord = Coord(2, 2)
 
         # Setup.
-        opts = GameOptsStruct(per_cell=2, first_success=False)
+        opts = GameOpts(per_cell=2, first_success=False)
         ctrlr = self.create_ctrlr(opts=opts, set_mf=False)
 
         # Flag a cell.
@@ -372,7 +372,7 @@ class TestGameController:
     def test_first_success(self):
         """Test success on first click toggle option."""
         # First click should hit an opening with first_success set.
-        opts = GameOptsStruct(first_success=True)
+        opts = GameOpts(first_success=True)
         ctrlr = GameController(opts, notif=mock.Mock())
         coord = Coord(1, 5)
         ctrlr.select_cell(coord)
@@ -389,7 +389,7 @@ class TestGameController:
         assert ctrlr.game.board[coord] is CellContents.HitMine(2)
 
         # Test first success on a high density board - no room for opening.
-        opts = GameOptsStruct(
+        opts = GameOpts(
             x_size=4, y_size=4, mines=15, per_cell=1, first_success=True
         )
         ctrlr = GameController(opts, notif=mock.Mock())
@@ -476,7 +476,7 @@ class TestGameController:
 
     def test_winning(self):
         # Test winning in one click.
-        opts = GameOptsStruct(x_size=2, y_size=1, mines=1, first_success=True)
+        opts = GameOpts(x_size=2, y_size=1, mines=1, first_success=True)
         ctrlr = self.create_ctrlr(opts=opts, set_mf=False)
         ctrlr.select_cell(Coord(0, 0))
         assert ctrlr.game.state is GameState.WON
@@ -863,7 +863,7 @@ class TestCreateController:
     registered listeners, as this is left to CUT/IT.
     """
 
-    opts = GameOptsStruct()
+    opts = GameOpts()
 
     # --------------------------------------------------------------------------
     # Helper methods
@@ -932,7 +932,7 @@ class TestCreateController:
         """Test various basic cell interaction."""
         # Setup.
         coord = Coord(2, 2)
-        opts = GameOptsStruct(per_cell=2)
+        opts = GameOpts(per_cell=2)
         ctrlr = self.create_ctrlr(opts)
 
         # Flag a cell.
@@ -991,7 +991,7 @@ class TestCreateController:
 
     def test_new_game(self):
         """Test starting new games."""
-        opts = GameOptsStruct(per_cell=3)
+        opts = GameOpts(per_cell=3)
         ctrlr = self.create_ctrlr(opts)
         base_game_info = ctrlr.get_game_info()
 
@@ -1051,7 +1051,7 @@ class TestCreateController:
 
     def test_set_first_success(self):
         """Test the method to set the 'first success' option."""
-        opts = GameOptsStruct(first_success=False)
+        opts = GameOpts(first_success=False)
         ctrlr = self.create_ctrlr(opts)
         assert ctrlr.get_game_info().first_success is False
 
@@ -1069,7 +1069,7 @@ class TestCreateController:
 
     def test_set_per_cell(self):
         """Test the method to set the 'per cell' option."""
-        opts = GameOptsStruct(per_cell=1)
+        opts = GameOpts(per_cell=1)
         ctrlr = self.create_ctrlr(opts)
         assert ctrlr.get_game_info().per_cell == 1
 
@@ -1083,7 +1083,7 @@ class TestCreateController:
 
     def test_set_reach(self):
         """Test the method to set the 'reach' option."""
-        opts = GameOptsStruct(reach=ReachSetting.NORMAL)
+        opts = GameOpts(reach=ReachSetting.NORMAL)
         ctrlr = self.create_ctrlr(opts)
         assert ctrlr.get_game_info().reach == ReachSetting.NORMAL
 
@@ -1098,7 +1098,7 @@ class TestCreateController:
     @mock.patch("builtins.open")
     def test_save_minefield(self, mock_open):
         """Test the method to save the current minefield."""
-        ctrlr = self.create_ctrlr(GameOptsStruct(x_size=3, y_size=3, per_cell=3))
+        ctrlr = self.create_ctrlr(GameOpts(x_size=3, y_size=3, per_cell=3))
         ctrlr.select_cell(Coord(0, 0))
         ctrlr.select_cell(Coord(0, 0))
         ctrlr.select_cell(Coord(0, 1))

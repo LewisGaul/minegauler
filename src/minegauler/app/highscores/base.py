@@ -5,8 +5,11 @@ Base classes/implementations for highscore handling.
 
 """
 
+from __future__ import annotations
+
+
 __all__ = (
-    "HighscoreSettingsStruct",
+    "HighscoreSettings",
     "HighscoreStruct",
     "AbstractHighscoresDB",
     "SQLMixin",
@@ -17,7 +20,7 @@ import logging
 import textwrap
 from typing import Iterable, Mapping, Optional, Tuple, Union
 
-import attr
+import attrs
 
 from ..shared.types import Difficulty, GameMode, ReachSetting
 from ..shared.utils import StructConstructorMixin
@@ -26,23 +29,23 @@ from ..shared.utils import StructConstructorMixin
 logger = logging.getLogger(__name__)
 
 
-@attr.attrs(auto_attribs=True, frozen=True)
-class HighscoreSettingsStruct(StructConstructorMixin):
+@attrs.frozen
+class HighscoreSettings(StructConstructorMixin):
     """A set of highscore settings."""
 
-    game_mode: GameMode = attr.attrib(converter=GameMode.from_str)
-    difficulty: Difficulty = attr.attrib(converter=Difficulty.from_str)
+    game_mode: GameMode = attrs.field(converter=GameMode.from_str)
+    difficulty: Difficulty = attrs.field(converter=Difficulty.from_str)
     per_cell: int
-    reach: ReachSetting = attr.attrib(converter=ReachSetting)
-    drag_select: bool = attr.attrib(converter=bool)
+    reach: ReachSetting = attrs.field(converter=ReachSetting)
+    drag_select: bool = attrs.field(converter=bool)
 
     @classmethod
-    def get_default(cls) -> "HighscoreSettingsStruct":
+    def get_default(cls) -> HighscoreSettings:
         return cls(GameMode.REGULAR, Difficulty.BEGINNER, 1, ReachSetting.NORMAL, False)
 
 
-@attr.attrs(auto_attribs=True, frozen=True)
-class HighscoreStruct(HighscoreSettingsStruct):
+@attrs.frozen
+class HighscoreStruct(HighscoreSettings):
     """A single highscore."""
 
     name: str
@@ -52,7 +55,7 @@ class HighscoreStruct(HighscoreSettingsStruct):
     bbbvps: float
     flagging: float
 
-    def to_row(self) -> Tuple[Union[int, float, str]]:
+    def to_row(self) -> Tuple[Union[int, float, str], ...]:
         return (
             self.difficulty.value,
             self.per_cell,
@@ -158,7 +161,7 @@ class SQLMixin:
 
     TABLES: Mapping[GameMode, str] = {m: m.name.lower() for m in GameMode}
 
-    _table_fields = [f.name for f in attr.fields(HighscoreStruct)][1:]
+    _table_fields = [f.name for f in attrs.fields(HighscoreStruct)][1:]
 
     def _get_create_table_sql(self, table_name: str) -> str:
         return textwrap.dedent(

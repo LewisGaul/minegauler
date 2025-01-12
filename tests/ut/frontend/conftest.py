@@ -18,7 +18,7 @@ from minegauler.app.shared.types import Difficulty, GameMode, GameState, ReachSe
 @pytest.fixture
 def ctrlr() -> api.AbstractController:
     ret = mock.Mock(spec=api.AbstractController)
-    ret._opts = utils.GameOptsStruct()
+    ret._opts = utils.GameOpts()
     ret.get_game_info.return_value = api.GameInfo(
         game_state=GameState.READY,
         x_size=8,

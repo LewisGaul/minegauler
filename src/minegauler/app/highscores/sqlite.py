@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class SQLiteDB(SQLMixin, AbstractHighscoresDB):
-    """Database of local highscores."""
+    """SQLite highscores DB."""
 
     VERSION: int = 2
 
@@ -42,8 +42,7 @@ class SQLiteDB(SQLMixin, AbstractHighscoresDB):
                 self._conn = sqlite3.connect(str(self._path))
         else:
             logger.debug("Creating SQLite highscores DB")
-            os.makedirs(self._path.parent, exist_ok=True)
-            self._conn = sqlite3.connect(str(self._path))
+            self._conn = sqlite3.connect(self._path)
 
             for t in self.TABLES.values():
                 self.execute(self._get_create_table_sql(t), commit=True)

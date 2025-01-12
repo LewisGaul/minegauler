@@ -44,7 +44,7 @@ from PyQt6.QtWidgets import (
 )
 
 from .. import api, highscores, paths
-from ..highscores import HighscoreSettingsStruct, HighscoreStruct
+from ..highscores import HighscoreSettings, HighscoreStruct
 from ..shared.types import (
     CellContents,
     CellImageType,
@@ -56,7 +56,7 @@ from ..shared.types import (
     ReachSetting,
     UIMode,
 )
-from ..shared.utils import GUIOptsStruct, format_timestamp
+from ..shared.utils import GUIOpts, format_timestamp
 from . import highscores as highscores_ui
 from . import minefield, panel, state, utils
 from .minefield import simulate
@@ -911,12 +911,12 @@ class MinegaulerGUI(
     def _open_advanced_opts_modal(self):
         _AdvancedOptionsModal(self, self).show()
 
-    def get_gui_opts(self) -> GUIOptsStruct:
-        return GUIOptsStruct.from_structs(self._state, self._state.pending_game_state)
+    def get_gui_opts(self) -> GUIOpts:
+        return GUIOpts.from_structs(self._state, self._state.pending_game_state)
 
     def open_highscores_window(
         self,
-        settings: Optional[HighscoreSettingsStruct] = None,
+        settings: Optional[HighscoreSettings] = None,
         sort_by: Optional[str] = None,
     ) -> None:
         """
@@ -941,7 +941,7 @@ class MinegaulerGUI(
         if self._open_subwindows.get("highscores"):
             self._open_subwindows.get("highscores").close()
         if not settings:
-            settings = HighscoreSettingsStruct(
+            settings = HighscoreSettings(
                 game_mode=self._state.game_mode,
                 difficulty=self._state.difficulty,
                 per_cell=self._state.per_cell,

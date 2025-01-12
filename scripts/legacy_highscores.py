@@ -8,7 +8,7 @@ import json
 import logging
 from typing import List, Optional
 
-import attr
+import attrs
 
 from minegauler.app import highscores as hs
 
@@ -16,7 +16,7 @@ from minegauler.app import highscores as hs
 logger = logging.getLogger(__name__)
 
 
-def _key_to_highscore_settings_v1_2(key: str) -> Optional[hs.HighscoreSettingsStruct]:
+def _key_to_highscore_settings_v1_2(key: str) -> Optional[hs.HighscoreSettings]:
     """
     Convert an old highscore key to highscore settings.
 
@@ -69,7 +69,7 @@ def _key_to_highscore_settings_v1_2(key: str) -> Optional[hs.HighscoreSettingsSt
     if detection != 1 or distance_to is True or lives != 1 or not 1 <= per_cell <= 3:
         return None
 
-    return hs.HighscoreSettingsStruct(
+    return hs.HighscoreSettings(
         difficulty=difficulty, per_cell=per_cell, drag_select=drag_select
     )
 
@@ -89,7 +89,7 @@ def read_highscore_file(file, version="1.2") -> List[hs.HighscoreStruct]:
             continue
         logger.info("Proceeding with highscores for settings %s", settings)
 
-        settings = attr.asdict(settings)
+        settings = attrs.asdict(settings)
         for v in values:
             try:
                 if not isinstance(v["name"], str) or v["name"] == "":

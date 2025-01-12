@@ -158,7 +158,7 @@ def get_player_info(username: str) -> PlayerInfo:
 
 def get_highscores(
     *,
-    settings: Optional[hs.HighscoreSettingsStruct] = None,
+    settings: Optional[hs.HighscoreSettings] = None,
     game_mode: GameMode = GameMode.REGULAR,
     difficulty: Optional[Difficulty] = None,
     per_cell: Optional[int] = None,

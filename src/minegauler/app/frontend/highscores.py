@@ -54,7 +54,7 @@ class HighscoresWindow(QDialog):
     def __init__(
         self,
         parent: Optional[QWidget],
-        settings: highscores.HighscoreSettingsStruct,
+        settings: highscores.HighscoreSettings,
         state_: state.HighscoreWindowState,
     ):
         super().__init__(parent)
@@ -192,9 +192,7 @@ class HighscoresModel(QAbstractTableModel):
     # -------------------------------------------------------------------------
     # Other methods
     # -------------------------------------------------------------------------
-    def update_highscores_group(
-        self, settings: highscores.HighscoreSettingsStruct
-    ) -> None:
+    def update_highscores_group(self, settings: highscores.HighscoreSettings) -> None:
         """
         Change the data to be highscores for a different set of settings.
         """

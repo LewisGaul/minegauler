@@ -5,7 +5,7 @@ Tests for the highscores sub-package.
 
 """
 
-import pathlib
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -13,14 +13,14 @@ import requests
 
 import minegauler.app
 from minegauler.app import highscores
-from minegauler.app.highscores import HighscoreSettingsStruct, HighscoreStruct
+from minegauler.app.highscores import HighscoreSettings, HighscoreStruct
 from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting
 
 
 @pytest.fixture
-def tmp_local_db_path(tmp_path: pathlib.Path) -> pathlib.Path:
+def tmp_local_db_path(tmp_path: Path) -> Path:
     """File path for creating a temporary local DB."""
-    yield tmp_path / "highscores.db"
+    return tmp_path / "highscores.db"
 
 
 fake_hs = HighscoreStruct(
@@ -55,7 +55,7 @@ fake_hs_json = {
 class TestLocalHighscoreDatabase:
     """Tests for interacting with a local highscores database."""
 
-    def test_create_db(self, tmp_local_db_path: pathlib.Path):
+    def test_create_db(self, tmp_local_db_path: Path):
         """Test creating a new highscores DB."""
         db = highscores.SQLiteDB(tmp_local_db_path)
         assert db.path == tmp_local_db_path
@@ -68,7 +68,7 @@ class TestLocalHighscoreDatabase:
         )
         assert list(tables) == [("regular",), ("split_cell",)]
 
-    def test_insert_count_get(self, tmp_local_db_path: pathlib.Path):
+    def test_insert_count_get(self, tmp_local_db_path: Path):
         """Test inserting, counting and getting highscores."""
         db = highscores.SQLiteDB(tmp_local_db_path)
         # Empty DB
@@ -214,7 +214,7 @@ class TestLocalHighscoreDatabase:
         # Case insensitive name match.
         assert db.get_highscores(name="TEStnaME") == [fake_hs]
 
-    def test_no_duplication(self, tmp_local_db_path: pathlib.Path):
+    def test_no_duplication(self, tmp_local_db_path: Path):
         """Test duplicate highscores are not stored."""
         db = highscores.SQLiteDB(tmp_local_db_path)
         db.insert_highscores([fake_hs, fake_hs])
@@ -271,7 +271,7 @@ class TestModuleAPIs:
         # Settings take precedent.
         highscores.get_highscores(
             database=mock_db,
-            settings=HighscoreSettingsStruct.get_default(),
+            settings=HighscoreSettings.get_default(),
             game_mode="NONSENSE",
             reach=ReachSetting.LONG,
             drag_select=True,

@@ -34,7 +34,7 @@ import pathlib
 from collections import namedtuple
 from typing import Iterable, List, Mapping, Tuple
 
-import attr
+import attrs
 
 from .. import paths
 from ..highscores import HighscoreStruct
@@ -76,7 +76,7 @@ def save_highscore_file(
         format_timestamp(highscore.timestamp).replace(" ", "_").replace(":", "-"),
     )
     data = {
-        "highscore": attr.asdict(highscore),
+        "highscore": attrs.asdict(highscore),
         "cell_updates": [
             (t, [(c, str(x)) for c, x in updates.items()])
             for t, updates in cell_updates

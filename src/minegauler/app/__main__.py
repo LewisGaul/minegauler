@@ -43,13 +43,13 @@ def main() -> int:
     read_settings = shared.read_settings_from_file(paths.SETTINGS_FILE)
 
     if read_settings:
-        game_opts = shared.GameOptsStruct.from_structs(read_settings)
-        gui_opts = shared.GUIOptsStruct.from_structs(read_settings)
+        game_opts = shared.GameOpts.from_structs(read_settings)
+        gui_opts = shared.GUIOpts.from_structs(read_settings)
         logger.info("Settings read from file")
     else:
         logger.info("Using default settings")
-        game_opts = shared.GameOptsStruct()
-        gui_opts = shared.GUIOptsStruct()
+        game_opts = shared.GameOpts()
+        gui_opts = shared.GUIOpts()
     logger.debug("Game options: %s", game_opts)
     logger.debug("GUI options: %s", gui_opts)
 
@@ -70,7 +70,7 @@ def main() -> int:
     rc = frontend.run_app(gui)
     logger.debug("Exiting event loop")
 
-    persist_settings = shared.AllOptsStruct.from_structs(
+    persist_settings = shared.AllOpts.from_structs(
         ctrlr.get_game_options(), gui.get_gui_opts()
     )
     shared.write_settings_to_file(persist_settings, paths.SETTINGS_FILE)

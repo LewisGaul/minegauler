@@ -17,7 +17,7 @@ from PyQt6.QtGui import QMouseEvent
 import minegauler.app.paths
 from minegauler.app import core, frontend  # TODO: Fix circular dependency
 from minegauler.app.shared.types import CellImageType
-from minegauler.app.shared.utils import AllOptsStruct, write_settings_to_file
+from minegauler.app.shared.utils import AllOpts, write_settings_to_file
 
 from . import process_events, run_main_entrypoint
 
@@ -25,7 +25,7 @@ from . import process_events, run_main_entrypoint
 logger = logging.getLogger(__name__)
 
 
-def create_gui(settings: Optional[AllOptsStruct] = None) -> frontend.MinegaulerGUI:
+def create_gui(settings: Optional[AllOpts] = None) -> frontend.MinegaulerGUI:
     """Create a minegauler GUI instance via the main entrypoint."""
     if settings is not None:
         write_settings_to_file(settings, minegauler.app.paths.SETTINGS_FILE)

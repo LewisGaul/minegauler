@@ -9,9 +9,9 @@ import os.path
 from os import PathLike
 from typing import Dict, Mapping, Optional, Type
 
-import attr
+import attrs
 
-from ..shared import GameOptsStruct
+from ..shared import GameOpts
 from ..shared.types import (
     CellContents,
     Coord,
@@ -29,7 +29,7 @@ from .minefield import MinefieldBase
 logger = logging.getLogger(__name__)
 
 
-@attr.attrs(auto_attribs=True, kw_only=True)
+@attrs.define(kw_only=True)
 class SharedInfo:
     """
     Information to pass to frontends.
@@ -69,7 +69,7 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
 
     def __init__(
         self,
-        opts: GameOptsStruct,
+        opts: GameOpts,
         *,
         notif: api.AbstractListener,
     ):
@@ -155,7 +155,7 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
 
     def __init__(
         self,
-        opts: GameOptsStruct,
+        opts: GameOpts,
         *,
         notif: api.AbstractListener,
     ):
@@ -378,7 +378,7 @@ class CreateControllerBase(ControllerBase, metaclass=abc.ABCMeta):
 
     def __init__(
         self,
-        opts: GameOptsStruct,
+        opts: GameOpts,
         *,
         notif: api.AbstractListener,
     ):

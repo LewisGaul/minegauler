@@ -15,7 +15,7 @@ import pytest
 
 from minegauler.app.core import engine
 from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting, UIMode
-from minegauler.app.shared.utils import GameOptsStruct
+from minegauler.app.shared.utils import GameOpts
 
 from .. import utils
 
@@ -50,7 +50,7 @@ class TestUberController:
 
     @pytest.fixture
     def ctrlr(self) -> engine.UberController:
-        opts = GameOptsStruct()
+        opts = GameOpts()
         with mock.patch.dict(
             engine.GAME_MODE_IMPL,
             {
@@ -73,7 +73,7 @@ class TestUberController:
     # --------------------------------------------------------------------------
     def test_basic_init(self, ctrlr):
         """Test basic creation of a controller."""
-        assert ctrlr._opts == GameOptsStruct()
+        assert ctrlr._opts == GameOpts()
         assert ctrlr.mode is GameMode.REGULAR
         assert ctrlr._ui_mode is UIMode.GAME
         self.mock_regular_game_ctrlr_cls.assert_called_once()

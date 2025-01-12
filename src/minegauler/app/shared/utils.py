@@ -5,13 +5,13 @@ General utilities.
 
 Exports
 -------
-.. class:: AllOptsStruct
+.. class:: AllOpts
     A structure class containing all persisted options.
 
-.. class:: GUIOptsStruct
+.. class:: GUIOpts
     A structure class containing persisted GUI options.
 
-.. class:: GameOptsStruct
+.. class:: GameOpts
     A structure class containing persisted game options.
 
 .. class:: Grid
@@ -35,9 +35,9 @@ Exports
 """
 
 __all__ = (
-    "AllOptsStruct",
-    "GUIOptsStruct",
-    "GameOptsStruct",
+    "AllOpts",
+    "GUIOpts",
+    "GameOpts",
     "Grid",
     "StructConstructorMixin",
     "format_timestamp",
@@ -52,7 +52,7 @@ import os
 import time
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
-import attr
+import attrs
 
 from .types import CellImageType, GameMode, PathLike, ReachSetting
 
@@ -248,7 +248,7 @@ class StructConstructorMixin:
         """
         dict_ = {}
         for struct in structs:
-            dict_.update(attr.asdict(struct))
+            dict_.update(attrs.asdict(struct))
         return cls.from_dict(dict_)
 
     @classmethod
@@ -258,7 +258,7 @@ class StructConstructorMixin:
 
         Ignores extra attributes.
         """
-        args = {a: v for a, v in dict_.items() if a in attr.fields_dict(cls)}
+        args = {a: v for a, v in dict_.items() if a in attrs.fields_dict(cls)}
         return cls(**args)
 
     def copy(self):
@@ -270,8 +270,8 @@ class StructConstructorMixin:
         return self.from_structs(self)
 
 
-@attr.attrs(auto_attribs=True)
-class GameOptsStruct(StructConstructorMixin):
+@attrs.define(slots=False)
+class GameOpts(StructConstructorMixin):
     """
     Structure of game options.
     """
@@ -286,8 +286,8 @@ class GameOptsStruct(StructConstructorMixin):
     mode: GameMode = GameMode.REGULAR
 
 
-@attr.attrs(auto_attribs=True)
-class GUIOptsStruct(StructConstructorMixin):
+@attrs.define(slots=False)
+class GUIOpts(StructConstructorMixin):
     """
     Structure of GUI options.
     """
@@ -302,20 +302,20 @@ class GUIOptsStruct(StructConstructorMixin):
     }
 
 
-@attr.attrs(auto_attribs=True)
-class AllOptsStruct(GameOptsStruct, GUIOptsStruct):
+@attrs.define(slots=False)
+class AllOpts(GameOpts, GUIOpts):
     """
     Structure containing all application options.
     """
 
     def encode_to_json(self) -> Dict[str, Any]:
-        ret = attr.asdict(self)
+        ret = attrs.asdict(self)
         ret["styles"] = {k.name: v for k, v in self.styles.items()}
         ret["mode"] = ret["mode"].name
         return ret
 
     @classmethod
-    def decode_from_json(cls, dict_: Dict[str, Any]) -> "AllOptsStruct":
+    def decode_from_json(cls, dict_: Dict[str, Any]) -> "AllOpts":
         dict_["styles"] = {
             getattr(CellImageType, k): v for k, v in dict_["styles"].items()
         }
@@ -329,13 +329,13 @@ def is_flagging_threshold(proportion: float) -> bool:
     return proportion > 0.1
 
 
-def read_settings_from_file(file: os.PathLike) -> Optional[AllOptsStruct]:
+def read_settings_from_file(file: os.PathLike) -> Optional[AllOpts]:
     logger.info("Reading settings from file: %s", file)
 
     read_settings = None
     try:
         with open(file, mode="r", encoding="utf-8") as f:
-            read_settings = AllOptsStruct.decode_from_json(json.load(f))
+            read_settings = AllOpts.decode_from_json(json.load(f))
     except FileNotFoundError:
         logger.info("Settings file not found")
     except json.JSONDecodeError:
@@ -346,7 +346,7 @@ def read_settings_from_file(file: os.PathLike) -> Optional[AllOptsStruct]:
     return read_settings
 
 
-def write_settings_to_file(settings: AllOptsStruct, file: PathLike) -> None:
+def write_settings_to_file(settings: AllOpts, file: PathLike) -> None:
     logger.info("Saving settings to file: %s", file)
     logger.debug("%s", settings)
     try:

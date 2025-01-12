@@ -12,7 +12,7 @@ import logging
 from typing import Mapping, Protocol, Type
 
 from ..shared.types import Coord, Difficulty, GameMode, PathLike, ReachSetting, UIMode
-from ..shared.utils import GameOptsStruct
+from ..shared.utils import GameOpts
 from . import api, board, controller, game, minefield, regular, split_cell
 from .board import BoardBase
 from .controller import ControllerBase
@@ -41,7 +41,7 @@ GAME_MODE_IMPL: Mapping[GameMode, GameModeImplementation] = {
 class UberController(api.AbstractController):
     """Base controller implementing all user interaction methods."""
 
-    def __init__(self, opts: GameOptsStruct):
+    def __init__(self, opts: GameOpts):
         super().__init__(opts)
         self._ui_mode: UIMode = UIMode.GAME
         self._active_ctrlr: ControllerBase = self._get_ctrlr_cls(
@@ -111,7 +111,7 @@ class UberController(api.AbstractController):
     def reset_settings(self) -> None:
         super().reset_settings()
         self.switch_game_mode(GameMode.REGULAR)
-        self._opts = GameOptsStruct()
+        self._opts = GameOpts()
         self.switch_ui_mode(UIMode.GAME)
         self.resize_board(self._opts.x_size, self._opts.y_size, self._opts.mines)
         self._notif.reset()

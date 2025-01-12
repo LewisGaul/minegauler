@@ -21,7 +21,7 @@ __all__ = ("HighscoreWindowState", "PerGameState", "State")
 import logging
 from typing import Dict, Optional
 
-import attr
+import attrs
 
 from ..highscores import HighscoreStruct
 from ..shared.types import (
@@ -32,13 +32,13 @@ from ..shared.types import (
     ReachSetting,
     UIMode,
 )
-from ..shared.utils import GameOptsStruct, GUIOptsStruct, StructConstructorMixin
+from ..shared.utils import GameOpts, GUIOpts, StructConstructorMixin
 
 
 logger = logging.getLogger(__name__)
 
 
-@attr.attrs(auto_attribs=True)
+@attrs.define
 class PerGameState(StructConstructorMixin):
     """State that applies to an in-progress game."""
 
@@ -54,6 +54,7 @@ class PerGameState(StructConstructorMixin):
     mode: GameMode = GameMode.REGULAR
 
 
+@attrs.define
 class HighscoreWindowState(StructConstructorMixin):
     """State associated with the highscores window."""
 
@@ -64,7 +65,7 @@ class HighscoreWindowState(StructConstructorMixin):
     current_highscore: Optional[HighscoreStruct] = None
 
 
-@attr.attrs(auto_attribs=True, kw_only=True)
+@attrs.define(kw_only=True)
 class State:
     """All state shared between widgets."""
 
@@ -281,7 +282,7 @@ class State:
             self._activate_pending_game_state()
 
     def reset(self) -> None:
-        for name, field in attr.fields_dict(type(self)).items():
+        for name, field in attrs.fields_dict(type(self)).items():
             setattr(self, name, field.default)
 
     # ---------------------------------
@@ -301,8 +302,8 @@ class State:
         )
 
     @classmethod
-    def from_opts(cls, game_opts: GameOptsStruct, gui_opts: GUIOptsStruct) -> "State":
-        dict_ = {**attr.asdict(game_opts), **attr.asdict(gui_opts)}
-        args = {a: v for a, v in dict_.items() if a in attr.fields_dict(cls)}
+    def from_opts(cls, game_opts: GameOpts, gui_opts: GUIOpts) -> "State":
+        dict_ = {**attrs.asdict(game_opts), **attrs.asdict(gui_opts)}
+        args = {a: v for a, v in dict_.items() if a in attrs.fields_dict(cls)}
         args["current_game_state"] = PerGameState.from_structs(game_opts, gui_opts)
         return cls(**args)

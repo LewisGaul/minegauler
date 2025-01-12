@@ -10,7 +10,7 @@ import logging
 import os
 from typing import Iterable, Optional, Tuple
 
-import attr
+import attrs
 import mysql.connector
 import mysql.connector.cursor
 
@@ -104,7 +104,7 @@ class MySQLDB(SQLMixin, AbstractHighscoresDB):
         super().insert_highscores(highscores)
         orig_count = self.count_highscores()
         for mode in GameMode:
-            mode_rows = [attr.astuple(h)[1:] for h in highscores if h.game_mode is mode]
+            mode_rows = [attrs.astuple(h)[1:] for h in highscores if h.game_mode is mode]
             self.executemany(
                 self._get_insert_highscore_sql(fmt="?", game_mode=mode),
                 mode_rows,

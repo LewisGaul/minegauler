@@ -7,7 +7,7 @@ Highscores handling.
 
 __all__ = (
     "HighscoreReadError",
-    "HighscoreSettingsStruct",
+    "HighscoreSettings",
     "HighscoreStruct",
     "SQLiteDB",
     "filter_and_sort",
@@ -20,7 +20,7 @@ import logging
 import threading
 from typing import Dict, Iterable, List, Optional
 
-import attr
+import attrs
 import requests
 
 from .. import paths
@@ -28,7 +28,7 @@ from .._version import __version__
 from ..shared import utils
 from ..shared.types import Difficulty, GameMode, PathLike, ReachSetting
 from . import compat
-from .base import AbstractHighscoresDB, HighscoreSettingsStruct, HighscoreStruct
+from .base import AbstractHighscoresDB, HighscoreSettings, HighscoreStruct
 from .compat import HighscoreReadError
 
 # from .mysql import MySQLDB  # Do not uncomment this without adding dependency on mysql connector
@@ -45,7 +45,7 @@ _default_local_db = SQLiteDB(paths.HIGHSCORES_FILE)
 def get_highscores(
     *,
     database: Optional[AbstractHighscoresDB] = None,
-    settings: Optional[HighscoreSettingsStruct] = None,
+    settings: Optional[HighscoreSettings] = None,
     game_mode: Optional[GameMode] = None,
     difficulty: Optional[Difficulty] = None,
     per_cell: Optional[int] = None,
@@ -226,7 +226,7 @@ def _post_highscore_to_remote(highscore: HighscoreStruct):
     requests.post(
         _REMOTE_POST_URL,
         json={
-            "highscore": attr.asdict(highscore),
+            "highscore": attrs.asdict(highscore),
             "app_version": __version__,
         },
         timeout=5,
