@@ -19,13 +19,14 @@ __all__ = (
 import functools
 import logging
 import threading
-from typing import Dict, Iterable, List, Optional
+from collections.abc import Iterable
+from typing import Optional
 
 import attrs
 import requests
 
 from .. import paths
-from .._version import __version__
+from .._metadata import VERSION
 from ..shared import utils
 from ..shared.types import Difficulty, GameMode, PathLike, ReachSetting
 from . import compat
@@ -149,8 +150,8 @@ def retrieve_highscores(
 def filter_and_sort(
     highscores: Iterable[HighscoreStruct],
     sort_key: str = "time",
-    filters: Dict[str, Optional[str]] = {},
-) -> List[HighscoreStruct]:
+    filters: Optional[dict[str, Optional[str]]] = None,
+) -> list[HighscoreStruct]:
     """
     Filter and sort an iterable of highscores.
 
@@ -164,6 +165,8 @@ def filter_and_sort(
         A new list of highscores.
     """
     # TODO: Generalise/tidy up...
+    if filters is None:
+        filters = {}
     ret = []
     filters = {k: f for k, f in filters.items() if f}
     for hs in highscores:
@@ -172,8 +175,8 @@ def filter_and_sort(
             if (
                 filters["flagging"] == "F"
                 and not utils.is_flagging_threshold(hs.flagging)
-                or filters["flagging"] == "NF"
-                and utils.is_flagging_threshold(hs.flagging)
+            ) or (
+                filters["flagging"] == "NF" and utils.is_flagging_threshold(hs.flagging)
             ):
                 all_pass = False
         if "name" in filters and filters["name"].lower() != hs.name.lower():
@@ -235,7 +238,7 @@ def _post_highscore_to_remote(highscore: HighscoreStruct):
         _REMOTE_POST_URL,
         json={
             "highscore": attrs.asdict(highscore),
-            "app_version": __version__,
+            "app_version": VERSION,
         },
         timeout=5,
     )

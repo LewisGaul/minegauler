@@ -14,7 +14,8 @@ __all__ = ("ConversionFunc", "HighscoreReadError", "read_highscores")
 
 import pathlib
 import sqlite3
-from typing import Callable, Iterable
+from collections.abc import Iterable
+from typing import Callable
 
 from ...shared.types import PathLike
 from ..base import HighscoreStruct

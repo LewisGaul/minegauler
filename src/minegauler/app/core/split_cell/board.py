@@ -1,6 +1,6 @@
 # October 2021, Lewis Gaul
 
-from typing import Iterable, List, Mapping
+from collections.abc import Iterable, Mapping
 
 from ...shared.types import CellContents, GameMode
 from ..board import BoardBase
@@ -47,11 +47,11 @@ class Board(BoardBase):
         return coord in self._all_coords
 
     @property
-    def all_coords(self) -> List[Coord]:
+    def all_coords(self) -> list[Coord]:
         return sorted(self._all_coords)
 
     @property
-    def all_underlying_coords(self) -> List[Coord]:
+    def all_underlying_coords(self) -> list[Coord]:
         return [
             Coord(x, y, True) for x in range(self.x_size) for y in range(self.y_size)
         ]

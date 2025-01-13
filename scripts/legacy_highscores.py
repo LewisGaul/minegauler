@@ -6,7 +6,7 @@ January 2020, Lewis Gaul
 
 import json
 import logging
-from typing import List, Optional
+from typing import Optional
 
 import attrs
 
@@ -36,7 +36,7 @@ def _key_to_highscore_settings_v1_2(key: str) -> Optional[hs.HighscoreSettings]:
     try:
         detection = float(detection)
     except ValueError:
-        raise ValueError(f"Invalid detection value: {detection}")
+        raise ValueError(f"Invalid detection value: {detection}") from None
 
     difficulty = values[1].upper()
     if difficulty not in ["B", "I", "E", "M"]:
@@ -58,13 +58,13 @@ def _key_to_highscore_settings_v1_2(key: str) -> Optional[hs.HighscoreSettings]:
     try:
         lives = int(lives)
     except ValueError:
-        raise ValueError(f"Invalid lives value: {lives}")
+        raise ValueError(f"Invalid lives value: {lives}") from None
 
     per_cell = values[5]
     try:
         per_cell = int(per_cell)
     except ValueError:
-        raise ValueError(f"Invalid per_cell value: {per_cell}")
+        raise ValueError(f"Invalid per_cell value: {per_cell}") from None
 
     if detection != 1 or distance_to is True or lives != 1 or not 1 <= per_cell <= 3:
         return None
@@ -74,11 +74,11 @@ def _key_to_highscore_settings_v1_2(key: str) -> Optional[hs.HighscoreSettings]:
     )
 
 
-def read_highscore_file(file, version="1.2") -> List[hs.HighscoreStruct]:
+def read_highscore_file(file, version="1.2") -> list[hs.HighscoreStruct]:
     if version != "1.2":
         raise ValueError("Currently only support version 1.2")
 
-    with open(file) as f:
+    with open(file, encoding="utf-8") as f:
         data = json.load(f)
 
     ret = []

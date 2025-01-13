@@ -6,7 +6,7 @@ import argparse
 import datetime as dt
 import logging
 import sys
-from typing import Iterable
+from collections.abc import Iterable
 
 from minegauler.app import highscores as hs
 

@@ -12,7 +12,8 @@ import abc
 import enum
 import logging
 import os.path
-from typing import Dict, Mapping, Optional
+from collections.abc import Mapping
+from typing import Optional
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QImage, QPainter, QPixmap
@@ -31,7 +32,7 @@ SUNKEN_CELL = CellContents.UnclickedSunken
 
 
 def update_cell_images(
-    cell_images: Dict[CellContents, QPixmap],
+    cell_images: dict[CellContents, QPixmap],
     size: int,
     styles: Mapping[CellImageType, str],
     required: CellImageType = CellImageType.ALL,
@@ -76,7 +77,7 @@ def update_cell_images(
                 get_path("numbers", num_style, f"num{i}.png"),
                 propn=7 / 8,
             )
-        num0_path = get_path("numbers", num_style, f"num0.png", fallback=False)
+        num0_path = get_path("numbers", num_style, "num0.png", fallback=False)
         if os.path.exists(num0_path):
             cell_images[CellContents.Num(0)] = _make_pixmap(
                 size,

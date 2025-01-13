@@ -6,6 +6,7 @@ Entry point for the application.
 """
 
 import logging
+import os
 import sys
 
 from . import core, frontend, paths, shared
@@ -39,6 +40,8 @@ def main() -> int:
     global ctrlr, gui
 
     setup_logging()
+
+    os.environ["LC_ALL"] = "C.UTF-8"
 
     read_settings = shared.read_settings_from_file(paths.SETTINGS_FILE)
 

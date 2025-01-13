@@ -5,8 +5,8 @@ __all__ = ("SQLiteDB",)
 
 import logging
 import sqlite3
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Tuple
 
 from typing_extensions import Self
 
@@ -54,7 +54,7 @@ class SQLiteDB:
         return next(cursor)[0]
 
     def execute(
-        self, cmd: str, params: Tuple = (), *, commit=False, **cursor_args
+        self, cmd: str, params: tuple = (), *, commit=False, **cursor_args
     ) -> sqlite3.Cursor:
         """
         Execute a command on the database.
@@ -80,7 +80,7 @@ class SQLiteDB:
         return cursor
 
     def executemany(
-        self, cmd: str, params: Iterable[Tuple] = (), *, commit=False, **cursor_args
+        self, cmd: str, params: Iterable[tuple] = (), *, commit=False, **cursor_args
     ) -> sqlite3.Cursor:
         """
         Execute multiple commands on the database.

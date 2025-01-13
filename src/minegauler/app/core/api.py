@@ -13,7 +13,8 @@ __all__ = (
 
 import abc
 import logging
-from typing import Callable, Dict, Iterable, List, Mapping, Optional
+from collections.abc import Iterable, Mapping
+from typing import Callable, Optional
 
 import attrs
 
@@ -96,7 +97,7 @@ class AbstractListener(metaclass=abc.ABCMeta):
         return NotImplemented
 
     @abc.abstractmethod
-    def update_cells(self, cell_updates: Dict[Coord, CellContents]) -> None:
+    def update_cells(self, cell_updates: dict[Coord, CellContents]) -> None:
         """
         Called when one or more cells were updated.
 
@@ -175,13 +176,13 @@ class _Notifier(AbstractListener):
 
     _count: int = 0
 
-    def __init__(self, listeners: Iterable[AbstractListener] = None):
+    def __init__(self, listeners: Optional[Iterable[AbstractListener]] = None):
         """
         Create the implementation for all
 
         :param listeners:
         """
-        self._listeners: List[AbstractListener] = list(listeners) if listeners else []
+        self._listeners: list[AbstractListener] = list(listeners) if listeners else []
         self._id: int = self._count
         self._logger = logging.getLogger(
             f"{__name__}.{self.__class__.__name__}[{self._id}]"
@@ -264,7 +265,7 @@ class _Notifier(AbstractListener):
     def set_difficulty(self, diff: Difficulty) -> None:
         self._logger.debug("Calling set_difficulty() with %s", diff)
 
-    def update_cells(self, cell_updates: Dict[Coord, CellContents]) -> None:
+    def update_cells(self, cell_updates: dict[Coord, CellContents]) -> None:
         """
         Called when one or more cells were updated.
 

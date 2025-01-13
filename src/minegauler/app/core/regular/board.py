@@ -2,7 +2,8 @@
 
 import logging
 import subprocess
-from typing import Iterable, List, Mapping, Union
+from collections.abc import Iterable, Mapping
+from typing import Union
 
 import zig_minesolver as minesolver  # TODO: Rename the package
 
@@ -27,7 +28,7 @@ class Board(BoardBase):
         self._reach = reach
 
     @classmethod
-    def from_2d_array(cls, array: List[List[Union[str, int]]]) -> "Board":
+    def from_2d_array(cls, array: list[list[Union[str, int]]]) -> "Board":
         """
         Create an instance from a 2-dimensional array.
 
@@ -88,7 +89,7 @@ class Board(BoardBase):
         return self._reach
 
     @property
-    def all_coords(self) -> List[Coord]:
+    def all_coords(self) -> list[Coord]:
         return [Coord(*c) for c in self._grid.all_coords]
 
     def fill(self, value: CellContents) -> None:

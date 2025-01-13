@@ -1,13 +1,14 @@
 # October 2021, Lewis Gaul
 
-__all__ = ("ControllerBase", "GameControllerBase", "CreateControllerBase", "SharedInfo")
+__all__ = ("ControllerBase", "CreateControllerBase", "GameControllerBase", "SharedInfo")
 
 import abc
 import json
 import logging
 import os.path
+from collections.abc import Mapping
 from os import PathLike
-from typing import Dict, Mapping, Optional, Type
+from typing import Optional
 
 import attrs
 
@@ -48,7 +49,7 @@ class SharedInfo:
         The number of lives remaining.
     """
 
-    cell_updates: Optional[Dict[Coord, CellContents]] = None
+    cell_updates: Optional[dict[Coord, CellContents]] = None
     game_state: GameState = GameState.READY
     mines_remaining: int = 0
     lives_remaining: int = 0
@@ -63,9 +64,9 @@ class ControllerBase(api.AbstractController, metaclass=abc.ABCMeta):
     reset_settings = None
 
     mode: GameMode
-    minefield_cls: Type[MinefieldBase]
-    board_cls: Type[BoardBase]
-    game_cls: Type[GameBase]
+    minefield_cls: type[MinefieldBase]
+    board_cls: type[BoardBase]
+    game_cls: type[GameBase]
 
     def __init__(
         self,
@@ -342,7 +343,7 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
     # Helper methods
     # --------------------------------------------------------------------------
     def _send_updates(
-        self, cells_updated: Optional[Dict[Coord, CellContents]] = None
+        self, cells_updated: Optional[dict[Coord, CellContents]] = None
     ) -> None:
         """Send updates to registered listeners."""
         update = SharedInfo(

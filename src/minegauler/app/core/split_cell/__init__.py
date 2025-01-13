@@ -1,6 +1,6 @@
 # October 2021, Lewis Gaul
 
-__all__ = ("Coord", "Minefield", "Board", "Game", "CreateController", "GameController")
+__all__ = ("Board", "Coord", "CreateController", "Game", "GameController", "Minefield")
 
 from .board import Board
 from .controller import CreateController, GameController

@@ -3,12 +3,12 @@
 __all__ = ("Minefield", "RegularMinefieldBase")
 
 import abc
-from typing import Any, Iterable, List, Mapping, Optional, TypeVar
+from collections.abc import Iterable, Mapping
+from typing import Any, Optional, TypeVar
 
 from ...shared import utils
-from ...shared.types import CellContents
+from ...shared.types import CellContents, ReachSetting
 from ...shared.types import Coord as CoordBase
-from ...shared.types import ReachSetting
 from ..board import BoardBase
 from ..minefield import MinefieldBase
 from .board import Board
@@ -34,7 +34,7 @@ class RegularMinefieldBase(MinefieldBase[C, B], metaclass=abc.ABCMeta):
         max_nr_mines = max(self[c] for c in self.all_coords)
         cell_size = len(repr(max_nr_mines))
 
-        cell = "{:>%d}" % cell_size
+        cell = f"{{:>{cell_size}}}"
         ret = ""
         for y in range(self.y_size):
             for x in range(self.x_size):
@@ -125,7 +125,7 @@ class Minefield(RegularMinefieldBase[Coord, Board]):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._openings: Optional[List[List[Coord]]] = None
+        self._openings: Optional[list[list[Coord]]] = None
 
     @classmethod
     def from_json(cls, obj: Mapping[str, Any]) -> "Minefield":
@@ -195,7 +195,7 @@ class Minefield(RegularMinefieldBase[Coord, Board]):
                         completed_board[nbr] += mines
         return completed_board
 
-    def _find_openings(self) -> List[List[Coord]]:
+    def _find_openings(self) -> list[list[Coord]]:
         """
         Find the openings of the board.
 

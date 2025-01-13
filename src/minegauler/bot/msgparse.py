@@ -6,7 +6,8 @@ Parse bot messages.
 __all__ = (
     "BotMsgParser",
     "CmdParser",
-    "CommandMapping" "InvalidArgsError",
+    "CommandMapping",
+    "InvalidArgsError",
     "InvalidMsgError",
     "helpstring",
     "schema",
@@ -14,7 +15,8 @@ __all__ = (
 
 import argparse
 import logging
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+from collections.abc import Iterable
+from typing import Any, Callable, Optional, Union
 
 from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting
 
@@ -30,7 +32,7 @@ class InvalidMsgError(Exception):
     pass
 
 
-CommandMapping = Dict[Optional[str], Union[Callable, "CommandMapping"]]
+CommandMapping = dict[Optional[str], Union[Callable, "CommandMapping"]]
 
 
 def helpstring(text):
@@ -82,7 +84,7 @@ class CmdParser:
             raise InvalidArgsError(linebreak.join(["Unrecognised command", flat_cmds]))
         return self._get_cmd_help(func)
 
-    def handle_msg(self, msg: Union[str, List[str]], **kwargs) -> str:
+    def handle_msg(self, msg: Union[str, list[str]], **kwargs) -> str:
         """
         Parse a message and perform the corresponding action.
 
@@ -103,7 +105,7 @@ class CmdParser:
             msg = msg.copy()
         if not msg:
             msg = ["help"]
-        if msg[-1] in ["?", "help"] and not msg[0] == "help":
+        if msg[-1] in ["?", "help"] and msg[0] != "help":
             # Change "?" at the end to be treated as help, except for the case where
             # this is a double help intended for a subcommand, e.g.
             # 'help matchups ?'.
@@ -118,7 +120,7 @@ class CmdParser:
             return func(args, markdown=self._markdown, **kwargs)
         except InvalidMsgError as e:
             logger.debug("Invalid message: %r", orig_msg)
-            resp_msg = f"Invalid command: {str(e)}"
+            resp_msg = f"Invalid command: {e!s}"
             raise InvalidMsgError(resp_msg) from e
         except InvalidArgsError as e:
             logger.debug("Invalid message: %r", orig_msg)
@@ -129,7 +131,7 @@ class CmdParser:
             else:
                 linebreak = "\n\n" if self._markdown else "\n"
                 resp_msg = self._get_cmd_help(func, only_schema=True)
-                resp_msg = linebreak.join([f"Unrecognised command: {str(e)}", resp_msg])
+                resp_msg = linebreak.join([f"Unrecognised command: {e!s}", resp_msg])
 
             raise InvalidArgsError(resp_msg) from e
 
@@ -159,7 +161,7 @@ class CmdParser:
 
         return "\n\n".join(lines)
 
-    def _map_to_cmd(self, msg: Iterable[str]) -> Tuple[Callable, List[str]]:
+    def _map_to_cmd(self, msg: Iterable[str]) -> tuple[Callable, list[str]]:
         cmds = self._cmds
         func = None
         words = list(msg)
@@ -329,14 +331,14 @@ class _ArgParser(argparse.ArgumentParser):
             The remaining unmatched keywords.
         """
         for arg in self._positional_args:
-            logger.debug(f"Parsing positional arg %r, kws: %s", arg.name, kws)
+            logger.debug("Parsing positional arg %r, kws: %s", arg.name, kws)
             result, kws = self._parse_single_positional_arg(arg, kws)
             setattr(namespace, arg.name, result)
         return kws
 
     def _parse_single_positional_arg(
         self, arg: _PositionalArg, kws: Iterable[str]
-    ) -> Tuple[Any, Iterable[str]]:
+    ) -> tuple[Any, Iterable[str]]:
         """
         Parse a single positional arg. Raise InvalidArgsError if not enough
         matching args are found.

@@ -14,7 +14,7 @@ __all__ = ("HighscoresWindow",)
 
 import logging
 import time
-from typing import Dict, List, Optional
+from typing import Final, Optional
 
 from PyQt6.QtCore import (
     QAbstractTableModel,
@@ -102,16 +102,16 @@ class HighscoresModel(QAbstractTableModel):
     """Model handling sorting and filtering of a highscore group."""
 
     sort_changed = pyqtSignal(int)
-    _HEADERS = ["name", "time", "3bv", "3bv/s", "date", "flagging"]
+    _HEADERS: Final = ["name", "time", "3bv", "3bv/s", "date", "flagging"]
 
     def __init__(self, parent: Optional[QWidget], state_: state.HighscoreWindowState):
         super().__init__(parent)
         self._state: state.HighscoreWindowState = state_
-        self._all_data: List[highscores.HighscoreStruct] = []
-        self._displayed_data: List[highscores.HighscoreStruct] = []
+        self._all_data: list[highscores.HighscoreStruct] = []
+        self._displayed_data: list[highscores.HighscoreStruct] = []
 
     @property
-    def _filters(self) -> Dict[str, Optional[str]]:
+    def _filters(self) -> dict[str, Optional[str]]:
         return {
             "name": self._state.name_filter,
             "flagging": self._state.flagging_filter,
@@ -305,7 +305,7 @@ class HighscoresTable(QTableView):
         self._filter_menu = QMenu(self.parent())
         self._filter_menu.aboutToHide.connect(self._check_mouse_on_header_menu_hide)
 
-        def get_filter_cb(key, f):
+        def get_filter_cb(key: str, f: str):
             def cb():
                 self.add_filter.emit(key, f)
                 self._block_header_menu = False
@@ -315,15 +315,13 @@ class HighscoresTable(QTableView):
         if key == "flagging":
             group = QActionGroup(self)
             group.setExclusive(True)
-            for filter_string in ["All", "F", "NF"]:
+            for flag_filter in [None, "F", "NF"]:
+                filter_string = flag_filter or "All"
                 action = QAction(filter_string, group, checkable=True)
-                if filter_string == "All" and not self._state.flagging_filter:
-                    action.setChecked(True)
-                    filter_string = ""
-                elif filter_string == self._state.flagging_filter:
+                if flag_filter == self._state.flagging_filter:
                     action.setChecked(True)
                 self._filter_menu.addAction(action)
-                action.triggered.connect(get_filter_cb(key, filter_string))
+                action.triggered.connect(get_filter_cb(key, filter_string or ""))
 
         elif key == "name":
             # Make button for resetting filter (show all).
@@ -357,10 +355,10 @@ class HighscoresTable(QTableView):
             self._filter_menu.addAction(name_action)  # add to menu
         self._filter_menu.index = col
         # Display menu in appropriate position, below header in column 'col'
-        headerPos = self.mapToGlobal(self._header.pos())
-        posY = headerPos.y() + self._header.height()
-        posX = headerPos.x() + self._header.sectionPosition(col)
-        pos = QPoint(posX, posY)
+        header_pos = self.mapToGlobal(self._header.pos())
+        pos_y = header_pos.y() + self._header.height()
+        pos_x = header_pos.x() + self._header.sectionPosition(col)
+        pos = QPoint(pos_x, pos_y)
         self._filter_menu.exec(pos)  # modal dialog
         self.resizeRowsToContents()
 

@@ -4,7 +4,8 @@ __all__ = ("Game",)
 
 import logging
 import time
-from typing import Iterable, Mapping
+from collections.abc import Iterable, Mapping
+from typing import Final
 
 from ...shared.types import CellContents, Difficulty, GameMode, GameState
 from ..game import GameBase, GameNotStartedError, _check_coord, _ignore_if_not
@@ -26,7 +27,7 @@ class Game(GameBase):
     mf: Minefield
     board: Board
 
-    _diff_pairs = [
+    _diff_pairs: Final = [
         # fmt: off
         (Difficulty.BEGINNER,     ( 8,  8,   5)),
         (Difficulty.INTERMEDIATE, (16, 16,  20)),

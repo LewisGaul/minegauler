@@ -2,7 +2,8 @@
 
 __all__ = ("Minefield",)
 
-from typing import Any, List, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from ...shared.types import CellContents
 from ..regular.minefield import RegularMinefieldBase
@@ -102,7 +103,7 @@ class Minefield(RegularMinefieldBase[Coord, Board]):
             board[coord] = CellContents.Num(num)
         return board
 
-    def _find_openings(self) -> List[List[Coord]]:
+    def _find_openings(self) -> list[list[Coord]]:
         board = self.completed_board
         openings = []
         blanks_to_check = {

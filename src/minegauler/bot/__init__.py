@@ -7,14 +7,14 @@ Bot package.
 
 __all__ = ("commands", "formatter", "handle_msg", "msgparse", "utils")
 
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Union
 
 from . import commands, formatter, msgparse, utils
 from .commands import RoomType
 
 
 def handle_msg(
-    msg: Union[str, List[str]],
+    msg: Union[str, list[str]],
     room_type: RoomType,
     *,
     markdown: bool,

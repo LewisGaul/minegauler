@@ -16,7 +16,8 @@ __all__ = (
 
 import abc
 import logging
-from typing import Iterable, Optional, Tuple, Union
+from collections.abc import Iterable
+from typing import Optional, Union
 
 import attrs
 
@@ -53,7 +54,7 @@ class HighscoreStruct(HighscoreSettings):
     bbbvps: float
     flagging: float
 
-    def to_row(self) -> Tuple[Union[int, float, str], ...]:
+    def to_row(self) -> tuple[Union[int, float, str], ...]:
         return (
             self.difficulty.value,
             self.per_cell,

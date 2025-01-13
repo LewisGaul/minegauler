@@ -10,7 +10,14 @@ import logging
 from minegauler.app.shared.types import GameMode
 
 from . import formatter, utils
-from .msgparse import BotMsgParser, CommandMapping, InvalidArgsError, helpstring, schema
+from .msgparse import (
+    BotMsgParser,
+    CommandMapping,
+    InvalidArgsError,
+    InvalidMsgError,
+    helpstring,
+    schema,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -258,7 +265,7 @@ def stats(args, **kwargs):
 @schema("stats players {all | <name> [<name> ...]}")
 def stats_players(args, username: str, markdown=False, **kwargs):
     parser = BotMsgParser()
-    username_choices = list(utils.USER_NAMES) + ["all"]
+    username_choices = [*list(utils.USER_NAMES), "all"]
     if username:
         username_choices.append("me")
     parser.add_positional_arg("username", nargs="+", choices=username_choices)
@@ -454,8 +461,8 @@ def set_nickname(args, username: str, **kwargs):
     for other in utils.USER_NAMES.values():
         if new.lower() == other.lower():
             raise InvalidArgsError(f"Nickname {other!r} already in use")
-    if new.lower() in utils.USER_NAMES.keys() and new != username:
-        raise InvalidArgsError(f"Cannot set nickname to someone else's username!")
+    if new.lower() in utils.USER_NAMES and new != username:
+        raise InvalidArgsError("Cannot set nickname to someone else's username!")
     old = utils.USER_NAMES[username]
     logger.debug("Changing nickname of %s from %r to %r", username, old, new)
     utils.set_user_nickname(username, new)

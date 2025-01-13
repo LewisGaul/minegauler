@@ -10,7 +10,7 @@ This version adds the 'reach' setting highscore support in v4.2.0 minegauler.
 __all__ = ("read_highscores",)
 
 import sqlite3
-from typing import Iterable
+from collections.abc import Iterable
 
 from ...shared.types import PathLike
 from ..base import HighscoreStruct

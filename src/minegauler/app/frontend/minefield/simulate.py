@@ -7,7 +7,8 @@ Simulate played games.
 __all__ = ("MinefieldWidget",)
 
 import logging
-from typing import Dict, List, Mapping, Optional
+from collections.abc import Mapping
+from typing import Optional
 
 from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QMouseEvent, QPixmap
@@ -36,14 +37,14 @@ class MinefieldWidget(QDialog):
         parent: Optional[QWidget],
         x_size: int,
         y_size: int,
-        cell_updates: List[CellUpdate_T],
+        cell_updates: list[CellUpdate_T],
     ):
         super().__init__(parent)
         self._x_size = x_size
         self._y_size = y_size
         self._remaining_cell_updates = cell_updates
 
-        self._cell_images: Dict[CellContents, QPixmap] = {}
+        self._cell_images: dict[CellContents, QPixmap] = {}
         update_cell_images(
             self._cell_images, self.btn_size, {CellImageType.BUTTONS: "standard"}
         )

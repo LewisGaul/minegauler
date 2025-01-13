@@ -10,7 +10,6 @@ import math
 import time
 
 import pytest
-from pytest import approx
 
 from minegauler.app.core.game import GameNotStartedError
 from minegauler.app.core.regular.board import Board
@@ -70,17 +69,17 @@ class TestGame:
     def test_get_elapsed(self, started_game):
         """Test the method to get the elapsed game time."""
         started_game.start_time = time.time() - 10
-        assert started_game.get_elapsed() == approx(10, abs=1e-3)
+        assert started_game.get_elapsed() == pytest.approx(10, abs=1e-3)
 
         started_game.end_time = started_game.start_time + 1.234
-        assert started_game.get_elapsed() == approx(1.234)
+        assert started_game.get_elapsed() == pytest.approx(1.234)
 
     def test_get_3bvps(self, started_game):
         """Test the method to get the 3bv/s."""
         started_game.state = GameState.WON
         started_game.start_time = time.time() - 10
         started_game.end_time = started_game.start_time + 1.234
-        assert started_game.get_3bvps() == approx(started_game.mf.bbbv / 1.234)
+        assert started_game.get_3bvps() == pytest.approx(started_game.mf.bbbv / 1.234)
 
     def test_get_flag_proportion(self):
         """Test the method to get the proportion of flagging."""
@@ -91,11 +90,11 @@ class TestGame:
 
         # 10 mines, 7 flags.
         game.set_cell_flags(Coord(0, 0), 7)
-        assert game.get_flag_proportion() == approx(0.7)
+        assert game.get_flag_proportion() == pytest.approx(0.7)
 
         # 10 mines, 17 flags.
         game.set_cell_flags(Coord(1, 1), 10)
-        assert game.get_flag_proportion() == approx(1.7)
+        assert game.get_flag_proportion() == pytest.approx(1.7)
 
     def test_get_prop_complete(self):
         """Test the method to get the proportion a game is complete."""
@@ -139,7 +138,7 @@ class TestGame:
         game.select_cell(Coord(0, 0))
         logger.debug("Board state:\n%s", game.board)
         assert game.get_rem_3bv() == 2
-        assert game.get_prop_complete() == approx(1 / 3)
+        assert game.get_prop_complete() == pytest.approx(1 / 3)
 
         # Click an opening that has a wrong flag in it, stopping propagation.
         #   . 2 @ @
@@ -151,7 +150,7 @@ class TestGame:
         game.select_cell(Coord(0, 4))
         logger.debug("Board state:\n%s", game.board)
         assert game.get_rem_3bv() == 2
-        assert game.get_prop_complete() == approx(1 / 3)
+        assert game.get_prop_complete() == pytest.approx(1 / 3)
 
         # Click an opening with a wrong flag at the edge.
         #   . 2 @ @
@@ -164,7 +163,7 @@ class TestGame:
         game.select_cell(Coord(1, 4))
         logger.debug("Board state:\n%s", game.board)
         assert game.get_rem_3bv() == 2
-        assert game.get_prop_complete() == approx(1 / 3)
+        assert game.get_prop_complete() == pytest.approx(1 / 3)
 
         # Finish previously blocked opening.
         #   . 2 @ @
@@ -176,7 +175,7 @@ class TestGame:
         game.chord_on_cell(Coord(1, 4))
         logger.debug("Board state:\n%s", game.board)
         assert game.get_rem_3bv() == 1
-        assert game.get_prop_complete() == approx(2 / 3)
+        assert game.get_prop_complete() == pytest.approx(2 / 3)
 
         # Finish the game.
         #   . 2 @ @

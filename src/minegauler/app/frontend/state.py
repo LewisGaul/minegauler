@@ -19,7 +19,8 @@ Exports
 __all__ = ("HighscoreWindowState", "PerGameState", "State")
 
 import logging
-from typing import Dict, Optional
+from collections.abc import Mapping
+from typing import Optional
 
 import attrs
 
@@ -74,7 +75,7 @@ class State:
 
     btn_size: int = 16
     name: str = ""
-    styles: Dict[CellImageType, str] = {
+    styles: Mapping[CellImageType, str] = {
         CellImageType.BUTTONS: "Standard",
         CellImageType.NUMBERS: "Standard",
         CellImageType.MARKERS: "Standard",

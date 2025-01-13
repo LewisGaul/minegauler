@@ -16,8 +16,9 @@ import functools
 import logging
 import textwrap
 import traceback
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Callable, Dict, Mapping, Optional
+from typing import Callable, Optional
 
 from PyQt6.QtCore import QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QAction, QActionGroup, QFocusEvent, QFont, QIcon, QKeyEvent
@@ -113,7 +114,7 @@ class _BaseMainWindow(QMainWindow):
         )
         self._setup_ui()
         # Keep track of all non-modal subwindows that are open.
-        self._open_subwindows: Dict[str, QWidget] = {}
+        self._open_subwindows: dict[str, QWidget] = {}
 
     # --------------------------------------------------------------------------
     # UI setup
@@ -215,12 +216,12 @@ class MinegaulerGUI(
         self._state: state.State = initial_state.deepcopy()
 
         self._create_menu_action: QAction
-        self._diff_menu_actions: Dict[Difficulty, QAction] = dict()
-        self._populate_menubars()
+        self._diff_menu_actions: dict[Difficulty, QAction] = dict()
         self._opts_menu_reach_group: QActionGroup
         self._menubar.setFixedHeight(self._menubar.sizeHint().height())
         self._panel_widget = panel.PanelWidget(self, self._state)
         self._mf_widget = minefield.MinefieldWidget(self, self._ctrlr, self._state)
+        self._populate_menubars()
         self.set_panel_widget(self._panel_widget)
         self.set_body_widget(self._mf_widget)
         self._name_entry_widget = _NameEntryBar(self, self._state.name)
@@ -424,7 +425,7 @@ class MinegaulerGUI(
         # - Auto flag (Ctrl+F)
         # - Auto click (Ctrl+Enter)
         probs_act = self._game_menu.addAction(
-            "Probabilities", lambda: self._mf_widget.display_probs()
+            "Probabilities", self._mf_widget.display_probs
         )
         probs_act.setShortcut("F5")
 
@@ -1085,8 +1086,8 @@ class _CustomBoardModal(QDialog):
         def set_mines_max():
             m_slider.setMaximum(x_slider.value() * y_slider.value() - 1)
 
-        x_slider.valueChanged.connect(set_mines_max)
-        y_slider.valueChanged.connect(set_mines_max)
+        x_slider.value_changed.connect(set_mines_max)
+        y_slider.value_changed.connect(set_mines_max)
 
         # Ok/Cancel buttons.
         def ok_pressed():
@@ -1191,7 +1192,7 @@ class _AdvancedOptionsModal(QDialog):
 class _SliderSpinner(QWidget):
     """A combination of a slider and a spinbox."""
 
-    valueChanged = pyqtSignal(int)
+    value_changed = pyqtSignal(int)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1202,8 +1203,8 @@ class _SliderSpinner(QWidget):
         self.slider.valueChanged.connect(self.numbox.setValue)
         self.slider.rangeChanged.connect(self.numbox.setRange)
         self.numbox.valueChanged.connect(self.slider.setValue)
-        self.slider.valueChanged.connect(self.valueChanged.emit)
-        self.valueChanged.connect(self.setValue)
+        self.slider.valueChanged.connect(self.value_changed.emit)
+        self.value_changed.connect(self.setValue)
         layout = QHBoxLayout(self)
         layout.addWidget(self.slider)
         layout.addWidget(self.numbox)

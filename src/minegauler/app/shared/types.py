@@ -137,7 +137,7 @@ class CellContents:
 
     items = NotImplemented
 
-    @functools.lru_cache(maxsize=None)
+    @functools.cache
     def __new__(cls, *args):
         if cls is CellContents:
             raise TypeError("Base class should not be instantiated")

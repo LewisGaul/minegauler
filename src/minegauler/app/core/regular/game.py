@@ -4,6 +4,7 @@ __all__ = ("Game",)
 
 import logging
 import time
+from typing import Final
 
 from ...shared.types import CellContents, Difficulty, GameMode, GameState
 from ..game import GameBase, GameNotStartedError
@@ -25,7 +26,7 @@ class Game(GameBase):
     mf: Minefield
     board: Board
 
-    _diff_pairs = [
+    _diff_pairs: Final = [
         # fmt: off
         (Difficulty.BEGINNER,     ( 8,  8,  10)),
         (Difficulty.INTERMEDIATE, (16, 16,  40)),

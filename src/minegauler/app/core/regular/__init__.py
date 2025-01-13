@@ -1,12 +1,12 @@
 # October 2021, Lewis Gaul
 
 __all__ = (
-    "Coord",
-    "Minefield",
     "Board",
+    "Coord",
+    "CreateController",
     "Game",
     "GameController",
-    "CreateController",
+    "Minefield",
     "mode",
 )
 

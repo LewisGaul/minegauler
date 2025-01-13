@@ -8,8 +8,9 @@ __all__ = ("SQLiteHighscoresDB",)
 import logging
 import os
 import textwrap
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Iterable, Mapping, Optional
+from typing import Optional
 
 import attrs
 from typing_extensions import Self
@@ -87,8 +88,8 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
             modes = [game_mode]
         ret = []
         for mode in modes:
-            self._conn.row_factory = lambda cursor, row: HighscoreStruct(
-                game_mode=mode,
+            self._conn.row_factory = lambda cursor, row, _mode=mode: HighscoreStruct(
+                game_mode=_mode,
                 **{col[0]: row[i] for i, col in enumerate(cursor.description)},
             )
             cursor = self.execute(

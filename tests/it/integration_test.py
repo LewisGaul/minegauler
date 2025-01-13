@@ -15,7 +15,7 @@ from PyQt6.QtCore import QEvent, QPoint, Qt
 from PyQt6.QtGui import QMouseEvent
 
 import minegauler.app.paths
-from minegauler.app import core, frontend  # TODO: Fix circular dependency
+from minegauler.app import frontend
 from minegauler.app.shared.types import CellImageType
 from minegauler.app.shared.utils import AllOpts, write_settings_to_file
 
