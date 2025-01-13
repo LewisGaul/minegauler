@@ -389,9 +389,7 @@ class TestGameController:
         assert ctrlr.game.board[coord] is CellContents.HitMine(2)
 
         # Test first success on a high density board - no room for opening.
-        opts = GameOpts(
-            x_size=4, y_size=4, mines=15, per_cell=1, first_success=True
-        )
+        opts = GameOpts(x_size=4, y_size=4, mines=15, per_cell=1, first_success=True)
         ctrlr = GameController(opts, notif=mock.Mock())
         coord = Coord(1, 2)
         ctrlr.select_cell(coord)

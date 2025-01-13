@@ -2,21 +2,22 @@
 
 from __future__ import annotations
 
+
 __all__ = ("SQLiteHighscoresDB",)
 
 import logging
 import os
 import textwrap
 from pathlib import Path
-from typing import Iterable, Optional, Mapping
+from typing import Iterable, Mapping, Optional
 
 import attrs
 from typing_extensions import Self
 
-from . import compat
-from ..shared.types import Difficulty, GameMode, ReachSetting, PathLike
-from .base import HighscoresDB, HighscoreStruct
+from ..shared.types import Difficulty, GameMode, PathLike, ReachSetting
 from ..sqlite import SQLiteDB
+from . import compat
+from .base import HighscoresDB, HighscoreStruct
 
 
 logger = logging.getLogger(__name__)

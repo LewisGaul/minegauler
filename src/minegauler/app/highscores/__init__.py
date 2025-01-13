@@ -31,7 +31,6 @@ from ..shared.types import Difficulty, GameMode, PathLike, ReachSetting
 from . import compat
 from .base import HighscoresDB, HighscoreSettings, HighscoreStruct
 from .compat import HighscoreReadError
-
 from .sqlite import SQLiteHighscoresDB
 
 

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+
 __all__ = ("SQLiteDB",)
 
 import logging
 import sqlite3
 from pathlib import Path
-from typing import Tuple, Iterable
+from typing import Iterable, Tuple
 
 from typing_extensions import Self
 
