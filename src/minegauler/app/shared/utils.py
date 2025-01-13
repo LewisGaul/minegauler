@@ -50,7 +50,8 @@ import json
 import logging
 import os
 import time
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
+from collections.abc import Iterable, Mapping
+from typing import Any, Optional
 
 import attrs
 
@@ -89,7 +90,7 @@ class Grid(list):
             self.append(row)
         self.x_size: int = x_size
         self.y_size: int = y_size
-        self.all_coords: List[Tuple[int, int]] = [
+        self.all_coords: list[tuple[int, int]] = [
             (x, y) for x in range(x_size) for y in range(y_size)
         ]
 
@@ -182,11 +183,11 @@ class Grid(list):
 
     def get_nbrs(
         self,
-        coord: Tuple[int, int],
+        coord: tuple[int, int],
         *,
         include_origin=False,
         reach: ReachSetting = ReachSetting.NORMAL,
-    ) -> Iterable[Tuple[int, int]]:
+    ) -> Iterable[tuple[int, int]]:
         """
         Get a list of the coordinates of neighbouring cells.
 
@@ -229,7 +230,7 @@ class Grid(list):
             ret[coord] = self[coord]
         return ret
 
-    def is_coord_in_grid(self, coord: Tuple[int, int]) -> bool:
+    def is_coord_in_grid(self, coord: tuple[int, int]) -> bool:
         x, y = coord
         return 0 <= x < self.x_size and 0 <= y < self.y_size
 
@@ -252,7 +253,7 @@ class StructConstructorMixin:
         return cls.from_dict(dict_)
 
     @classmethod
-    def from_dict(cls, dict_: Dict[str, Any]):
+    def from_dict(cls, dict_: dict[str, Any]):
         """
         Create an instance from a dictionary.
 
@@ -308,14 +309,14 @@ class AllOpts(GameOpts, GUIOpts):
     Structure containing all application options.
     """
 
-    def encode_to_json(self) -> Dict[str, Any]:
+    def encode_to_json(self) -> dict[str, Any]:
         ret = attrs.asdict(self)
         ret["styles"] = {k.name: v for k, v in self.styles.items()}
         ret["mode"] = ret["mode"].name
         return ret
 
     @classmethod
-    def decode_from_json(cls, dict_: Dict[str, Any]) -> "AllOpts":
+    def decode_from_json(cls, dict_: dict[str, Any]) -> "AllOpts":
         dict_["styles"] = {
             getattr(CellImageType, k): v for k, v in dict_["styles"].items()
         }

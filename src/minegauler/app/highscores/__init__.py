@@ -26,7 +26,7 @@ import attrs
 import requests
 
 from .. import paths
-from .._version import __version__
+from .._metadata import VERSION
 from ..shared import utils
 from ..shared.types import Difficulty, GameMode, PathLike, ReachSetting
 from . import compat
@@ -238,7 +238,7 @@ def _post_highscore_to_remote(highscore: HighscoreStruct):
         _REMOTE_POST_URL,
         json={
             "highscore": attrs.asdict(highscore),
-            "app_version": __version__,
+            "app_version": VERSION,
         },
         timeout=5,
     )

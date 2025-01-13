@@ -177,6 +177,9 @@ keep-runtime-typing = true
     "D",
     "PLW1641",  # eq-without-hash
 ]
+"src/minegauler/app/__main__.py" = [
+    "PLW0603",  # global-statement
+]
 "src/minegauler/app/frontend/__init__.py" = [
     "PLW0603",  # global-statement
 ]
@@ -209,7 +212,7 @@ layers = [
     "minegauler.app.highscores",
     "minegauler.app.shared",
     "minegauler.app.paths",
-    "minegauler.app._version",
+    "minegauler.app._metadata",
 ]
 
 # pytest

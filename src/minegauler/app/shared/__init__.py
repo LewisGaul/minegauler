@@ -7,8 +7,8 @@ Code not belonging to another specific sub-package.
 
 __all__ = (
     "AllOpts",
-    "GameOpts",
     "GUIOpts",
+    "GameOpts",
     "read_settings_from_file",
     "write_settings_to_file",
 )
