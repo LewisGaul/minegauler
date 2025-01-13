@@ -170,7 +170,7 @@ lines-after-imports = 2
 keep-runtime-typing = true
 
 [tool.ruff.lint.per-file-ignores]
-"src/**" = ["PT"]
+"!tests/**" = ["PT"]
 "tests/**" = ["D"]
 # Temporary stuff that should be fixed up...
 "**" = [
@@ -189,6 +189,7 @@ keep-runtime-typing = true
 "src/minegauler/app/frontend/state.py" = [
     "RUF009",  # function-call-in-dataclass-default-argument
 ]
+"src/minegauler/bot/**" = ["PLW", "PYI"]
 
 # mypy
 # ------------------------

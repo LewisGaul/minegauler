@@ -6,8 +6,8 @@ Format bot messages.
 """
 
 __all__ = (
-    "format_highscores",
     "format_highscore_times",
+    "format_highscores",
     "format_kwargs",
     "format_matchups",
     "format_player_highscores",
@@ -15,7 +15,8 @@ __all__ = (
 )
 
 import datetime as dt
-from typing import Iterable, List, Mapping, Optional, Tuple, Union
+from collections.abc import Iterable, Mapping
+from typing import Optional, Union
 
 import pytz
 import tabulate
@@ -33,16 +34,16 @@ def format_highscores(highscores: Iterable[hs.HighscoreStruct]) -> str:
     return format_highscore_times([(h.name, h.elapsed) for h in highscores])
 
 
-def format_highscore_times(highscores: Iterable[Tuple[str, float]]) -> str:
+def format_highscore_times(highscores: Iterable[tuple[str, float]]) -> str:
     lines = [
-        f"{i+1:2d}. {h[0][:10]:<10s}  {h[1]:7.2f}" for i, h in enumerate(highscores)
+        f"{i + 1:2d}. {h[0][:10]:<10s}  {h[1]:7.2f}" for i, h in enumerate(highscores)
     ]
     return "\n".join(lines)
 
 
 def format_player_highscores(
-    highscores: List[hs.HighscoreStruct], difficulty: Optional[Difficulty] = None
-) -> List[str]:
+    highscores: list[hs.HighscoreStruct], difficulty: Optional[Difficulty] = None
+) -> list[str]:
     lines = []
     if highscores:
         last_played = format_timestamp(max(h.timestamp for h in highscores))
@@ -146,7 +147,7 @@ def format_filters(
     return format_kwargs(opts)
 
 
-def format_matchups(matchups: Iterable[Matchup]) -> List[str]:
+def format_matchups(matchups: Iterable[Matchup]) -> list[str]:
     return [
         "{} ({:.2f}) vs {} ({:.2f}) - {:.2f}% difference".format(*m) for m in matchups
     ]

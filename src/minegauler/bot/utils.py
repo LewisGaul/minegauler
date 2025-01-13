@@ -9,9 +9,9 @@ __all__ = (
     "USER_NAMES",
     "Matchup",
     "PlayerInfo",
+    "get_highscore_times",
     "get_highscores",
     "get_matchups",
-    "get_highscore_times",
     "get_player_info",
     "set_user_nickname",
 )
@@ -22,7 +22,8 @@ import logging
 import os
 import pathlib
 import sys
-from typing import Iterable, List, Optional, Tuple
+from collections.abc import Iterable
+from typing import Optional
 
 import requests
 
@@ -51,14 +52,14 @@ _API_BASEURL = "http://minegauler.lewisgaul.co.uk/api/v1/highscores"
 def read_users_file():
     global USER_NAMES
     try:
-        with open(_USER_NAMES_FILE) as f:
+        with open(_USER_NAMES_FILE, encoding="utf-8") as f:
             USER_NAMES = json.load(f)
     except FileNotFoundError:
         logger.info("%s file not found", _USER_NAMES_FILE)
 
 
 def save_users_file():
-    with open(_USER_NAMES_FILE, "w") as f:
+    with open(_USER_NAMES_FILE, "w", encoding="utf-8") as f:
         json.dump(USER_NAMES, f)
 
 
@@ -75,7 +76,7 @@ def get_highscore_times(
     per_cell: Optional[int] = None,
     reach: Optional[ReachSetting] = None,
     users: Optional[Iterable[str]] = None,
-) -> List[Tuple[str, float]]:
+) -> list[tuple[str, float]]:
     if difficulty is Difficulty.CUSTOM:
         raise ValueError("No highscores for custom difficulty")
     if users is None:
@@ -116,8 +117,8 @@ Matchup = collections.namedtuple("Matchup", "user1, time1, user2, time2, percent
 
 
 def get_matchups(
-    times: Iterable[Tuple[str, float]], include_users: Optional[Iterable[str]] = None
-) -> List[Matchup]:
+    times: Iterable[tuple[str, float]], include_users: Optional[Iterable[str]] = None
+) -> list[Matchup]:
     times = sorted(times, key=lambda x: x[1], reverse=True)
     matchups = set()
     while times:
