@@ -234,7 +234,7 @@ class GameBase(metaclass=abc.ABCMeta):
     def difficulty_from_values(cls, x_size: int, y_size: int, mines: int) -> Difficulty:
         mapping = dict((x[1], x[0]) for x in cls._diff_pairs)
         try:
-            return mapping[x_size, y_size, mines]
+            return mapping[(x_size, y_size, mines)]
         except KeyError:
             return Difficulty.CUSTOM
 

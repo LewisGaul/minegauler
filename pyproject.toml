@@ -83,7 +83,6 @@ extend_exclude = '.*venv.*|_vendor|__pycache__'
 # ------------------------
 [tool.ruff.lint]
 preview = true
-#parenthesize-tuple-in-subscript = true
 select = [
     # pydocstyle
     "D",
@@ -154,12 +153,13 @@ ignore = [
     # flake8-bugbear
     "B007",  # unused-loop-control-variable
     "B011",  # assert-false
-    # Ruff-specific rules
-    "RUF028",  # invalid-formatter-suppression-comment
     # flake8-simplify
     "SIM102",  # collapsible-if
     "SIM108",  # if-else-block-instead-of-if-exp
     "SIM117",  # multiple-with-statements
+    # Ruff-specific rules
+    "RUF028",  # invalid-formatter-suppression-comment
+    "RUF031",  # incorrectly-parenthesized-tuple-in-subscript
 ]
 task-tags = ["TODO", "FIXME", "XXX", "@@@"]
 
