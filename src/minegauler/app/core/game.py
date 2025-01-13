@@ -11,7 +11,8 @@ import functools
 import logging
 import math
 import time
-from typing import Callable, Dict, Iterable, List, Mapping, Optional, Tuple, Type, Union
+from collections.abc import Iterable, Mapping
+from typing import Callable, Optional, Union
 
 from ..shared.types import (
     CellContents,
@@ -41,7 +42,7 @@ def _check_coord(method: Callable) -> Callable:
         if not 0 <= coord.x < self.x_size or not 0 <= coord.y < self.y_size:
             raise ValueError(
                 f"Coordinate is out of bounds, should be between (0,0) and "
-                f"({self.x_size-1}, {self.y_size-1})"
+                f"({self.x_size - 1}, {self.y_size - 1})"
             )
         return method(self, coord, *args, **kwargs)
 
@@ -76,8 +77,8 @@ def _ignore_decorator_helper(conditions_sense, game_state, cell_state) -> Callab
 
             # fmt: off
             if (
-                any(conditions) and conditions_sense
-                or not all(conditions) and not conditions_sense
+                (any(conditions) and conditions_sense)
+                or (not all(conditions) and not conditions_sense)
             ):
                 return
             # fmt: on
@@ -148,10 +149,10 @@ class GameBase(metaclass=abc.ABCMeta):
     """Representation of a minesweeper game, generic on the game mode."""
 
     mode: GameMode
-    minefield_cls: Type[MinefieldBase]
-    board_cls: Type[BoardBase]
+    minefield_cls: type[MinefieldBase]
+    board_cls: type[BoardBase]
 
-    _diff_pairs: List[Tuple[Difficulty, Tuple[int, int, int]]]
+    _diff_pairs: list[tuple[Difficulty, tuple[int, int, int]]]
 
     def __init__(
         self,
@@ -184,7 +185,7 @@ class GameBase(metaclass=abc.ABCMeta):
         self.lives_remaining: int = self.lives
         self._num_flags: int = 0
 
-        self._cell_updates: Dict[Coord, CellContents] = {}
+        self._cell_updates: dict[Coord, CellContents] = {}
 
     @abc.abstractmethod
     def _make_board(self) -> BoardBase:
@@ -223,7 +224,7 @@ class GameBase(metaclass=abc.ABCMeta):
         return self
 
     @classmethod
-    def difficulty_to_values(cls, diff: Difficulty) -> Tuple[int, int, int]:
+    def difficulty_to_values(cls, diff: Difficulty) -> tuple[int, int, int]:
         try:
             return dict(cls._diff_pairs)[diff]
         except KeyError:
@@ -233,7 +234,7 @@ class GameBase(metaclass=abc.ABCMeta):
     def difficulty_from_values(cls, x_size: int, y_size: int, mines: int) -> Difficulty:
         mapping = dict((x[1], x[0]) for x in cls._diff_pairs)
         try:
-            return mapping[(x_size, y_size, mines)]
+            return mapping[x_size, y_size, mines]
         except KeyError:
             return Difficulty.CUSTOM
 

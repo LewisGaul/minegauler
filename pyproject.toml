@@ -99,6 +99,7 @@ skip_glob = ['*/_vendor/*', '*venv*/*']
 # ------------------------
 [tool.ruff.lint]
 preview = true
+#parenthesize-tuple-in-subscript = true
 select = [
     # pydocstyle
     "D",
@@ -106,6 +107,8 @@ select = [
     "F",
     # pycodestyle
     "E",
+    # isort
+    "I",
     # pep8-naming
     "N",
     # pyupgrade
@@ -122,6 +125,8 @@ select = [
     "EXE",
     # flake8-pie
     "PIE",
+    # flake8-pytest-style
+    "PT",
     # flake8-pyi
     "PYI",
     # flake8-simplify
@@ -145,6 +150,11 @@ ignore = [
     "F403",  # undefined-local-with-import-star
     "F841",  # unused-variable
     # pycodestyle
+    "E201",  # whitespace-after-open-bracket
+    "E202",  # whitespace-before-close-bracket
+    "E203",  # whitespace-before-punctuation
+    "E211",  # whitespace-before-parameters
+    "E241",  # multiple-spaces-after-comma
     "E402",  # module-import-not-at-top-of-file
     "E501",  # line-too-long
     # pep8-naming
@@ -167,9 +177,14 @@ ignore = [
 ]
 task-tags = ["TODO", "FIXME", "XXX", "@@@"]
 
+[tool.ruff.lint.isort]
+lines-after-imports = 2
+
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D"]
 "**/__init__.py" = ["RUF022"]
+# Temporary stuff that should be fixed up...
+"**" = ["D", "PLW1641"]
 
 # mypy
 # ------------------------

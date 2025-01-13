@@ -8,7 +8,7 @@ Minesweeper board API.
 __all__ = ("BoardBase",)
 
 import abc
-from typing import Iterable, List, Mapping
+from collections.abc import Iterable, Mapping
 
 from ..shared.types import CellContents, Coord, GameMode
 
@@ -36,12 +36,12 @@ class BoardBase(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def all_coords(self) -> List[Coord]:
+    def all_coords(self) -> list[Coord]:
         """A list of all coords currently in the board."""
         raise NotImplementedError
 
     @property
-    def all_underlying_coords(self) -> List[Coord]:
+    def all_underlying_coords(self) -> list[Coord]:
         """A list of all underlying coords that may contain a mine."""
         return self.all_coords
 

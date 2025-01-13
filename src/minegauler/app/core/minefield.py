@@ -10,7 +10,8 @@ __all__ = ("MinefieldBase",)
 import abc
 import logging
 import random
-from typing import Any, Generic, Iterable, List, Mapping, Optional, Set, TypeVar
+from collections.abc import Iterable, Mapping
+from typing import Any, Generic, Optional, TypeVar
 
 from ..shared.types import ReachSetting
 from .board import BoardBase
@@ -54,14 +55,14 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
         :raise ValueError:
             If the number of mines is too high.
         """
-        self.all_coords: Set[C] = set(all_coords)
+        self.all_coords: set[C] = set(all_coords)
         self.mines: int = mines
         self.per_cell: int = per_cell
         self.reach: ReachSetting = reach
-        self.mine_coords: List[C] = []
+        self.mine_coords: list[C] = []
         self._bbbv: Optional[int] = None
         self._completed_board: Optional[B] = None
-        self._openings: Optional[List[List[C]]] = None
+        self._openings: Optional[list[list[C]]] = None
         self.populated: bool = False
 
         # Perform some checks on the args.
@@ -141,7 +142,7 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
         return self._completed_board
 
     @property
-    def openings(self) -> List[List[C]]:
+    def openings(self) -> list[list[C]]:
         if not self.populated:
             raise AttributeError("Uninitialised minefield has no openings")
         if self._openings is None:
@@ -197,7 +198,7 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _find_openings(self) -> List[List[C]]:
+    def _find_openings(self) -> list[list[C]]:
         """Find the openings in the completed board."""
         raise NotImplementedError
 

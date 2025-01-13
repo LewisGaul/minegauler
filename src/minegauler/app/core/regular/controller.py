@@ -1,6 +1,6 @@
 # October 2021, Lewis Gaul
 
-__all__ = ("GameController", "CreateController")
+__all__ = ("CreateController", "GameController")
 
 import logging
 

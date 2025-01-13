@@ -9,7 +9,8 @@ __all__ = ("UberController",)
 
 import json
 import logging
-from typing import Mapping, Protocol, Type
+from collections.abc import Mapping
+from typing import Protocol
 
 from ..shared.types import Coord, Difficulty, GameMode, PathLike, ReachSetting, UIMode
 from ..shared.utils import GameOpts
@@ -24,11 +25,11 @@ logger = logging.getLogger(__name__)
 class GameModeImplementation(Protocol):
     """Protocol for game mode implementations to satisfy."""
 
-    Minefield: Type[minefield.MinefieldBase]
-    Board: Type[board.BoardBase]
-    Game: Type[game.GameBase]
-    GameController: Type[controller.ControllerBase]
-    CreateController: Type[controller.ControllerBase]
+    Minefield: type[minefield.MinefieldBase]
+    Board: type[board.BoardBase]
+    Game: type[game.GameBase]
+    GameController: type[controller.ControllerBase]
+    CreateController: type[controller.ControllerBase]
     mode: GameMode
 
 
@@ -53,7 +54,7 @@ class UberController(api.AbstractController):
         return self._opts.mode
 
     @staticmethod
-    def _get_ctrlr_cls(game_mode: GameMode, ui_mode: UIMode) -> Type[ControllerBase]:
+    def _get_ctrlr_cls(game_mode: GameMode, ui_mode: UIMode) -> type[ControllerBase]:
         """Get the controller class for given modes."""
         if ui_mode is UIMode.GAME:
             return GAME_MODE_IMPL[game_mode].GameController
