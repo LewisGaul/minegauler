@@ -9,7 +9,7 @@ __all__ = ("activate_patches", "make_true_mock", "patch_open")
 
 import contextlib
 import os
-from typing import Iterable
+from collections.abc import Iterable
 from unittest import mock
 
 

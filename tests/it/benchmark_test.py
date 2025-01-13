@@ -44,7 +44,7 @@ class ITBase:
 
     def load_minefield(self, mf: core.MinefieldBase) -> None:
         with tempfile.TemporaryFile() as tmp_file:
-            with open(tmp_file, "w") as f:
+            with open(tmp_file, "w", encoding="utf-8") as f:
                 json.dump(mf.to_json(), f)
             self.ctrlr.load_minefield(tmp_file)
 

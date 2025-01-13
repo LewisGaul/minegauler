@@ -34,7 +34,7 @@ def pytest_configure(config):
             prefix = config.option.markexpr + " and "
         else:
             prefix = ""
-        setattr(config.option, "markexpr", prefix + "not benchmark")
+        config.option.markexpr = prefix + "not benchmark"
 
 
 # ------------------------------------------------------------------------------

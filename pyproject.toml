@@ -145,6 +145,9 @@ ignore = [
     "N802",  # invalid-function-name
     # pylint warnings
     "PLW3201",  # bad-dunder-method-name
+    # flake8-pytest-style
+    "PT003",  # pytest-extraneous-scope-function
+    "PT011",  # pytest-raises-too-broad
     # flake8-pyi
     "PYI041",  # redundant-numeric-union
     # pyupgrade
@@ -161,6 +164,9 @@ ignore = [
     "RUF028",  # invalid-formatter-suppression-comment
     "RUF031",  # incorrectly-parenthesized-tuple-in-subscript
 ]
+unfixable = [
+    "PLW0108",  # unnecessary-lambda
+]
 task-tags = ["TODO", "FIXME", "XXX", "@@@"]
 
 [tool.ruff.lint.isort]
@@ -171,10 +177,13 @@ keep-runtime-typing = true
 
 [tool.ruff.lint.per-file-ignores]
 "!tests/**" = ["PT"]
-"tests/**" = ["D"]
+"tests/**" = [
+    "D",  # pydocstyle
+    "B018",  # useless-expression
+]
 # Temporary stuff that should be fixed up...
 "**" = [
-    "D",
+    "D",  # pydocstyle
     "PLW1641",  # eq-without-hash
 ]
 "src/minegauler/app/__main__.py" = [

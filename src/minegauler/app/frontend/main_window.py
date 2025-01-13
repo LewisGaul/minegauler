@@ -217,11 +217,11 @@ class MinegaulerGUI(
 
         self._create_menu_action: QAction
         self._diff_menu_actions: dict[Difficulty, QAction] = dict()
-        self._populate_menubars()
         self._opts_menu_reach_group: QActionGroup
         self._menubar.setFixedHeight(self._menubar.sizeHint().height())
         self._panel_widget = panel.PanelWidget(self, self._state)
         self._mf_widget = minefield.MinefieldWidget(self, self._ctrlr, self._state)
+        self._populate_menubars()
         self.set_panel_widget(self._panel_widget)
         self.set_body_widget(self._mf_widget)
         self._name_entry_widget = _NameEntryBar(self, self._state.name)
