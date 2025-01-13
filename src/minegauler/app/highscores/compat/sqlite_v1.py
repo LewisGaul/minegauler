@@ -10,7 +10,7 @@ This version adds split-cell mode highscore support in v4.1.2 minegauler.
 __all__ = ("read_highscores",)
 
 import sqlite3
-from typing import Iterable
+from collections.abc import Iterable
 
 from ...shared.types import PathLike, ReachSetting
 from ..base import HighscoreStruct

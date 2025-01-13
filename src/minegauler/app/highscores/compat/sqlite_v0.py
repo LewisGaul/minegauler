@@ -10,7 +10,7 @@ This is the initial SQLite format that comes with v4.0 minegauler.
 __all__ = ("read_highscores",)
 
 import sqlite3
-from typing import Iterable
+from collections.abc import Iterable
 
 from ...shared.types import GameMode, PathLike, ReachSetting
 from ..base import HighscoreStruct
