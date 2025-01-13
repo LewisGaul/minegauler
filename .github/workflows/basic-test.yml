@@ -34,8 +34,8 @@ jobs:
       - name: Run black
         run: black --check --diff ./
 
-      - name: Run isort
-        run: isort --check --diff ./
+      - name: Run ruff (includes isort checks)
+        run: ruff check
 
       - name: Run import-linter
         run: lint-imports

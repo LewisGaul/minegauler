@@ -38,7 +38,6 @@ dev = [
     "black>=24.10.0",
     "coverage>=7.6.10",
     "import-linter>=2.1",
-    "isort>=5.13.2",
     "mypy>=1.14.1",
     "pytest>=8.3.4",
     "pytest-benchmark>=5.1.0",
@@ -79,21 +78,6 @@ line-length = 88
 target-version = ['py39']
 include = '\.spec$|\.pyi?$'
 extend_exclude = '.*venv.*|_vendor|__pycache__'
-
-# isort
-# ------------------------
-[tool.isort]
-# Make compatible with Black
-profile = "black"
-line_length = 88
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-# Other options
-order_by_type = true
-lines_after_imports = 2
-skip_glob = ['*/_vendor/*', '*venv*/*']
 
 # ruff
 # ------------------------
@@ -179,6 +163,9 @@ task-tags = ["TODO", "FIXME", "XXX", "@@@"]
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D"]

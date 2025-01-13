@@ -400,15 +400,6 @@ wheels = [
 ]
 
 [[package]]
-name = "isort"
-version = "5.13.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/87/f9/c1eb8635a24e87ade2efce21e3ce8cd6b8630bb685ddc9cdaca1349b2eb5/isort-5.13.2.tar.gz", hash = "sha256:48fdfcb9face5d58a4f6dde2e72a1fb8dcaf8ab26f95ab49fab84c2ddefb0109", size = 175303 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d1/b3/8def84f539e7d2289a02f0524b944b15d7c75dab7628bedf1c4f0992029c/isort-5.13.2-py3-none-any.whl", hash = "sha256:8ca5e72a8d85860d5a3fa69b8745237f2939afe12dbf656afbcb47fe72d947a6", size = 92310 },
-]
-
-[[package]]
 name = "macholib"
 version = "1.16.3"
 source = { registry = "https://pypi.org/simple" }
@@ -440,7 +431,6 @@ dev = [
     { name = "bump2version" },
     { name = "coverage" },
     { name = "import-linter" },
-    { name = "isort" },
     { name = "mypy" },
     { name = "pyinstaller" },
     { name = "pytest" },
@@ -467,7 +457,6 @@ dev = [
     { name = "bump2version", specifier = ">=1.0.1" },
     { name = "coverage", specifier = ">=7.6.10" },
     { name = "import-linter", specifier = ">=2.1" },
-    { name = "isort", specifier = ">=5.13.2" },
     { name = "mypy", specifier = ">=1.14.1" },
     { name = "pyinstaller", specifier = ">=6.11.1" },
     { name = "pytest", specifier = ">=8.3.4" },
