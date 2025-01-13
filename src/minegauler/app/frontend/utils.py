@@ -31,8 +31,8 @@ import gzip
 import json
 import logging
 import pathlib
-from collections import namedtuple
-from typing import Iterable, List, Mapping, Tuple
+from collections.abc import Iterable, Mapping
+from typing import NamedTuple
 
 import attrs
 
@@ -44,15 +44,15 @@ from ..shared.utils import format_timestamp
 
 logger = logging.getLogger(__name__)
 
-CellUpdate_T = Tuple[float, Mapping[Coord, CellContents]]
+CellUpdate_T = tuple[float, Mapping[Coord, CellContents]]
 
 
 # TODO
-class MouseMove(namedtuple("_MouseMove", ["elapsed", "position"])):
+class MouseMove(NamedTuple):
     """A mouse move tuple."""
 
-    def __new__(cls, elapsed: float, position: Coord):
-        return super().__new__(cls, elapsed, position)
+    elapsed: float
+    position: Coord
 
 
 def save_highscore_file(
@@ -90,7 +90,7 @@ def save_highscore_file(
 
 def read_highscore_file(
     path: PathLike,
-) -> Tuple[HighscoreStruct, List[CellUpdate_T]]:
+) -> tuple[HighscoreStruct, list[CellUpdate_T]]:
     """
     Read data from a highscore file.
 
@@ -104,5 +104,5 @@ def read_highscore_file(
     return HighscoreStruct(**data["highscore"]), data["cell_updates"]
 
 
-def blend_colours(ratio, high=(255, 0, 0), low=(255, 255, 64)) -> Tuple[int, int, int]:
+def blend_colours(ratio, high=(255, 0, 0), low=(255, 255, 64)) -> tuple[int, int, int]:
     return tuple(int(low[i] + ratio * (high[i] - low[i])) for i in range(3))

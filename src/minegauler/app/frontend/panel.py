@@ -12,6 +12,7 @@ Exports
 
 __all__ = ("PanelWidget",)
 
+import contextlib
 from typing import Optional, Union
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
@@ -102,10 +103,8 @@ class PanelWidget(QWidget):
         Arguments:
         state (str | GameState | FaceState)
         """
-        try:
+        with contextlib.suppress(AttributeError):
             state = state.value.lower()
-        except AttributeError:
-            pass
         life = 1
         fname = f"face{life}{state}.png"
         pixmap = QPixmap(str(paths.IMG_DIR / "faces" / fname))

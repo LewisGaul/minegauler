@@ -5,10 +5,11 @@ __all__ = ("MinefieldWidget",)
 import functools
 import logging
 import time
-from typing import Callable, Iterable, List, Mapping, Optional, Set, Type
+from collections.abc import Iterable, Mapping
+from typing import Callable, Optional
 
 from PyQt6.QtCore import QSize, Qt, pyqtSignal
-from PyQt6.QtGui import QBrush, QColor, QImage, QMouseEvent, QPainter, QPen, QPixmap
+from PyQt6.QtGui import QBrush, QColor, QMouseEvent, QPen
 from PyQt6.QtWidgets import (
     QApplication,
     QGraphicsScene,
@@ -21,14 +22,14 @@ from ...core import BoardBase, api
 from ...shared.types import CellContents, CellImageType, Coord, GameMode
 from ..state import State
 from ..utils import CellUpdate_T, MouseMove, blend_colours
-from . import regular, simulate, split_cell
+from . import regular, split_cell
 from ._base import RAISED_CELL, SUNKEN_CELL, FlagAction, MinefieldWidgetImplBase
 
 
 logger = logging.getLogger(__name__)
 
 
-_IMPLS: Mapping[GameMode, Type[MinefieldWidgetImplBase]] = {
+_IMPLS: Mapping[GameMode, type[MinefieldWidgetImplBase]] = {
     GameMode.REGULAR: regular.MinefieldWidgetImpl,
     GameMode.SPLIT_CELL: split_cell.MinefieldWidgetImpl,
 }
@@ -94,14 +95,14 @@ class MinefieldWidget(QGraphicsView):
         self._right_drag_action: FlagAction = FlagAction.FLAG
 
         # Set of coords for cells which are sunken.
-        self._sunken_cells: Set[Coord] = set()
+        self._sunken_cells: set[Coord] = set()
 
         # Coloured squares for probabilities.
         self._colour_squares = []
 
         # Mouse tracking info, for simulating a played game.
-        self._mouse_tracking: List[MouseMove] = []
-        self._mouse_events: List[CellUpdate_T] = []
+        self._mouse_tracking: list[MouseMove] = []
+        self._mouse_events: list[CellUpdate_T] = []
         self._first_click_time: Optional[int] = None
 
         self.reset()
@@ -499,7 +500,7 @@ class MinefieldWidget(QGraphicsView):
         self._redraw_cells()
         self._update_size()
 
-    def get_mouse_events(self) -> List[CellUpdate_T]:
+    def get_mouse_events(self) -> list[CellUpdate_T]:
         return self._mouse_events
 
     def _set_cell_colour(self, coord: Coord, prob: float) -> None:
@@ -542,4 +543,4 @@ class MinefieldWidget(QGraphicsView):
             return
         for coord, prob in probs.items():
             if self._board[coord] is CellContents.Unclicked:
-                self._set_cell_colour(coord, probs[coord])
+                self._set_cell_colour(coord, prob)

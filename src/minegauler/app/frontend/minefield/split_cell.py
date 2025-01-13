@@ -3,7 +3,6 @@
 __all__ = ("MinefieldWidgetImpl",)
 
 import logging
-from typing import Dict
 
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QGraphicsScene
@@ -28,8 +27,8 @@ class MinefieldWidgetImpl(_base.MinefieldWidgetImplBase):
         self, scene: QGraphicsScene, ctrlr: api.AbstractController, state: State
     ):
         super().__init__(scene, ctrlr, state)
-        self._small_cell_images: Dict[CellContents, QPixmap] = {}
-        self._large_cell_images: Dict[CellContents, QPixmap] = {}
+        self._small_cell_images: dict[CellContents, QPixmap] = {}
+        self._large_cell_images: dict[CellContents, QPixmap] = {}
         self.update_cell_images()
 
     def set_cell_image(self, coord: Coord, state: CellContents) -> None:

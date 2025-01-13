@@ -139,6 +139,7 @@ ignore = [
     "E203",  # whitespace-before-punctuation
     "E211",  # whitespace-before-parameters
     "E241",  # multiple-spaces-after-comma
+    "E266",  # multiple-leading-hashes-for-block-comment
     "E402",  # module-import-not-at-top-of-file
     "E501",  # line-too-long
     # pep8-naming
@@ -151,6 +152,7 @@ ignore = [
     "UP015",  # redundant-open-modes
     "UP032",  # f-string
     # flake8-bugbear
+    "B007",  # unused-loop-control-variable
     "B011",  # assert-false
     # Ruff-specific rules
     "RUF028",  # invalid-formatter-suppression-comment
@@ -168,10 +170,22 @@ lines-after-imports = 2
 keep-runtime-typing = true
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["D"]
-"**/__init__.py" = ["RUF022"]
+"src/**" = ["PT"]
+"tests/**" = ["D"]
 # Temporary stuff that should be fixed up...
-"**" = ["D", "PLW1641"]
+"**" = [
+    "D",
+    "PLW1641",  # eq-without-hash
+]
+"src/minegauler/app/frontend/__init__.py" = [
+    "PLW0603",  # global-statement
+]
+"src/minegauler/app/frontend/highscores.py" = [
+    "B008",  # function-call-in-default-argument
+]
+"src/minegauler/app/frontend/state.py" = [
+    "RUF009",  # function-call-in-dataclass-default-argument
+]
 
 # mypy
 # ------------------------
