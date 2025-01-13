@@ -219,7 +219,6 @@ source = [
 ]
 omit = [
     "*venv*/**",
-    "src/minegauler/app/highscores/mysql.py",
 ]
 
 [tool.coverage.report]

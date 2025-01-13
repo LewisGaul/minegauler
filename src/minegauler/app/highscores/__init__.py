@@ -1,7 +1,7 @@
 # February 2022, Lewis Gaul
 
 """
-Highscores handling.
+Highscores handling API.
 
 """
 
@@ -9,13 +9,14 @@ __all__ = (
     "HighscoreReadError",
     "HighscoreSettings",
     "HighscoreStruct",
-    "SQLiteDB",
+    "SQLiteHighscoresDB",
     "filter_and_sort",
     "get_highscores",
     "insert_highscore",
     "is_highscore_new_best",
 )
 
+import functools
 import logging
 import threading
 from typing import Dict, Iterable, List, Optional
@@ -28,23 +29,25 @@ from .._version import __version__
 from ..shared import utils
 from ..shared.types import Difficulty, GameMode, PathLike, ReachSetting
 from . import compat
-from .base import AbstractHighscoresDB, HighscoreSettings, HighscoreStruct
+from .base import HighscoresDB, HighscoreSettings, HighscoreStruct
 from .compat import HighscoreReadError
 
-# from .mysql import MySQLDB  # Do not uncomment this without adding dependency on mysql connector
-from .sqlite import SQLiteDB
+from .sqlite import SQLiteHighscoresDB
 
 
 logger = logging.getLogger(__name__)
 
 _REMOTE_POST_URL = "http://minegauler.lewisgaul.co.uk/api/v1/highscore"
 
-_default_local_db = SQLiteDB(paths.HIGHSCORES_FILE)
+
+@functools.cache
+def _get_default_local_db() -> HighscoreStruct:
+    return SQLiteHighscoresDB.create_or_open_with_compat(paths.HIGHSCORES_FILE)
 
 
 def get_highscores(
     *,
-    database: Optional[AbstractHighscoresDB] = None,
+    database: Optional[HighscoresDB] = None,
     settings: Optional[HighscoreSettings] = None,
     game_mode: Optional[GameMode] = None,
     difficulty: Optional[Difficulty] = None,
@@ -74,7 +77,7 @@ def get_highscores(
         Optionally specify a name to filter by.
     """
     if database is None:
-        database = _default_local_db
+        database = _get_default_local_db()
     if settings is not None:
         game_mode = settings.game_mode
         difficulty = settings.difficulty
@@ -94,7 +97,7 @@ def get_highscores(
 def insert_highscore(
     highscore: HighscoreStruct,
     *,
-    database: Optional[AbstractHighscoresDB] = None,
+    database: Optional[HighscoresDB] = None,
     post_remote: bool = True,
 ) -> None:
     """
@@ -108,7 +111,7 @@ def insert_highscore(
         Whether to post the highscore to the remote master DB.
     """
     if database is None:
-        database = _default_local_db
+        database = _get_default_local_db()
     database.insert_highscores([highscore])
 
     if post_remote:
@@ -122,7 +125,11 @@ def insert_highscore(
         threading.Thread(target=_post_catch_exc).start()
 
 
-def retrieve_highscores(path: PathLike) -> int:
+def retrieve_highscores(
+    path: PathLike,
+    *,
+    database: Optional[HighscoresDB] = None,
+) -> int:
     """
     Insert highscores from another DB at the given path.
 
@@ -135,7 +142,9 @@ def retrieve_highscores(path: PathLike) -> int:
     :raise HighscoreReadError:
         If unable to read highscores from the given path.
     """
-    return _default_local_db.insert_highscores(compat.read_highscores(path))
+    if database is None:
+        database = _get_default_local_db()
+    return database.insert_highscores(compat.read_highscores(path))
 
 
 def filter_and_sort(

@@ -12,7 +12,7 @@ __all__ = ("read_highscores",)
 import sqlite3
 from typing import Iterable
 
-from ...shared.types import PathLike, ReachSetting
+from ...shared.types import PathLike
 from ..base import HighscoreStruct
 
 
@@ -21,7 +21,7 @@ _TABLE_NAMES = ["regular", "split_cell"]
 
 def read_highscores(path: PathLike) -> Iterable[HighscoreStruct]:
     ret = set()
-    with sqlite3.connect(str(path)) as conn:
+    with sqlite3.connect(path) as conn:
         for table_name in _TABLE_NAMES:
             cursor = conn.execute(f"SELECT * FROM {table_name}")
             for row in cursor:

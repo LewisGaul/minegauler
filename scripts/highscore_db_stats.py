@@ -46,7 +46,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str]) -> None:
     args = parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
-    db = hs.SQLiteDB(args.file)
+    db = hs.SQLiteHighscoresDB(args.file)
     all_highscores = hs.get_highscores(database=db)
     print_highscore_stats(all_highscores)
 

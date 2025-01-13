@@ -48,7 +48,7 @@ def read_highscores(path: PathLike) -> Iterable[HighscoreStruct]:
         path = path / "highscores.db"
 
     if path.suffix == ".db":
-        with sqlite3.connect(str(path)) as conn:
+        with sqlite3.connect(path) as conn:
             sqlite_db_version = next(conn.execute("PRAGMA user_version"))[0]
         func: ConversionFunc
         if sqlite_db_version == 0:

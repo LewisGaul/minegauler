@@ -21,7 +21,7 @@ _TABLE_NAME = "highscores"
 
 def read_highscores(path: PathLike) -> Iterable[HighscoreStruct]:
     ret = set()
-    with sqlite3.connect(str(path)) as conn:
+    with sqlite3.connect(path) as conn:
         cursor = conn.execute(f"SELECT * FROM {_TABLE_NAME}")
         for row in cursor:
             # First row entry is 'index' (ignore).

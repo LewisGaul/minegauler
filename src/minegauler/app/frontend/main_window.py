@@ -14,9 +14,9 @@ __all__ = ("MinegaulerGUI",)
 
 import functools
 import logging
-import pathlib
 import textwrap
 import traceback
+from pathlib import Path
 from typing import Callable, Dict, Mapping, Optional
 
 from PyQt6.QtCore import QSize, Qt, pyqtSignal
@@ -815,7 +815,7 @@ class MinegaulerGUI(
         dialog = QFileDialog(
             parent=self,
             caption="Retrieve highscores",
-            directory=str(pathlib.Path.home()),
+            directory=str(Path.home()),
             filter="highscores.db",
         )
         dialog.setFileMode(QFileDialog.FileMode.Directory)
@@ -828,7 +828,7 @@ class MinegaulerGUI(
         path = dialog.selectedFiles()[0]
         logger.debug("Selected directory: %s", path)
 
-        path = pathlib.Path(path)
+        path = Path(path)
         if not path.exists():
             _msg_popup(
                 self,
@@ -838,8 +838,9 @@ class MinegaulerGUI(
             )
             return
 
-        tail = pathlib.Path()
-        for part in reversed(["minegauler", "data", "highscores.db"]):
+        tail = Path()
+        search_path = Path("minegauler/app/data/highscores.db")
+        for part in reversed(search_path.parts):
             tail = part / tail
             if (path / tail).is_file():
                 file = path / tail
@@ -850,8 +851,8 @@ class MinegaulerGUI(
                 QMessageBox.Icon.Warning,
                 "Not found",
                 "No highscores database found when searching along the path "
-                "'.../minegauler/data/highscores.db'. Contact "
-                "minegauler@gmail.com if this error is unexpected.",
+                f"'.../{search_path}'. Contact minegauler@gmail.com if this "
+                "error is unexpected.",
             )
             return
 
@@ -895,7 +896,7 @@ class MinegaulerGUI(
         if not hs_file:
             return  # cancelled
 
-        hs_file = pathlib.Path(hs_file)
+        hs_file = Path(hs_file)
         try:
             hs, cell_updates = utils.read_highscore_file(hs_file)
             x_size, y_size, _ = hs.difficulty.get_board_values()

@@ -13,7 +13,11 @@ import requests
 
 import minegauler.app
 from minegauler.app import highscores
-from minegauler.app.highscores import HighscoreSettings, HighscoreStruct
+from minegauler.app.highscores import (
+    HighscoreSettings,
+    HighscoreStruct,
+    SQLiteHighscoresDB,
+)
 from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting
 
 
@@ -57,9 +61,9 @@ class TestLocalHighscoreDatabase:
 
     def test_create_db(self, tmp_local_db_path: Path):
         """Test creating a new highscores DB."""
-        db = highscores.SQLiteDB(tmp_local_db_path)
+        db = SQLiteHighscoresDB.create(tmp_local_db_path)
         assert db.path == tmp_local_db_path
-        assert db.get_db_version() == 2
+        assert db.get_version() == 2
         tables = list(
             db.execute(
                 "SELECT name FROM sqlite_master "
@@ -70,7 +74,7 @@ class TestLocalHighscoreDatabase:
 
     def test_insert_count_get(self, tmp_local_db_path: Path):
         """Test inserting, counting and getting highscores."""
-        db = highscores.SQLiteDB(tmp_local_db_path)
+        db = SQLiteHighscoresDB.create(tmp_local_db_path)
         # Empty DB
         assert db.count_highscores() == 0
         assert db.get_highscores() == []
@@ -211,12 +215,23 @@ class TestLocalHighscoreDatabase:
             )
         ]
 
-        # Case insensitive name match.
+        # Case-insensitive name match.
         assert db.get_highscores(name="TEStnaME") == [fake_hs]
+
+    def test_create_insert_reinit(self, tmp_local_db_path: Path):
+        """Test creating, inserting a highscore, and re-initialising the DB."""
+        assert not tmp_local_db_path.exists()
+        db = SQLiteHighscoresDB.create_or_open_with_compat(tmp_local_db_path)
+        assert tmp_local_db_path.exists()
+        db.insert_highscores([fake_hs])
+        db.close()
+
+        db_reinit = SQLiteHighscoresDB.create_or_open_with_compat(tmp_local_db_path)
+        assert db_reinit.get_highscores() == [fake_hs]
 
     def test_no_duplication(self, tmp_local_db_path: Path):
         """Test duplicate highscores are not stored."""
-        db = highscores.SQLiteDB(tmp_local_db_path)
+        db = SQLiteHighscoresDB.create(tmp_local_db_path)
         db.insert_highscores([fake_hs, fake_hs])
         db.insert_highscores([fake_hs])
         assert db.count_highscores() == 1
