@@ -30,9 +30,9 @@ from .._metadata import VERSION
 from ..shared import utils
 from ..shared.types import Difficulty, GameMode, PathLike, ReachSetting
 from . import compat
-from .base import HighscoresDB, HighscoreSettings, HighscoreStruct
 from .compat import HighscoreReadError
 from .sqlite import SQLiteHighscoresDB
+from .types import HighscoresDB, HighscoreSettings, HighscoreStruct
 
 
 logger = logging.getLogger(__name__)

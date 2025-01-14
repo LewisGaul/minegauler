@@ -286,7 +286,7 @@ class TestModuleAPIs:
         # Settings take precedent.
         highscores.get_highscores(
             database=mock_db,
-            settings=HighscoreSettings.get_default(),
+            settings=HighscoreSettings.original(),
             game_mode="NONSENSE",
             reach=ReachSetting.LONG,
             drag_select=True,

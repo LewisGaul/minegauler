@@ -32,6 +32,12 @@ class SQLiteDB:
             conn.execute(f"PRAGMA user_version = {version}")
         return cls(path)
 
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
+
     @property
     def conn(self) -> sqlite3.Connection:
         return self._conn

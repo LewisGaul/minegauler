@@ -1,7 +1,7 @@
 # February 2022, Lewis Gaul
 
 """
-Base classes/implementations for highscore handling.
+Base classes and types for highscore handling.
 
 """
 
@@ -20,6 +20,7 @@ from collections.abc import Iterable
 from typing import Optional, Union
 
 import attrs
+from typing_extensions import Self
 
 from ..shared.types import Difficulty, GameMode, ReachSetting
 from ..shared.utils import StructConstructorMixin
@@ -28,7 +29,7 @@ from ..shared.utils import StructConstructorMixin
 logger = logging.getLogger(__name__)
 
 
-@attrs.frozen
+@attrs.frozen  # TODO: Make kw-only
 class HighscoreSettings(StructConstructorMixin):
     """A set of highscore settings."""
 
@@ -39,32 +40,35 @@ class HighscoreSettings(StructConstructorMixin):
     drag_select: bool = attrs.field(converter=bool)
 
     @classmethod
-    def get_default(cls) -> HighscoreSettings:
+    def original(cls) -> Self:
         return cls(GameMode.REGULAR, Difficulty.BEGINNER, 1, ReachSetting.NORMAL, False)
 
 
-@attrs.frozen
-class HighscoreStruct(HighscoreSettings):
+@attrs.frozen  # TODO: Make kw-only
+class HighscoreStruct:  # TODO: Rename to just 'Highscore'
     """A single highscore."""
 
+    settings: HighscoreSettings
     name: str
     timestamp: int
     elapsed: float
     bbbv: int
-    bbbvps: float
     flagging: float
+
+    @property
+    def bbbvps(self) -> float:
+        return self.bbbv / self.elapsed
 
     def to_row(self) -> tuple[Union[int, float, str], ...]:
         return (
-            self.difficulty.value,
-            self.per_cell,
-            self.reach.value,
-            int(self.drag_select),
+            self.settings.difficulty.value,
+            self.settings.per_cell,
+            self.settings.reach.value,
+            int(self.settings.drag_select),
             self.name,
             self.timestamp,
             self.elapsed,
             self.bbbv,
-            self.bbbvps,
             self.flagging,
         )
 

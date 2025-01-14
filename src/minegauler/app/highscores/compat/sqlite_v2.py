@@ -1,9 +1,23 @@
 # February 2022, Lewis Gaul
 
 """
-Compatibility with v1 SQLite highscore format.
+Compatibility with v2 SQLite highscore format.
 
 This version adds the 'reach' setting highscore support in v4.2.0 minegauler.
+
+DB structure:
+ - One table per game mode ('regular' and 'split_cell')
+ - Columns:
+   0. difficulty: str ("B", "I", "E", "M", "L")
+   1. per_cell: int (1, 2, 3)
+   2. reach: int (4, 8, 24)
+   3. drag_select: int (0, 1)
+   4. name: str (max 20 characters)
+   5. timestamp: int
+   6. elapsed: float
+   7. bbbv: int
+   8. bbbvps: float
+   9. flagging: float (in the range 0-1)
 
 """
 
@@ -13,7 +27,7 @@ import sqlite3
 from collections.abc import Iterable
 
 from ...shared.types import PathLike
-from ..base import HighscoreStruct
+from ..types import HighscoreStruct
 
 
 _TABLE_NAMES = ["regular", "split_cell"]
