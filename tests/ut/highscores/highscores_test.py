@@ -27,18 +27,20 @@ def tmp_local_db_path(tmp_path: Path) -> Path:
     return tmp_path / "highscores.db"
 
 
+fake_hs_settings = HighscoreSettings(
+    game_mode=GameMode.REGULAR,
+    difficulty=Difficulty.MASTER,
+    per_cell=1,
+    reach=ReachSetting.NORMAL,
+    drag_select=True,
+)
 fake_hs = HighscoreStruct(
-    GameMode.REGULAR,
-    "M",
-    1,
-    ReachSetting.NORMAL,
-    True,
-    "testname",
-    1234,
-    166.49,
-    322,
-    1.94,
-    0.0,
+    settings=fake_hs_settings,
+    name="testname",
+    timestamp=1234,
+    elapsed=166.49,
+    bbbv=322,
+    flagging=0.2,
 )
 
 fake_hs_json = {
@@ -51,8 +53,7 @@ fake_hs_json = {
     "timestamp": 1234,
     "elapsed": 166.49,
     "bbbv": 322,
-    "bbbvps": 1.94,
-    "flagging": 0.0,
+    "flagging": 0.2,
 }
 
 
@@ -70,7 +71,7 @@ class TestLocalHighscoreDatabase:
                 "WHERE type='table' AND name NOT LIKE 'sqlite_%'"
             )
         )
-        assert list(tables) == [("regular",), ("split_cell",)]
+        assert tables == [("highscores",)]
 
     def test_insert_count_get(self, tmp_local_db_path: Path):
         """Test inserting, counting and getting highscores."""
@@ -88,82 +89,88 @@ class TestLocalHighscoreDatabase:
         # Multiple highscores
         multiple_hs = {
             HighscoreStruct(
-                GameMode.REGULAR,
-                "B",
-                1,
-                ReachSetting.NORMAL,
-                False,
-                "NAME1",
-                123400,
-                3.00,
-                5,
-                1.56,
-                0.0,
+                settings=HighscoreSettings(
+                    game_mode=GameMode.REGULAR,
+                    difficulty=Difficulty.BEGINNER,
+                    per_cell=1,
+                    reach=ReachSetting.NORMAL,
+                    drag_select=False,
+                ),
+                name="NAME1",
+                timestamp=123400,
+                elapsed=3.00,
+                bbbv=5,
+                flagging=0.2,
             ),
             HighscoreStruct(
-                GameMode.REGULAR,
-                "B",
-                1,
-                ReachSetting.SHORT,
-                False,
-                "NAME2",
-                123401,
-                3.11,
-                5,
-                1.56,
-                0.0,
+                settings=HighscoreSettings(
+                    game_mode=GameMode.REGULAR,
+                    difficulty=Difficulty.BEGINNER,
+                    per_cell=1,
+                    reach=ReachSetting.SHORT,
+                    drag_select=False,
+                ),
+                name="NAME2",
+                timestamp=123401,
+                elapsed=3.11,
+                bbbv=5,
+                flagging=0.2,
             ),
             HighscoreStruct(
-                GameMode.REGULAR,
-                "B",
-                1,
-                ReachSetting.LONG,
-                True,
-                "NAME1",
-                123402,
-                3.22,
-                5,
-                1.56,
-                0.0,
+                settings=HighscoreSettings(
+                    game_mode=GameMode.REGULAR,
+                    difficulty=Difficulty.BEGINNER,
+                    per_cell=1,
+                    reach=ReachSetting.LONG,
+                    drag_select=True,
+                ),
+                name="NAME1",
+                timestamp=123402,
+                elapsed=3.22,
+                bbbv=5,
+                flagging=0.2,
             ),
             HighscoreStruct(
-                GameMode.REGULAR,
-                "B",
-                2,
-                ReachSetting.NORMAL,
-                False,
-                "NAME1",
-                123403,
-                3.33,
-                5,
-                1.56,
-                0.0,
+                settings=HighscoreSettings(
+                    game_mode=GameMode.REGULAR,
+                    difficulty=Difficulty.BEGINNER,
+                    per_cell=2,
+                    reach=ReachSetting.NORMAL,
+                    drag_select=False,
+                ),
+                name="NAME1",
+                timestamp=123403,
+                elapsed=3.33,
+                bbbv=5,
+                flagging=0.2,
             ),
             HighscoreStruct(
-                GameMode.REGULAR,
-                "I",
-                1,
-                ReachSetting.NORMAL,
-                False,
-                "NAME1",
-                123404,
-                3.44,
-                5,
-                1.56,
-                0.0,
+                settings=HighscoreSettings(
+                    game_mode=GameMode.REGULAR,
+                    difficulty=Difficulty.INTERMEDIATE,
+                    per_cell=1,
+                    reach=ReachSetting.NORMAL,
+                    drag_select=False,
+                ),
+                name="NAME1",
+                timestamp=123404,
+                elapsed=3.44,
+                bbbv=5,
+                flagging=0.2,
             ),
             HighscoreStruct(
-                GameMode.SPLIT_CELL,
-                "I",
-                1,
-                ReachSetting.NORMAL,
-                False,
-                "NAME1",
-                123404,
-                3.55,
-                5,
-                1.56,
-                0.0,
+                settings=HighscoreSettings(
+                    game_mode=GameMode.SPLIT_CELL,
+                    difficulty=Difficulty.INTERMEDIATE,
+                    per_cell=1,
+                    reach=ReachSetting.NORMAL,
+                    drag_select=False,
+                ),
+                name="NAME1",
+                timestamp=123404,
+                elapsed=3.55,
+                bbbv=5,
+                flagging=0.2,
             ),
         }
         db.insert_highscores(multiple_hs)
@@ -201,17 +208,18 @@ class TestLocalHighscoreDatabase:
             )
         ) == [
             HighscoreStruct(
-                GameMode.REGULAR,
-                "B",
-                1,
-                ReachSetting.NORMAL,
-                False,
-                "NAME1",
-                123400,
-                3,
-                5,
-                1.56,
-                0,
+                settings=HighscoreSettings(
+                    game_mode=GameMode.REGULAR,
+                    difficulty=Difficulty.BEGINNER,
+                    per_cell=1,
+                    reach=ReachSetting.NORMAL,
+                    drag_select=False,
+                ),
+                name="NAME1",
+                timestamp=123400,
+                elapsed=3,
+                bbbv=5,
+                flagging=0.2,
             )
         ]
 

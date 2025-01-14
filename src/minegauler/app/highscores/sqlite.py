@@ -6,8 +6,8 @@ from __future__ import annotations
 __all__ = ("SQLiteHighscoresDB",)
 
 import logging
-import os
 import textwrap
+import time
 import typing
 from collections.abc import Iterable
 from pathlib import Path
@@ -39,8 +39,7 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
             raise RuntimeError(
                 f"DB at {path} has version {version}, expected {self.VERSION}"
             )
-        for t in self.TABLES.values():
-            self.execute(self._get_create_table_sql(t), commit=True)
+        self.execute(self._get_create_table_sql(), commit=True)
 
     @classmethod
     def create(cls, path: PathLike, *, version: int = VERSION) -> Self:
@@ -60,13 +59,27 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
                     found_version,
                 )
                 # Read highscores into new DB using compat subpackage.
-                tmp_db_path = Path.with_suffix(".new")
-                new_db = cls.create(tmp_db_path, version=cls.VERSION)
-                new_db.insert_highscores(compat.read_highscores(path))
+                tmp_db_path = path.with_suffix(".new.db")
+                if tmp_db_path.exists():
+                    logger.warning("DB already exists at %s, cleaning up", tmp_db_path)
+                    tmp_db_path.unlink()
+                with cls.create(tmp_db_path, version=cls.VERSION) as new_db:
+                    try:
+                        new_db.insert_highscores(compat.read_highscores(path))
+                    except Exception:
+                        archive_path = path.with_suffix(f".{int(time.time())}.db")
+                        logger.error(
+                            "Failed to port old highscores from DB version %d to new DB, "
+                            "saving at %s",
+                            found_version,
+                            archive_path,
+                        )
+                        logger.debug("", exc_info=True)
+                        path.rename(archive_path)
+                    else:
+                        path.rename(path.with_suffix(f".old-v{found_version}.db"))
                 # Switch to the new DB.
-                new_db.close()
-                os.rename(path, path.with_suffix(f".old-v{found_version}"))
-                os.rename(tmp_db_path, path)
+                tmp_db_path.rename(path)
             self = cls(path)
         return self
 
@@ -127,11 +140,11 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
         )
         return self.count_highscores() - orig_count
 
-    @staticmethod
-    def _get_create_table_sql(table_name: str) -> str:
+    @classmethod
+    def _get_create_table_sql(cls) -> str:
         return textwrap.dedent(
             f"""\
-            CREATE TABLE IF NOT EXISTS {table_name} (
+            CREATE TABLE IF NOT EXISTS {cls._TABLE_NAME} (
                 game_mode TEXT NOT NULL,
                 difficulty TEXT NOT NULL,
                 per_cell INTEGER NOT NULL,
@@ -146,8 +159,9 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
             )"""
         )
 
+    @classmethod
     def _get_select_highscores_sql(
-        self,
+        cls,
         *,
         game_mode: Optional[GameMode] = None,
         difficulty: Optional[Difficulty] = None,
@@ -171,19 +185,21 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
         if name is not None:
             conditions.append(f"LOWER(name)='{name.lower()}'")
         return "SELECT {fields} FROM {table} {where} ORDER BY elapsed ASC".format(
-            fields=", ".join(self._TABLE_FIELDS),
-            table=self._TABLE_NAME,
+            fields=", ".join(cls._TABLE_FIELDS),
+            table=cls._TABLE_NAME,
             where="WHERE " + " AND ".join(conditions) if conditions else "",
         )
 
-    def _get_insert_highscore_sql(self) -> str:
+    @classmethod
+    def _get_insert_highscore_sql(cls) -> str:
         """Get the SQL command to insert a highscore into a DB."""
         return "INSERT OR IGNORE INTO {table} ({fields}) VALUES ({fmt})".format(
-            table=self._TABLE_NAME,
-            fields=", ".join(self._TABLE_FIELDS),
-            fmt=", ".join("?" for _ in self._TABLE_FIELDS),
+            table=cls._TABLE_NAME,
+            fields=", ".join(cls._TABLE_FIELDS),
+            fmt=", ".join("?" for _ in cls._TABLE_FIELDS),
         )
 
-    def _get_highscores_count_sql(self) -> str:
+    @classmethod
+    def _get_highscores_count_sql(cls) -> str:
         """Get the SQL command to count the rows of the highscores table."""
-        return f"SELECT COUNT(*) FROM {self._TABLE_NAME}"
+        return f"SELECT COUNT(*) FROM {cls._TABLE_NAME}"
