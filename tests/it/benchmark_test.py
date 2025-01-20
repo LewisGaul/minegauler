@@ -4,6 +4,7 @@ Benchmark tests.
 February 2020, Lewis Gaul
 """
 
+import functools
 import json
 import tempfile
 from types import ModuleType
@@ -18,8 +19,7 @@ from . import process_events as _utils_process_events
 from . import run_main_entrypoint
 
 
-def process_events():
-    _utils_process_events(0)
+process_events = functools.partial(_utils_process_events, ignore_wait=True)
 
 
 class ITBase:

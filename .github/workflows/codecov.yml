@@ -6,8 +6,6 @@ on:
       - 'tests/**'
       - '.github/**'
   pull_request:
-env:
-  QT_QPA_PLATFORM: offscreen
 jobs:
   run:
     runs-on: ubuntu-latest
