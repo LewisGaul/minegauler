@@ -1,6 +1,6 @@
 # January 2022, Lewis Gaul
 
-__all__ = ("process_events", "run_main_entrypoint")
+__all__ = ("EVENT_PAUSE", "process_events", "run_main_entrypoint")
 
 import logging
 import os
@@ -27,18 +27,19 @@ def run_main_entrypoint() -> types.ModuleType:
 
 
 try:
-    _EVENT_PAUSE = float(os.environ["TEST_IT_EVENT_WAIT"])
+    EVENT_PAUSE = float(os.environ["TEST_IT_EVENT_WAIT"])
 except KeyError:
-    _EVENT_PAUSE = 0
+    EVENT_PAUSE = 0
 
 
-def process_events(wait: float = _EVENT_PAUSE) -> None:
+def process_events(*, ignore_wait: bool = False) -> None:
     """
     Manually process Qt events (normally taken care of by the event loop).
 
-    :param wait:
-        The amount of time to spend processing events (in seconds).
+    :param ignore_wait:
+        Whether to ignore the default wait time when processing events.
     """
+    wait = 0 if ignore_wait else EVENT_PAUSE
     logger.debug("Processing Qt events (pause of %.2fs)", wait)
     start_time = time.time()
     QApplication.processEvents()
