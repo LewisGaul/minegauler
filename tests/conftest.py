@@ -13,6 +13,7 @@ import minegauler.app
 import minegauler.app.highscores
 
 from . import APP_DIR
+from .it import EVENT_PAUSE
 
 
 logger = logging.getLogger(__name__)
@@ -72,6 +73,12 @@ def sandbox(tmpdir_factory: pytest.TempdirFactory):
         ctxs.enter_context(mock.patch("requests.post"))
 
         yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _env_vars() -> None:
+    if not EVENT_PAUSE:
+        os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
 
 @pytest.fixture
