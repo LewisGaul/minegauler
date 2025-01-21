@@ -64,7 +64,7 @@ class TestLocalHighscoreDatabase:
         """Test creating a new highscores DB."""
         db = SQLiteHighscoresDB.create(tmp_local_db_path)
         assert db.path == tmp_local_db_path
-        assert db.get_version() == 2
+        assert db.get_version() == 3
         tables = list(
             db.execute(
                 "SELECT name FROM sqlite_master "
@@ -167,7 +167,7 @@ class TestLocalHighscoreDatabase:
                     drag_select=False,
                 ),
                 name="NAME1",
-                timestamp=123404,
+                timestamp=123405,
                 elapsed=3.55,
                 bbbv=5,
                 flagging=0.2,
@@ -179,19 +179,23 @@ class TestLocalHighscoreDatabase:
         assert set(db.get_highscores()) == hscores
 
         # Filtered highscores
-        exp_highscores = {h for h in hscores if h.game_mode is GameMode.SPLIT_CELL}
+        exp_highscores = {
+            h for h in hscores if h.settings.game_mode is GameMode.SPLIT_CELL
+        }
         assert set(db.get_highscores(game_mode=GameMode.SPLIT_CELL)) == exp_highscores
 
-        exp_highscores = {h for h in hscores if h.difficulty is Difficulty.BEGINNER}
+        exp_highscores = {
+            h for h in hscores if h.settings.difficulty is Difficulty.BEGINNER
+        }
         assert set(db.get_highscores(difficulty=Difficulty.BEGINNER)) == exp_highscores
 
-        exp_highscores = {h for h in hscores if h.per_cell == 1}
+        exp_highscores = {h for h in hscores if h.settings.per_cell == 1}
         assert set(db.get_highscores(per_cell=1)) == exp_highscores
 
-        exp_highscores = {h for h in hscores if h.reach is ReachSetting.NORMAL}
+        exp_highscores = {h for h in hscores if h.settings.reach is ReachSetting.NORMAL}
         assert set(db.get_highscores(reach=ReachSetting.NORMAL)) == exp_highscores
 
-        exp_highscores = {h for h in hscores if h.drag_select is False}
+        exp_highscores = {h for h in hscores if h.settings.drag_select is False}
         assert set(db.get_highscores(drag_select=False)) == exp_highscores
 
         exp_highscores = {h for h in hscores if h.name == "NAME1"}

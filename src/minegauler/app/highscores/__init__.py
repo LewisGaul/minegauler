@@ -237,7 +237,10 @@ def _post_highscore_to_remote(highscore: HighscoreStruct):
     requests.post(
         _REMOTE_POST_URL,
         json={
-            "highscore": attrs.asdict(highscore),
+            "highscore": {
+                **attrs.asdict(highscore.settings),
+                **attrs.asdict(highscore, filter=attrs.filters.exclude("settings")),
+            },
             "app_version": VERSION,
         },
         timeout=5,

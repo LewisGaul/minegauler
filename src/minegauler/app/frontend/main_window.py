@@ -682,16 +682,17 @@ class MinegaulerGUI(
         ):
             assert info.started_info.prop_complete == 1
             highscore = HighscoreStruct(
-                game_mode=info.mode,
-                difficulty=info.difficulty,
-                per_cell=info.per_cell,
-                reach=info.reach,
+                settings=HighscoreSettings(
+                    game_mode=info.mode,
+                    difficulty=info.difficulty,
+                    per_cell=info.per_cell,
+                    reach=info.reach,
+                    drag_select=self._state.drag_select,
+                ),
+                name=self._state.name,
                 timestamp=int(info.started_info.start_time),
                 elapsed=info.started_info.elapsed,
                 bbbv=info.started_info.bbbv,
-                bbbvps=info.started_info.bbbvps,
-                drag_select=self._state.drag_select,
-                name=self._state.name,
                 flagging=info.started_info.prop_flagging,
             )
             try:
@@ -703,7 +704,7 @@ class MinegaulerGUI(
             # TODO: This is too slow...
             try:
                 new_best = highscores.is_highscore_new_best(
-                    highscore, highscores.get_highscores(settings=highscore)
+                    highscore, highscores.get_highscores(settings=highscore.settings)
                 )
             except Exception:
                 logger.exception("Error getting highscores")

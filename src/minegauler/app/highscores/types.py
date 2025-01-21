@@ -17,9 +17,10 @@ __all__ = (
 import abc
 import logging
 from collections.abc import Iterable
-from typing import Optional, Union
+from typing import Optional
 
 import attrs
+import attrs.validators as av
 from typing_extensions import Self
 
 from ..shared.types import Difficulty, GameMode, ReachSetting
@@ -29,48 +30,41 @@ from ..shared.utils import StructConstructorMixin
 logger = logging.getLogger(__name__)
 
 
-@attrs.frozen  # TODO: Make kw-only
+@attrs.frozen(kw_only=True)
 class HighscoreSettings(StructConstructorMixin):
     """A set of highscore settings."""
 
     game_mode: GameMode = attrs.field(converter=GameMode.from_str)
     difficulty: Difficulty = attrs.field(converter=Difficulty.from_str)
-    per_cell: int
+    per_cell: int = attrs.field(validator=av.in_([1, 2, 3]))
     reach: ReachSetting = attrs.field(converter=ReachSetting)
     drag_select: bool = attrs.field(converter=bool)
 
     @classmethod
     def original(cls) -> Self:
-        return cls(GameMode.REGULAR, Difficulty.BEGINNER, 1, ReachSetting.NORMAL, False)
+        return cls(
+            game_mode=GameMode.REGULAR,
+            difficulty=Difficulty.BEGINNER,
+            per_cell=1,
+            reach=ReachSetting.NORMAL,
+            drag_select=False,
+        )
 
 
-@attrs.frozen  # TODO: Make kw-only
+@attrs.frozen(kw_only=True)
 class HighscoreStruct:  # TODO: Rename to just 'Highscore'
     """A single highscore."""
 
     settings: HighscoreSettings
     name: str
-    timestamp: int
-    elapsed: float
-    bbbv: int
-    flagging: float
+    timestamp: int = attrs.field(validator=av.gt(0))
+    elapsed: float = attrs.field(validator=av.gt(0))
+    bbbv: int = attrs.field(validator=av.gt(0))
+    flagging: float = attrs.field(validator=av.and_(av.ge(0), av.le(1)))
 
     @property
     def bbbvps(self) -> float:
         return self.bbbv / self.elapsed
-
-    def to_row(self) -> tuple[Union[int, float, str], ...]:
-        return (
-            self.settings.difficulty.value,
-            self.settings.per_cell,
-            self.settings.reach.value,
-            int(self.settings.drag_select),
-            self.name,
-            self.timestamp,
-            self.elapsed,
-            self.bbbv,
-            self.flagging,
-        )
 
 
 class HighscoresDB(abc.ABC):

@@ -25,33 +25,42 @@ __all__ = ("read_highscores",)
 
 import sqlite3
 from collections.abc import Iterable
+from sqlite3 import Cursor, Row
+from typing import Callable
+
+import attrs
 
 from ...shared.types import PathLike
-from ..types import HighscoreStruct
+from ..types import HighscoreSettings, HighscoreStruct
 
 
 _TABLE_NAMES = ["regular", "split_cell"]
+
+
+def get_highscore_row_factory(
+    game_mode: str,
+) -> Callable[[Cursor, Row], HighscoreStruct]:
+
+    setting_fields = attrs.fields_dict(HighscoreSettings).keys()
+    entry_fields = attrs.fields_dict(HighscoreStruct).keys()
+
+    def highscore_row_factory(cursor: Cursor, row: Row) -> HighscoreStruct:
+        row_dict = {col[0]: row[i] for i, col in enumerate(cursor.description)}
+        row_dict["game_mode"] = game_mode
+        return HighscoreStruct(
+            settings=HighscoreSettings(**{f: row_dict[f] for f in setting_fields}),
+            **{f: row_dict[f] for f in entry_fields if f not in ("settings")},
+        )
+
+    return highscore_row_factory
 
 
 def read_highscores(path: PathLike) -> Iterable[HighscoreStruct]:
     ret = set()
     with sqlite3.connect(path) as conn:
         for table_name in _TABLE_NAMES:
-            cursor = conn.execute(f"SELECT * FROM {table_name}")
-            for row in cursor:
-                ret.add(
-                    HighscoreStruct(
-                        game_mode=table_name,
-                        difficulty=row[0],
-                        per_cell=row[1],
-                        reach=row[2],
-                        drag_select=row[3],
-                        name=row[4],
-                        timestamp=row[5],
-                        elapsed=row[6],
-                        bbbv=row[7],
-                        bbbvps=row[8],
-                        flagging=row[9],
-                    )
-                )
+            cursor = conn.cursor()
+            cursor.row_factory = get_highscore_row_factory(table_name)
+            cursor.execute(f"SELECT * FROM {table_name}")
+            ret.update(cursor)
     return ret

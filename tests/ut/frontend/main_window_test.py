@@ -13,7 +13,7 @@ from pytestqt.qtbot import QtBot
 from minegauler.app import api
 from minegauler.app.frontend import main_window, minefield, panel, state
 from minegauler.app.frontend.main_window import MinegaulerGUI
-from minegauler.app.highscores import HighscoreStruct
+from minegauler.app.highscores import HighscoreSettings, HighscoreStruct
 from minegauler.app.shared.types import Difficulty, GameMode, GameState, ReachSetting
 
 from ..utils import make_true_mock
@@ -154,17 +154,18 @@ class TestMinegaulerGUI:
         gui._state.drag_select = False
         gui._state.name = "NAME"
         exp_highscore = HighscoreStruct(
-            GameMode.REGULAR,
-            Difficulty.BEGINNER,
-            2,
-            ReachSetting.NORMAL,
-            False,
-            "NAME",
-            1234,
-            99.01,
-            123,
-            123 / 99.01,
-            0.4,
+            settings=HighscoreSettings(
+                game_mode=GameMode.REGULAR,
+                difficulty=Difficulty.BEGINNER,
+                per_cell=2,
+                reach=ReachSetting.NORMAL,
+                drag_select=False,
+            ),
+            name="NAME",
+            timestamp=1234,
+            elapsed=99.01,
+            bbbv=123,
+            flagging=0.4,
         )
 
         with mock.patch("minegauler.app.frontend.utils.save_highscore_file"):

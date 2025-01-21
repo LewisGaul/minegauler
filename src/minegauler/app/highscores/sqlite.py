@@ -6,6 +6,7 @@ from __future__ import annotations
 __all__ = ("SQLiteHighscoresDB",)
 
 import logging
+import sqlite3
 import textwrap
 import time
 import typing
@@ -19,10 +20,35 @@ from typing_extensions import Self
 from ..shared.types import Difficulty, GameMode, PathLike, ReachSetting
 from ..sqlite import SQLiteDB
 from . import compat
-from .types import HighscoresDB, HighscoreStruct
+from .types import HighscoresDB, HighscoreSettings, HighscoreStruct
 
 
 logger = logging.getLogger(__name__)
+
+
+def highscore_row_factory(cursor: sqlite3.Cursor, row: sqlite3.Row) -> HighscoreStruct:
+    setting_fields = attrs.fields_dict(HighscoreSettings).keys()
+    entry_fields = attrs.fields_dict(HighscoreStruct).keys()
+    row_dict = {col[0]: row[i] for i, col in enumerate(cursor.description)}
+    return HighscoreStruct(
+        settings=HighscoreSettings(**{f: row_dict[f] for f in setting_fields}),
+        **{f: row_dict[f] for f in entry_fields if f != "settings"},
+    )
+
+
+def highscore_to_row(highscore: HighscoreStruct) -> tuple:
+    return (
+        highscore.settings.game_mode.value,
+        highscore.settings.difficulty.value,
+        highscore.settings.per_cell,
+        highscore.settings.reach.value,
+        int(highscore.settings.drag_select),
+        highscore.name,
+        highscore.timestamp,
+        highscore.elapsed,
+        highscore.bbbv,
+        highscore.flagging,
+    )
 
 
 class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
@@ -31,7 +57,11 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
     VERSION: int = 3
 
     _TABLE_NAME: typing.Final = "highscores"
-    _TABLE_FIELDS: typing.Final = [f.name for f in attrs.fields(HighscoreStruct)]
+    _TABLE_FIELDS: typing.Final = [
+        f.name
+        for f in (*attrs.fields(HighscoreSettings), *attrs.fields(HighscoreStruct))
+        if f.name != "settings"
+    ]
 
     def __init__(self, path: PathLike):
         super().__init__(path)
@@ -95,39 +125,24 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
     ) -> Iterable[HighscoreStruct]:
         """Fetch highscores from the database using the given filters."""
         logger.debug("%s: Getting highscores", type(self).__name__)
-        if game_mode is None:
-            modes = list(GameMode)
-        else:
-            modes = [game_mode]
-        ret = []
-        for mode in modes:
-            self._conn.row_factory = lambda cursor, row, _mode=mode: HighscoreStruct(
-                game_mode=_mode,
-                **{col[0]: row[i] for i, col in enumerate(cursor.description)},
+        cursor = self._conn.cursor()
+        cursor.row_factory = highscore_row_factory
+        cursor.execute(
+            self._get_select_highscores_sql(
+                game_mode=game_mode,
+                difficulty=difficulty,
+                per_cell=per_cell,
+                reach=reach,
+                drag_select=drag_select,
+                name=name,
             )
-            cursor = self.execute(
-                self._get_select_highscores_sql(
-                    game_mode=mode,
-                    difficulty=difficulty,
-                    per_cell=per_cell,
-                    reach=reach,
-                    drag_select=drag_select,
-                    name=name,
-                )
-            )
-            ret.extend(cursor.fetchall())
-        self._conn.row_factory = None
-        return ret
+        )
+        return cursor.fetchall()
 
     def count_highscores(self) -> int:
         """Count the number of rows in the highscores table."""
         logger.debug("%s: Counting number of highscores in DB", type(self).__name__)
-        return sum(
-            self.extract_single_elem(
-                self.execute(self._get_highscores_count_sql(game_mode=mode))
-            )
-            for mode in GameMode
-        )
+        return self.extract_single_elem(self.execute(self._get_highscores_count_sql()))
 
     def insert_highscores(self, highscores: Iterable[HighscoreStruct]) -> int:
         """Insert highscores into the database."""
@@ -135,7 +150,7 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
         orig_count = self.count_highscores()
         self.executemany(
             self._get_insert_highscore_sql(),
-            [h.to_row() for h in highscores],
+            [highscore_to_row(h) for h in highscores],
             commit=True,
         )
         return self.count_highscores() - orig_count
