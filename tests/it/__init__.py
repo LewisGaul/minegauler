@@ -26,10 +26,7 @@ def run_main_entrypoint() -> types.ModuleType:
     return main_module
 
 
-try:
-    EVENT_PAUSE = float(os.environ["TEST_IT_EVENT_WAIT"])
-except KeyError:
-    EVENT_PAUSE = 0
+EVENT_PAUSE = float(os.environ.get("TEST_IT_EVENT_WAIT", "0"))
 
 
 def process_events(*, ignore_wait: bool = False) -> None:
