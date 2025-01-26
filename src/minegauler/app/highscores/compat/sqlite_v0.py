@@ -23,8 +23,10 @@ DB structure:
 
 __all__ = ("read_highscores",)
 
+import contextlib
 import sqlite3
 from collections.abc import Iterable
+from sqlite3 import Cursor, Row
 
 from ...shared.types import GameMode, PathLike, ReachSetting
 from ..types import HighscoreStruct
@@ -33,25 +35,16 @@ from ..types import HighscoreStruct
 _TABLE_NAME = "highscores"
 
 
+def highscore_row_factory(cursor: Cursor, row: Row) -> HighscoreStruct:
+    row_dict = {col[0]: row[i] for i, col in enumerate(cursor.description)}
+    row_dict["game_mode"] = GameMode.REGULAR.value
+    row_dict["reach"] = ReachSetting.NORMAL.value
+    return HighscoreStruct.from_flat_json(row_dict)
+
+
 def read_highscores(path: PathLike) -> Iterable[HighscoreStruct]:
-    ret = set()
-    with sqlite3.connect(path) as conn:
-        cursor = conn.execute(f"SELECT * FROM {_TABLE_NAME}")
-        for row in cursor:
-            # First row entry is 'index' (ignore).
-            ret.add(
-                HighscoreStruct(
-                    game_mode=GameMode.REGULAR.value,  # only mode supported
-                    difficulty=row[1],
-                    per_cell=row[2],
-                    reach=ReachSetting.NORMAL.value,  # only mode supported
-                    drag_select=row[3],
-                    name=row[4],
-                    timestamp=row[5],
-                    elapsed=row[6],
-                    bbbv=row[7],
-                    bbbvps=row[8],
-                    flagging=row[9],
-                )
-            )
-    return ret
+    with contextlib.closing(sqlite3.connect(path)) as conn:
+        cursor = conn.cursor()
+        cursor.row_factory = highscore_row_factory
+        cursor.execute(f"SELECT * FROM {_TABLE_NAME}")
+        yield from cursor

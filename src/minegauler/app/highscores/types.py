@@ -66,6 +66,29 @@ class HighscoreStruct:  # TODO: Rename to just 'Highscore'
     def bbbvps(self) -> float:
         return self.bbbv / self.elapsed
 
+    @classmethod
+    def flat_fields(cls) -> Iterable[str]:
+        return (
+            f.name
+            for f in (*attrs.fields(HighscoreSettings), *attrs.fields(HighscoreStruct))
+            if f.name != "settings"
+        )
+
+    @classmethod
+    def from_flat_json(cls, data: dict[str, str | int | float | bool | None]) -> Self:
+        return cls(
+            settings=HighscoreSettings(
+                **{f: data[f] for f in attrs.fields_dict(HighscoreSettings)}
+            ),
+            **{f: data[f] for f in attrs.fields_dict(cls) if f != "settings"},
+        )
+
+    def to_flat_json(self) -> dict[str, str | int | float | bool | None]:
+        return {
+            **attrs.asdict(self.settings),
+            **attrs.asdict(self, filter=attrs.filters.exclude("settings")),
+        }
+
 
 class HighscoresDB(abc.ABC):
     """Abstract base class for a highscores database."""

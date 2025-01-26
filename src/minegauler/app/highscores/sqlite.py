@@ -27,28 +27,12 @@ logger = logging.getLogger(__name__)
 
 
 def highscore_row_factory(cursor: sqlite3.Cursor, row: sqlite3.Row) -> HighscoreStruct:
-    setting_fields = attrs.fields_dict(HighscoreSettings).keys()
-    entry_fields = attrs.fields_dict(HighscoreStruct).keys()
     row_dict = {col[0]: row[i] for i, col in enumerate(cursor.description)}
-    return HighscoreStruct(
-        settings=HighscoreSettings(**{f: row_dict[f] for f in setting_fields}),
-        **{f: row_dict[f] for f in entry_fields if f != "settings"},
-    )
+    return HighscoreStruct.from_flat_json(row_dict)
 
 
 def highscore_to_row(highscore: HighscoreStruct) -> tuple:
-    return (
-        highscore.settings.game_mode.value,
-        highscore.settings.difficulty.value,
-        highscore.settings.per_cell,
-        highscore.settings.reach.value,
-        int(highscore.settings.drag_select),
-        highscore.name,
-        highscore.timestamp,
-        highscore.elapsed,
-        highscore.bbbv,
-        highscore.flagging,
-    )
+    return tuple(highscore.to_flat_json().values())
 
 
 class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):

@@ -22,7 +22,6 @@ import threading
 from collections.abc import Iterable
 from typing import Optional
 
-import attrs
 import requests
 
 from .. import paths
@@ -237,10 +236,7 @@ def _post_highscore_to_remote(highscore: HighscoreStruct):
     requests.post(
         _REMOTE_POST_URL,
         json={
-            "highscore": {
-                **attrs.asdict(highscore.settings),
-                **attrs.asdict(highscore, filter=attrs.filters.exclude("settings")),
-            },
+            "highscore": highscore.to_flat_json(),
             "app_version": VERSION,
         },
         timeout=5,
