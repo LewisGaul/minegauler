@@ -20,6 +20,8 @@ from minegauler.app.highscores import (
 )
 from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting
 
+from . import create_sqlite_db
+
 
 @pytest.fixture
 def tmp_local_db_path(tmp_path: Path) -> Path:
@@ -72,6 +74,22 @@ class TestLocalHighscoreDatabase:
             )
         )
         assert tables == [("highscores",)]
+
+    def test_create_from_old_version(self, tmp_local_db_path: Path):
+        """Test creating a new highscores DB."""
+        create_sqlite_db(tmp_local_db_path, 1, [fake_hs])
+        db = SQLiteHighscoresDB.create_or_open_with_compat(tmp_local_db_path)
+        assert db.path == tmp_local_db_path
+        assert db.get_version() == 3
+        tables = list(
+            db.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            )
+        )
+        assert tables == [("highscores",)]
+        assert tmp_local_db_path.with_name("highscores.old-v1.db").exists()
+        assert set(db.get_highscores()) == {fake_hs}
 
     def test_insert_count_get(self, tmp_local_db_path: Path):
         """Test inserting, counting and getting highscores."""
