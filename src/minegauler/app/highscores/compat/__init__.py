@@ -12,17 +12,19 @@ alongside the app.
 
 __all__ = ("ConversionFunc", "HighscoreReadError", "read_highscores")
 
-import pathlib
-import sqlite3
 from collections.abc import Iterable
+from pathlib import Path
 from typing import Callable
 
+from typing_extensions import TypeAlias
+
 from ...shared.types import PathLike
-from ..base import HighscoreStruct
-from . import sqlite_v0, sqlite_v1, sqlite_v2
+from ..sqlite import SQLiteDB
+from ..types import HighscoreStruct
+from . import sqlite_v0, sqlite_v1, sqlite_v2, sqlite_v3
 
 
-ConversionFunc = Callable[[PathLike], Iterable[HighscoreStruct]]
+ConversionFunc: TypeAlias = Callable[[PathLike], Iterable[HighscoreStruct]]
 
 
 class HighscoreReadError(Exception):
@@ -42,31 +44,26 @@ def read_highscores(path: PathLike) -> Iterable[HighscoreStruct]:
     :raise HighscoreReadError:
         If unable to read highscores from the given path.
     """
-    path = pathlib.Path(path)
-    if (path / "data" / "highscores.db").is_file():
-        path = path / "data" / "highscores.db"
-    elif (path / "highscores.db").is_file():
-        path = path / "highscores.db"
+    path = Path(path)
+    if not path.is_file():
+        raise HighscoreReadError(f"DB file not found: {path}")
+    if path.suffix != ".db":
+        raise HighscoreReadError(f"Unrecognised DB extension: {path.suffix}")
 
-    if path.suffix == ".db":
-        with sqlite3.connect(path) as conn:
-            sqlite_db_version = next(conn.execute("PRAGMA user_version"))[0]
-        func: ConversionFunc
-        if sqlite_db_version == 0:
-            func = sqlite_v0.read_highscores
-        elif sqlite_db_version == 1:
-            func = sqlite_v1.read_highscores
-        elif sqlite_db_version == 2:
-            func = sqlite_v2.read_highscores
-        else:
-            raise HighscoreReadError(
-                f"Unrecognised SQLite DB version '{sqlite_db_version}'"
-            )
-        try:
-            return func(path)
-        except Exception as e:
-            raise HighscoreReadError(
-                f"Failed to read v{sqlite_db_version} SQLite DB"
-            ) from e
+    with SQLiteDB(path) as db:
+        db_version = db.get_version()
+    func: ConversionFunc
+    if db_version == 0:
+        func = sqlite_v0.read_highscores
+    elif db_version == 1:
+        func = sqlite_v1.read_highscores
+    elif db_version == 2:
+        func = sqlite_v2.read_highscores
+    elif db_version == 3:
+        func = sqlite_v3.read_highscores
     else:
-        raise HighscoreReadError(f"Unrecognised DB extension '{path.suffix}'")
+        raise HighscoreReadError(f"Unrecognised SQLite DB version: {db_version}")
+    try:
+        return func(path)
+    except Exception as e:
+        raise HighscoreReadError(f"Failed to read v{db_version} SQLite DB") from e

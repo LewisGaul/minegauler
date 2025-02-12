@@ -1,22 +1,24 @@
-# February 2022, Lewis Gaul
+# January 2025, Lewis Gaul
 
 """
-Compatibility with v0 SQLite highscore format.
+Compatibility with v3 SQLite highscore format.
 
-This is the initial SQLite format that comes with v4.0 minegauler.
+This version changes the following:
+ - Combine game modes (regular and split-cell) into a single table
+ - Remove 'bbbvps' field, since this can be computed from bbbv and elapsed
 
 DB structure:
  - One table containing all highscores
  - Columns:
-   0. index (ignore)
+   0. game_mode: str ("regular", "split-cell")
    1. difficulty: str ("B", "I", "E", "M", "L")
    2. per_cell: int (1, 2, 3)
-   3. drag_select: int (0, 1)
-   4. name: str (max 20 characters)
-   5. timestamp: int
-   6. elapsed: float
-   7. bbbv: int
-   8. bbbvps: float
+   3. reach: int (4, 8, 24)
+   4. drag_select: int (0, 1)
+   5. name: str (max 20 characters)
+   6. timestamp: int
+   7. elapsed: float
+   8. bbbv: int
    9. flagging: float (in the range 0-1)
 
 """
@@ -28,7 +30,7 @@ import sqlite3
 from collections.abc import Iterable
 from sqlite3 import Cursor, Row
 
-from ...shared.types import GameMode, PathLike, ReachSetting
+from ...shared.types import PathLike
 from ..types import HighscoreStruct
 
 
@@ -37,8 +39,6 @@ _TABLE_NAME = "highscores"
 
 def highscore_row_factory(cursor: Cursor, row: Row) -> HighscoreStruct:
     row_dict = {col[0]: row[i] for i, col in enumerate(cursor.description)}
-    row_dict["game_mode"] = GameMode.REGULAR.value
-    row_dict["reach"] = ReachSetting.NORMAL.value
     return HighscoreStruct.from_flat_json(row_dict)
 
 

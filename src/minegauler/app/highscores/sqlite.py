@@ -6,9 +6,11 @@ from __future__ import annotations
 __all__ = ("SQLiteHighscoresDB",)
 
 import logging
-import os
+import sqlite3
 import textwrap
-from collections.abc import Iterable, Mapping
+import time
+import typing
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Optional
 
@@ -18,20 +20,32 @@ from typing_extensions import Self
 from ..shared.types import Difficulty, GameMode, PathLike, ReachSetting
 from ..sqlite import SQLiteDB
 from . import compat
-from .base import HighscoresDB, HighscoreStruct
+from .types import HighscoresDB, HighscoreSettings, HighscoreStruct
 
 
 logger = logging.getLogger(__name__)
 
 
+def highscore_row_factory(cursor: sqlite3.Cursor, row: sqlite3.Row) -> HighscoreStruct:
+    row_dict = {col[0]: row[i] for i, col in enumerate(cursor.description)}
+    return HighscoreStruct.from_flat_json(row_dict)
+
+
+def highscore_to_row(highscore: HighscoreStruct) -> tuple:
+    return tuple(highscore.to_flat_json().values())
+
+
 class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
     """SQLite highscores DB."""
 
-    VERSION: int = 2
+    VERSION: int = 3
 
-    TABLES: Mapping[GameMode, str] = {m: m.name.lower() for m in GameMode}
-
-    _table_fields = [f.name for f in attrs.fields(HighscoreStruct)][1:]
+    _TABLE_NAME: typing.Final = "highscores"
+    _TABLE_FIELDS: typing.Final = [
+        f.name
+        for f in (*attrs.fields(HighscoreSettings), *attrs.fields(HighscoreStruct))
+        if f.name != "settings"
+    ]
 
     def __init__(self, path: PathLike):
         super().__init__(path)
@@ -39,8 +53,7 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
             raise RuntimeError(
                 f"DB at {path} has version {version}, expected {self.VERSION}"
             )
-        for t in self.TABLES.values():
-            self.execute(self._get_create_table_sql(t), commit=True)
+        self.execute(self._get_create_table_sql(), commit=True)
 
     @classmethod
     def create(cls, path: PathLike, *, version: int = VERSION) -> Self:
@@ -60,13 +73,27 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
                     found_version,
                 )
                 # Read highscores into new DB using compat subpackage.
-                tmp_db_path = Path.with_suffix(".new")
-                new_db = cls.create(tmp_db_path, version=cls.VERSION)
-                new_db.insert_highscores(compat.read_highscores(path))
+                tmp_db_path = path.with_suffix(".new.db")
+                if tmp_db_path.exists():
+                    logger.warning("DB already exists at %s, cleaning up", tmp_db_path)
+                    tmp_db_path.unlink()
+                with cls.create(tmp_db_path, version=cls.VERSION) as new_db:
+                    try:
+                        new_db.insert_highscores(compat.read_highscores(path))
+                    except Exception:
+                        archive_path = path.with_suffix(f".{int(time.time())}.db")
+                        logger.error(
+                            "Failed to port old highscores from DB version %d to new DB, "
+                            "saving at %s",
+                            found_version,
+                            archive_path,
+                        )
+                        logger.debug("", exc_info=True)
+                        path.rename(archive_path)
+                    else:
+                        path.rename(path.with_suffix(f".old-v{found_version}.db"))
                 # Switch to the new DB.
-                new_db.close()
-                os.rename(path, path.with_suffix(f".old-v{found_version}"))
-                os.rename(tmp_db_path, path)
+                tmp_db_path.rename(path)
             self = cls(path)
         return self
 
@@ -82,76 +109,60 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
     ) -> Iterable[HighscoreStruct]:
         """Fetch highscores from the database using the given filters."""
         logger.debug("%s: Getting highscores", type(self).__name__)
-        if game_mode is None:
-            modes = list(GameMode)
-        else:
-            modes = [game_mode]
-        ret = []
-        for mode in modes:
-            self._conn.row_factory = lambda cursor, row, _mode=mode: HighscoreStruct(
-                game_mode=_mode,
-                **{col[0]: row[i] for i, col in enumerate(cursor.description)},
+        cursor = self._conn.cursor()
+        cursor.row_factory = highscore_row_factory
+        cursor.execute(
+            self._get_select_highscores_sql(
+                game_mode=game_mode,
+                difficulty=difficulty,
+                per_cell=per_cell,
+                reach=reach,
+                drag_select=drag_select,
+                name=name,
             )
-            cursor = self.execute(
-                self._get_select_highscores_sql(
-                    game_mode=mode,
-                    difficulty=difficulty,
-                    per_cell=per_cell,
-                    reach=reach,
-                    drag_select=drag_select,
-                    name=name,
-                )
-            )
-            ret.extend(cursor.fetchall())
-        self._conn.row_factory = None
-        return ret
+        )
+        return cursor.fetchall()
 
     def count_highscores(self) -> int:
         """Count the number of rows in the highscores table."""
         logger.debug("%s: Counting number of highscores in DB", type(self).__name__)
-        return sum(
-            self.extract_single_elem(
-                self.execute(self._get_highscores_count_sql(game_mode=mode))
-            )
-            for mode in GameMode
-        )
+        return self.extract_single_elem(self.execute(self._get_highscores_count_sql()))
 
     def insert_highscores(self, highscores: Iterable[HighscoreStruct]) -> int:
         """Insert highscores into the database."""
         logger.debug("%s: Inserting highscores into DB", type(self).__name__)
         orig_count = self.count_highscores()
-        for mode in GameMode:
-            mode_rows = [h.to_row() for h in highscores if h.game_mode is mode]
-            self.executemany(
-                self._get_insert_highscore_sql(game_mode=mode),
-                mode_rows,
-                commit=True,
-            )
+        self.executemany(
+            self._get_insert_highscore_sql(),
+            [highscore_to_row(h) for h in highscores],
+            commit=True,
+        )
         return self.count_highscores() - orig_count
 
-    @staticmethod
-    def _get_create_table_sql(table_name: str) -> str:
+    @classmethod
+    def _get_create_table_sql(cls) -> str:
         return textwrap.dedent(
             f"""\
-            CREATE TABLE IF NOT EXISTS {table_name} (
-                difficulty VARCHAR(1) NOT NULL,
+            CREATE TABLE IF NOT EXISTS {cls._TABLE_NAME} (
+                game_mode TEXT NOT NULL,
+                difficulty TEXT NOT NULL,
                 per_cell INTEGER NOT NULL,
                 reach INTEGER NOT NULL,
                 drag_select INTEGER NOT NULL,
-                name VARCHAR(20) NOT NULL,
+                name TEXT NOT NULL,
                 timestamp INTEGER NOT NULL,
                 elapsed REAL NOT NULL,
                 bbbv INTEGER NOT NULL,
-                bbbvps REAL NOT NULL,
                 flagging REAL NOT NULL,
-                PRIMARY KEY(difficulty, name, timestamp)
+                PRIMARY KEY (name, timestamp)
             )"""
         )
 
+    @classmethod
     def _get_select_highscores_sql(
-        self,
+        cls,
         *,
-        game_mode: GameMode,
+        game_mode: Optional[GameMode] = None,
         difficulty: Optional[Difficulty] = None,
         per_cell: Optional[int] = None,
         reach: Optional[ReachSetting] = None,
@@ -160,6 +171,8 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
     ) -> str:
         """Get the SQL command to get/select highscores from a DB."""
         conditions = []
+        if game_mode is not None:
+            conditions.append(f"game_mode='{game_mode.value}'")
         if difficulty is not None:
             conditions.append(f"difficulty='{difficulty.value}'")
         if per_cell is not None:
@@ -171,19 +184,21 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
         if name is not None:
             conditions.append(f"LOWER(name)='{name.lower()}'")
         return "SELECT {fields} FROM {table} {where} ORDER BY elapsed ASC".format(
-            fields=", ".join(self._table_fields),
-            table=self.TABLES[game_mode],
+            fields=", ".join(cls._TABLE_FIELDS),
+            table=cls._TABLE_NAME,
             where="WHERE " + " AND ".join(conditions) if conditions else "",
         )
 
-    def _get_insert_highscore_sql(self, *, game_mode: GameMode) -> str:
+    @classmethod
+    def _get_insert_highscore_sql(cls) -> str:
         """Get the SQL command to insert a highscore into a DB."""
         return "INSERT OR IGNORE INTO {table} ({fields}) VALUES ({fmt})".format(
-            table=self.TABLES[game_mode],
-            fields=", ".join(self._table_fields),
-            fmt=", ".join("?" for _ in self._table_fields),
+            table=cls._TABLE_NAME,
+            fields=", ".join(cls._TABLE_FIELDS),
+            fmt=", ".join("?" for _ in cls._TABLE_FIELDS),
         )
 
-    def _get_highscores_count_sql(self, *, game_mode: GameMode) -> str:
+    @classmethod
+    def _get_highscores_count_sql(cls) -> str:
         """Get the SQL command to count the rows of the highscores table."""
-        return f"SELECT COUNT(*) FROM {self.TABLES[game_mode]}"
+        return f"SELECT COUNT(*) FROM {cls._TABLE_NAME}"

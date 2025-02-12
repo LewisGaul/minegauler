@@ -22,7 +22,6 @@ import threading
 from collections.abc import Iterable
 from typing import Optional
 
-import attrs
 import requests
 
 from .. import paths
@@ -30,9 +29,9 @@ from .._metadata import VERSION
 from ..shared import utils
 from ..shared.types import Difficulty, GameMode, PathLike, ReachSetting
 from . import compat
-from .base import HighscoresDB, HighscoreSettings, HighscoreStruct
 from .compat import HighscoreReadError
 from .sqlite import SQLiteHighscoresDB
+from .types import HighscoresDB, HighscoreSettings, HighscoreStruct
 
 
 logger = logging.getLogger(__name__)
@@ -237,7 +236,7 @@ def _post_highscore_to_remote(highscore: HighscoreStruct):
     requests.post(
         _REMOTE_POST_URL,
         json={
-            "highscore": attrs.asdict(highscore),
+            "highscore": highscore.to_flat_json(),
             "app_version": VERSION,
         },
         timeout=5,
