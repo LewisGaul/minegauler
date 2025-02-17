@@ -51,7 +51,13 @@ import abc
 import enum
 import functools
 import os
+import sys
 from typing import Union
+
+if sys.version_info < (3, 11):
+    from typing_extensions import Self
+else:
+    from typing import Self
 
 
 PathLike = Union[str, bytes, os.PathLike]
@@ -149,15 +155,34 @@ class CellContents:
     def __repr__(self):
         return self.char
 
-    @staticmethod
-    def from_char(char: str) -> "CellContents":
-        return NotImplemented  # Implemented below, after subclasses
+    @classmethod
+    def from_char(cls, char: str) -> type[Self]:
+        """
+        Get the class of mine-like cell contents using the character
+        representation.
 
-    @staticmethod
-    def from_str(string: str) -> "CellContents":
-        return NotImplemented  # Implemented below, after subclasses
+        :param char:
+            The character representation of a cell contents type.
+        :return:
+            The cell contents enum item.
+        """
+        for item in cls.items:
+            if item.char == char:
+                return item
 
-    def is_type(self, item: "CellContents") -> bool:
+    @classmethod
+    def from_str(cls, string: str) -> Self:
+        if string.isnumeric():
+            return cls.Num(int(string))
+        elif len(string) == 2:
+            char, num = string
+            return cls.from_char(char)(int(num))
+        elif string == cls.Unclicked.char:
+            return cls.Unclicked
+        else:
+            raise ValueError(f"Unknown cell contents representation {string!r}")
+
+    def is_type(self, item: Union[type[Self], Self]) -> bool:
         if item in [self.Unclicked, self.UnclickedSunken]:
             return self is item
         elif item in self.items:
@@ -253,37 +278,6 @@ CellContents.items = [
     CellContents.Flag,
     CellContents.WrongFlag,
 ]
-
-
-def _from_char(char: str) -> CellContents:
-    """
-    Get the class of mine-like cell contents using the character
-    representation.
-
-    :param char:
-        The character representation of a cell contents type.
-    :return:
-        The cell contents enum item.
-    """
-    for item in CellContents.items:
-        if item.char == char:
-            return item
-
-
-def _from_str(string: str) -> CellContents:
-    if string.isnumeric():
-        return CellContents.Num(int(string))
-    elif len(string) == 2:
-        char, num = string
-        return CellContents.from_char(char)(int(num))
-    elif string == CellContents.Unclicked.char:
-        return CellContents.Unclicked
-    else:
-        raise ValueError(f"Unknown cell contents representation {string!r}")
-
-
-CellContents.from_char = _from_char
-CellContents.from_str = _from_str
 
 
 # ------------------------------------------------------------------------------
