@@ -708,7 +708,7 @@ class MinegaulerGUI(
                 logger.exception("Error getting highscores")
             else:
                 if new_best:
-                    self.open_highscores_window(highscore, new_best)
+                    self.open_highscores_window(highscore.settings, new_best)
                     # try:
                     #     save_highscore_file(
                     #         highscore, self._mf_widget.get_mouse_events(),
