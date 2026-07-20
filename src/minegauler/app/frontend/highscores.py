@@ -13,6 +13,7 @@ Exports
 __all__ = ("HighscoresWindow",)
 
 import logging
+import math
 import time
 from typing import Final, Optional
 
@@ -285,7 +286,7 @@ class HighscoresTable(QTableView):
 
     def sizeHint(self) -> QSize:
         width = super().sizeHint().width()
-        height = width / 1.61
+        height = math.ceil(width / 1.61)
         return QSize(width, height)
 
     def set_sort_indicator(self, *_):

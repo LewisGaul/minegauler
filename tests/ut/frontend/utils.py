@@ -16,4 +16,4 @@ def maybe_stop_for_interaction(qtbot: QtBot) -> None:
     variable is set.
     """
     if os.environ.get("TEST_INTERACT"):
-        qtbot.stopForInteraction()
+        qtbot.stop()

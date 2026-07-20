@@ -77,7 +77,10 @@ def sandbox(tmpdir_factory: pytest.TempdirFactory):
 
 @pytest.fixture(scope="session", autouse=True)
 def _env_vars() -> None:
-    if not EVENT_PAUSE:
+    # Interactive GUI tests need a real platform plugin (not offscreen).
+    if os.environ.get("TEST_INTERACT"):
+        os.environ.pop("QT_QPA_PLATFORM", None)
+    elif not EVENT_PAUSE:
         os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
 
