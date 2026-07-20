@@ -15,11 +15,10 @@ __all__ = (
 
 import argparse
 import logging
-from collections.abc import Iterable
-from typing import Any, Callable, Optional, Union
+from collections.abc import Callable, Iterable
+from typing import Any, Union
 
 from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting
-
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ class InvalidMsgError(Exception):
     pass
 
 
-CommandMapping = dict[Optional[str], Union[Callable, "CommandMapping"]]
+CommandMapping = dict[str | None, Union[Callable, "CommandMapping"]]
 
 
 def helpstring(text):
@@ -84,7 +83,7 @@ class CmdParser:
             raise InvalidArgsError(linebreak.join(["Unrecognised command", flat_cmds]))
         return self._get_cmd_help(func)
 
-    def handle_msg(self, msg: Union[str, list[str]], **kwargs) -> str:
+    def handle_msg(self, msg: str | list[str], **kwargs) -> str:
         """
         Parse a message and perform the corresponding action.
 
@@ -204,11 +203,11 @@ class _PositionalArg:
         name: str,
         *,
         parse_name: bool = False,
-        nargs: Union[int, str] = 1,
+        nargs: int | str = 1,
         default: Any = None,
-        choices: Optional[Iterable[Any]] = None,
-        type: Optional[Callable] = None,
-        validate: Optional[Callable] = None,
+        choices: Iterable[Any] | None = None,
+        type: Callable | None = None,
+        validate: Callable | None = None,
     ):
         if (isinstance(nargs, int) and nargs < 1) and nargs not in ["?", "*", "+"]:
             raise ValueError(f"Bad nargs value {nargs!r}")

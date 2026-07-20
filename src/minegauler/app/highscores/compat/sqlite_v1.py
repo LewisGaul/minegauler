@@ -24,13 +24,11 @@ __all__ = ("read_highscores",)
 
 import contextlib
 import sqlite3
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from sqlite3 import Cursor, Row
-from typing import Callable
 
 from ...shared.types import PathLike, ReachSetting
 from ..types import HighscoreStruct
-
 
 _TABLE_NAMES = ["regular", "split_cell"]
 

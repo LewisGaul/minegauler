@@ -15,7 +15,7 @@ __all__ = ("HighscoresWindow",)
 import logging
 import math
 import time
-from typing import Final, Optional
+from typing import Final
 
 from PyQt6.QtCore import (
     QAbstractTableModel,
@@ -45,7 +45,6 @@ from .. import highscores
 from ..shared import utils
 from . import state
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -54,7 +53,7 @@ class HighscoresWindow(QDialog):
 
     def __init__(
         self,
-        parent: Optional[QWidget],
+        parent: QWidget | None,
         settings: highscores.HighscoreSettings,
         state_: state.HighscoreWindowState,
     ):
@@ -105,14 +104,14 @@ class HighscoresModel(QAbstractTableModel):
     sort_changed = pyqtSignal(int)
     _HEADERS: Final = ["name", "time", "3bv", "3bv/s", "date", "flagging"]
 
-    def __init__(self, parent: Optional[QWidget], state_: state.HighscoreWindowState):
+    def __init__(self, parent: QWidget | None, state_: state.HighscoreWindowState):
         super().__init__(parent)
         self._state: state.HighscoreWindowState = state_
         self._all_data: list[highscores.HighscoreStruct] = []
         self._displayed_data: list[highscores.HighscoreStruct] = []
 
     @property
-    def _filters(self) -> dict[str, Optional[str]]:
+    def _filters(self) -> dict[str, str | None]:
         return {
             "name": self._state.name_filter,
             "flagging": self._state.flagging_filter,
@@ -200,7 +199,7 @@ class HighscoresModel(QAbstractTableModel):
         self._all_data = highscores.get_highscores(settings=settings)
         self.filter_and_sort()
 
-    def _get_active_row(self) -> Optional[int]:
+    def _get_active_row(self) -> int | None:
         """Get the index of the row containing the active highscore."""
         if self._state.current_highscore in self._displayed_data:
             return self._displayed_data.index(self._state.current_highscore)
@@ -250,12 +249,10 @@ class HighscoresTable(QTableView):
         self.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         # self.setMinimumWidth(500)
         self.setMinimumHeight(300)
-        self.setStyleSheet(
-            """
+        self.setStyleSheet("""
             background: rgb(215,215,255);
             font:       normal 9pt Sans-serif;
-            """
-        )
+            """)
         self.setAlternatingRowColors(True)
         self.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)

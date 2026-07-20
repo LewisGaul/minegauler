@@ -13,7 +13,6 @@ from .board import Board
 from .minefield import Minefield
 from .types import Coord
 
-
 logger = logging.getLogger(__name__)
 
 

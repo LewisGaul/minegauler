@@ -10,7 +10,6 @@ from collections.abc import Iterable
 
 from minegauler.app import highscores as hs
 
-
 logger = logging.getLogger(__name__)
 
 

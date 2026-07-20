@@ -18,7 +18,6 @@ from . import api, board, controller, game, minefield, regular, split_cell
 from .board import BoardBase
 from .controller import ControllerBase
 
-
 logger = logging.getLogger(__name__)
 
 

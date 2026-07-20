@@ -13,7 +13,6 @@ __all__ = (
 import pathlib
 import sys
 
-
 if hasattr(sys, "frozen") and hasattr(sys, "_MEIPASS"):  # in pyinstaller EXE
     ROOT_DIR = pathlib.Path(__file__).parents[2] / "app"
 else:

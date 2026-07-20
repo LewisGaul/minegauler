@@ -12,7 +12,6 @@ import sys
 
 import minegauler.bot
 
-
 if len(sys.argv) >= 2:
     sys.exit(minegauler.bot.msgparse.main(sys.argv[1:]))
 else:

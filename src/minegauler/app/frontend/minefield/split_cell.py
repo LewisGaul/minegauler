@@ -14,7 +14,6 @@ from ..state import State
 from . import _base
 from ._base import FlagAction, update_cell_images
 
-
 logger = logging.getLogger(__name__)
 
 

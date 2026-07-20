@@ -12,10 +12,9 @@ import sys
 import tempfile
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Self
+from typing import Self
 
 import minegauler.app  # To get the version
-
 
 APP_NAME = "minegauler"
 
@@ -77,7 +76,7 @@ def create_windows_wrapper(
     src: os.PathLike,
     dest: os.PathLike,
     *,
-    cd: Optional[os.PathLike] = None,
+    cd: os.PathLike | None = None,
     argv: Iterable[str] = (),
     console: bool = False,
 ) -> None:
@@ -96,7 +95,7 @@ def create_posix_wrapper(
     src: os.PathLike,
     dest: os.PathLike,
     *,
-    cd: Optional[os.PathLike] = None,
+    cd: os.PathLike | None = None,
     argv: Iterable[str] = (),
     console: bool = False,
 ) -> None:
@@ -119,7 +118,7 @@ def create_wrapper(
     src: os.PathLike,
     dest: os.PathLike,
     *,
-    cd: Optional[os.PathLike] = None,
+    cd: os.PathLike | None = None,
     argv: Iterable[str] = (),
     console: bool = False,
 ) -> None:
@@ -175,7 +174,7 @@ def archive_name() -> str:
     return f"minegauler-v{minegauler.app.__version__}-{plat}-{arch}"
 
 
-def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-f",

@@ -13,7 +13,6 @@ from minegauler.app.core.regular.game import Game
 from minegauler.app.core.regular.types import Coord
 from minegauler.app.shared.types import CellContents, GameState
 
-
 logger = logging.getLogger(__name__)
 
 

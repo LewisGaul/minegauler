@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-
 __all__ = ("SQLiteHighscoresDB",)
 
 import logging
@@ -12,16 +11,14 @@ import time
 import typing
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional
+from typing import Self
 
 import attrs
-from typing_extensions import Self
 
 from ..shared.types import Difficulty, GameMode, PathLike, ReachSetting
 from ..sqlite import SQLiteDB
 from . import compat
 from .types import HighscoresDB, HighscoreSettings, HighscoreStruct
-
 
 logger = logging.getLogger(__name__)
 
@@ -100,12 +97,12 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
     def get_highscores(
         self,
         *,
-        game_mode: Optional[GameMode] = None,
-        difficulty: Optional[Difficulty] = None,
-        per_cell: Optional[int] = None,
-        reach: Optional[ReachSetting] = None,
-        drag_select: Optional[bool] = None,
-        name: Optional[str] = None,
+        game_mode: GameMode | None = None,
+        difficulty: Difficulty | None = None,
+        per_cell: int | None = None,
+        reach: ReachSetting | None = None,
+        drag_select: bool | None = None,
+        name: str | None = None,
     ) -> Iterable[HighscoreStruct]:
         """Fetch highscores from the database using the given filters."""
         logger.debug("%s: Getting highscores", type(self).__name__)
@@ -141,8 +138,7 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
 
     @classmethod
     def _get_create_table_sql(cls) -> str:
-        return textwrap.dedent(
-            f"""\
+        return textwrap.dedent(f"""\
             CREATE TABLE IF NOT EXISTS {cls._TABLE_NAME} (
                 game_mode TEXT NOT NULL,
                 difficulty TEXT NOT NULL,
@@ -155,19 +151,18 @@ class SQLiteHighscoresDB(SQLiteDB, HighscoresDB):
                 bbbv INTEGER NOT NULL,
                 flagging REAL NOT NULL,
                 PRIMARY KEY (name, timestamp)
-            )"""
-        )
+            )""")
 
     @classmethod
     def _get_select_highscores_sql(
         cls,
         *,
-        game_mode: Optional[GameMode] = None,
-        difficulty: Optional[Difficulty] = None,
-        per_cell: Optional[int] = None,
-        reach: Optional[ReachSetting] = None,
-        drag_select: Optional[bool] = None,
-        name: Optional[str] = None,
+        game_mode: GameMode | None = None,
+        difficulty: Difficulty | None = None,
+        per_cell: int | None = None,
+        reach: ReachSetting | None = None,
+        drag_select: bool | None = None,
+        name: str | None = None,
     ) -> str:
         """Get the SQL command to get/select highscores from a DB."""
         conditions = []

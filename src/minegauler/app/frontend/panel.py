@@ -13,7 +13,6 @@ Exports
 __all__ = ("PanelWidget",)
 
 import contextlib
-from typing import Optional, Union
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QColor, QFont, QPalette, QPixmap
@@ -31,7 +30,7 @@ class PanelWidget(QWidget):
 
     clicked = pyqtSignal()
 
-    def __init__(self, parent: Optional[QWidget], state_: state.State):
+    def __init__(self, parent: QWidget | None, state_: state.State):
         """
         :param parent:
             Parent widget.
@@ -98,7 +97,7 @@ class PanelWidget(QWidget):
         self.set_mines_counter(self._state.mines)
         self.timer.reset()
 
-    def set_face(self, state: Union[FaceState, GameState, str]) -> None:
+    def set_face(self, state: FaceState | GameState | str) -> None:
         """
         Arguments:
         state (str | GameState | FaceState)

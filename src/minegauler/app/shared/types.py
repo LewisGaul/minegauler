@@ -51,16 +51,9 @@ import abc
 import enum
 import functools
 import os
-import sys
-from typing import Union
+from typing import Self
 
-if sys.version_info < (3, 11):
-    from typing_extensions import Self
-else:
-    from typing import Self
-
-
-PathLike = Union[str, bytes, os.PathLike]
+PathLike = str | bytes | os.PathLike
 
 
 # ------------------------------------------------------------------------------
@@ -182,7 +175,7 @@ class CellContents:
         else:
             raise ValueError(f"Unknown cell contents representation {string!r}")
 
-    def is_type(self, item: Union[type[Self], Self]) -> bool:
+    def is_type(self, item: type[Self] | Self) -> bool:
         if item in [self.Unclicked, self.UnclickedSunken]:
             return self is item
         elif item in self.items:
@@ -285,7 +278,7 @@ CellContents.items = [
 # ------------------------------------------------------------------------------
 
 
-class Difficulty(str, enum.Enum):
+class Difficulty(enum.StrEnum):
     """Enum of difficulty settings."""
 
     BEGINNER = "B"
@@ -305,7 +298,7 @@ class Difficulty(str, enum.Enum):
         return cls(value)
 
 
-class GameState(str, enum.Enum):
+class GameState(enum.StrEnum):
     """Enum representing the state of a game."""
 
     READY = "READY"
@@ -328,7 +321,7 @@ class ReachSetting(enum.IntEnum):
     LONG = 24
 
 
-class GameMode(str, enum.Enum):
+class GameMode(enum.StrEnum):
     """Minesweeper game mode."""
 
     REGULAR = "regular"

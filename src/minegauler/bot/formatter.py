@@ -16,7 +16,6 @@ __all__ = (
 
 import datetime as dt
 from collections.abc import Iterable, Mapping
-from typing import Optional, Union
 
 import pytz
 import tabulate
@@ -25,7 +24,6 @@ from minegauler.app import highscores as hs
 from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting
 
 from .utils import Matchup, PlayerInfo
-
 
 tabulate.PRESERVE_WHITESPACE = True
 
@@ -42,7 +40,7 @@ def format_highscore_times(highscores: Iterable[tuple[str, float]]) -> str:
 
 
 def format_player_highscores(
-    highscores: list[hs.HighscoreStruct], difficulty: Optional[Difficulty] = None
+    highscores: list[hs.HighscoreStruct], difficulty: Difficulty | None = None
 ) -> list[str]:
     lines = []
     if highscores:
@@ -122,11 +120,11 @@ def format_kwargs(kwargs: Mapping) -> str:
 
 def format_filters(
     *,
-    game_mode: Optional[GameMode],
-    difficulty: Optional[Union[str, Difficulty]],
-    drag_select: Optional[bool],
-    per_cell: Optional[int],
-    reach: Optional[ReachSetting],
+    game_mode: GameMode | None,
+    difficulty: str | Difficulty | None,
+    drag_select: bool | None,
+    per_cell: int | None,
+    reach: ReachSetting | None,
     no_difficulty=False,
 ) -> str:
     opts = {}

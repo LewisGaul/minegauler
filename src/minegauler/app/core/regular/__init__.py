@@ -17,5 +17,4 @@ from .game import Game
 from .minefield import Minefield
 from .types import Coord
 
-
 mode = GameMode.REGULAR

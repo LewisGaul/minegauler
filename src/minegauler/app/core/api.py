@@ -13,8 +13,7 @@ __all__ = (
 
 import abc
 import logging
-from collections.abc import Iterable, Mapping
-from typing import Callable, Optional
+from collections.abc import Callable, Iterable, Mapping
 
 import attrs
 
@@ -57,7 +56,7 @@ class GameInfo:
     mode: GameMode
 
     minefield_known: bool
-    started_info: Optional[StartedInfo] = None
+    started_info: StartedInfo | None = None
 
 
 class AbstractListener(metaclass=abc.ABCMeta):
@@ -176,7 +175,7 @@ class _Notifier(AbstractListener):
 
     _count: int = 0
 
-    def __init__(self, listeners: Optional[Iterable[AbstractListener]] = None):
+    def __init__(self, listeners: Iterable[AbstractListener] | None = None):
         """
         Create the implementation for all
 

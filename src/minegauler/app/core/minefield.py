@@ -11,11 +11,10 @@ import abc
 import logging
 import random
 from collections.abc import Iterable, Mapping
-from typing import Any, Generic, Optional, TypeVar
+from typing import Any, Generic, TypeVar
 
 from ..shared.types import ReachSetting
 from .board import BoardBase
-
 
 logger = logging.getLogger(__name__)
 
@@ -60,9 +59,9 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
         self.per_cell: int = per_cell
         self.reach: ReachSetting = reach
         self.mine_coords: list[C] = []
-        self._bbbv: Optional[int] = None
-        self._completed_board: Optional[B] = None
-        self._openings: Optional[list[list[C]]] = None
+        self._bbbv: int | None = None
+        self._completed_board: B | None = None
+        self._openings: list[list[C]] | None = None
         self.populated: bool = False
 
         # Perform some checks on the args.
@@ -149,7 +148,7 @@ class MinefieldBase(Generic[C, B], metaclass=abc.ABCMeta):
             self._openings = self._find_openings()
         return self._openings
 
-    def populate(self, safe_coords: Optional[Iterable[C]] = None) -> None:
+    def populate(self, safe_coords: Iterable[C] | None = None) -> None:
         """
         Randomly place mines in the available coordinates.
 

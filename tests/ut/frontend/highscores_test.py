@@ -15,7 +15,7 @@ from pytestqt.qtbot import QtBot
 
 from minegauler.app.frontend.highscores import HighscoresModel, HighscoresWindow
 from minegauler.app.frontend.state import HighscoreWindowState
-from minegauler.app.highscores import HighscoreStruct, HighscoreSettings
+from minegauler.app.highscores import HighscoreSettings, HighscoreStruct
 from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting
 
 from . import utils

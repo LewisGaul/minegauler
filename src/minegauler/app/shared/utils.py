@@ -51,12 +51,11 @@ import logging
 import os
 import time
 from collections.abc import Iterable, Mapping
-from typing import Any, Optional
+from typing import Any
 
 import attrs
 
 from .types import CellImageType, GameMode, PathLike, ReachSetting
-
 
 logger = logging.getLogger(__name__)
 
@@ -330,7 +329,7 @@ def is_flagging_threshold(proportion: float) -> bool:
     return proportion > 0.1
 
 
-def read_settings_from_file(file: os.PathLike) -> Optional[AllOpts]:
+def read_settings_from_file(file: os.PathLike) -> AllOpts | None:
     logger.info("Reading settings from file: %s", file)
 
     read_settings = None

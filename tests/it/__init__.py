@@ -9,7 +9,6 @@ import types
 
 from PyQt6.QtWidgets import QApplication
 
-
 logger = logging.getLogger(__name__)
 
 

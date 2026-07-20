@@ -16,9 +16,8 @@ import functools
 import logging
 import textwrap
 import traceback
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Callable, Optional
 
 from PyQt6.QtCore import QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QAction, QActionGroup, QFocusEvent, QFont, QIcon, QKeyEvent
@@ -62,12 +61,11 @@ from . import highscores as highscores_ui
 from . import minefield, panel, state, utils
 from .minefield import simulate
 
-
 logger = logging.getLogger(__name__)
 
 
 def _msg_popup(
-    parent: QWidget, icon: QMessageBox.Icon, title: str, msg: Optional[str] = None
+    parent: QWidget, icon: QMessageBox.Icon, title: str, msg: str | None = None
 ) -> None:
     """Open a modal popup with a simple message."""
     logger.debug(
@@ -88,7 +86,7 @@ class _BaseMainWindow(QMainWindow):
 
     BODY_FRAME_WIDTH = 10
 
-    def __init__(self, parent: Optional[QWidget], title: Optional[str] = None):
+    def __init__(self, parent: QWidget | None, title: str | None = None):
         """
         :param title:
             The window title.
@@ -101,9 +99,9 @@ class _BaseMainWindow(QMainWindow):
         self._panel_frame: QFrame
         self._body_frame: QFrame
         self._footer_frame: QFrame
-        self._panel_widget: Optional[QWidget]
-        self._body_widget: Optional[QWidget]
-        self._footer_widget: Optional[QWidget]
+        self._panel_widget: QWidget | None
+        self._body_widget: QWidget | None
+        self._footer_widget: QWidget | None
         self._icon: QIcon = QIcon(str(paths.IMG_DIR / "icon.ico"))
         self.setWindowTitle(title)
         self.setWindowIcon(self._icon)
@@ -919,8 +917,8 @@ class MinegaulerGUI(
 
     def open_highscores_window(
         self,
-        settings: Optional[HighscoreSettings] = None,
-        sort_by: Optional[str] = None,
+        settings: HighscoreSettings | None = None,
+        sort_by: str | None = None,
     ) -> None:
         """
         Open the highscores window.
@@ -997,37 +995,31 @@ class _CurrentInfoModal(QDialog):
         base_layout = QVBoxLayout(self)
         base_layout.addWidget(QLabel("Information about the current game:", self))
         info = self._info
-        info_text = textwrap.dedent(
-            f"""\
+        info_text = textwrap.dedent(f"""\
             {info.x_size} x {info.y_size} grid
             {info.mines} mines
             Max mines per cell: {info.per_cell}
             Drag-select: {self._state.drag_select}
-            """
-        )
+            """)
         if info.game_state.finished():
             assert info.started_info is not None
             fin_info = info.started_info
             start_time = format_timestamp(fin_info.start_time)
             state = info.game_state.name.capitalize()
-            info_text += textwrap.dedent(
-                f"""\
+            info_text += textwrap.dedent(f"""\
 
                 Game was started at {start_time}
                 {state} after {fin_info.elapsed + 0.005:.2f} seconds
                 The board was {fin_info.prop_flagging * 100:.1f}% flagged
                 The 3bv was: {fin_info.bbbv}
                 The 3bv/s rate was: {fin_info.bbbvps + 0.005:.2f}
-                """
-            )
+                """)
             if info.game_state is GameState.LOST:
-                info_text += textwrap.dedent(
-                    f"""\
+                info_text += textwrap.dedent(f"""\
 
                     Remaining 3bv: {fin_info.rem_bbbv}
                     Game was {fin_info.prop_complete * 100:.1f}% complete
-                    """
-                )
+                    """)
                 if fin_info.prop_complete > 0:
                     info_text += "Predicted completion time: {:.2f} seconds".format(
                         fin_info.elapsed / fin_info.prop_complete
@@ -1252,7 +1244,7 @@ class _NameEntryBar(QLineEdit):
 class _TextPopup(QWidget):
     """A popup window containing a block of text."""
 
-    def __init__(self, parent: Optional[QWidget], title: str, file: PathLike):
+    def __init__(self, parent: QWidget | None, title: str, file: PathLike):
         super().__init__(parent)
         self.setWindowFlag(Qt.WindowType.Window)
         self.setWindowTitle(title)
@@ -1273,11 +1265,9 @@ class _TextPopup(QWidget):
         self._text_widget.setLineWidth(1)
         self._text_widget.setFrameShape(QFrame.Shape.Panel)
         self._text_widget.setMargin(10)
-        self._text_widget.setStyleSheet(
-            """
+        self._text_widget.setStyleSheet("""
             background-color: white;
-            """
-        )
+            """)
         self._text_widget.setWordWrap(True)
         lyt.addWidget(self._text_widget)
 

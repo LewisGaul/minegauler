@@ -19,7 +19,6 @@ from .msgparse import (
     schema,
 )
 
-
 logger = logging.getLogger(__name__)
 
 

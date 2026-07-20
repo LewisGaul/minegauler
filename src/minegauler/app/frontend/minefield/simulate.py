@@ -8,7 +8,6 @@ __all__ = ("MinefieldWidget",)
 
 import logging
 from collections.abc import Mapping
-from typing import Optional
 
 from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QMouseEvent, QPixmap
@@ -26,7 +25,6 @@ from ...shared.types import CellContents, CellImageType, Coord
 from ..utils import CellUpdate_T
 from ._base import update_cell_images
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -34,7 +32,7 @@ logger = logging.getLogger(__name__)
 class MinefieldWidget(QDialog):
     def __init__(
         self,
-        parent: Optional[QWidget],
+        parent: QWidget | None,
         x_size: int,
         y_size: int,
         cell_updates: list[CellUpdate_T],

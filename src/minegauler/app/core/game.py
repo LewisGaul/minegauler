@@ -11,8 +11,7 @@ import functools
 import logging
 import math
 import time
-from collections.abc import Iterable, Mapping
-from typing import Callable, Optional, Union
+from collections.abc import Callable, Iterable, Mapping
 
 from ..shared.types import (
     CellContents,
@@ -24,7 +23,6 @@ from ..shared.types import (
 )
 from .board import BoardBase
 from .minefield import MinefieldBase
-
 
 logger = logging.getLogger(__name__)
 
@@ -92,8 +90,8 @@ def _ignore_decorator_helper(conditions_sense, game_state, cell_state) -> Callab
 
 def _ignore_if(
     *,
-    game_state: Optional[Union[GameState, Iterable[GameState]]] = None,
-    cell_state: Optional[Union[CellContents, Iterable[CellContents]]] = None,
+    game_state: GameState | Iterable[GameState] | None = None,
+    cell_state: CellContents | Iterable[CellContents] | None = None,
 ) -> Callable:
     """
     Return a decorator which prevents a method from running if any of the given
@@ -111,8 +109,8 @@ def _ignore_if(
 
 def _ignore_if_not(
     *,
-    game_state: Optional[Union[GameState, Iterable[GameState]]] = None,
-    cell_state: Optional[Union[CellContents, Iterable[CellContents]]] = None,
+    game_state: GameState | Iterable[GameState] | None = None,
+    cell_state: CellContents | Iterable[CellContents] | None = None,
 ) -> Callable:
     """
     Return a decorator which prevents a method from running if any of the given
@@ -178,8 +176,8 @@ class GameBase(metaclass=abc.ABCMeta):
         self.minefield_known: bool = False
         self.lives: int = lives
         self.first_success: bool = first_success
-        self.start_time: Optional[float] = None
-        self.end_time: Optional[float] = None
+        self.start_time: float | None = None
+        self.end_time: float | None = None
         self.state: GameState = GameState.READY
         self.mines_remaining: int = self.mines
         self.lives_remaining: int = self.lives

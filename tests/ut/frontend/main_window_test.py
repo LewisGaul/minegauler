@@ -19,7 +19,6 @@ from minegauler.app.shared.types import Difficulty, GameMode, GameState, ReachSe
 from ..utils import make_true_mock
 from .utils import maybe_stop_for_interaction
 
-
 _MockPanelWidget = make_true_mock(panel.PanelWidget)
 _MockCounterWidget = make_true_mock(panel._CounterWidget)
 _MockMinefieldWidget = make_true_mock(minefield.MinefieldWidget)

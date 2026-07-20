@@ -1,17 +1,14 @@
 from __future__ import annotations
 
-
 __all__ = ("SQLiteDB",)
 
 import logging
 import sqlite3
 from collections.abc import Iterable
 from pathlib import Path
-
-from typing_extensions import Self
+from typing import Self
 
 from .shared.types import PathLike
-
 
 logger = logging.getLogger(__name__)
 

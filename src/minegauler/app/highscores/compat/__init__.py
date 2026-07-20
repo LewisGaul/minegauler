@@ -12,17 +12,14 @@ alongside the app.
 
 __all__ = ("ConversionFunc", "HighscoreReadError", "read_highscores")
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Callable
-
-from typing_extensions import TypeAlias
+from typing import TypeAlias
 
 from ...shared.types import PathLike
 from ..sqlite import SQLiteDB
 from ..types import HighscoreStruct
 from . import sqlite_v0, sqlite_v1, sqlite_v2, sqlite_v3
-
 
 ConversionFunc: TypeAlias = Callable[[PathLike], Iterable[HighscoreStruct]]
 

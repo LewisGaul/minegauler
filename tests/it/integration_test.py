@@ -7,7 +7,6 @@ Integration tests. Simulates interactions by calling frontend APIs only.
 
 import contextlib
 import logging
-from typing import Optional
 from unittest import mock
 
 import pytest
@@ -21,11 +20,10 @@ from minegauler.app.shared.utils import AllOpts, write_settings_to_file
 
 from . import process_events, run_main_entrypoint
 
-
 logger = logging.getLogger(__name__)
 
 
-def create_gui(settings: Optional[AllOpts] = None) -> frontend.MinegaulerGUI:
+def create_gui(settings: AllOpts | None = None) -> frontend.MinegaulerGUI:
     """Create a minegauler GUI instance via the main entrypoint."""
     if settings is not None:
         write_settings_to_file(settings, minegauler.app.paths.SETTINGS_FILE)
@@ -60,8 +58,8 @@ class Test:
     _mouse_down_pos = None
 
     @pytest.fixture(scope="class", autouse=True)
-    def class_setup(self):
-        cls = type(self)
+    @classmethod
+    def class_setup(cls):
         cls.gui = create_gui()
         cls._mf_widget = cls.gui._mf_widget
 

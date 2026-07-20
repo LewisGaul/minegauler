@@ -158,12 +158,10 @@ class TestRegularBoard:
         board[(1, 1)] = CellContents.Num(5)
         board[(2, 1)] = CellContents.Num(0)
         assert repr(board) == f"<{self.x}x{self.y} board>"
-        assert str(board) == textwrap.dedent(
-            """\
+        assert str(board) == textwrap.dedent("""\
             F2 M2  #  #  #
              #  5  .  #  #
-             #  #  #  #  #"""
-        )
+             #  #  #  #  #""")
 
     def test_from_2d_array(self):
         board = Board.from_2d_array(

@@ -18,7 +18,6 @@ from minegauler.app.core.regular.minefield import Minefield
 from minegauler.app.core.regular.types import Coord
 from minegauler.app.shared.types import Difficulty, GameState, ReachSetting
 
-
 logger = logging.getLogger(__name__)
 
 

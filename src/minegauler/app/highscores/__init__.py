@@ -20,7 +20,6 @@ import functools
 import logging
 import threading
 from collections.abc import Iterable
-from typing import Optional
 
 import requests
 
@@ -32,7 +31,6 @@ from . import compat
 from .compat import HighscoreReadError
 from .sqlite import SQLiteHighscoresDB
 from .types import HighscoresDB, HighscoreSettings, HighscoreStruct
-
 
 logger = logging.getLogger(__name__)
 
@@ -46,14 +44,14 @@ def _get_default_local_db() -> HighscoreStruct:
 
 def get_highscores(
     *,
-    database: Optional[HighscoresDB] = None,
-    settings: Optional[HighscoreSettings] = None,
-    game_mode: Optional[GameMode] = None,
-    difficulty: Optional[Difficulty] = None,
-    per_cell: Optional[int] = None,
-    reach: Optional[ReachSetting] = None,
-    drag_select: Optional[bool] = None,
-    name: Optional[str] = None,
+    database: HighscoresDB | None = None,
+    settings: HighscoreSettings | None = None,
+    game_mode: GameMode | None = None,
+    difficulty: Difficulty | None = None,
+    per_cell: int | None = None,
+    reach: ReachSetting | None = None,
+    drag_select: bool | None = None,
+    name: str | None = None,
 ) -> Iterable[HighscoreStruct]:
     """
     Fetch highscores from a database.
@@ -96,7 +94,7 @@ def get_highscores(
 def insert_highscore(
     highscore: HighscoreStruct,
     *,
-    database: Optional[HighscoresDB] = None,
+    database: HighscoresDB | None = None,
     post_remote: bool = True,
 ) -> None:
     """
@@ -127,7 +125,7 @@ def insert_highscore(
 def retrieve_highscores(
     path: PathLike,
     *,
-    database: Optional[HighscoresDB] = None,
+    database: HighscoresDB | None = None,
 ) -> int:
     """
     Insert highscores from another DB at the given path.
@@ -149,7 +147,7 @@ def retrieve_highscores(
 def filter_and_sort(
     highscores: Iterable[HighscoreStruct],
     sort_key: str = "time",
-    filters: Optional[dict[str, Optional[str]]] = None,
+    filters: dict[str, str | None] | None = None,
 ) -> list[HighscoreStruct]:
     """
     Filter and sort an iterable of highscores.
@@ -206,7 +204,7 @@ def filter_and_sort(
 
 def is_highscore_new_best(
     highscore: HighscoreStruct, all_highscores: Iterable[HighscoreStruct]
-) -> Optional[str]:
+) -> str | None:
     """
     Test to see if a new top highscore has been set.
 

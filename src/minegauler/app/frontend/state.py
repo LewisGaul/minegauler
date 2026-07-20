@@ -20,7 +20,6 @@ __all__ = ("HighscoreWindowState", "PerGameState", "State")
 
 import logging
 from collections.abc import Mapping
-from typing import Optional
 
 import attrs
 
@@ -34,7 +33,6 @@ from ..shared.types import (
     UIMode,
 )
 from ..shared.utils import GameOpts, GUIOpts, StructConstructorMixin
-
 
 logger = logging.getLogger(__name__)
 
@@ -59,11 +57,11 @@ class PerGameState(StructConstructorMixin):
 class HighscoreWindowState(StructConstructorMixin):
     """State associated with the highscores window."""
 
-    name_filter: Optional[str] = None
+    name_filter: str | None = None
     name_hint: str = ""
-    flagging_filter: Optional[str] = None
+    flagging_filter: str | None = None
     sort_by: str = "time"
-    current_highscore: Optional[HighscoreStruct] = None
+    current_highscore: HighscoreStruct | None = None
 
 
 @attrs.define(kw_only=True)
@@ -71,7 +69,7 @@ class State:
     """All state shared between widgets."""
 
     _current_game_state: PerGameState = PerGameState()
-    _pending_game_state: Optional[PerGameState] = None
+    _pending_game_state: PerGameState | None = None
 
     btn_size: int = 16
     name: str = ""

@@ -4,7 +4,7 @@ __all__ = ("Minefield", "RegularMinefieldBase")
 
 import abc
 from collections.abc import Iterable, Mapping
-from typing import Any, Optional, TypeVar
+from typing import Any, TypeVar
 
 from ...shared import utils
 from ...shared.types import CellContents, ReachSetting
@@ -13,7 +13,6 @@ from ..board import BoardBase
 from ..minefield import MinefieldBase
 from .board import Board
 from .types import Coord
-
 
 C = TypeVar("C", bound=CoordBase)
 B = TypeVar("B", bound=BoardBase)
@@ -125,7 +124,7 @@ class Minefield(RegularMinefieldBase[Coord, Board]):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._openings: Optional[list[list[Coord]]] = None
+        self._openings: list[list[Coord]] | None = None
 
     @classmethod
     def from_json(cls, obj: Mapping[str, Any]) -> "Minefield":

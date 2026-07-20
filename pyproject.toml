@@ -20,7 +20,7 @@ classifiers = [
     "Natural Language :: English",
     "Topic :: Games/Entertainment :: Puzzle Games"
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 dependencies = [
     "attrs",
     "PyQt6",
@@ -35,17 +35,17 @@ scripts.minegauler-bot = "minegauler.bot.__main__:main"
 
 [dependency-groups]
 dev = [
-    "black>=24.10.0",
-    "coverage>=7.6.10",
-    "import-linter>=2.1",
-    "mypy>=1.14.1",
-    "pytest>=8.3.4",
-    "pytest-benchmark>=5.1.0",
-    "pytest-cov>=6.0.0",
-    "pytest-qt>=4.4.0",
-    "ruff>=0.9.0",
-    "bump2version>=1.0.1",
-    "pyinstaller>=6.11.1",
+    "black",
+    "coverage",
+    "import-linter",
+    "mypy",
+    "pytest",
+    "pytest-benchmark",
+    "pytest-cov",
+    "pytest-qt",
+    "ruff",
+    "bump2version",
+    "pyinstaller",
 ]
 
 [build-system]
@@ -75,7 +75,7 @@ include = ["minegauler*"]
 # ------------------------
 [tool.black]
 line-length = 88
-target-version = ['py39']
+target-version = ['py311']
 include = '\.spec$|\.pyi?$'
 extend_exclude = '.*venv.*|_vendor|__pycache__'
 
@@ -101,7 +101,7 @@ select = [
     # flake8-async
     "ASYNC",
     # flake8-bandit
-    "S506",  # unsafe-yaml-load
+    "unsafe-yaml-load",
     # flake8-bugbear
     "B",
     # flake8-executable
@@ -117,60 +117,59 @@ select = [
     # pylint
     "PLE",      # errors
     "PLW",      # warnings
-    "PLR1711",  # useless-return
+    "useless-return",
     # Ruff-specific rules
     "RUF",
 ]
 ignore = [
     # pydocstyle
-    "D105",  # undocumented-magic-method
-    "D107",  # undocumented-public-init
-    "D203",  # one-blank-line-before-class
-    "D205",  # blank-line-after-summary
-    "D212",  # multi-line-summary-first-line
-    "D401",  # non-imperative-mood
+    "undocumented-magic-method",
+    "undocumented-public-init",
+    "incorrect-blank-line-before-class",
+    "missing-blank-line-after-summary",
+    "multi-line-summary-first-line",
+    "non-imperative-mood",
     # Pyflakes
-    "F403",  # undefined-local-with-import-star
-    "F841",  # unused-variable
+    "undefined-local-with-import-star",
+    "unused-variable",
     # pycodestyle
-    "E201",  # whitespace-after-open-bracket
-    "E202",  # whitespace-before-close-bracket
-    "E203",  # whitespace-before-punctuation
-    "E211",  # whitespace-before-parameters
-    "E241",  # multiple-spaces-after-comma
-    "E266",  # multiple-leading-hashes-for-block-comment
-    "E402",  # module-import-not-at-top-of-file
-    "E501",  # line-too-long
+    "whitespace-after-open-bracket",
+    "whitespace-before-close-bracket",
+    "whitespace-before-punctuation",
+    "whitespace-before-parameters",
+    "multiple-spaces-after-comma",
+    "multiple-leading-hashes-for-block-comment",
+    "module-import-not-at-top-of-file",
+    "line-too-long",
     # pep8-naming
-    "N802",  # invalid-function-name
+    "invalid-function-name",
     # pylint warnings
-    "PLW3201",  # bad-dunder-method-name
+    "too-many-statements-in-try-clause",
+    "bad-dunder-method-name",
     # flake8-pytest-style
-    "PT003",  # pytest-extraneous-scope-function
-    "PT011",  # pytest-raises-too-broad
+    "pytest-extraneous-scope-function",
+    "pytest-raises-too-broad",
     # flake8-pyi
-    "PYI041",  # redundant-numeric-union
+    "redundant-numeric-union",
     # pyupgrade
-    "UP015",  # redundant-open-modes
-    "UP032",  # f-string
+    "redundant-open-modes",
+    "f-string",
     # flake8-bugbear
-    "B007",  # unused-loop-control-variable
-    "B011",  # assert-false
+    "unused-loop-control-variable",
+    "assert-false",
     # flake8-simplify
-    "SIM102",  # collapsible-if
-    "SIM108",  # if-else-block-instead-of-if-exp
-    "SIM117",  # multiple-with-statements
+    "collapsible-if",
+    "if-else-block-instead-of-if-exp",
+    "multiple-with-statements",
     # Ruff-specific rules
-    "RUF028",  # invalid-formatter-suppression-comment
-    "RUF031",  # incorrectly-parenthesized-tuple-in-subscript
+    "invalid-formatter-suppression-comment",
+    "incorrectly-parenthesized-tuple-in-subscript",
+    "non-empty-init-module",
 ]
 unfixable = [
-    "PLW0108",  # unnecessary-lambda
+    "unnecessary-lambda",
 ]
 task-tags = ["TODO", "FIXME", "XXX", "@@@"]
-
-[tool.ruff.lint.isort]
-lines-after-imports = 2
 
 [tool.ruff.lint.pyupgrade]
 keep-runtime-typing = true
@@ -179,24 +178,24 @@ keep-runtime-typing = true
 "!tests/**" = ["PT"]
 "tests/**" = [
     "D",  # pydocstyle
-    "B018",  # useless-expression
+    "useless-expression",
 ]
 # Temporary stuff that should be fixed up...
 "**" = [
     "D",  # pydocstyle
-    "PLW1641",  # eq-without-hash
+    "eq-without-hash",
 ]
 "src/minegauler/app/__main__.py" = [
-    "PLW0603",  # global-statement
+    "global-statement",
 ]
 "src/minegauler/app/frontend/__init__.py" = [
-    "PLW0603",  # global-statement
+    "global-statement",
 ]
 "src/minegauler/app/frontend/highscores.py" = [
-    "B008",  # function-call-in-default-argument
+    "function-call-in-default-argument",
 ]
 "src/minegauler/app/frontend/state.py" = [
-    "RUF009",  # function-call-in-dataclass-default-argument
+    "function-call-in-dataclass-default-argument",
 ]
 "src/minegauler/bot/**" = ["PLW", "PYI"]
 

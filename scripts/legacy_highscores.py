@@ -6,17 +6,15 @@ January 2020, Lewis Gaul
 
 import json
 import logging
-from typing import Optional
 
 import attrs
 
 from minegauler.app import highscores as hs
 
-
 logger = logging.getLogger(__name__)
 
 
-def _key_to_highscore_settings_v1_2(key: str) -> Optional[hs.HighscoreSettings]:
+def _key_to_highscore_settings_v1_2(key: str) -> hs.HighscoreSettings | None:
     """
     Convert an old highscore key to highscore settings.
 
@@ -104,8 +102,8 @@ def read_highscore_file(file, version="1.2") -> list[hs.HighscoreStruct]:
                     "flagging": float(v["flagging"]),
                     "name": v["name"],
                 }
-            except (ValueError, TypeError) as e:
-                logger.debug("Skipping highscore with invalid type: %s", str(e))
+            except (ValueError, TypeError) as exc:
+                logger.debug("Skipping highscore with invalid type: %s", exc)
                 continue
 
             ret.append(hs.HighscoreStruct(**settings, **fields))

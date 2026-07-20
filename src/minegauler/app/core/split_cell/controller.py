@@ -12,7 +12,6 @@ from .game import Game
 from .minefield import Minefield
 from .types import Coord
 
-
 logger = logging.getLogger(__name__)
 
 

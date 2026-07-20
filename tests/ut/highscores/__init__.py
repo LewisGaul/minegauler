@@ -49,9 +49,7 @@ class SQLiteDBVersion0(AbstractSQLiteDBVersion):
 
     @classmethod
     def get_create_tables_sql(cls) -> Iterable[str]:
-        return [
-            textwrap.dedent(
-                f"""\
+        return [textwrap.dedent(f"""\
                 CREATE TABLE IF NOT EXISTS {cls._TABLE_NAME} (
                     id INTEGER PRIMARY KEY,
                     difficulty VARCHAR(1) NOT NULL,
@@ -63,9 +61,7 @@ class SQLiteDBVersion0(AbstractSQLiteDBVersion):
                     bbbv INTEGER NOT NULL,
                     bbbvps REAL NOT NULL,
                     flagging REAL NOT NULL
-                )"""
-            )
-        ]
+                )""")]
 
     @classmethod
     def get_insert_row_sql(cls, highscore: HighscoreStruct) -> str:
@@ -116,9 +112,7 @@ class SQLiteDBVersion1(AbstractSQLiteDBVersion):
 
     @classmethod
     def get_create_tables_sql(cls) -> Iterable[str]:
-        return [
-            textwrap.dedent(
-                f"""\
+        return [textwrap.dedent(f"""\
                 CREATE TABLE IF NOT EXISTS {table_name} (
                     difficulty VARCHAR(1) NOT NULL,
                     per_cell INTEGER NOT NULL,
@@ -130,10 +124,7 @@ class SQLiteDBVersion1(AbstractSQLiteDBVersion):
                     bbbvps REAL NOT NULL,
                     flagging REAL NOT NULL,
                     PRIMARY KEY(difficulty, name, timestamp)
-                )"""
-            )
-            for table_name in cls._TABLE_NAMES
-        ]
+                )""") for table_name in cls._TABLE_NAMES]
 
     @classmethod
     def get_insert_row_sql(cls, highscore: HighscoreStruct) -> str:
@@ -185,9 +176,7 @@ class SQLiteDBVersion2(AbstractSQLiteDBVersion):
 
     @classmethod
     def get_create_tables_sql(cls) -> Iterable[str]:
-        return [
-            textwrap.dedent(
-                f"""\
+        return [textwrap.dedent(f"""\
                 CREATE TABLE IF NOT EXISTS {table_name} (
                     difficulty VARCHAR(1) NOT NULL,
                     per_cell INTEGER NOT NULL,
@@ -200,10 +189,7 @@ class SQLiteDBVersion2(AbstractSQLiteDBVersion):
                     bbbvps REAL NOT NULL,
                     flagging REAL NOT NULL,
                     PRIMARY KEY(difficulty, name, timestamp)
-                )"""
-            )
-            for table_name in cls._TABLE_NAMES
-        ]
+                )""") for table_name in cls._TABLE_NAMES]
 
     @classmethod
     def get_insert_row_sql(cls, highscore: HighscoreStruct) -> str:
@@ -252,9 +238,7 @@ class SQLiteDBVersion3(AbstractSQLiteDBVersion):
 
     @classmethod
     def get_create_tables_sql(cls) -> Iterable[str]:
-        return [
-            textwrap.dedent(
-                f"""\
+        return [textwrap.dedent(f"""\
                 CREATE TABLE IF NOT EXISTS {cls._TABLE_NAME} (
                     game_mode TEXT NOT NULL,
                     difficulty TEXT NOT NULL,
@@ -267,9 +251,7 @@ class SQLiteDBVersion3(AbstractSQLiteDBVersion):
                     bbbv INTEGER NOT NULL,
                     flagging REAL NOT NULL,
                     PRIMARY KEY (name, timestamp)
-                )"""
-            )
-        ]
+                )""")]
 
     @classmethod
     def get_insert_row_sql(cls, highscore: HighscoreStruct) -> str:

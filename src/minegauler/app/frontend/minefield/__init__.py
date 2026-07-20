@@ -5,8 +5,7 @@ __all__ = ("MinefieldWidget",)
 import functools
 import logging
 import time
-from collections.abc import Iterable, Mapping
-from typing import Callable, Optional
+from collections.abc import Callable, Iterable, Mapping
 
 from PyQt6.QtCore import QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QMouseEvent, QPen
@@ -24,7 +23,6 @@ from ..state import State
 from ..utils import CellUpdate_T, MouseMove, blend_colours
 from . import regular, split_cell
 from ._base import RAISED_CELL, SUNKEN_CELL, FlagAction, MinefieldWidgetImplBase
-
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +66,7 @@ class MinefieldWidget(QGraphicsView):
 
     def __init__(
         self,
-        parent: Optional[QWidget],
+        parent: QWidget | None,
         ctrlr: api.AbstractController,
         state: State,
     ):
@@ -88,7 +86,7 @@ class MinefieldWidget(QGraphicsView):
         )
 
         # Keep track of mouse button states.
-        self._mouse_coord: Optional[Coord] = None
+        self._mouse_coord: Coord | None = None
         self._both_mouse_buttons_pressed: bool = False
         self._await_release_all_buttons: bool = False
         self._was_double_left_click: bool = False
@@ -103,7 +101,7 @@ class MinefieldWidget(QGraphicsView):
         # Mouse tracking info, for simulating a played game.
         self._mouse_tracking: list[MouseMove] = []
         self._mouse_events: list[CellUpdate_T] = []
-        self._first_click_time: Optional[int] = None
+        self._first_click_time: int | None = None
 
         self.reset()
 
@@ -292,7 +290,7 @@ class MinefieldWidget(QGraphicsView):
             self._was_double_left_click = False
             self.left_button_down(coord)
 
-    def left_button_move(self, coord: Optional[Coord]) -> None:
+    def left_button_move(self, coord: Coord | None) -> None:
         """
         Left mouse button was moved after a single click. Change display as
         appropriate.
@@ -302,7 +300,7 @@ class MinefieldWidget(QGraphicsView):
         if coord is not None:
             self.left_button_down(coord)
 
-    def left_button_double_move(self, coord: Optional[Coord]) -> None:
+    def left_button_double_move(self, coord: Coord | None) -> None:
         """
         Left mouse button moved after a double click.
         """
@@ -326,7 +324,7 @@ class MinefieldWidget(QGraphicsView):
         """
         self._right_drag_action = self._impl.right_down_action(coord)
 
-    def right_button_move(self, coord: Optional[Coord]) -> None:
+    def right_button_move(self, coord: Coord | None) -> None:
         """
         Right mouse button was moved. Change display as appropriate.
         """
@@ -344,7 +342,7 @@ class MinefieldWidget(QGraphicsView):
             self.at_risk_signal.emit()
             self._ctrlr.chord_on_cell(coord)
 
-    def both_buttons_move(self, coord: Optional[Coord]) -> None:
+    def both_buttons_move(self, coord: Coord | None) -> None:
         """
         Both left and right mouse buttons were moved. Change display as
         appropriate.
@@ -378,7 +376,7 @@ class MinefieldWidget(QGraphicsView):
     # --------------------------------------------------------------------------
     # Other methods
     # --------------------------------------------------------------------------
-    def _coord_from_event(self, event: QMouseEvent) -> Optional[Coord]:
+    def _coord_from_event(self, event: QMouseEvent) -> Coord | None:
         """
         Get cell coordinate from mouse button event.
 

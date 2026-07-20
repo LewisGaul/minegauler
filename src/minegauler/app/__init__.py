@@ -4,5 +4,4 @@ from . import paths
 from ._metadata import VERSION
 from .core import api
 
-
 __version__ = VERSION

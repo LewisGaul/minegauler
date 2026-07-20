@@ -3,7 +3,6 @@
 import logging
 import subprocess
 from collections.abc import Iterable, Mapping
-from typing import Union
 
 import zig_minesolver as minesolver  # TODO: Rename the package
 
@@ -11,7 +10,6 @@ from ...shared import utils
 from ...shared.types import CellContents, GameMode, ReachSetting
 from ..board import BoardBase
 from .types import Coord
-
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +26,7 @@ class Board(BoardBase):
         self._reach = reach
 
     @classmethod
-    def from_2d_array(cls, array: list[list[Union[str, int]]]) -> "Board":
+    def from_2d_array(cls, array: list[list[str | int]]) -> "Board":
         """
         Create an instance from a 2-dimensional array.
 

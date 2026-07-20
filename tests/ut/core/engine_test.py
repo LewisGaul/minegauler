@@ -19,7 +19,6 @@ from minegauler.app.shared.utils import GameOpts
 
 from .. import utils
 
-
 logger = logging.getLogger(__name__)
 
 

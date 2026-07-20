@@ -7,7 +7,6 @@ Base classes and types for highscore handling.
 
 from __future__ import annotations
 
-
 __all__ = (
     "HighscoreSettings",
     "HighscoreStruct",
@@ -17,15 +16,13 @@ __all__ = (
 import abc
 import logging
 from collections.abc import Iterable
-from typing import Optional
+from typing import Self
 
 import attrs
 import attrs.validators as av
-from typing_extensions import Self
 
 from ..shared.types import Difficulty, GameMode, ReachSetting
 from ..shared.utils import StructConstructorMixin
-
 
 logger = logging.getLogger(__name__)
 
@@ -97,12 +94,12 @@ class HighscoresDB(abc.ABC):
     def get_highscores(
         self,
         *,
-        game_mode: Optional[GameMode] = None,
-        difficulty: Optional[Difficulty] = None,
-        per_cell: Optional[int] = None,
-        reach: Optional[ReachSetting] = None,
-        drag_select: Optional[bool] = None,
-        name: Optional[str] = None,
+        game_mode: GameMode | None = None,
+        difficulty: Difficulty | None = None,
+        per_cell: int | None = None,
+        reach: ReachSetting | None = None,
+        drag_select: bool | None = None,
+        name: str | None = None,
     ) -> Iterable[HighscoreStruct]:
         """Fetch highscores from the database using the given filters."""
 

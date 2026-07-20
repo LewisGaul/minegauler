@@ -11,7 +11,6 @@ import sys
 
 from . import core, frontend, paths, shared
 
-
 logger = logging.getLogger(__name__)
 
 ctrlr = None

@@ -10,11 +10,9 @@ from unittest import mock
 import pytest
 
 import minegauler.app
-import minegauler.app.highscores
 
 from . import APP_DIR
 from .it import EVENT_PAUSE
-
 
 logger = logging.getLogger(__name__)
 

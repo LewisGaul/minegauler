@@ -23,13 +23,11 @@ import os
 import pathlib
 import sys
 from collections.abc import Iterable
-from typing import Optional
 
 import requests
 
 from minegauler.app import highscores as hs
 from minegauler.app.shared.types import Difficulty, GameMode, ReachSetting
-
 
 logger = logging.getLogger(__name__)
 
@@ -69,13 +67,13 @@ def set_user_nickname(user: str, nickname: str) -> None:
 
 
 def get_highscore_times(
-    difficulty: Optional[Difficulty],
+    difficulty: Difficulty | None,
     *,
     game_mode: GameMode = GameMode.REGULAR,
-    drag_select: Optional[bool] = None,
-    per_cell: Optional[int] = None,
-    reach: Optional[ReachSetting] = None,
-    users: Optional[Iterable[str]] = None,
+    drag_select: bool | None = None,
+    per_cell: int | None = None,
+    reach: ReachSetting | None = None,
+    users: Iterable[str] | None = None,
 ) -> list[tuple[str, float]]:
     if difficulty is Difficulty.CUSTOM:
         raise ValueError("No highscores for custom difficulty")
@@ -117,7 +115,7 @@ Matchup = collections.namedtuple("Matchup", "user1, time1, user2, time2, percent
 
 
 def get_matchups(
-    times: Iterable[tuple[str, float]], include_users: Optional[Iterable[str]] = None
+    times: Iterable[tuple[str, float]], include_users: Iterable[str] | None = None
 ) -> list[Matchup]:
     times = sorted(times, key=lambda x: x[1], reverse=True)
     matchups = set()
@@ -159,13 +157,13 @@ def get_player_info(username: str) -> PlayerInfo:
 
 def get_highscores(
     *,
-    settings: Optional[hs.HighscoreSettings] = None,
+    settings: hs.HighscoreSettings | None = None,
     game_mode: GameMode = GameMode.REGULAR,
-    difficulty: Optional[Difficulty] = None,
-    per_cell: Optional[int] = None,
-    reach: Optional[ReachSetting] = None,
-    drag_select: Optional[bool] = None,
-    name: Optional[str] = None,
+    difficulty: Difficulty | None = None,
+    per_cell: int | None = None,
+    reach: ReachSetting | None = None,
+    drag_select: bool | None = None,
+    name: str | None = None,
 ) -> Iterable[hs.HighscoreStruct]:
     """
     Get highscores using the REST API.
@@ -220,9 +218,9 @@ def _get_combined_highscore(
     name: str,
     *,
     game_mode: GameMode = GameMode.REGULAR,
-    per_cell: Optional[int] = None,
-    reach: Optional[ReachSetting] = None,
-    drag_select: Optional[bool] = None,
+    per_cell: int | None = None,
+    reach: ReachSetting | None = None,
+    drag_select: bool | None = None,
 ) -> float:
     total = 0
     for diff in ["b", "i", "e"]:

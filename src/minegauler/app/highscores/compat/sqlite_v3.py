@@ -33,7 +33,6 @@ from sqlite3 import Cursor, Row
 from ...shared.types import PathLike
 from ..types import HighscoreStruct
 
-
 _TABLE_NAME = "highscores"
 
 

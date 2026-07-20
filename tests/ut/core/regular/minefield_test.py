@@ -152,12 +152,10 @@ class TestRegularMinefield:
             self.coords, mine_coords=mine_coords, per_cell=self.per_cell
         )
         assert repr(mf) == "<4x3 minefield with 3 mines>"
-        assert str(mf) == textwrap.dedent(
-            """\
+        assert str(mf) == textwrap.dedent("""\
             2 0 0 0
             1 0 0 0
-            0 0 0 0"""
-        )
+            0 0 0 0""")
 
     def test_getitem(self):
         """Check getitem behaviour."""

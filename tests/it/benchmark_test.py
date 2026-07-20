@@ -18,7 +18,6 @@ from minegauler.app.shared.types import CellContents
 from . import process_events as _utils_process_events
 from . import run_main_entrypoint
 
-
 process_events = functools.partial(_utils_process_events, ignore_wait=True)
 
 

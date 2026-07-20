@@ -8,7 +8,6 @@ import logging
 import os.path
 from collections.abc import Mapping
 from os import PathLike
-from typing import Optional
 
 import attrs
 
@@ -25,7 +24,6 @@ from . import api
 from .board import BoardBase
 from .game import GameBase
 from .minefield import MinefieldBase
-
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +47,7 @@ class SharedInfo:
         The number of lives remaining.
     """
 
-    cell_updates: Optional[dict[Coord, CellContents]] = None
+    cell_updates: dict[Coord, CellContents] | None = None
     game_state: GameState = GameState.READY
     mines_remaining: int = 0
     lives_remaining: int = 0
@@ -343,7 +341,7 @@ class GameControllerBase(ControllerBase, metaclass=abc.ABCMeta):
     # Helper methods
     # --------------------------------------------------------------------------
     def _send_updates(
-        self, cells_updated: Optional[dict[Coord, CellContents]] = None
+        self, cells_updated: dict[Coord, CellContents] | None = None
     ) -> None:
         """Send updates to registered listeners."""
         update = SharedInfo(

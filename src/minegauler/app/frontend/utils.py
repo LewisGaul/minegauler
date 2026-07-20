@@ -41,7 +41,6 @@ from ..highscores import HighscoreStruct
 from ..shared.types import CellContents, Coord, PathLike
 from ..shared.utils import format_timestamp
 
-
 logger = logging.getLogger(__name__)
 
 CellUpdate_T = tuple[float, Mapping[Coord, CellContents]]

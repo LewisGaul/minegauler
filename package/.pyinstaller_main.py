@@ -13,5 +13,4 @@ import sys
 
 from minegauler.app.__main__ import main
 
-
 sys.exit(main())

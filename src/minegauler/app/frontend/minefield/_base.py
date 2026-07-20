@@ -13,7 +13,6 @@ import enum
 import logging
 import os.path
 from collections.abc import Mapping
-from typing import Optional
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QImage, QPainter, QPixmap
@@ -23,7 +22,6 @@ from ... import api, paths
 from ...core.board import BoardBase
 from ...shared.types import CellContents, CellImageType, Coord
 from ..state import State
-
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +116,7 @@ def update_cell_images(
 def _make_pixmap(
     size: int,
     bg_path: str,
-    fg_path: Optional[str] = None,
+    fg_path: str | None = None,
     *,
     propn: float = 1.0,
 ) -> QPixmap:

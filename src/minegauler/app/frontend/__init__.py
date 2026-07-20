@@ -16,7 +16,6 @@ from PyQt6.QtWidgets import QApplication, QWidget
 from . import state
 from .main_window import MinegaulerGUI
 
-
 _app = None
 _timer = None
 
